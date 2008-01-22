@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Profile" script:language="StarBasic">REM  *****  BASIC  *****
+Public sProfileFilename As String
+
+Function ReadProfile
+	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
+	If FileExists(sProfileFilename) Then
+		Dim iFileNo As Integer, sCurrentLine As String
+		&apos; Установление свободного файлового манипулятора
+		iFileNo = Freefile
+		&apos; Открытие файла (в режиме на чтение)
+		Open sProfileFilename For Input As #iFileNo
+		&apos; Проверка, был ли достигнут конец файла
+		Do While NOT eof(iFileNo)
+			&apos; Чтение строки
+			Line Input #iFileNo, sCurrentLine
+			If sCurrentLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные профиля
+				SetProfile(sCurrentLine)
+			End If
+		Loop
+		&apos; Закрытие файла
+		Close #iFileNo
+		&apos; Добавляем автора документа в список
+		&apos;AppendDocAuthorInArray
+	End If
+
+End Function
+
+Function SetProfile(sCurrentLine)
+	Dim sProfile() As String
+	sProfile = Split(sCurrentLine, &quot;=&quot;)
+	Select Case sProfile(0)
+		Case &quot;diFirstField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diMiddleField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diLastField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diNicknameField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diEmailField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diHomepageField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diOCRField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+	End Select
+End Function
+
+Function AppendDocAuthorInArray
+	Dim i As Integer
+	i = Ubound(sDocAuthors(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sDocAuthors(i, 5)
+	Else Redim sDocAuthors(i, 5)
+	End If
+	sDocAuthors(i, 0) = Trim(oInfoDlg.Model.diFirstField.Text)
+	sDocAuthors(i, 1) = Trim(oInfoDlg.Model.diMiddleField.Text)
+	sDocAuthors(i, 2) = Trim(oInfoDlg.Model.diLastField.Text)
+	sDocAuthors(i, 3) = Trim(oInfoDlg.Model.diNicknameField.Text)
+	sDocAuthors(i, 4) = Trim(oInfoDlg.Model.diEmailField.Text)
+	sDocAuthors(i, 5) = Trim(oInfoDlg.Model.diHomepageField.Text)
+	oInfoDlg.GetControl(&quot;lblDocAutors&quot;).Text = i+1
+End Function
+
+Function SaveProfile
+	&apos; записываем установки
+	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot;,128 + 32 + 1,sConvertorName) = 2 Then
+		Exit Function
+	End If
+	Dim iFileNo As Integer, sCurrentLine As String
+	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
+	Open sProfileFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	
+	Print #iFileNo, &quot;diFirstField=&quot; &amp; oInfoDlg.Model.diFirstField.Text
+	Print #iFileNo, &quot;diMiddleField=&quot; &amp; oInfoDlg.Model.diMiddleField.Text
+	Print #iFileNo, &quot;diLastField=&quot; &amp; oInfoDlg.Model.diLastField.Text
+	Print #iFileNo, &quot;diNicknameField=&quot; &amp; oInfoDlg.Model.diNicknameField.Text
+	Print #iFileNo, &quot;diEmailField=&quot; &amp; oInfoDlg.Model.diEmailField.Text
+	Print #iFileNo, &quot;diHomepageField=&quot; &amp; oInfoDlg.Model.diHomepageField.Text
+	Print #iFileNo, &quot;diOCRField=&quot; &amp; oInfoDlg.Model.diOCRField.Text
+	
+	Close #iFileNo &apos; Закрытие файла
+End Function
+
+</script:module>

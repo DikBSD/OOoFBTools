@@ -5,46 +5,20 @@ Option Explicit
 
 Public sCurDocFile As String
 Public oTextOutputStream As Object
-Public sGenres() As String REM book&apos;s genres
-Public sAuthors() As String REM book&apos;s authors
-Public sTranslators() As String REM book&apos;s translators
-Public sSequences() As String REM book&apos;s sequences
-Public sDocAuthors() As String REM doc&apos;s authors
-Public sPubSequences() As String REM publisher book&apos;s sequences
-Public sCustomInfos() As String
 Public sBodyParagraphs() As String
-&apos; оформление сносок
-Public sFootnoteLeft As String
-Public sFootnoteRight As String
-Public bFootnoteSpace As Boolean
-&apos; оформление подзаголовков
-Public bMergeSubTitle As Boolean
-&apos; оформление авторов эпиграфов
-Public bMergeEpigraphAuthors As Boolean
-&apos; оформление заголовков стихов
-Public bMergePoemTitle As Boolean
-&apos; оформление авторов стихов
-Public bMergePoemAuthors As Boolean
-&apos; оформление авторов цитат
-Public bMergeCiteAuthors As Boolean
-&apos; удаление пустых строк
-Public bDelEL As Boolean
-&apos; применение стиля к тексту сносок
-Public bStyleFootnote As Boolean
-&apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
-Public bCorrectPara As Boolean
+
+Public sConvertorName As String &apos; название конвертора
 
 Dim oProgressBar
 
 Dim oDoc As Object
 Dim oCursor As Object
-Dim count As Long &apos; для статусбара
-
-Dim sFootnoteText() As String
-Dim iFootnoteCount As Integer
+Dim lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 Dim sPoemTitle As String
 
 Sub ExportToFB21
+	sConvertorName = &quot;ExportToFB2.0&quot;
+	
 	Dim oOutputStream As Object
 	Dim oFileAccess As Object
 
@@ -56,7 +30,7 @@ Sub ExportToFB21
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL
 	Else
-		MsgBox &quot;Сохраните ООо файл&quot;, 48
+		MsgBox &quot;Сохраните ООо файл&quot;, 64, sConvertorName
 		exit Sub
 	End If
 	Mid(sCurDocFile, Len(sCurDocFile)-2, 3, &quot;fb2&quot;)
@@ -70,7 +44,7 @@ Sub ExportToFB21
 	oTextOutputStream.setOutputStream(oOutputStream)
 	oTextOutputStream.setEncoding(oInfoDlg.Model.Codepage.Text)
 
-	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount)
+	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount+100)
 	oProgressBar.setValue(0)
 	
 	&apos; печатаем данные из &lt;description&gt;
@@ -79,9 +53,6 @@ Sub ExportToFB21
 	oCursor = oDoc.Text.createTextCursor()
 	oCursor.gotoStart(False)
 	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))
-	
-	&apos; формируем заглавие книги
-	SaveBookTitle
 
 	&apos; запускаем парсинг всего текста
 	DocumentParser
@@ -99,8 +70,17 @@ Sub ExportToFB21
 	oTextOutputStream.closeOutput()
 	oProgressBar.end
 
-	MsgBox &quot;Создание книги в fb2 формате завершено!&quot;, 48
+	MsgBox &quot;Создание книги в fb2 формате завершено!&quot;, 64, sConvertorName
 End Sub
+
+Function SaveCloseSection(Count As Integer) As Long
+	Dim i As Integer
+	If Count &gt; 0 Then
+		For i = 0 To Count-1
+			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		Next i
+	End If
+End Function
 
 Function IndexOf1Section As Long
 	&apos; индекс 1-й секции
@@ -180,18 +160,280 @@ Function GetLevelNumber(Level As String) As Integer
 	End Select
 End Function
 
-Function SaveNotes
-	Dim iCount As Integer
-	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
-	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;Примечания&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-	For iCount = 0 To UBound(sFootnoteText())
-		oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; iCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
-		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; iCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-		oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sFootnoteText(iCount) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
-		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
-		PrintStatus(count) &apos; Статусбар
-	Next iCount
-	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+Function MakeBookTitle As String
+	&apos; формируем заглавие книги
+	Dim sBT As String, i As Integer
+	sBT = &quot;&lt;title&gt;&quot; &amp; chr(10)
+	For i = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(i,1) = &quot;Book Author&quot; OR sBodyParagraphs(i,1) = &quot;Book Title&quot; Then
+			sBT = sBT &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Else Exit For
+		End If
+	Next i
+	lCurrentElement = i
+	sBT = sBT &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
+	MakeBookTitle = sBT
+End Function
+
+Function MakeAnnotation As String
+	Dim sAnnot As String, i As Integer
+	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
+	For i = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(i,1) = &quot;Annotation&quot; Then
+			sAnnot = sAnnot &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Else Exit For
+		End If
+	Next i
+	lCurrentElement = i
+	sAnnot = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
+	MakeAnnotation = sAnnot
+End Function
+
+Function MakePoemTitle
+	Dim i As Integer
+	sPoemTitle = sPoemTitle &amp; &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
+	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
+		sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot;
+		For i = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(i,1) = &quot;Poem Title&quot; Then
+				sPoemTitle = sPoemTitle &amp; sBodyParagraphs(i,0) &amp;  &quot; &quot;
+				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			Else Exit For
+			End If
+		Next i
+		sPoemTitle = Mid(sPoemTitle, 1, Len(sPoemTitle)-1)
+		sPoemTitle = sPoemTitle &amp; &quot;&lt;/p&gt;&quot;
+		lCurrentElement = i
+	Else &apos; Заголовки стиха не будут собираться в одну строку, а будут один под другим
+		For i = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(i,1) = &quot;Poem Title&quot; Then
+				sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			Else Exit For
+			End If
+		Next i
+		lCurrentElement = i
+	End If
+	sPoemTitle = sPoemTitle &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
+End Function
+
+Function MakePoem As String
+	Dim sPoem As String, bEndPar As Boolean, i As Integer
+	If sPoemTitle = &quot;&quot; Then	&apos; стихи без заголовка
+		sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+	Else 
+		sPoem = sPoemTitle
+	End If
+	For i = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(i,1) = &quot;Poem&quot; Then
+			If sBodyParagraphs(i,0) = &quot;&quot; Then
+				sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+			Else
+				sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+			End If
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Else 
+			Exit For
+		End If
+	Next i
+	sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10
+	lCurrentElement = i
+	If sBodyParagraphs(lCurrentElement,1) = &quot;Poem Author&quot; Then
+		If bMergePoemAuthors = True Then &apos; собираем Авторов стиха, идущих один за другим в одну строку
+			sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot;
+			For i = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(i,1) = &quot;Poem Author&quot; Then
+					sPoem = sPoem &amp; sBodyParagraphs(i,0) &amp; &quot;, &quot;
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else Exit For
+				End If
+			Next i
+			sPoem = Mid(sPoem, 1, Len(sPoem)-2)
+			sPoem = sPoem &amp; &quot;&lt;/text-author&gt;&quot;
+			lCurrentElement = i
+		Else &apos; Авторы стиха не будут собираться в одну строку, а будут один под другим
+			For i = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(i,1) = &quot;Poem Author&quot; Then
+					sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else 
+					Exit For
+				End If
+			Next i
+			lCurrentElement = i
+		End If
+	End If
+	sPoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
+	sPoemTitle = &quot;&quot;
+	MakePoem = sPoem
+End Function
+
+Function MakeEpigraph As String
+	Dim sEpig As String, bEndPar As Boolean, i As Integer
+	sEpig = sEpig &amp; &quot;&lt;epigraph&gt;&quot; &amp; chr(10)
+	For i = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(i,1) = &quot;Epigraph&quot; Then
+			sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Else Exit For
+		End If
+	Next i
+	lCurrentElement = i
+	If sBodyParagraphs(lCurrentElement,1) = &quot;Epigraph Author&quot; Then
+		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
+			sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot;
+			For i = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(i,1) = &quot;Epigraph Author&quot; Then
+					sEpig = sEpig &amp; sBodyParagraphs(i,0) &amp; &quot;, &quot;
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else 
+					Exit For
+				End If
+			Next i
+			sEpig = Mid(sEpig, 1, Len(sEpig)-2)
+			sEpig = sEpig &amp; &quot;&lt;/text-author&gt;&quot;
+			lCurrentElement = i
+		Else &apos; Авторы епиграфа не будут собираться в одну строку, а будут один под другим
+			For i = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(i,1) = &quot;Epigraph Author&quot; Then
+					sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else Exit For
+				End If
+			Next i
+			lCurrentElement = i
+		End If
+	End If
+	sEpig = sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
+	MakeEpigraph = sEpig
+End Function
+
+Function MakeCite As String
+	Dim sCite As String, bEndPar As Boolean, i As Integer
+	sCite = &quot;&lt;cite&gt;&quot; &amp; chr(10)
+	For i = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(i,1) = &quot;Cite&quot; Then
+			sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Else 
+			Exit For
+		End If
+	Next i
+	lCurrentElement = i
+	If sBodyParagraphs(lCurrentElement,1) = &quot;Cite Author&quot; Then
+		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
+			sCite = sCite &amp; &quot;&lt;text-author&gt;&quot;
+			For i = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(i,1) = &quot;Cite Author&quot; Then
+					sCite = sCite &amp; sBodyParagraphs(i,0) &amp; &quot;, &quot;
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else Exit For
+				End If
+			Next i
+			sCite = Mid(sCite, 1, Len(sCite)-2)
+			sCite = sCite &amp; &quot;&lt;/text-author&gt;&quot;
+			lCurrentElement = i
+		Else &apos; Авторы цитаты не будут собираться в одну строку, а будут один под другим
+			For i = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(i,1) = &quot;Cite Author&quot; Then
+					sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else Exit For
+				End If
+			Next i
+			lCurrentElement = i
+		End If
+	End If
+	sCite = sCite &amp; &quot;&lt;/cite&gt;&quot;
+	MakeCite = sCite
+End Function
+
+Function MakeSubtitle As String
+	Dim sSubtitle As String, bEndPar As Boolean, i As Integer
+	If bMergeSubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
+		sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot;
+		For i = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(i,1) = &quot;SubTitle&quot; Then
+				sSubtitle = sSubtitle &amp; sBodyParagraphs(i,0) &amp; &quot; &quot;
+				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			Else Exit For
+			End If
+		Next i
+		lCurrentElement = i
+		sSubtitle = sSubtitle &amp; &quot;&lt;/subtitle&gt;&quot;
+	Else &apos; подзаголовки не будут собираться в одну строку, а будут один под другим
+		For i = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(i,1) = &quot;SubTitle&quot; Then
+				sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/subtitle&gt;&quot;
+				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			Else Exit For
+			End If
+		Next i
+		lCurrentElement = i
+	End If
+	MakeSubtitle = sSubtitle
+End Function
+
+Function MakeSection(sLevel As String) As String
+	Dim sSect As String, bEndPar As Boolean, i As Integer
+	sSect = sSect &amp; &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
+	sSect = sSect &amp; sBodyParagraphs(lCurrentElement,0) &amp; chr(10)
+	sSect = sSect  &amp; &quot;&lt;/title&gt;&quot;
+	oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+	lCurrentElement = lCurrentElement+1
+	MakeSection = sSect
+End Function
+
+Function SaveElements(sParaStyleName As String, sPara As String)
+	&apos; перебор по стилям
+	Select Case sParaStyleName
+		Case &quot;Poem Title&quot;
+			MakePoemTitle
+		Case &quot;Poem&quot;
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+		Case &quot;Epigraph&quot;
+			oTextOutputStream.writeString(MakeEpigraph &amp; chr(10))
+		Case &quot;Cite&quot;
+			oTextOutputStream.writeString(MakeCite &amp; chr(10))
+		Case &quot;Annotation&quot;
+			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
+		Case &quot;SubTitle&quot;
+			oTextOutputStream.writeString(MakeSubTitle &amp; chr(10))
+		Case &quot;Level 1&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 2&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 3&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 4&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 5&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 6&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 7&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 8&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 9&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;Level 10&quot;
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;&quot; &apos; &lt;empty-line/&gt;
+			oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case &quot;Table&quot; 
+			oTextOutputStream.writeString(sPara &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case &quot;Image&quot; 
+			oTextOutputStream.writeString(sPara &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case Else &apos; что-то другое или просто параграф - записываем как параграф
+			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+	End Select
 End Function
 
 Function SaveBody
@@ -201,84 +443,89 @@ Function SaveBody
 	Dim i As Long, lIndexOf1Section As Long, lParaCount As Long
 	Dim bText As Boolean, bTextSmSection As Boolean
 	lIndexOf1Section = IndexOf1Section
-	bText = false
-	bTextSmSection = false
+	bText = False
+	bTextSmSection = False
 	
-	If Instr(sBodyParagraphs(UBound(sBodyParagraphs),1),&quot;Level &quot;) &gt; 0 Then
+	If InStr(sBodyParagraphs(UBound(sBodyParagraphs),1),&quot;Level &quot;) &gt; 0 Then
 		&apos; на случай, если последний абзац - Уровень (в нарушение схемы) - защита от зацикливания конвертора
 		AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;Para&quot;)
 	End If
 	
 	lParaCount = UBound(sBodyParagraphs)
-	count = 0
 	oProgressBar.start(&quot;Экспортирование в FB2: Создание файла&quot;, (lParaCount+UBound(sFootnoteText()))
 	oProgressBar.setValue(0)
 	
+	lCurrentElement = 0
+	oTextOutputStream.writeString(MakeBookTitle)
+	
 	If lIndexOf1Section = -1 Then &apos; нет ни одной секции
-		Dim k As Integer
-		k = 0
-		While sBodyParagraphs(k,1)=&quot;Epigraph&quot;
+		While sBodyParagraphs(lCurrentElement,1)=&quot;Epigraph&quot;
 			&apos; Если 1-е элементы - епиграф, то его не берем в &lt;section&gt;, хотя если взять - документ все равно валидный будет
-			oTextOutputStream.writeString(sBodyParagraphs(k, 0))
-			PrintStatus(count) &apos; Статусбар
-			k = k+1
+			SaveElements(sBodyParagraphs(lCurrentElement, 1), sBodyParagraphs(lCurrentElement, 0))
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Wend
 		&apos; Все остальные элементы обрамляем &lt;section&gt;
 		oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
-		For i = k To lParaCount &apos; печатаем все, как есть
-			oTextOutputStream.writeString(sBodyParagraphs(i, 0))
-			PrintStatus(count) &apos; Статусбар
-		Next i
+		While lCurrentElement &lt;= UBound(sBodyParagraphs)
+			SaveElements(sBodyParagraphs(lCurrentElement, 1), sBodyParagraphs(lCurrentElement, 0))
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Wend
 		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 	Else &apos;секции есть
-		If lIndexOf1Section &gt; 0 Then &apos; что-то есть
-			For i = 0 To lIndexOf1Section - 1
-				If sBodyParagraphs(i,1)=&quot;Para&quot; OR sBodyParagraphs(i,1)=&quot;Poem&quot; OR sBodyParagraphs(i,1)=&quot;Cite&quot; OR _
-					sBodyParagraphs(i,1)=&quot;SubTitle&quot; OR sBodyParagraphs(i,1)=&quot;&quot; OR sBodyParagraphs(i, 1)=&quot;Annotation&quot; Then
-					If bText = false Then
+		If lIndexOf1Section &gt; 0 Then &apos; что-то есть - записываем до 1-й секции
+			While lCurrentElement &lt; lIndexOf1Section
+				If sBodyParagraphs(lCurrentElement,1)=&quot;Para&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;Poem Title&quot; OR _
+					sBodyParagraphs(lCurrentElement,1)=&quot;Poem&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;Cite&quot; OR _
+					sBodyParagraphs(lCurrentElement,1)=&quot;SubTitle&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;&quot; OR _
+					sBodyParagraphs(lCurrentElement,1)=&quot;Image&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;Table&quot; _
+					OR sBodyParagraphs(lCurrentElement,1)=&quot;Annotation&quot; Then
+					If bText = False Then
 						oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
-						bText = true
+						bText = True
 					End If
-					oTextOutputStream.writeString(sBodyParagraphs(i, 0))
-					PrintStatus(count) &apos; Статусбар
+					SaveElements(sBodyParagraphs(lCurrentElement, 1), sBodyParagraphs(lCurrentElement, 0))
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else &apos; это явно эпиграф
-					If bText = true Then
+					If bText = True Then
 						oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
-						oTextOutputStream.writeString(sBodyParagraphs(i, 0))
-						bText = false
-						PrintStatus(count) &apos; Статусбар
+						SaveElements(sBodyParagraphs(lCurrentElement, 1), sBodyParagraphs(lCurrentElement, 0))
+						bText = False
+						oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 					Else &apos; епиграф самый первый, как и должен 
-						oTextOutputStream.writeString(sBodyParagraphs(i, 0))
-						PrintStatus(count) &apos; Статусбар
+						SaveElements(sBodyParagraphs(lCurrentElement, 1), sBodyParagraphs(lCurrentElement, 0))
+						oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 					End If
 				End If
-				If bText = true AND i = (lIndexOf1Section - 1) Then
+				If bText = true AND lCurrentElement = lIndexOf1Section Then
 					oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 				End If
-			Next i
+			Wend
 		End If
-		&apos; 2. Печать всех блоков секций
+		&apos; 2. Печать всех блоков секций, начиная от 1-й
 		Dim N As Integer, lNextIndex As Long, j As Long
 		If lIndexOf1Section &lt;&gt; -1 Then &apos; что-то есть
-			For i = lIndexOf1Section To lParaCount &apos; по индексам
-				lNextIndex = GetIndexOfNextLevel(i)
-				N = GetCountSection(i, lNextIndex, IndexOfEndSection)
+			While lCurrentElement &lt;= lParaCount &apos; по индексам
+				lNextIndex = GetIndexOfNextLevel(lCurrentElement)
+				N = GetCountSection(lCurrentElement, lNextIndex, IndexOfEndSection)
 				If lNextIndex = 0 Then
 					lNextIndex = lParaCount + 1
 				End If
-				For j = i To lNextIndex - 1 &apos;печатаем все абзацы между секциями (саму следующую секцию не включаем)
+				While lCurrentElement &lt; lNextIndex
+					&apos;печатаем все абзацы между секциями (саму следующую секцию не включаем)
 					If N = 0 Then &apos; смежные уровни
-						If sBodyParagraphs(j,1)=&quot;Para&quot; OR sBodyParagraphs(j,1)=&quot;Poem&quot; OR sBodyParagraphs(j,1)=&quot;Cite&quot; OR _
-							sBodyParagraphs(j,1)=&quot;SubTitle&quot; OR sBodyParagraphs(j,1)=&quot;&quot; Then
+						If sBodyParagraphs(lCurrentElement,1)=&quot;Para&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;Poem Title&quot; OR _
+							sBodyParagraphs(lCurrentElement,1)=&quot;Poem&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;Cite&quot; OR _
+							sBodyParagraphs(lCurrentElement,1)=&quot;SubTitle&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;Image&quot; OR _
+							sBodyParagraphs(lCurrentElement,1)=&quot;Table&quot; OR sBodyParagraphs(lCurrentElement,1)=&quot;&quot; Then
 							If bTextSmSection = False Then
 								oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
 								bTextSmSection = True
 							End If
 						End If
 					End If
-					oTextOutputStream.writeString(sBodyParagraphs(j, 0))
-					PrintStatus(count) &apos; Статусбар
-				Next j
+					SaveElements(sBodyParagraphs(lCurrentElement, 1), sBodyParagraphs(lCurrentElement, 0))
+					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Wend
 	
 				&apos; закрываем секции, взависимости от смежности уровней
 				If N = 0 Then &apos; смежные уровни
@@ -290,28 +537,27 @@ Function SaveBody
 					SaveCloseSection(N)
 					bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
 				End If
-	
-				If i &gt;= lParaCount Then
-					i = lParaCount - 1
-				Else
-					i = lNextIndex - 1
-				End If
-			Next i
+				
+			Wend
 		End If
 	End If
 End Function
 
-Function SaveCloseSection(Count As Integer) As Long
-	Dim i As Integer
-	If Count &gt; 0 Then
-		For i = 0 To Count-1
-			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+Function SaveNotes
+	Dim iCount As Integer, sNotePars() As String, i As Integer
+	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;Примечания&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+	For iCount = 0 To UBound(sFootnoteText())
+		oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; iCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; iCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+		sNotePars = Split(sFootnoteText(iCount),chr(10))
+		For i=0 To UBound(sNotePars)-1
+			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sNotePars(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
 		Next i
-	End If
-End Function
-Function PrintStatus(count As Long)
-	count = count+1
-	oProgressBar.setValue(count)
+		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+	Next iCount
+	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 End Function
 
 </script:module>

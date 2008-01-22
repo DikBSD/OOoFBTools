@@ -10,40 +10,83 @@ Const oDlgHeight = 343
 Const oDlgX = 50
 Const oDlgY = 50
 Const oDlgTitle = &quot;Данные о книге&quot;
-Private sGenreList() As String
+Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
+
 Private sLangList() As String
 Private bExecute As Boolean
 Private bAppendBtn As Boolean
 
 Public oServiceDlg As Object
-Private sFootStyleList() As String
+Private sFootStyleList() As String &apos; стиль сносок
+Private sHRList() As String &apos; выравнивание ячеек
+Private sHVList() As String &apos; выравнивание по высоте
 Private bServiceExecute As Boolean
+Private sTFList() As String &apos; вид экспорта врезок
+
+Public sGenres() As String REM book&apos;s genres
+Public sAuthors() As String REM book&apos;s authors
+Public sTranslators() As String REM book&apos;s translators
+Public sSequences() As String REM book&apos;s sequences
+Public sDocAuthors() As String REM doc&apos;s authors
+Public sPubSequences() As String REM publisher book&apos;s sequences
+Public sCustomInfos() As String  REM данные пользователя
+
+Public sHeaderTRA As String, sHeaderTVA As String
+Public sLineTRA As String, sLineTVA As String
+Public sTextFrameToFB2 As String &apos; экспортировать врезки как...
+Public sAdjTextFrame As String  &apos; выравнивание текста врезок, если экспорт как таблицы
 
 Function InfoDlgExec As Boolean
-	sGenreList = Array(&quot;adv_animal&quot;, &quot;adv_animal&quot;, &quot;adv_animal&quot;, &quot;adv_geo&quot;, &quot;adv_history&quot;, &quot;adv_indian&quot;,_
-						&quot;adv_maritime&quot;, &quot;adv_western&quot;, &quot;adventure&quot;, &quot;antique&quot;, &quot;antique_ant&quot;,_
-						&quot;antique_east&quot;, &quot;antique_european&quot;, &quot;antique_myths&quot;, &quot;antique_russian&quot;,_
-						&quot;child_adv&quot;, &quot;child_adv&quot;, &quot;child_det&quot;, &quot;child_det&quot;, &quot;child_education&quot;,_
-						&quot;child_prose&quot;, &quot;child_prose&quot;, &quot;child_sf&quot;, &quot;child_sf&quot;, &quot;child_tale&quot;,_
-						&quot;child_verse&quot;, &quot;child_verse&quot;, &quot;children&quot;, &quot;children&quot;, &quot;comp_db&quot;, &quot;comp_hard&quot;,_
-						&quot;comp_osnet&quot;, &quot;comp_programming&quot;, &quot;comp_soft&quot;, &quot;comp_www&quot;, &quot;computers&quot;,_
-						&quot;design&quot;, &quot;det_action&quot;, &quot;det_classic&quot;, &quot;det_crime&quot;, &quot;det_espionage&quot;,_
-						&quot;det_hard&quot;, &quot;det_history&quot;, &quot;det_irony&quot;, &quot;det_maniac&quot;, &quot;det_police&quot;,_
-						&quot;det_political&quot;, &quot;detective&quot;, &quot;dramaturgy&quot;, &quot;home&quot;, &quot;home_cooking&quot;,_
-						&quot;home_crafts&quot;, &quot;home_diy&quot;, &quot;home_entertain&quot;, &quot;home_garden&quot;, &quot;home_health&quot;,_
-						&quot;home_pets&quot;, &quot;home_sex&quot;, &quot;home_sport&quot;, &quot;humor&quot;, &quot;humor_anecdote&quot;, &quot;humor_prose&quot;,_
-						&quot;humor_prose&quot;, &quot;humor_verse&quot;, &quot;humor_verse&quot;, &quot;love&quot;, &quot;love_contemporary&quot;,_
-						&quot;love_detective&quot;, &quot;love_detective&quot;, &quot;love_erotica&quot;, &quot;love_history&quot;, &quot;love_short&quot;,_
-						&quot;nonf_biography&quot;, &quot;nonf_criticism&quot;, &quot;nonf_publicism&quot;, &quot;nonfiction&quot;, &quot;poetry&quot;,_
-						&quot;prose&quot;, &quot;prose_classic&quot;, &quot;prose_contemporary&quot;, &quot;prose_counter&quot;, &quot;prose_history&quot;,_
-						&quot;prose_rus_classic&quot;, &quot;prose_su_classics&quot;, &quot;ref_dict&quot;, &quot;ref_encyc&quot;, &quot;ref_guide&quot;,_
-						&quot;ref_ref&quot;, &quot;reference&quot;, &quot;religion&quot;, &quot;religion_esoterics&quot;, &quot;religion_rel&quot;,_
-						&quot;religion_self&quot;, &quot;sci_biology&quot;, &quot;sci_business&quot;, &quot;sci_chem&quot;, &quot;sci_culture&quot;,_
-						&quot;sci_history&quot;, &quot;sci_juris&quot;, &quot;sci_linguistic&quot;, &quot;sci_math&quot;, &quot;sci_medicine&quot;,_
-						&quot;sci_philosophy&quot;, &quot;sci_phys&quot;, &quot;sci_politics&quot;, &quot;sci_psychology&quot;, &quot;sci_religion&quot;,_
-						&quot;sci_religion&quot;, &quot;sci_tech&quot;, &quot;science&quot;, &quot;sf&quot;, &quot;sf_action&quot;, &quot;sf_cyberpunk&quot;,_
-						&quot;sf_detective&quot;, &quot;sf_detective&quot;, &quot;sf_epic&quot;, &quot;sf_fantasy&quot;, &quot;sf_heroic&quot;,_
-						&quot;sf_horror&quot;, &quot;sf_humor&quot;, &quot;sf_social&quot;, &quot;sf_space&quot;, &quot;story&quot;, &quot;thriller&quot;)
+	&apos; файл настроек
+	sSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/settings.xml&quot;
+	&apos; файл профиля Автора fb2 документа
+	sProfileFilename = pmxCurDir() &amp; &quot;/ExportToFB21/profile.xml&quot;
+	
+	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
+				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
+				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
+				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
+				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot;, _
+				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
+				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
+				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
+				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения: Прочее&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
+				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
+				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
+				&quot;Политика&quot;, &quot;Деловая литература&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
+				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Научно-образовательная: Прочее&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
+				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религия и духовность: Прочее&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
+				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot; )
+ 
+ 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;,_
+			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,_
+			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,_
+			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,_
+			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;adventure&quot;,_
+			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
+			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,_
+			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
+			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_business&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;science&quot;,_
+			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
+			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
+			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
+			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;religion&quot;,_
+			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
+			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
+
 	sLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
 						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
 						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
@@ -60,10 +103,11 @@ Function InfoDlgExec As Boolean
 		.PositionX = oDlgX
 		.PositionY = oDlgY
 		.Title = oDlgTitle
-		.GenreComboBox.StringItemList = sGenreList()
+		.GenreComboBox.StringItemList = sGLN()
+		.NumericFieldMatch.Value = &quot;100&quot;
 		.LangComboBox.StringItemList = sLangList()
 		.SrcLangComboBox.StringItemList = sLangList()
-		.BookTitleField.Text = Find(&quot;Book Title&quot;)
+		.BookTitleField.Text = FindBookTitle
 		.diDateTextField.Text = Date
 		.diDateValueField.Text = Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;)_
 								&amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
@@ -71,7 +115,7 @@ Function InfoDlgExec As Boolean
 		.IDField.Text = &quot;OOo-ExportToFB21-&quot; &amp; Year(sNow) &amp; Month(sNow) &amp; Day(sNow) &amp; Hour(sNow) &amp; Minute(sNow) &amp; Second(sNow)
 		.VersionField.Text = &quot;1.0&quot;
 	End With
-	
+
 	&apos; значения по умолчанию для сносок	
 	sFootnoteLeft = &quot;[&quot;
 	sFootnoteRight = &quot;]&quot;
@@ -92,8 +136,22 @@ Function InfoDlgExec As Boolean
 	bStyleFootnote = True
 	&apos; значения по умолчанию для обработкb &quot;проблемных&quot; знаков (&lt; &gt;)
 	bCorrectPara = True
+	&apos; значения по умолчанию для сохранения названия картинки, как аттрибута &quot;title&apos;
+	bSaveImageTitle = True
 	
-	bAppendBtn = true
+	&apos; значения по умолчанию для выравнивания элементов таблиц
+	sHeaderTRA = &quot;center&quot;
+	sLineTRA = &quot;center&quot;
+	sHeaderTVA = &quot;middle&quot;
+	sLineTVA = &quot;middle&quot;
+	
+	sTextFrameToFB2 = &quot;Таблица&quot;
+	sAdjTextFrame = &quot;left&quot;
+	
+	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
+	ReadProfile
+	
+	bAppendBtn = True
 	oInfoDlg.Model.Step = 1
 	oInfoDlg.execute()
 	InfoDlgExec = bExecute
@@ -101,24 +159,26 @@ Function InfoDlgExec As Boolean
 End Function
 
 Function InfoDlgCanceled
-	bExecute = false
+	bExecute = False
 	oInfoDlg.endExecute()
 End Function
 
 Function ConvertingFile
 	If oInfoDlg.Model.GenreComboBox.Text = &quot;&quot; OR oInfoDlg.Model.BookTitleField.Text = &quot;&quot; OR oInfoDlg.Model.LangComboBox.Text = &quot;&quot; Then
-		MsgBox &quot;Заполните все выделенные поля&quot;, 48
+		MsgBox &quot;Заполните все выделенные (обязательные) поля&quot;, 64, sConvertorName
 		Exit Function
 	End If
-	bAppendBtn = false
-	AppendBookGenre
+	bAppendBtn = False
+	If Not AppendBookGenre Then
+		Exit Function
+	End If
 	AppendBookAuthor
 	AppendBookTranslator
 	AppendBookSequence
 	AppendDocAuthor
 	AppendPublisherSequence
 	AppendCustomInfos
-	bExecute = true
+	bExecute = True
 	oInfoDlg.endExecute()
 End Function
 
@@ -151,29 +211,56 @@ Function SaveAs
 	oFileDlg.Dispose()
 End Function
 
-Function AppendBookGenre
-	IF bAppendBtn = true Then
+Function AppendBookGenre As Boolean
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot; Then
-			MsgBox &quot;Выберите жанр книги!&quot;, 48
+			MsgBox &quot;Выберите жанр книги!&quot;, 64, sConvertorName
+			AppendBookGenre = False
 			Exit Function
 		End If
 	End If
+	&apos;ищем в массиве нужный жанр
+	Dim sGenre As String
 	Dim i As Integer
+	sGenre = &quot;&quot;
+	For i=0 To UBound(sGLN())
+		If sGLN(i) = Trim(oInfoDlg.Model.GenreComboBox.Text) Then
+			sGenre = sGLC(i)
+			Exit For
+		End If
+	Next i
+	If sGenre = &quot;&quot; Then
+		MsgBox &quot;Выберите жанр книги непосредственно из списка жанров!&quot;, 64, sConvertorName
+		AppendBookGenre = False
+		Exit Function
+	ElseIf sGenre = &quot;?&quot; Then
+		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
+		AppendBookGenre = False
+		Exit Function
+	End If
+	
 	i = Ubound(sGenres(), 1) + 1
 	If i &gt; 0 Then
-		ReDim Preserve sGenres(i, 1)
-	Else Redim sGenres(i, 1)
+		ReDim Preserve sGenres(i, 2)
+	Else Redim sGenres(i, 2)
 	End If
-	sGenres(i, 0) = Trim(oInfoDlg.Model.GenreComboBox.Text)
+	sGenres(i, 0) = sGenre
+	If oInfoDlg.Model.NumericFieldMatch.Value = &quot;&quot; Then
+		sGenres(i, 1) = &quot;100&quot;
+	Else
+		sGenres(i, 1) = oInfoDlg.Model.NumericFieldMatch.Value
+	End If
 	&apos;oInfoDlg.Model.GenreComboBox.Text = &quot;&quot;
+	oInfoDlg.Model.NumericFieldMatch.Value = &quot;100&quot;
 	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = i+1
+	AppendBookGenre = True
 End Function
 
 Function AppendBookAuthor
-	IF bAppendBtn = true Then
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
 			 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните хоть одно поле для Автора Книги&quot;, 48
+			MsgBox &quot;Заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
 			Exit Function
 		End If
 	End If
@@ -201,10 +288,10 @@ Function AppendBookAuthor
 End Function
 
 Function AppendBookTranslator
-	IF bAppendBtn = true Then
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
 			Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните хоть одно поле для Переводчика Книги&quot;, 48
+			MsgBox &quot;Заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
 			Exit Function
 		End If
 	End If
@@ -232,9 +319,9 @@ Function AppendBookTranslator
 End Function
 
 Function AppendBookSequence
-	IF bAppendBtn = true Then
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните поля названия и (или) номера для Серии Книги&quot;, 48
+			MsgBox &quot;Заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
 			Exit Function
 		End If
 	End If
@@ -254,10 +341,10 @@ Function AppendBookSequence
 End Function
 
 Function AppendDocAuthor
-	IF bAppendBtn = true Then
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
 			Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните хоть одно поле для Создателя FB2 Документа&quot;, 48
+			MsgBox &quot;Заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
 			Exit Function
 		End If
 	End If
@@ -285,9 +372,9 @@ Function AppendDocAuthor
 End Function
 
 Function AppendPublisherSequence
-	IF bAppendBtn = true Then
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.pubSequenseTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 48
+			MsgBox &quot;Заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 64, sConvertorName
 			Exit Function
 		End If
 	End If
@@ -307,9 +394,9 @@ Function AppendPublisherSequence
 End Function
 
 Function AppendCustomInfos
-	IF bAppendBtn = true Then
+	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните оба поля для Custom Info&quot;, 48
+			MsgBox &quot;Заполните оба поля для Custom Info&quot;, 64, sConvertorName
 			Exit Function
 		End If
 	End If
@@ -330,29 +417,76 @@ End Function
 
 Function ServiceDlgExec As Boolean
 	sFootStyleList() = Array(&quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
+	sHRList() = Array(&quot;Слева&quot;, &quot;По Центру&quot;, &quot;Справа&quot;)
+	sHVList() = Array(&quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
+	sTFList() = Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;)
 						
 	oServiceDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.ServiceDlg)
 	With oServiceDlg.Model
-		.PositionX = 100
-		.PositionY = 100
 		.Title = &quot;Дополнительные настройки&quot;
 		.cmbboxStyle.StringItemList = sFootStyleList()
+		.cmbboxHeaderTRA.StringItemList = sHRList()
+		.cmbboxHeaderTHV.StringItemList = sHVList()
+		.cmbboxLineTRA.StringItemList = sHRList()
+		.cmbboxLineTDV.StringItemList = sHVList()
+		.cmbboxTextFrame.StringItemList = sTFList()
+		.cmbboxAdjTextFrame.StringItemList = sHRList()
 		.cmbboxStyle.Text = &quot;[x]&quot;
+		.cmbboxHeaderTRA.Text = &quot;По Центру&quot;
+		.cmbboxHeaderTHV.Text = &quot;По Центру&quot;
+		.cmbboxLineTRA.Text = &quot;По Центру&quot;
+		.cmbboxLineTDV.Text = &quot;По Центру&quot;
+		.cmbboxTextFrame.Text = &quot;Таблица&quot;
+		.cmbboxAdjTextFrame.Text = &quot;Слева&quot;
 	End With
-	oServiceDlg.Model.Step = 1
+
+	&apos; центрирование на экране
+	Dim CurPosSize As New com.sun.star.awt.Rectangle
+	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
+	oFrame = ThisComponent.getCurrentController().Frame
+	FramePosSize = oFrame.getComponentWindow.PosSize
+	xWindowPeer = oServiceDlg.getPeer()
+	CurPosSize = oServiceDlg.getPosSize()
+	WindowHeight = FramePosSize.Height
+	WindowWidth = FramePosSize.Width
+	DialogWidth = CurPosSize.Width
+	DialogHeight = CurPosSize.Height
+	iXPos = ((WindowWidth/2) - (DialogWidth/2))
+	iYPos = ((WindowHeight/2) - (DialogHeight/2))
+	oServiceDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
+	
+	oServiceDlg.Model.Step = 0
+	
+	&apos; Считываем и устанавливаем настройки
+	ReadSettings
+	
 	oServiceDlg.execute()
 	ServiceDlgExec = bServiceExecute
 
 End Function
 
 Function ServiceDlgCanceled
-	bServiceExecute = false
+	bServiceExecute = False
 	oServiceDlg.endExecute()
 End Function
 
 Function ServiceDlgOk
-	If oServiceDlg.Model.cmbboxStyle.Text = &quot;&quot; Then
-		MsgBox &quot;Выберите стиль сносок&quot;, 48
+	If Trim(oServiceDlg.Model.cmbboxStyle.Text) = &quot;&quot; Then
+		MsgBox &quot;Выберите стиль сносок&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oServiceDlg.Model.cmbboxHeaderTRA.Text) = &quot;&quot; OR _
+		Trim(oServiceDlg.Model.cmbboxHeaderTHV.Text) = &quot;&quot; Then
+		MsgBox &quot;Выберите способ выравнивания Заголовков таблиц&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oServiceDlg.Model.cmbboxLineTRA.Text) = &quot;&quot; OR _
+		Trim(oServiceDlg.Model.cmbboxLineTDV.Text) = &quot;&quot; Then
+		MsgBox &quot;Выберите способ выравнивания Строк таблиц&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oServiceDlg.Model.cmbboxTextFrame.Text) = &quot;&quot;  Then
+		MsgBox &quot;Выберите способ экспортра текста Врезок&quot;, 64, sConvertorName
 		Exit Function
 	End If
 
@@ -365,6 +499,7 @@ Function ServiceDlgOk
 	bDelEL = oServiceDlg.GetControl(&quot;cboxDelEL&quot;).State
 	bStyleFootnote = oServiceDlg.GetControl(&quot;cboxStyleFootnote&quot;).State
 	bCorrectPara = oServiceDlg.GetControl(&quot;cboxCorrect&quot;).State
+	bSaveImageTitle = oServiceDlg.GetControl(&quot;cboxImageTitle&quot;).State
 	
 	Select Case oServiceDlg.GetControl(&quot;cmbboxStyle&quot;).Text
 		Case &quot;[x]&quot;
@@ -390,8 +525,97 @@ Function ServiceDlgOk
 			sFootnoteRight = &quot;]&quot;	
 	End Select
 	
+	sHeaderTRA = GetTRA(&quot;cmbboxHeaderTRA&quot;)
+	sLineTRA = GetTRA(&quot;cmbboxLineTRA&quot;)
+	sHeaderTVA = GetTVA(&quot;cmbboxHeaderTHV&quot;)
+	sLineTVA = GetTVA(&quot;cmbboxLineTDV&quot;)
+	
+	Select Case oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).Text
+		Case &quot;Таблица&quot;
+			sTextFrameToFB2 = &quot;Таблица&quot;
+		Case &quot;Текст&quot;
+			sTextFrameToFB2 = &quot;Текст&quot;
+		Case &quot;Цитата&quot;
+			sTextFrameToFB2 = &quot;Цитата&quot;
+		Case Else
+			sTextFrameToFB2 = &quot;Таблица&quot;
+	End Select
+
+	Select Case oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Text
+		Case &quot;Слева&quot;
+			sAdjTextFrame = &quot;left&quot;
+		Case &quot;По Центру&quot;
+			sAdjTextFrame = &quot;center&quot;
+		Case &quot;Справа&quot;
+			sAdjTextFrame = &quot;right&quot;
+		Case Else
+			sAdjTextFrame = &quot;left&quot;
+	End Select
+
+	&apos; Сохраняем настройки в файл
+	SaveSettings
+	
 	bServiceExecute = true
 	oServiceDlg.endExecute()
 End Function
+
+Function GetTRA(sComnoBox) As String
+	Select Case oServiceDlg.GetControl(sComnoBox).Text
+		Case &quot;Слева&quot;
+			GetTRA = &quot;left&quot;
+		Case &quot;По Центру&quot;
+			GetTRA = &quot;center&quot;
+		Case &quot;Справа&quot;
+			GetTRA = &quot;right&quot;
+		Case Else
+			GetTRA =  &quot;center&quot;
+	End Select
+End Function
+
+Function GetTVA(sComnoBox) As String
+	Select Case oServiceDlg.GetControl(sComnoBox).Text
+		Case &quot;Сверху&quot;
+			GetTVA = &quot;top&quot;
+		Case &quot;По Центру&quot;
+			GetTVA = &quot;middle&quot;
+		Case &quot;Снизу&quot;
+			GetTVA = &quot;bottom&quot;
+		Case Else
+			GetTVA =  &quot;middle&quot;
+	End Select
+End Function
+
+Function cmbboxTextFrameChange
+	If oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).Text = &quot;Таблица&quot; Then
+		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = True
+	Else
+		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = False
+	End If
+End Function
+
+Function FindBookTitle As String
+	Dim sResult As String
+	Dim oStr As Object, oEnum As Object
+	Dim oDesc As Object, iCount As Integer
+	oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchStyles = true
+		.setSearchString(&quot;Book Title&quot;)
+	End With
+	oEnum = ThisComponent.findAll(oDesc)
+	If oEnum.getCount = 0 Then 
+		FindBookTitle = &quot;&quot;
+		Exit Function
+	End If
+	For iCount = 0 to oEnum.getCount() - 1
+		oStr = oEnum.getByIndex(iCount)
+		sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
+	Next iCount
+	sResult = Mid(sResult, 1, Len(sResult)-1)
+	FindBookTitle = sResult
+End Function
+
 
 </script:module>

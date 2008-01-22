@@ -1,234 +1,597 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
-Dim lCurrentBodyPara As Long
+&apos; оформление сносок
+Public sFootnoteLeft As String
+Public sFootnoteRight As String
+Public bFootnoteSpace As Boolean
+&apos; оформление подзаголовков
+Public bMergeSubTitle As Boolean
+&apos; оформление авторов эпиграфов
+Public bMergeEpigraphAuthors As Boolean
+&apos; оформление заголовков стихов
+Public bMergePoemTitle As Boolean
+&apos; оформление авторов стихов
+Public bMergePoemAuthors As Boolean
+&apos; оформление авторов цитат
+Public bMergeCiteAuthors As Boolean
+&apos; удаление пустых строк
+Public bDelEL As Boolean
+&apos; применение стиля к тексту сносок
+Public bStyleFootnote As Boolean
+&apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
+Public bCorrectPara As Boolean
+&apos; сохранение названия картинки, как аттрибута &quot;title&apos;
+Public bSaveImageTitle
 
-Function SaveBookTitle
-&apos; формируем заглавие книги
-	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10))
-	While oCursor.ParaStyleName = &quot;Book Author&quot; OR oCursor.ParaStyleName = &quot;Book Title&quot;
-		oCursor.gotoEndOfParagraph(true)
-		oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
-		oCursor.gotoNextParagraph(False)
-		PrintStatus(count) &apos; Статусбар
-	Wend
-	oTextOutputStream.writeString(&quot;&lt;/title&gt;&quot; &amp; chr(10))
-End Function
+Dim lCurrentBodyPara As Long &apos; текущий параграф в документе - для парсинга
+
+Dim sFootnoteText() As String
+Dim iFootnoteCount As Integer
+Dim iImgCurrent As Integer &apos; для формирования номера картинки
+Dim sPrevStyle As String &apos; название предыдущего стиля - для формирования Уровней из нескольких строк
+Dim sPara As String &apos; отформатированный текст параграфа
+					
+Sub DocumentParser
+	Dim oParEnum As Object &apos;Счетчик, используемый для перебора параграфов
+	Dim oPar As Object &apos;Перебираемый параграф
+	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
+	Dim oSect As Object &apos;Перебиремый текстовый раздел (section)
+	Dim oCEnum As Object &apos;Перебирает содержимое, такое как графические объекты
+	Dim oContent As Object &apos;Перебираемое содержимое
+	Dim textGraphService As String, graphicService As String, customShapeService As String
+	Dim iCurrentTable As Integer &apos; номер текушей таблицы
 	
-Function DocumentParser
-	lCurrentBodyPara = 0
-	Do
-		oCursor.gotoEndOfParagraph(True)
-		ParseParagraph
-		PrintStatus(count) &apos; Статусбар
-	Loop While oCursor.gotoNextParagraph(False)
-End Function
+	textGraphService = &quot;com.sun.star.text.TextGraphicObject&quot;
+	graphicService = &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	customShapeService = &quot;com.sun.star.drawing.CustomShape&quot;
 
-Function ParseParagraph
-	Select Case oCursor.ParaStyleName
-		Case &quot;Poem Title&quot;
-			MakePoemTitle
-		Case &quot;Poem&quot;
-			MakePoem
-		Case &quot;Epigraph&quot;
-			MakeEpigraph
-		Case &quot;Cite&quot;
-			MakeCite
-		Case &quot;Annotation&quot;
-			MakeAnnotation
-		Case &quot;SubTitle&quot;
-			MakeSubtitle
-		Case &quot;Level 1&quot;
-			MakeSection(&quot;Level 1&quot;)
-		Case &quot;Level 2&quot;
-			MakeSection(&quot;Level 2&quot;)
-		Case &quot;Level 3&quot;
-			MakeSection(&quot;Level 3&quot;)
-		Case &quot;Level 4&quot;
-			MakeSection(&quot;Level 4&quot;)
-		Case &quot;Level 5&quot;
-			MakeSection(&quot;Level 5&quot;)
-		Case &quot;Level 6&quot;
-			MakeSection(&quot;Level 6&quot;)
-		Case &quot;Level 7&quot;
-			MakeSection(&quot;Level 7&quot;)
-		Case &quot;Level 8&quot;
-			MakeSection(&quot;Level 8&quot;)
-		Case &quot;Level 9&quot;
-			MakeSection(&quot;Level 9&quot;)
-		Case &quot;Level 10&quot;
-			MakeSection(&quot;Level 10&quot;)
-		Case Else &apos; просто параграф
-			Dim Para As String
-			Para = MakeParag
-			If Para &lt;&gt; &quot;&quot; Then	&apos; параграф есть
-				AddBodyArray(&quot;&lt;p&gt;&quot; &amp; Para &amp; &quot;&lt;/p&gt;&quot;, &quot;Para&quot;)
-			Else	&apos; &lt;empty-line/&gt;
-				If bDelEL = False Then
-					AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;)
+	&apos; номер текущей таблицы, если она есть
+	iCurrentTable = 0
+	&apos; номер текущей картинки, если она есть
+	iImgCurrent = 0
+			
+	&apos; Перебрать параграфы. Таблицы перебираются одновременно с параграфами
+	oParEnum = ThisComponent.getText().createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		&apos; сначала ищем таблицы
+		If oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+			&apos; парсер таблицы
+			OOo23TextTableParser(iCurrentTable)
+		ElseIf oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Then
+					&apos; парсер графики TextGraphicObject, привязанной к параграфу
+					TextGraphicObjectParagraphParser(oContent)
+				ElseIf oContent.supportsService(graphicService) Then
+					&apos; парсер графики GraphicObjectShape, привязанной к параграфу
+					GraphicObjectShapeParagraphParser(oContent)
+				ElseIf oContent.supportsService(customShapeService) Then
+					&apos; парсер графики CustomShape, привязанной к параграфу
+					GraphicCustomShapeParagraphParser(oContent)
+				&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
+				&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к параграфу&quot;
+				Else
+				&apos;	MsgBox &quot;?????&quot;, 0, &quot;Привязка к параграфу&quot;
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						&apos; Парсер Текстовой Врезки
+						TextFrameParser(oContent)
+					End If
 				End If
+
+				
+				&apos;If oPar.getString() = &quot;&quot; Then
+					&apos;MsgBox &quot;Пустая строка - от картинки&quot;, 0, &quot;Привязка - параграф&quot;
+				&apos;End if
+				
+			Loop
+
+			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты,
+			&apos; которые привязаны к символу, или вставлены как символы
+			oSectEnum = oPar.createEnumeration()
+&apos;			Dim sPara As String
+			sPara = &quot;&quot;
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()
+				If oSect.TextPortionType = &quot;Text&quot; Then
+					&apos; парсер текстового абзаца
+					sPara = sPara &amp; InLineParser(oSect)
+				ElseIf oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
+					Do While oCEnum.hasMoreElements()
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Then
+							&apos; парсер графики TextGraphicObject, привязанной к символу
+							TextGraphicObjectSymbolParser(oContent)
+						ElseIf oContent.supportsService(graphicService) Then
+							&apos; парсер графики GraphicObjectShape, привязанной к символу
+							GraphicObjectShapeSymbolParser(oContent)
+						ElseIf oContent.supportsService(customShapeService) Then
+							&apos; парсер графики CustomShape, привязанной к символу
+							GraphicCustomShapeSymbolParser(oContent)
+						&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
+						&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к символу&quot;
+						Else
+							&apos;MsgBox &quot;?????&quot;, 0, &quot;Привязка к символу&quot;
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								&apos; Парсер Текстовой Врезки
+								TextFrameParser(oContent)
+							End If
+						End If
+
+					Loop
+				ElseIf oSect.TextPortionType = &quot;Footnote&quot; Then
+					&apos; парсер сносок
+					sPara = sPara + FootEndNoteParser(oSect)
+				ElseIf oSect.TextPortionType = &quot;Endnote&quot; Then
+					&apos; парсер сносок
+					sPara = sPara + FootEndNoteParser(oSect)
+				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
+					sPara = sPara &amp; InLineParser(oSect)
+				&apos;Else
+				&apos;	MsgBox &quot;Что-то другое : &quot; &amp; oSect.TextPortionType
+				End If
+			Loop
+			If sPara = &quot;&quot; Then
+				If bDelEL = False Then
+					StyleParser(oPar.ParaStyleName, sPara)
+				End If
+			Else
+				&apos; Теперь - парсер элементов - по стилям
+				If oSect.NumberingIsNumber = True Then
+					sPara = &quot;• &quot; &amp; sPara &apos;Временно - здесь надо определять тип нумерации
+				End If
+				StyleParser(oPar.ParaStyleName, sPara)
 			End If
-	End Select
+		End If
+	Loop
+End Sub
+
+Function StyleParser(sParaStyleName As String, sPara As String)
+	&apos; перебор по стилям
+	If sPara = &quot;&quot; Then
+		If sParaStyleName = &quot;Poem&quot; Then
+			AddBodyArray(&quot;&quot;, sParaStyleName) &apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
+		Else
+			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;)
+		End If
+	Else
+		Select Case sParaStyleName
+			Case &quot;Book Author&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Book Title&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Poem Title&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Poem&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Poem Author&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Epigraph&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Epigraph Author&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Cite&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Cite Author&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Annotation&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;SubTitle&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 1&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 2&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 3&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 4&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 5&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 6&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 7&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 8&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 9&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case &quot;Level 10&quot;
+				AddBodyArray(sPara, sParaStyleName)
+			Case Else &apos; что-то другое или просто параграф
+				AddBodyArray(sPara, &quot;Para&quot;)
+		End Select
+	End If
+	sPrevStyle = sParaStyleName
 End Function
 
-Function MakeParag As String
-	Dim oEnum As Object, oSecEnum As Object
-	Dim oText As Object
-	Dim oTextPortion As Object
-	Dim sParag As String
-	Dim oFootnoteCursor As Object
-	If oCursor.String = &quot;&quot; Then	&apos; &lt;empty-line/&gt;
-		MakeParag = oCursor.String
-		Exit Function
+Function InLineParser(oSect As Object) As String
+	&apos; перебор по in-line стилям
+	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oSect.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/a&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oSect.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/a&gt;&quot;
+		End If
+	ElseIf oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;strong&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/strong&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;strong&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/strong&gt;&quot;
+		End If
+	ElseIf oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/emphasis&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;emphasis&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/emphasis&gt;&quot;
+		End If
+	ElseIf oSect.CharEscapement &gt; 0 Then
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;sup&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/sup&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;sup&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/sup&gt;&quot;
+		End If
+	ElseIf oSect.CharEscapement &lt; 0 Then
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;sub&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/sub&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;sub&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/sub&gt;&quot;
+		End If
+	ElseIf oSect.CharShadowed = True OR oSect.CharContoured = True Then &apos; тень или контур
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;code&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/code&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;code&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/code&gt;&quot;
+		End If
+	ElseIf oSect.CharStrikeout &gt; 0 Then
+		If bCorrectPara = True Then
+			InLineParser = &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/strikethrough&gt;&quot;
+		Else
+			InLineParser = &quot;&lt;strikethrough&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/strikethrough&gt;&quot;
+		End If
+	Else
+		If bCorrectPara = True Then
+			InLineParser = CorrectPara(oSect.getString())
+		Else
+			InLineParser = oSect.getString()
+		End If
 	End If
-	oEnum = oCursor.createEnumeration
-		While oEnum.hasMoreElements
-			oText = oEnum.nextElement
-			oSecEnum = oText.createEnumeration
-			While oSecEnum.hasMoreElements
-				oTextPortion = oSecEnum.nextElement	
-				&apos; отлов сносок - сначала, иначе не отлавливаются сноски в форматных текстах!!!
-				If oTextPortion.TextPortionType = &quot;Footnote&quot; Then
-					Static i As Integer
-					i = iFootnoteCount + 1
-					If bFootnoteSpace = True Then
-						sParag = sParag &amp; &quot; &quot;
-					End If
-					sParag = sParag &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; i &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; i &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
-					
-					oFootnoteCursor = oTextPortion.Footnote.createTextCursor
-					oFootnoteCursor.gotoStart(False)
-					oFootnoteCursor.gotoEndOfParagraph(True)					
-					ReDim Preserve sFootnoteText(iFootnoteCount) As String
-					
-					If bStyleFootnote = True Then &apos; форматирование текста сноски по стилям
-						FormatFootnoteText(oFootnoteCursor)
-					Else &apos; не применяем стили к тексту сносок
-						If bCorrectPara = True Then
-							sFootnoteText(iFootnoteCount) = CorrectPara(oFootnoteCursor.String)
-						Else
-							sFootnoteText(iFootnoteCount) = oFootnoteCursor.String
-						End If
-					End If
-					iFootnoteCount = iFootnoteCount + 1
-				ElseIf oTextPortion.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+End Function			
+
+Function FootEndNoteParser(oSect As Object) As String
+	&apos; парсер сносок
+	Dim sNote As String, sNoteText As String
+	Dim oFootnoteCursor As Object
+	Static i As Integer
+	sNote = &quot;&quot;
+	i = iFootnoteCount + 1
+	If bFootnoteSpace = True Then
+		sNote = sNote &amp; &quot; &quot;
+	End If
+	sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; i &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; i &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
+	
+	ReDim Preserve sFootnoteText(iFootnoteCount) As String
+
+	If bStyleFootnote = True Then &apos; форматирование текста сноски по стилям
+		FormatFootnoteText(oSect)
+	Else &apos; не применяем стили к тексту сносок
+		oFootnoteCursor = oSect.Footnote.createTextCursor()
+		oFootnoteCursor.gotoStart(False)
+		Do
+			oFootnoteCursor.gotoEndOfParagraph(True)
+			sNoteText = sNoteText &amp; oFootnoteCursor.String &amp; chr(10)
+		Loop While oFootnoteCursor.gotoNextParagraph(False)
+	
+		If bCorrectPara = True Then
+			sFootnoteText(iFootnoteCount) = CorrectPara(sNoteText)
+		Else
+			sFootnoteText(iFootnoteCount) = sNoteText
+		End If
+	End If
+	iFootnoteCount = iFootnoteCount + 1
+	
+	FootEndNoteParser = sNote
+End Function
+
+Function FormatFootnoteText(oSect)
+	&apos; форматирование текста сноски по стилям
+	Dim oFootnoteCursor As Object
+	oFootnoteCursor = oSect.Footnote.createTextCursor()
+	oFootnoteCursor.gotoStart(False)
+	oFootnoteCursor.gotoEndOfParagraph(True)
+	
+	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
+	Dim sParagF As String
+		sParagF = &quot;&quot;
+	Do
+		oFootnoteCursor.gotoEndOfParagraph(True)
+		oEnumF = oFootnoteCursor.createEnumeration
+		While oEnumF.hasMoreElements
+			oTextF = oEnumF.nextElement
+			oSecEnumF = oTextF.createEnumeration
+			While oSecEnumF.hasMoreElements
+				oTextPortionF = oSecEnumF.nextElement
+				If oTextPortionF.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortion.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/a&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/a&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortion.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/a&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/a&gt;&quot;
 					End If
-				ElseIf oTextPortion.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+				Elseif oTextPortionF.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;strong&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/strong&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;strong&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/strong&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;strong&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/strong&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;strong&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/strong&gt;&quot;
 					End If
-				ElseIf oTextPortion.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+				ElseIf oTextPortionF.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/emphasis&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/emphasis&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;emphasis&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/emphasis&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;emphasis&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/emphasis&gt;&quot;
 					End If
-				ElseIf oTextPortion.CharEscapement &gt; 0 Then
+				ElseIf oTextPortionF.CharEscapement &gt; 0 Then
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;sup&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/sup&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;sup&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/sup&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;sup&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/sup&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;sup&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sup&gt;&quot;
 					End If
-				ElseIf oTextPortion.CharEscapement &lt; 0 Then
+				ElseIf oTextPortionF.CharEscapement &lt; 0 Then
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;sub&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/sub&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/sub&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;sub&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/sub&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sub&gt;&quot;
 					End If
-				ElseIf oTextPortion.CharShadowed = True OR oTextPortion.CharContoured = True Then &apos; тень или контур
+				ElseIf oTextPortionF.CharShadowed = True OR oTextPortionF.CharContoured = True Then &apos; тень или контур
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;code&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/code&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/code&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;code&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/code&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/code&gt;&quot;
 					End If
-				ElseIf oTextPortion.CharStrikeout &gt; 0 Then
+				ElseIf oTextPortionF.CharStrikeout &gt; 0 Then
 					If bCorrectPara = True Then
-						sParag = sParag &amp; &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(oTextPortion.String) &amp; &quot;&lt;/strikethrough&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/strikethrough&gt;&quot;
 					Else
-						sParag = sParag &amp; &quot;&lt;strikethrough&gt;&quot; &amp; oTextPortion.String &amp; &quot;&lt;/strikethrough&gt;&quot;
+						sParagF = sParagF &amp; &quot;&lt;strikethrough&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/strikethrough&gt;&quot;
 					End If
 				Else
 					If bCorrectPara = True Then
-						sParag = sParag &amp; CorrectPara(oTextPortion.String)
+						sParagF = sParagF &amp; CorrectPara(oTextPortionF.String)
 					Else
-						sParag = sParag &amp; oTextPortion.String
+						sParagF = sParagF &amp; oTextPortionF.String
 					End If
 				End If
 			Wend
 		Wend
-	MakeParag = RTrim(sParag)
-End Function
-
-Function FormatFootnoteText(oFootnoteCursor)
-	&apos; форматирование текста сноски по стилям
-	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
-	Dim sParagF As String
-	oEnumF = oFootnoteCursor.createEnumeration
-	While oEnumF.hasMoreElements
-		sParagF = &quot;&quot;
-		oTextF = oEnumF.nextElement
-		oSecEnumF = oTextF.createEnumeration
-		While oSecEnumF.hasMoreElements
-			oTextPortionF = oSecEnumF.nextElement
-			If oTextPortionF.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/a&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/a&gt;&quot;
-				End If
-			ElseIf oTextPortionF.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;strong&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/strong&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;strong&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/strong&gt;&quot;
-				End If
-			ElseIf oTextPortionF.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/emphasis&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;emphasis&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/emphasis&gt;&quot;
-				End If
-			ElseIf oTextPortionF.CharEscapement &gt; 0 Then
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;sup&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/sup&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;sup&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sup&gt;&quot;
-				End If
-			ElseIf oTextPortionF.CharEscapement &lt; 0 Then
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/sub&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sub&gt;&quot;
-				End If
-			ElseIf oTextPortionF.CharShadowed = True OR oTextPortionF.CharContoured = True Then &apos; тень или контур
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/code&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/code&gt;&quot;
-				End If
-			ElseIf oTextPortionF.CharStrikeout &gt; 0 Then
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/strikethrough&gt;&quot;
-				Else
-					sParagF = sParagF &amp; &quot;&lt;strikethrough&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/strikethrough&gt;&quot;
-				End If
-			Else
-				If bCorrectPara = True Then
-					sParagF = sParagF &amp; CorrectPara(oTextPortionF.String)
-				Else
-					sParagF = sParagF &amp; oTextPortionF.String
-				End If
-			End If
-		Wend
-	Wend
+		sParagF = sParagF &amp; chr(10)
+	Loop While oFootnoteCursor.gotoNextParagraph(False)
 	&apos; теперь отфолрматированный текст сноски сохраняем в массив
 	sFootnoteText(iFootnoteCount) = sParagF
+End Function
+
+Function TextGraphicObjectParagraphParser(oContent As Object)
+	&apos; парсер графики TextGraphicObject, привязанной к параграфу
+	If bSaveImageTitle=True Then
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	Else
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	End If
+	iImgCount = iImgCount+1
+End Function
+
+Function GraphicObjectShapeParagraphParser(oContent As Object)
+	&apos; парсер графики формы GraphicObjectShape, привязанной к параграфу
+	If bSaveImageTitle=True Then
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	Else
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	End If
+	iImgCount = iImgCount+1
+End Function
+
+&apos; парсер векторной графики
+Function GraphicCustomShapeParagraphParser(oContent As Object)
+	&apos; парсер графики CustomShape, привязанной к параграфу
+	If bSaveImageTitle=True Then
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	Else
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	End If
+	iImgCount = iImgCount+1
+End Function
+
+Function TextGraphicObjectSymbolParser(oContent As Object)
+	&apos; парсер графики TextGraphicObject, привязанной к символу и как символ
+	If oContent.AnchorType = 1 Then
+		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+	Else
+		If bSaveImageTitle=True Then
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		Else
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		End If
+	End If
+	iImgCount = iImgCount+1
+End Function
+
+Function GraphicObjectShapeSymbolParser(oContent As Object)
+	&apos; парсер графики GraphicObjectShape, привязанной к символу
+	If bSaveImageTitle=True Then
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	Else
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	End If
+	iImgCount = iImgCount+1
+End Function
+
+&apos; парсер векторной графики
+Function GraphicCustomShapeSymbolParser(oContent As Object)
+	&apos; парсер графики CustomShape, привязанной к символу
+	If bSaveImageTitle=True Then
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	Else
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+	End If
+	iImgCount = iImgCount+1
+End Function
+
+Function FormatCellText(CellCursor As Object, Cell As Object) As String
+	&apos; перебор по in-line стилям
+	If CellCursor.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; CellCursor.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/a&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; CellCursor.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/a&gt;&quot;
+		End If
+	ElseIf CellCursor.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;strong&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/strong&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;strong&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/strong&gt;&quot;
+		End If
+	ElseIf CellCursor.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/emphasis&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;emphasis&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/emphasis&gt;&quot;
+		End If
+	ElseIf CellCursor.CharEscapement &gt; 0 Then
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;sup&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/sup&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;sup&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/sup&gt;&quot;
+		End If
+	ElseIf CellCursor.CharEscapement &lt; 0 Then
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;sub&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/sub&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;sub&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/sub&gt;&quot;
+		End If
+	ElseIf CellCursor.CharShadowed = True OR CellCursor.CharContoured = True Then &apos; тень или контур
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;code&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/code&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;code&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/code&gt;&quot;
+		End If
+	ElseIf CellCursor.CharStrikeout &gt; 0 Then
+		If bCorrectPara = True Then
+			FormatCellText = &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(Cell.getString()) &amp; &quot;&lt;/strikethrough&gt;&quot;
+		Else
+			FormatCellText = &quot;&lt;strikethrough&gt;&quot; &amp; Cell.getString() &amp; &quot;&lt;/strikethrough&gt;&quot;
+		End If
+	Else
+		If bCorrectPara = True Then
+			FormatCellText = CorrectPara(Cell.getString())
+		Else
+			FormatCellText = Cell.getString()
+		End If
+	End If
+End Function
+
+Function OOo23TextTableParser(iCurrentTable As Integer)
+	Dim iHeaderRowCount As Integer
+	Dim oTables As Object, oTable As Object
+	Dim sTable As String &apos; текст таблицы в fb2.1 формате
+	Dim CellNames, Cell, CellCursor
+	Dim iCel As Integer, iRow As Integer, iCol As Integer
+	&apos; все таблицы документа
+	oTables = ThisComponent.getTextTables() 
+	&apos; получаем текущую таблицу
+	oTable = oTables.getByIndex(iCurrentTable)
+	iCel = 0 &apos; текушая ячейка
+	CellNames = oTable.getCellNames()
+	
+	If OOoWriterVersion &lt; &quot;2.3&quot; Then
+		&apos; не поддерживается свойство таблиц HeaderRowCount - не сможем отловить число заголовков
+		If oTable.RepeatHeadline = True Then
+			iHeaderRowCount = 1
+		Else 
+			iHeaderRowCount = 0
+		End If
+	Else
+		iHeaderRowCount = oTable.HeaderRowCount &apos; число строк заголовка таблицы
+	End If
+	
+	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
+	&apos; формируем заголовки, если они есть
+	If iHeaderRowCount &gt; 0 Then
+		For i = 0 To iHeaderRowCount-1
+			sTable = sTable &amp; &quot;&lt;tr align=&quot;&quot;&quot; &amp; sHeaderTRA &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10)
+			For iCol = 0 To oTable.Columns.Count-1
+				Cell = oTable.getCellByName(CellNames(iCel))
+				CellCursor = Cell.createTextCursor()
+				&apos; влева - 0, вправо - 1, по центру - 3, по ширине - 2
+				sTable = sTable &amp; &quot;&lt;th align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor) &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sHeaderTVA &amp; &quot;&quot;&quot;&gt;&quot; &amp; FormatCellText(CellCursor, Cell) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+				iCel = iCel+1
+			Next iCol
+			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+		Next i
+	End If
+	&apos; строки таблицы
+	For iRow = iHeaderRowCount To oTable.Rows.Count-1
+		sTable = sTable &amp; &quot;&lt;tr align=&quot;&quot;&quot; &amp; sLineTRA &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10)
+		For iCol = 0 To oTable.Columns.Count-1
+			Cell = oTable.getCellByName(CellNames(iCel))
+			CellCursor = Cell.createTextCursor()
+			&apos; влева - 0, вправо - 1, по центру - 3, по ширине - 2
+			sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor) &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sLineTVA &amp; &quot;&quot;&quot;&gt;&quot; &amp; FormatCellText(CellCursor, Cell) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			iCel = iCel+1
+		Next iCol
+		sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+	Next iRow
+	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
+	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
+	AddBodyArray(sTable, &quot;Table&quot;)
+End Function
+
+Function TextFrameParser(oContent As Object)
+	&apos; Парсер Текстовой Врезки
+	Dim sText() As String, iC As Integer, sTable As String, sCite As String
+	sText = Split(oContent.getString(),chr(10))
+	Select Case sTextFrameToFB2
+		Case &quot;Таблица&quot;
+			sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
+			For iC=0 To UBound(sText)
+				If Len(sText(iC)) &gt; 1 Then &apos; пропускаем пустые параграфы
+					sTable = sTable &amp; &quot;&lt;tr align=&quot;&quot;center&quot;&quot;&gt;&quot; &amp; chr(10)
+					sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; sAdjTextFrame &amp; &quot;&quot;&quot;  valign=&quot;&quot;middle&quot;&quot;&gt;&quot; &amp; sText(iC) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+				End If
+			Next iC
+			sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
+			AddBodyArray(sTable, &quot;Table&quot;)
+		Case &quot;Цитата&quot;
+			For iC=0 To UBound(sText)
+				If Len(sText(iC)) &gt; 1 Then &apos; пустые параграфы
+					sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sText(iC) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				Else
+					sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
+				End If
+			Next iC
+			sCite = Mid(sCite, 4, Len(sCite))
+			sCite = Mid(sCite, 1, Len(sCite)-5)
+			AddBodyArray(sCite, &quot;Cite&quot;)
+		Case Else
+			For iC=0 To UBound(sText)
+				AddBodyArray(sText(iC), &quot;Para&quot;)
+			Next iC
+	End Select
+End Function
+
+Function GetParagraphAdjust(CellCursor) As String
+	Select Case CellCursor.paraAdjust
+		Case com.sun.star.style.ParagraphAdjust.LEFT
+			GetParagraphAdjust = &quot;left&quot;
+		Case com.sun.star.style.ParagraphAdjust.CENTER
+			GetParagraphAdjust = &quot;center&quot;
+		Case com.sun.star.style.ParagraphAdjust.RIGHT
+			GetParagraphAdjust = &quot;right&quot;
+		Case Else
+			GetParagraphAdjust =  &quot;left&quot;
+	End Select
 End Function
 
 Function CorrectPara(sPara As String) As String
@@ -252,236 +615,46 @@ Function CorrectPara(sPara As String) As String
 	CorrectPara = newPara
 End Function
 
-Function MakePoemTitle
-	sPoemTitle = sPoemTitle &amp; &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
-	oCursor.gotoPreviousParagraph(False)
-	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
-		sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot;
-		While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Poem Title&quot;)
-			sPoemTitle = sPoemTitle &amp; MakeParag &amp; &quot; &quot;
-		Wend
-		sPoemTitle = Mid(sPoemTitle, 1, Len(sPoemTitle)-1)
-		sPoemTitle = sPoemTitle &amp; &quot;&lt;/p&gt;&quot;
-	Else &apos; Заголовки стиха не будут собираться в одну строку, а будут один под другим
-		While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Poem Title&quot;)
-			sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-		Wend
-	End If
-	&apos; проверяем следующий абзац - если не заголовок поэмы - назад, чтобы потом его обработать
-	If oCursor.ParaStyleName() &lt;&gt; &quot;Poem Title&quot; Then
-		oCursor.gotoPreviousParagraph(False)
-	End If
-	sPoemTitle = sPoemTitle &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
-End Function
-
-Function MakePoem
-	Dim sPoem As String, bEndPar As Boolean
-	If sPoemTitle = &quot;&quot; Then	&apos; стихи без заголовка
-		sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-	Else 
-		sPoem = sPoemTitle
-	End If
-	oCursor.gotoPreviousParagraph(False)
-	While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Poem&quot;)
-		If oCursor.String = &quot;&quot; Then
-			sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-		Else
-			sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-		End If
-	Wend
-	sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10
-	If oCursor.ParaStyleName() = &quot;Poem Author&quot; Then
-		oCursor.gotoPreviousParagraph(False)
-		If bMergePoemAuthors = True Then &apos; собираем Авторов стиха, идущих один за другим в одну строку
-			sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot;
-			While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Poem Author&quot;)
-				sPoem = sPoem &amp; MakeParag &amp; &quot;, &quot;
-			Wend
-			sPoem = Mid(sPoem, 1, Len(sPoem)-2)
-			sPoem = sPoem &amp; &quot;&lt;/text-author&gt;&quot;
-		Else &apos; Авторы стиха не будут собираться в одну строку, а будут один под другим
-			While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Poem Author&quot;)
-				sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
-			Wend
-		End If
-		&apos; проверяем следующий абзац - если не автор поэмы - назад, чтобы потом его обработать
-		If oCursor.ParaStyleName() &lt;&gt; &quot;Poem Author&quot; Then
-			oCursor.gotoPreviousParagraph(False)
-		End If
-	Else
-		&apos; проверяем следующий абзац - если не поэма - назад, чтобы потом его обработать
-		If oCursor.ParaStyleName() &lt;&gt; &quot;Poem&quot; Then
-			oCursor.gotoPreviousParagraph(False)
-		End If
-	End If
-	sPoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
-	AddBodyArray(sPoem, &quot;Poem&quot;)
-	sPoemTitle = &quot;&quot;
-End Function
-
-Function MakeEpigraph
-	Dim sEpig As String, bEndPar As Boolean
-	oCursor.gotoPreviousParagraph(False)
-	sEpig = sEpig &amp; &quot;&lt;epigraph&gt;&quot; &amp; chr(10)
-	While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Epigraph&quot;)
-		sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-	Wend
-	If oCursor.ParaStyleName() = &quot;Epigraph Author&quot; Then
-		oCursor.gotoPreviousParagraph(False)
-		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
-			sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot;
-			While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Epigraph Author&quot;)
-				sEpig = sEpig &amp; MakeParag &amp; &quot;, &quot;
-			Wend
-			sEpig = Mid(sEpig, 1, Len(sEpig)-2)
-			sEpig = sEpig &amp; &quot;&lt;/text-author&gt;&quot;
-		Else &apos; Авторы епиграфа не будут собираться в одну строку, а будут один под другим
-			While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Epigraph Author&quot;)
-				sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
-			Wend
-		End If
-		&apos; проверяем следующий абзац - если не автор эпиграфа - назад, чтобы потом его обработать
-		If oCursor.ParaStyleName() &lt;&gt; &quot;Epigraph Author&quot; Then
-			oCursor.gotoPreviousParagraph(False)
-		End If
-	Else
-		&apos; проверяем следующий абзац - если не эпиграф - назад, чтобы потом его обработать
-		If oCursor.ParaStyleName() &lt;&gt; &quot;Epigraph&quot; Then
-			oCursor.gotoPreviousParagraph(False)
-		End If
-	End If
-	sEpig = sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
-	AddBodyArray(sEpig, &quot;Epigraph&quot;)
-
-End Function
-
-Function MakeCite
-	Dim sCite As String, bEndPar As Boolean
-	oCursor.gotoPreviousParagraph(False)
-	sCite = &quot;&lt;cite&gt;&quot; &amp; chr(10)
-	While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Cite&quot;)
-		sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-	Wend
-	If oCursor.ParaStyleName() = &quot;Cite Author&quot; Then
-		oCursor.gotoPreviousParagraph(False)
-		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
-			sCite = sCite &amp; &quot;&lt;text-author&gt;&quot;
-			While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Cite Author&quot;)
-				sCite = sCite &amp; MakeParag &amp; &quot;, &quot;
-			Wend
-			sCite = Mid(sCite, 1, Len(sCite)-2)
-			sCite = sCite &amp; &quot;&lt;/text-author&gt;&quot;
-		Else &apos; Авторы цитаты не будут собираться в одну строку, а будут один под другим
-			While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Cite Author&quot;)
-				sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
-			Wend
-		End If
-		&apos; проверяем следующий абзац - если не автор цитаты - назад, чтобы потом его обработать
-		If oCursor.ParaStyleName() &lt;&gt; &quot;Cite Author&quot; Then
-			oCursor.gotoPreviousParagraph(False)
-		End If
-	Else &apos; когда цитаты без автора
-		&apos; проверяем следующий абзац - если не цитата - назад, чтобы потом его обработать
-		If oCursor.ParaStyleName() &lt;&gt; &quot;Cite&quot; Then
-			oCursor.gotoPreviousParagraph(False)
-		End If
-	End If
-	sCite = sCite &amp; &quot;&lt;/cite&gt;&quot;
-	AddBodyArray(sCite, &quot;Cite&quot;)
-End Function
-
-Function MakeAnnotation
-	Dim sAnnot As String
-	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
-	oCursor.gotoPreviousParagraph(False)
-	While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;Annotation&quot;) 
-		sAnnot = sAnnot &amp; &quot;&lt;p&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/p&gt;&quot; &amp;  chr(10)
-	Wend
-	&apos; проверяем следующий абзац - если не анотация - назад, чтобы потом его обработать
-	If oCursor.ParaStyleName() &lt;&gt; &quot;Annotation&quot; Then
-		oCursor.gotoPreviousParagraph(False)
-	End If
-	sAnnot = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
-	AddBodyArray(sAnnot, &quot;Annotation&quot;)
-End Function
-
-Function MakeSubtitle
-	Dim sSubtitle As String, bEndPar As Boolean
-	oCursor.gotoPreviousParagraph(False)
-	If bMergeSubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
-		sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot;
-		While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;SubTitle&quot;)
-			sSubtitle = sSubtitle &amp; MakeParag &amp; &quot; &quot;
-		Wend
-		sSubtitle = sSubtitle &amp; &quot;&lt;/subtitle&gt;&quot;
-		AddBodyArray(sSubtitle, &quot;SubTitle&quot;)
-	Else &apos; подзаголовки не будут собираться в одну строку, а будут один под другим
-		While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = &quot;SubTitle&quot;)
-			AddBodyArray(&quot;&lt;subtitle&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/subtitle&gt;&quot;, &quot;SubTitle&quot;)
-		Wend
-	End If
-	&apos; проверяем следующий абзац - если не подзаголовок - назад, чтобы потом его обработать
-	If oCursor.ParaStyleName() &lt;&gt; &quot;SubTitle&quot; Then
-		oCursor.gotoPreviousParagraph(False)
-	End If
-End Function
-
-Function AddBodyArray(Para As String, TextType As String)
+Function AddBodyArray(sPara As String, TextType As String)
 	Dim i As Integer
 	i = Ubound(sBodyParagraphs(), 1) + 1
-	If i &gt; 0 Then
-		ReDim Preserve sBodyParagraphs(i, 1)
-	Else Redim sBodyParagraphs(i, 1)
+	&apos; для уровней - проверка на несколько строк
+	If InStr(TextType,&quot;Level &quot;) = 0 Then &apos; это не уровни
+		If i &gt; 0 Then
+			ReDim Preserve sBodyParagraphs(i, 1)
+		Else Redim sBodyParagraphs(i, 1)
+		End If
+	
+		sBodyParagraphs(lCurrentBodyPara,0) = sPara
+		sBodyParagraphs(lCurrentBodyPara,1) = TextType
+		oProgressBar.setValue(lCurrentBodyPara) &apos; Статусбар
+		lCurrentBodyPara = lCurrentBodyPara + 1
+	Else
+		If TextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
+			If i &gt; 0 Then
+				ReDim Preserve sBodyParagraphs(i, 1)
+			Else Redim sBodyParagraphs(i, 1)
+			End If
+			sBodyParagraphs(lCurrentBodyPara,0) = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			sBodyParagraphs(lCurrentBodyPara,1) = TextType
+			oProgressBar.setValue(lCurrentBodyPara) &apos; Статусбар
+			lCurrentBodyPara = lCurrentBodyPara + 1
+		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
+			Dim sText As String
+			sText = sBodyParagraphs(UBound(sBodyParagraphs),0)
+			sBodyParagraphs(UBound(sBodyParagraphs),0) = sText &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			oProgressBar.setValue(lCurrentBodyPara) &apos; Статусбар
+		End If
 	End If
-	sBodyParagraphs(lCurrentBodyPara,0) = Para &amp; chr(10)
-	sBodyParagraphs(lCurrentBodyPara,1) = TextType
-	lCurrentBodyPara = lCurrentBodyPara + 1
 End Function
 
-Function MakeSection(Level As String)
-	Dim sPart As String, bEndPar As Boolean
-	sPart = sPart &amp; &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
-	oCursor.gotoPreviousParagraph(False)
-	While(oCursor.gotoNextParagraph(False) AND oCursor.gotoEndOfParagraph(True) AND oCursor.ParaStyleName() = Level)
-		sPart = sPart &amp; &quot;&lt;p&gt;&quot; &amp; MakeParag &amp; &quot;&lt;/p&gt;&quot;
-	Wend
-	sPart = sPart &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot;
-	&apos; проверяем следующий абзац - если не Уровень Level - назад, чтобы потом его обработать
-	If oCursor.ParaStyleName() &lt;&gt; Level Then
-		oCursor.gotoPreviousParagraph(False)
-	End If
-	AddBodyArray(sPart, Level)
+Function OOoWriterVersion() As String
+	Dim oSet, oConfigProvider
+	Dim oParm(0) As New com.sun.star.beans.PropertyValue
+	oConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot;)
+	oParm(0).Name = &quot;nodepath&quot;
+	oParm(0).Value = &quot;/org.openoffice.Setup/Product&quot;
+	oSet = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;,oParm())
+	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
 End Function
-
-Function Find (Style As String) As String
-	Dim sResult As String
-	Dim oStr As Object, oEnum As Object
-	Dim oDesc As Object, iCount As Integer
-	oDesc = ThisComponent.createSearchDescriptor()
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(Style)
-	End With
-	oEnum = ThisComponent.findAll(oDesc)
-	If oEnum.getCount = 0 Then 
-		Find = &quot;&quot;
-		Exit Function
-	End If
-	If Style = &quot;Book Title&quot; Then
-		For iCount = 0 to oEnum.getCount() - 1
-			oStr = oEnum.getByIndex(iCount)
-			sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
-		Next iCount
-		&apos;Find = oEnum.getByIndex(0).getString
-		sResult = Mid(sResult, 1, Len(sResult)-1)
-		Find = sResult
-		Exit Function
-	End If
-	For iCount = 0 to oEnum.getCount() - 1
-		oStr = oEnum.getByIndex(iCount)
-		sResult = sResult &amp; &quot;&lt;p&gt;&quot; &amp; oStr.getString() &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-	Next iCount
-	Find = sResult
-End Function
-
 </script:module>
