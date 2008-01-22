@@ -3,6 +3,20 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Body" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+Function IsAECP(sStyle As String) As Boolean
+	&apos; Если аргумент sStyle - это Эпиграф, Цитата или Поэма - то возвращается True, иначе - False
+	Select Case sStyle
+			Case sStylePoem
+				IsAECP = True
+			Case sStyleCite
+				IsAECP = True
+			Case sStyleEpigraph
+				IsAECP = True
+			Case Else
+				IsAECP = False
+		End Select
+End Function
+
 Function SaveBody
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
@@ -13,9 +27,11 @@ Function SaveBody
 	bText = False
 	bTextSmSection = False
 	
-	If InStr(sBodyParagraphs(UBound(sBodyParagraphs),1),&quot;Level &quot;) &gt; 0 Then
-		&apos; на случай, если последний абзац - Уровень (в нарушение схемы) - защита от зацикливания конвертора
-		AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;Para&quot;, False)
+	If  IsLevel(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True OR _
+		IsAECP(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True Then
+		&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац -
+		&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поема, Цитата
+		AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
 	End If
 	
 	lParaCount = UBound(sBodyParagraphs)
