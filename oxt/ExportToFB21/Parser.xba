@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
 &apos; оформление сносок
 Public sFootnoteLeft As String
 Public sFootnoteRight As String
@@ -31,7 +33,7 @@ Dim iFootnoteCount As Integer
 Dim iImgCurrent As Integer &apos; для формирования номера картинки
 Dim sPrevStyle As String &apos; название предыдущего стиля - для формирования Уровней из нескольких строк
 Dim sPara As String &apos; отформатированный текст параграфа
-					
+
 Sub DocumentParser
 	Dim oParEnum As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar As Object &apos;Перебираемый параграф
@@ -92,11 +94,15 @@ Sub DocumentParser
 			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты,
 			&apos; которые привязаны к символу, или вставлены как символы
 			oSectEnum = oPar.createEnumeration()
+			Dim sAllSectString As String &apos; текст всех секций параграфа (нужен для определения нумерации и маркеров)
 &apos;			Dim sPara As String
 			sPara = &quot;&quot;
 			Do While oSectEnum.hasMoreElements()
 				oSect = oSectEnum.nextElement()
 				If oSect.TextPortionType = &quot;Text&quot; Then
+					If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then &apos; заголовки стиля Heading игнорируются
+						sAllSectString = sAllSectString + oSect.getString()
+					End If
 					&apos; парсер текстового абзаца
 					sPara = sPara &amp; InLineParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;Frame&quot; Then
@@ -135,14 +141,21 @@ Sub DocumentParser
 				&apos;	MsgBox &quot;Что-то другое : &quot; &amp; oSect.TextPortionType
 				End If
 			Loop
+			
+			&apos; Теперь - парсер элементов - по стилям
 			If sPara = &quot;&quot; Then
 				If bDelEL = False Then
 					StyleParser(oPar.ParaStyleName, sPara)
 				End If
 			Else
-				&apos; Теперь - парсер элементов - по стилям
-				If oSect.NumberingIsNumber = True Then
-					sPara = &quot;• &quot; &amp; sPara &apos;Временно - здесь надо определять тип нумерации
+				If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then &apos; заголовки стиля Heading игнорируются
+					Dim sMarker As String
+					sMarker = Mid(oPar.getString(), 1, Len(oPar.getString())-Len(sAllSectString))
+					sPara = sMarker &amp; &quot; &quot; &amp; sPara
+					If sMarker = &quot;&quot; Then &apos; для маркеров • и других
+						sPara = &quot;• &quot; &amp; sPara 
+					End If
+					sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
 				End If
 				StyleParser(oPar.ParaStyleName, sPara)
 			End If
@@ -153,57 +166,58 @@ End Sub
 Function StyleParser(sParaStyleName As String, sPara As String)
 	&apos; перебор по стилям
 	If sPara = &quot;&quot; Then
-		If sParaStyleName = &quot;Poem&quot; Then
-			AddBodyArray(&quot;&quot;, sParaStyleName) &apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
+		If sParaStyleName = sStylePoem Then
+			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
+			AddBodyArray(&quot;&quot;, sParaStyleName, False)
 		Else
-			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;)
+			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
 		End If
 	Else
 		Select Case sParaStyleName
-			Case &quot;Book Author&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Book Title&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Poem Title&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Poem&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Poem Author&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Epigraph&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Epigraph Author&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Cite&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Cite Author&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Annotation&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;SubTitle&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 1&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 2&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 3&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 4&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 5&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 6&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 7&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 8&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 9&quot;
-				AddBodyArray(sPara, sParaStyleName)
-			Case &quot;Level 10&quot;
-				AddBodyArray(sPara, sParaStyleName)
+			Case sStyleBookAuthor
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleBookTitle
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStylePoemTitle
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStylePoem
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStylePoemAuthor
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleEpigraph
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleEpigraphAuthor
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleCite
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleCiteAuthor
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleAnnotation
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleSubTitle
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStyleLevel1
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel2
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel3
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel4
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel5
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel6
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel7
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel8
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel9
+				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleLevel10
+				AddBodyArray(sPara, sParaStyleName, True)
 			Case Else &apos; что-то другое или просто параграф
-				AddBodyArray(sPara, &quot;Para&quot;)
+				AddBodyArray(sPara, &quot;Para&quot;, False)
 		End Select
 	End If
 	sPrevStyle = sParaStyleName
@@ -375,32 +389,32 @@ End Function
 Function TextGraphicObjectParagraphParser(oContent As Object)
 	&apos; парсер графики TextGraphicObject, привязанной к параграфу
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
-	iImgCount = iImgCount+1
+	iImgCurrent = iImgCurrent+1
 End Function
 
 Function GraphicObjectShapeParagraphParser(oContent As Object)
 	&apos; парсер графики формы GraphicObjectShape, привязанной к параграфу
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
-	iImgCount = iImgCount+1
+	iImgCurrent = iImgCurrent+1
 End Function
 
 &apos; парсер векторной графики
 Function GraphicCustomShapeParagraphParser(oContent As Object)
 	&apos; парсер графики CustomShape, привязанной к параграфу
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
-	iImgCount = iImgCount+1
+	iImgCurrent = iImgCurrent+1
 End Function
 
 Function TextGraphicObjectSymbolParser(oContent As Object)
@@ -409,33 +423,33 @@ Function TextGraphicObjectSymbolParser(oContent As Object)
 		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
 		If bSaveImageTitle=True Then
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		Else
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		End If
 	End If
-	iImgCount = iImgCount+1
+	iImgCurrent = iImgCurrent+1
 End Function
 
 Function GraphicObjectShapeSymbolParser(oContent As Object)
 	&apos; парсер графики GraphicObjectShape, привязанной к символу
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
-	iImgCount = iImgCount+1
+	iImgCurrent = iImgCurrent+1
 End Function
 
 &apos; парсер векторной графики
 Function GraphicCustomShapeSymbolParser(oContent As Object)
 	&apos; парсер графики CustomShape, привязанной к символу
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
-	iImgCount = iImgCount+1
+	iImgCurrent = iImgCurrent+1
 End Function
 
 Function FormatCellText(CellCursor As Object, Cell As Object) As String
@@ -517,6 +531,7 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
 	&apos; формируем заголовки, если они есть
+	Dim i As Integer
 	If iHeaderRowCount &gt; 0 Then
 		For i = 0 To iHeaderRowCount-1
 			sTable = sTable &amp; &quot;&lt;tr align=&quot;&quot;&quot; &amp; sHeaderTRA &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10)
@@ -544,7 +559,7 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	Next iRow
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
 	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
-	AddBodyArray(sTable, &quot;Table&quot;)
+	AddBodyArray(sTable, &quot;Table&quot;, False)
 End Function
 
 Function TextFrameParser(oContent As Object)
@@ -562,7 +577,7 @@ Function TextFrameParser(oContent As Object)
 				End If
 			Next iC
 			sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
-			AddBodyArray(sTable, &quot;Table&quot;)
+			AddBodyArray(sTable, &quot;Table&quot;, False)
 		Case &quot;Цитата&quot;
 			For iC=0 To UBound(sText)
 				If Len(sText(iC)) &gt; 1 Then &apos; пустые параграфы
@@ -573,10 +588,10 @@ Function TextFrameParser(oContent As Object)
 			Next iC
 			sCite = Mid(sCite, 4, Len(sCite))
 			sCite = Mid(sCite, 1, Len(sCite)-5)
-			AddBodyArray(sCite, &quot;Cite&quot;)
+			AddBodyArray(sCite, &quot;Cite&quot;, False)
 		Case Else
 			For iC=0 To UBound(sText)
-				AddBodyArray(sText(iC), &quot;Para&quot;)
+				AddBodyArray(sText(iC), &quot;Para&quot;, False)
 			Next iC
 	End Select
 End Function
@@ -615,11 +630,11 @@ Function CorrectPara(sPara As String) As String
 	CorrectPara = newPara
 End Function
 
-Function AddBodyArray(sPara As String, TextType As String)
+Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	Dim i As Integer
 	i = Ubound(sBodyParagraphs(), 1) + 1
 	&apos; для уровней - проверка на несколько строк
-	If InStr(TextType,&quot;Level &quot;) = 0 Then &apos; это не уровни
+	If bLevel = False Then &apos; это не уровни  ( старый код: If InStr(TextType,&quot;Level &quot;) = 0 Then &apos; это не уровни)
 		If i &gt; 0 Then
 			ReDim Preserve sBodyParagraphs(i, 1)
 		Else Redim sBodyParagraphs(i, 1)
