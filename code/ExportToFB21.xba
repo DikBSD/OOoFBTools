@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Public sCurDocFile As String
+Public oTextOutputStream As Object
+Public sGenres() As String REM book&apos;s genres
+Public sAuthors() As String REM book&apos;s authors
+Public sTranslators() As String REM book&apos;s translators
+Public sSequences() As String REM book&apos;s sequences
+Public sDocAuthors() As String REM doc&apos;s authors
+Public sPubSequences() As String REM publisher book&apos;s sequences
+Public sCustomInfos() As String
+Public sBodyParagraphs() As String
+&apos; оформление сносок
+Public sFootnoteLeft As String
+Public sFootnoteRight As String
+Public bFootnoteSpace As Boolean
+&apos; оформление подзаголовков
+Public bMergeSubTitle As Boolean
+&apos; оформление авторов эпиграфов
+Public bMergeEpigraphAuthors As Boolean
+&apos; оформление заголовков стихов
+Public bMergePoemTitle As Boolean
+&apos; оформление авторов стихов
+Public bMergePoemAuthors As Boolean
+&apos; оформление авторов цитат
+Public bMergeCiteAuthors As Boolean
+&apos; удаление пустых строк
+Public bDelEL As Boolean
+&apos; применение стиля к тексту сносок
+Public bStyleFootnote As Boolean
+&apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
+Public bCorrectPara As Boolean
+
+Dim oProgressBar
+
+Dim oDoc As Object
+Dim oCursor As Object
+Dim count As Long &apos; для статусбара
+
+Dim sFootnoteText() As String
+Dim iFootnoteCount As Integer
+Dim sPoemTitle As String
+
+Sub ExportToFB21
+	Dim oOutputStream As Object
+	Dim oFileAccess As Object
+
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	oDoc = ThisComponent
+
+	If oDoc.hasLocation() Then
+		sCurDocFile = oDoc.getURL
+	Else
+		MsgBox &quot;Сохраните ООо файл&quot;, 48
+		exit Sub
+	End If
+	Mid(sCurDocFile, Len(sCurDocFile)-2, 3, &quot;fb2&quot;)
+	
+	If Not InfoDlgExec Then
+		exit Sub
+	End If
+	
+	oOutputStream = oFileAccess.openFileWrite(ConvertToUrl(oInfoDlg.Model.FilenameTextField.Text))
+	oOutputStream.truncate()
+	oTextOutputStream.setOutputStream(oOutputStream)
+	oTextOutputStream.setEncoding(oInfoDlg.Model.Codepage.Text)
+
+	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount)
+	oProgressBar.setValue(0)
+	
+	&apos; печатаем данные из &lt;description&gt;
+	SaveDescription
+	
+	oCursor = oDoc.Text.createTextCursor()
+	oCursor.gotoStart(False)
+	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))
+	
+	&apos; формируем заглавие книги
+	SaveBookTitle
+
+	&apos; запускаем парсинг всего текста
+	DocumentParser
+		
+	&apos; печатаем данные из &lt;body&gt;
+	SaveBody	
+
+	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+	
+	If UBound(sFootnoteText()) &lt;&gt; -1 Then
+		SaveNotes
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot;&amp;chr(10))
+	oTextOutputStream.closeOutput()
+	oProgressBar.end
+
+	MsgBox &quot;Создание книги в fb2 формате завершено!&quot;, 48
+End Sub
+
+Function IndexOf1Section As Long
+	&apos; индекс 1-й секции
+	Dim i As Long
+	For i = 0 To UBound(sBodyParagraphs)
+		If Instr(sBodyParagraphs(i,1),&quot;Level &quot;) &gt; 0 Then
+			IndexOf1Section = i
+			Exit For
+		Else
+			IndexOf1Section = -1
+		End If
+	Next i
+End Function
+
+Function IndexOfEndSection As Long
+	&apos; индекс последней секции
+	Dim i As Long
+	For i = UBound(sBodyParagraphs) To 0 Step -1 
+		If Instr(sBodyParagraphs(i,1),&quot;Level &quot;) &gt; 0 Then
+			IndexOfEndSection = i
+			Exit For
+		Else
+			IndexOfEndSection = -1
+		End If
+	Next i
+End Function
+
+Function GetCountSection(lIndexOfCurrentLevel As Long, lIndexOfNextLevel As Long, lIndexOfEndSection As Long) As Integer
+	&apos; сравнение по индексам, расчет по номерам уровней
+	If lIndexOfCurrentLevel &lt; lIndexOfEndSection Then 
+		GetCountSection = ( GetLevelNumber(sBodyParagraphs(lIndexOfCurrentLevel,1)) - _
+							GetLevelNumber(sBodyParagraphs(lIndexOfNextLevel,1)) ) + 1
+	Else
+		GetCountSection = GetLevelNumber(sBodyParagraphs(lIndexOfEndSection,1))
+	End If
+End Function
+
+Function GetIndexOfNextLevel(lIndexOfCurrentLevel As Long) As Long
+	Dim i As Long, sInput As String
+	&apos; Ищем следующий индекс уровеня после LevelCurrent
+	If lIndexOfCurrentLevel = UBound(sBodyParagraphs) Then
+		GetIndexOfNextLevel = lIndexOfCurrentLevel
+		Exit Function
+	End If
+	For i = lIndexOfCurrentLevel+1 To UBound(sBodyParagraphs)
+		sInput = sBodyParagraphs(i,1)
+		If Instr(sInput,&quot;Level &quot;) &gt; 0 Then
+			GetIndexOfNextLevel = i
+			Exit For
+		End If
+	Next i
+End Function
+
+Function GetLevelNumber(Level As String) As Integer
+	&apos; Возвращает номер уровня (число) из строки уровня
+	Select Case Level
+		Case &quot;Level 1&quot;
+			GetLevelNumber = 1
+		Case &quot;Level 2&quot;
+			GetLevelNumber = 2
+		Case &quot;Level 3&quot;
+			GetLevelNumber = 3
+		Case &quot;Level 4&quot;
+			GetLevelNumber = 4
+		Case &quot;Level 5&quot;
+			GetLevelNumber = 5
+		Case &quot;Level 6&quot;
+			GetLevelNumber = 6
+		Case &quot;Level 7&quot;
+			GetLevelNumber = 7
+		Case &quot;Level 8&quot;
+			GetLevelNumber = 8
+		Case &quot;Level 9&quot;
+			GetLevelNumber = 9
+		Case &quot;Level 10&quot;
+			GetLevelNumber = 10
+	End Select
+End Function
+
+Function SaveNotes
+	Dim iCount As Integer
+	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;Примечания&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+	For iCount = 0 To UBound(sFootnoteText())
+		oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; iCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; iCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sFootnoteText(iCount) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		PrintStatus(count) &apos; Статусбар
+	Next iCount
+	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+End Function
+
+Function SaveBody
+	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
+	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
+	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
+	Dim i As Long, lIndexOf1Section As Long, lParaCount As Long
+	Dim bText As Boolean, bTextSmSection As Boolean
+	lIndexOf1Section = IndexOf1Section
+	bText = false
+	bTextSmSection = false
+	
+	If Instr(sBodyParagraphs(UBound(sBodyParagraphs),1),&quot;Level &quot;) &gt; 0 Then
+		&apos; на случай, если последний абзац - Уровень (в нарушение схемы) - защита от зацикливания конвертора
+		AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;Para&quot;)
+	End If
+	
+	lParaCount = UBound(sBodyParagraphs)
+	count = 0
+	oProgressBar.start(&quot;Экспортирование в FB2: Создание файла&quot;, (lParaCount+UBound(sFootnoteText()))
+	oProgressBar.setValue(0)
+	
+	If lIndexOf1Section = -1 Then &apos; нет ни одной секции
+		Dim k As Integer
+		k = 0
+		While sBodyParagraphs(k,1)=&quot;Epigraph&quot;
+			&apos; Если 1-е элементы - епиграф, то его не берем в &lt;section&gt;, хотя если взять - документ все равно валидный будет
+			oTextOutputStream.writeString(sBodyParagraphs(k, 0))
+			PrintStatus(count) &apos; Статусбар
+			k = k+1
+		Wend
+		&apos; Все остальные элементы обрамляем &lt;section&gt;
+		oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+		For i = k To lParaCount &apos; печатаем все, как есть
+			oTextOutputStream.writeString(sBodyParagraphs(i, 0))
+			PrintStatus(count) &apos; Статусбар
+		Next i
+		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+	Else &apos;секции есть
+		If lIndexOf1Section &gt; 0 Then &apos; что-то есть
+			For i = 0 To lIndexOf1Section - 1
+				If sBodyParagraphs(i,1)=&quot;Para&quot; OR sBodyParagraphs(i,1)=&quot;Poem&quot; OR sBodyParagraphs(i,1)=&quot;Cite&quot; OR _
+					sBodyParagraphs(i,1)=&quot;SubTitle&quot; OR sBodyParagraphs(i,1)=&quot;&quot; OR sBodyParagraphs(i, 1)=&quot;Annotation&quot; Then
+					If bText = false Then
+						oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+						bText = true
+					End If
+					oTextOutputStream.writeString(sBodyParagraphs(i, 0))
+					PrintStatus(count) &apos; Статусбар
+				Else &apos; это явно эпиграф
+					If bText = true Then
+						oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+						oTextOutputStream.writeString(sBodyParagraphs(i, 0))
+						bText = false
+						PrintStatus(count) &apos; Статусбар
+					Else &apos; епиграф самый первый, как и должен 
+						oTextOutputStream.writeString(sBodyParagraphs(i, 0))
+						PrintStatus(count) &apos; Статусбар
+					End If
+				End If
+				If bText = true AND i = (lIndexOf1Section - 1) Then
+					oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+				End If
+			Next i
+		End If
+		&apos; 2. Печать всех блоков секций
+		Dim N As Integer, lNextIndex As Long, j As Long
+		If lIndexOf1Section &lt;&gt; -1 Then &apos; что-то есть
+			For i = lIndexOf1Section To lParaCount &apos; по индексам
+				lNextIndex = GetIndexOfNextLevel(i)
+				N = GetCountSection(i, lNextIndex, IndexOfEndSection)
+				If lNextIndex = 0 Then
+					lNextIndex = lParaCount + 1
+				End If
+				For j = i To lNextIndex - 1 &apos;печатаем все абзацы между секциями (саму следующую секцию не включаем)
+					If N = 0 Then &apos; смежные уровни
+						If sBodyParagraphs(j,1)=&quot;Para&quot; OR sBodyParagraphs(j,1)=&quot;Poem&quot; OR sBodyParagraphs(j,1)=&quot;Cite&quot; OR _
+							sBodyParagraphs(j,1)=&quot;SubTitle&quot; OR sBodyParagraphs(j,1)=&quot;&quot; Then
+							If bTextSmSection = False Then
+								oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+								bTextSmSection = True
+							End If
+						End If
+					End If
+					oTextOutputStream.writeString(sBodyParagraphs(j, 0))
+					PrintStatus(count) &apos; Статусбар
+				Next j
+	
+				&apos; закрываем секции, взависимости от смежности уровней
+				If N = 0 Then &apos; смежные уровни
+					If bTextSmSection = true Then &apos; между ними есть текст. требующий взятие его в &lt;section&gt; &lt;/section&gt;
+						SaveCloseSection(1)
+						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					End If
+				Else &apos; не смежные уровни
+					SaveCloseSection(N)
+					bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+				End If
+	
+				If i &gt;= lParaCount Then
+					i = lParaCount - 1
+				Else
+					i = lNextIndex - 1
+				End If
+			Next i
+		End If
+	End If
+End Function
+
+Function SaveCloseSection(Count As Integer) As Long
+	Dim i As Integer
+	If Count &gt; 0 Then
+		For i = 0 To Count-1
+			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		Next i
+	End If
+End Function
+Function PrintStatus(count As Long)
+	count = count+1
+	oProgressBar.setValue(count)
+End Function
+
+</script:module>

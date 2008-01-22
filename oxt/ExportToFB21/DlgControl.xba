@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="DlgControl" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Public oInfoDlg As Object
+
+Const oDlgWidth = 388
+Const oDlgHeight = 343
+Const oDlgX = 50
+Const oDlgY = 50
+Const oDlgTitle = &quot;Данные о книге&quot;
+Private sGenreList() As String
+Private sLangList() As String
+Private bExecute As Boolean
+Private bAppendBtn As Boolean
+
+Public oServiceDlg As Object
+Private sFootStyleList() As String
+Private bServiceExecute As Boolean
+
+Function InfoDlgExec As Boolean
+	sGenreList = Array(&quot;adv_animal&quot;, &quot;adv_animal&quot;, &quot;adv_animal&quot;, &quot;adv_geo&quot;, &quot;adv_history&quot;, &quot;adv_indian&quot;,_
+						&quot;adv_maritime&quot;, &quot;adv_western&quot;, &quot;adventure&quot;, &quot;antique&quot;, &quot;antique_ant&quot;,_
+						&quot;antique_east&quot;, &quot;antique_european&quot;, &quot;antique_myths&quot;, &quot;antique_russian&quot;,_
+						&quot;child_adv&quot;, &quot;child_adv&quot;, &quot;child_det&quot;, &quot;child_det&quot;, &quot;child_education&quot;,_
+						&quot;child_prose&quot;, &quot;child_prose&quot;, &quot;child_sf&quot;, &quot;child_sf&quot;, &quot;child_tale&quot;,_
+						&quot;child_verse&quot;, &quot;child_verse&quot;, &quot;children&quot;, &quot;children&quot;, &quot;comp_db&quot;, &quot;comp_hard&quot;,_
+						&quot;comp_osnet&quot;, &quot;comp_programming&quot;, &quot;comp_soft&quot;, &quot;comp_www&quot;, &quot;computers&quot;,_
+						&quot;design&quot;, &quot;det_action&quot;, &quot;det_classic&quot;, &quot;det_crime&quot;, &quot;det_espionage&quot;,_
+						&quot;det_hard&quot;, &quot;det_history&quot;, &quot;det_irony&quot;, &quot;det_maniac&quot;, &quot;det_police&quot;,_
+						&quot;det_political&quot;, &quot;detective&quot;, &quot;dramaturgy&quot;, &quot;home&quot;, &quot;home_cooking&quot;,_
+						&quot;home_crafts&quot;, &quot;home_diy&quot;, &quot;home_entertain&quot;, &quot;home_garden&quot;, &quot;home_health&quot;,_
+						&quot;home_pets&quot;, &quot;home_sex&quot;, &quot;home_sport&quot;, &quot;humor&quot;, &quot;humor_anecdote&quot;, &quot;humor_prose&quot;,_
+						&quot;humor_prose&quot;, &quot;humor_verse&quot;, &quot;humor_verse&quot;, &quot;love&quot;, &quot;love_contemporary&quot;,_
+						&quot;love_detective&quot;, &quot;love_detective&quot;, &quot;love_erotica&quot;, &quot;love_history&quot;, &quot;love_short&quot;,_
+						&quot;nonf_biography&quot;, &quot;nonf_criticism&quot;, &quot;nonf_publicism&quot;, &quot;nonfiction&quot;, &quot;poetry&quot;,_
+						&quot;prose&quot;, &quot;prose_classic&quot;, &quot;prose_contemporary&quot;, &quot;prose_counter&quot;, &quot;prose_history&quot;,_
+						&quot;prose_rus_classic&quot;, &quot;prose_su_classics&quot;, &quot;ref_dict&quot;, &quot;ref_encyc&quot;, &quot;ref_guide&quot;,_
+						&quot;ref_ref&quot;, &quot;reference&quot;, &quot;religion&quot;, &quot;religion_esoterics&quot;, &quot;religion_rel&quot;,_
+						&quot;religion_self&quot;, &quot;sci_biology&quot;, &quot;sci_business&quot;, &quot;sci_chem&quot;, &quot;sci_culture&quot;,_
+						&quot;sci_history&quot;, &quot;sci_juris&quot;, &quot;sci_linguistic&quot;, &quot;sci_math&quot;, &quot;sci_medicine&quot;,_
+						&quot;sci_philosophy&quot;, &quot;sci_phys&quot;, &quot;sci_politics&quot;, &quot;sci_psychology&quot;, &quot;sci_religion&quot;,_
+						&quot;sci_religion&quot;, &quot;sci_tech&quot;, &quot;science&quot;, &quot;sf&quot;, &quot;sf_action&quot;, &quot;sf_cyberpunk&quot;,_
+						&quot;sf_detective&quot;, &quot;sf_detective&quot;, &quot;sf_epic&quot;, &quot;sf_fantasy&quot;, &quot;sf_heroic&quot;,_
+						&quot;sf_horror&quot;, &quot;sf_humor&quot;, &quot;sf_social&quot;, &quot;sf_space&quot;, &quot;story&quot;, &quot;thriller&quot;)
+	sLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
+						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
+						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
+						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
+						
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oInfoDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.InfoDlg)
+	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(sCurDocFile)
+	Dim sNow As String
+	sNow = Now
+	With oInfoDlg.Model
+		.Width = oDlgWidth
+		.Height = oDlgHeight
+		.PositionX = oDlgX
+		.PositionY = oDlgY
+		.Title = oDlgTitle
+		.GenreComboBox.StringItemList = sGenreList()
+		.LangComboBox.StringItemList = sLangList()
+		.SrcLangComboBox.StringItemList = sLangList()
+		.BookTitleField.Text = Find(&quot;Book Title&quot;)
+		.diDateTextField.Text = Date
+		.diDateValueField.Text = Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;)_
+								&amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
+		.ProgrammUsedField.Text = &quot;ExportToFB21&quot;
+		.IDField.Text = &quot;OOo-ExportToFB21-&quot; &amp; Year(sNow) &amp; Month(sNow) &amp; Day(sNow) &amp; Hour(sNow) &amp; Minute(sNow) &amp; Second(sNow)
+		.VersionField.Text = &quot;1.0&quot;
+	End With
+	
+	&apos; значения по умолчанию для сносок	
+	sFootnoteLeft = &quot;[&quot;
+	sFootnoteRight = &quot;]&quot;
+	bFootnoteSpace = False
+	&apos; значения по умолчанию для SubTitle
+	bMergeSubTitle = True
+	&apos; значения по умолчанию для Авторов епиграфа
+	bMergeEpigraphAuthors = False
+	&apos; значения по умолчанию для заголовков стихов
+	bMergePoemTitle = False
+	&apos; значения по умолчанию для авторов стихов
+	bMergePoemAuthors = False
+	&apos; значения по умолчанию для авторов цитат
+	bMergeCiteAuthors = False
+	&apos; значения по умолчанию для удаления пустых строк
+	bDelEL = False
+	&apos; значения по умолчанию для применения стиля к тексту сносок
+	bStyleFootnote = True
+	&apos; значения по умолчанию для обработкb &quot;проблемных&quot; знаков (&lt; &gt;)
+	bCorrectPara = True
+	
+	bAppendBtn = true
+	oInfoDlg.Model.Step = 1
+	oInfoDlg.execute()
+	InfoDlgExec = bExecute
+
+End Function
+
+Function InfoDlgCanceled
+	bExecute = false
+	oInfoDlg.endExecute()
+End Function
+
+Function ConvertingFile
+	If oInfoDlg.Model.GenreComboBox.Text = &quot;&quot; OR oInfoDlg.Model.BookTitleField.Text = &quot;&quot; OR oInfoDlg.Model.LangComboBox.Text = &quot;&quot; Then
+		MsgBox &quot;Заполните все выделенные поля&quot;, 48
+		Exit Function
+	End If
+	bAppendBtn = false
+	AppendBookGenre
+	AppendBookAuthor
+	AppendBookTranslator
+	AppendBookSequence
+	AppendDocAuthor
+	AppendPublisherSequence
+	AppendCustomInfos
+	bExecute = true
+	oInfoDlg.endExecute()
+End Function
+
+Function SaveAs
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sDir As String
+	Dim sFName As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+	
+	sDir = DirectoryNameOutOfPath(sCurDocFile, &quot;/&quot;)
+	sFName = ConvertFromUrl(FilenameOutOfPath(sCurDocFile, &quot;/&quot;)
+	
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot;)
+		.setTitle(&quot;Сохранить как...&quot;)
+		.setDisplayDirectory(sDir)
+		.setDefaultName(sFName)
+	End With
+	If oFileDlg.execute() Then
+		oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(oFileDlg.Files(0))
+	End If
+	oFileDlg.Dispose()
+End Function
+
+Function AppendBookGenre
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot; Then
+			MsgBox &quot;Выберите жанр книги!&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sGenres(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sGenres(i, 1)
+	Else Redim sGenres(i, 1)
+	End If
+	sGenres(i, 0) = Trim(oInfoDlg.Model.GenreComboBox.Text)
+	&apos;oInfoDlg.Model.GenreComboBox.Text = &quot;&quot;
+	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = i+1
+End Function
+
+Function AppendBookAuthor
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
+			 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
+			MsgBox &quot;Заполните хоть одно поле для Автора Книги&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sAuthors(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sAuthors(i, 5)
+	Else Redim sAuthors(i, 5)
+	End If
+	sAuthors(i, 0) = Trim(oInfoDlg.Model.tiFirst.Text)
+	sAuthors(i, 1) = Trim(oInfoDlg.Model.tiMiddle.Text)
+	sAuthors(i, 2) = Trim(oInfoDlg.Model.tiLast.Text)
+	sAuthors(i, 3) = Trim(oInfoDlg.Model.tiNickname.Text)
+	sAuthors(i, 4) = Trim(oInfoDlg.Model.tiEmail.Text)
+	sAuthors(i, 5) = Trim(oInfoDlg.Model.tiHomepage.Text)
+	With oInfoDlg.Model
+		.tiFirst.Text = &quot;&quot;
+		.tiMiddle.Text = &quot;&quot;
+		.tiLast.Text = &quot;&quot;
+		.tiNickname.Text = &quot;&quot;
+		.tiEmail.Text = &quot;&quot;
+		.tiHomepage.Text = &quot;&quot;
+	End With
+	oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = i+1
+End Function
+
+Function AppendBookTranslator
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
+			Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
+			MsgBox &quot;Заполните хоть одно поле для Переводчика Книги&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sTranslators(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sTranslators(i, 5)
+	Else Redim sTranslators(i, 5)
+	End If
+	sTranslators(i, 0) = Trim(oInfoDlg.Model.tiTransFirst.Text)
+	sTranslators(i, 1) = Trim(oInfoDlg.Model.tiTransMiddle.Text)
+	sTranslators(i, 2) = Trim(oInfoDlg.Model.tiTransLast.Text)
+	sTranslators(i, 3) = Trim(oInfoDlg.Model.tiTransNickname.Text)
+	sTranslators(i, 4) = Trim(oInfoDlg.Model.tiTransEmail.Text)
+	sTranslators(i, 5) = Trim(oInfoDlg.Model.tiTransHomepage.Text)
+	With oInfoDlg.Model
+		.tiTransFirst.Text = &quot;&quot;
+		.tiTransMiddle.Text = &quot;&quot;
+		.tiTransLast.Text = &quot;&quot;
+		.tiTransNickname.Text = &quot;&quot;
+		.tiTransEmail.Text = &quot;&quot;
+		.tiTransHomepage.Text = &quot;&quot;
+	End With
+	oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = i+1
+End Function
+
+Function AppendBookSequence
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
+			MsgBox &quot;Заполните поля названия и (или) номера для Серии Книги&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sSequences(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sSequences(i, 1)
+	Else Redim sSequences(i, 1)
+	End If
+	sSequences(i, 0) = Trim(oInfoDlg.Model.SequenceTextField.Text)
+	sSequences(i, 1) = Trim(oInfoDlg.Model.SequenceNumberTextField.Text)
+	With oInfoDlg.Model
+		.SequenceTextField.Text = &quot;&quot;
+		.SequenceNumberTextField.Text = &quot;&quot;
+	End With
+	oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = i+1
+End Function
+
+Function AppendDocAuthor
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
+			Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
+			MsgBox &quot;Заполните хоть одно поле для Создателя FB2 Документа&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sDocAuthors(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sDocAuthors(i, 5)
+	Else Redim sDocAuthors(i, 5)
+	End If
+	sDocAuthors(i, 0) = Trim(oInfoDlg.Model.diFirstField.Text)
+	sDocAuthors(i, 1) = Trim(oInfoDlg.Model.diMiddleField.Text)
+	sDocAuthors(i, 2) = Trim(oInfoDlg.Model.diLastField.Text)
+	sDocAuthors(i, 3) = Trim(oInfoDlg.Model.diNicknameField.Text)
+	sDocAuthors(i, 4) = Trim(oInfoDlg.Model.diEmailField.Text)
+	sDocAuthors(i, 5) = Trim(oInfoDlg.Model.diHomepageField.Text)
+	With oInfoDlg.Model
+		.diFirstField.Text = &quot;&quot;
+		.diMiddleField.Text = &quot;&quot;
+		.diLastField.Text = &quot;&quot;
+		.diNicknameField.Text = &quot;&quot;
+		.diEmailField.Text = &quot;&quot;
+		.diHomepageField.Text = &quot;&quot;
+	End With
+	oInfoDlg.GetControl(&quot;lblDocAutors&quot;).Text = i+1
+End Function
+
+Function AppendPublisherSequence
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.pubSequenseTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) = &quot;&quot; Then
+			MsgBox &quot;Заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sPubSequences(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sPubSequences(i, 1)
+	Else Redim sPubSequences(i, 1)
+	End If
+	sPubSequences(i, 0) = Trim(oInfoDlg.Model.pubSequenseTextField.Text)
+	sPubSequences(i, 1) = Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text)
+	With oInfoDlg.Model
+		.pubSequenseTextField.Text = &quot;&quot;
+		.pubSequenseNumberTextField.Text = &quot;&quot;
+	End With
+	oInfoDlg.GetControl(&quot;lblPubSequence&quot;).Text = i+1
+End Function
+
+Function AppendCustomInfos
+	IF bAppendBtn = true Then
+		If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
+			MsgBox &quot;Заполните оба поля для Custom Info&quot;, 48
+			Exit Function
+		End If
+	End If
+	Dim i As Integer
+	i = Ubound(sCustomInfos(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sCustomInfos(i, 1)
+	Else Redim sCustomInfos(i, 1)
+	End If
+	sCustomInfos(i, 0) = Trim(oInfoDlg.Model.cusTypeTextField.Text)
+	sCustomInfos(i, 1) = Trim(oInfoDlg.Model.cusValueTextField.Text)
+	With oInfoDlg.Model
+		.cusTypeTextField.Text = &quot;&quot;
+		.cusValueTextField.Text = &quot;&quot;
+	End With
+	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = i+1
+End Function
+
+Function ServiceDlgExec As Boolean
+	sFootStyleList() = Array(&quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
+						
+	oServiceDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.ServiceDlg)
+	With oServiceDlg.Model
+		.PositionX = 100
+		.PositionY = 100
+		.Title = &quot;Дополнительные настройки&quot;
+		.cmbboxStyle.StringItemList = sFootStyleList()
+		.cmbboxStyle.Text = &quot;[x]&quot;
+	End With
+	oServiceDlg.Model.Step = 1
+	oServiceDlg.execute()
+	ServiceDlgExec = bServiceExecute
+
+End Function
+
+Function ServiceDlgCanceled
+	bServiceExecute = false
+	oServiceDlg.endExecute()
+End Function
+
+Function ServiceDlgOk
+	If oServiceDlg.Model.cmbboxStyle.Text = &quot;&quot; Then
+		MsgBox &quot;Выберите стиль сносок&quot;, 48
+		Exit Function
+	End If
+
+	bFootnoteSpace = oServiceDlg.GetControl(&quot;cboxSpace&quot;).State
+	bMergeSubTitle = oServiceDlg.GetControl(&quot;cboxSubtitle&quot;).State
+	bMergeEpigraphAuthors = oServiceDlg.GetControl(&quot;cboxEpigAuthor&quot;).State
+	bMergePoemTitle = oServiceDlg.GetControl(&quot;cboxPoemTitle&quot;).State
+	bMergePoemAuthors = oServiceDlg.GetControl(&quot;cboxPoemAuthor&quot;).State
+	bMergeCiteAuthors = oServiceDlg.GetControl(&quot;cboxCiteAuthor&quot;).State
+	bDelEL = oServiceDlg.GetControl(&quot;cboxDelEL&quot;).State
+	bStyleFootnote = oServiceDlg.GetControl(&quot;cboxStyleFootnote&quot;).State
+	bCorrectPara = oServiceDlg.GetControl(&quot;cboxCorrect&quot;).State
+	
+	Select Case oServiceDlg.GetControl(&quot;cmbboxStyle&quot;).Text
+		Case &quot;[x]&quot;
+			sFootnoteLeft = &quot;[&quot;
+			sFootnoteRight = &quot;]&quot;
+		Case &quot;[ x ]&quot;
+			sFootnoteLeft = &quot;[ &quot;
+			sFootnoteRight = &quot; ]&quot;
+		Case &quot;{x}&quot;
+			sFootnoteLeft = &quot;{&quot;
+			sFootnoteRight = &quot;}&quot;
+		Case &quot;{ x }&quot;
+			sFootnoteLeft = &quot;{ &quot;
+			sFootnoteRight = &quot; }&quot;
+		Case &quot;(x)&quot;
+			sFootnoteLeft = &quot;(&quot;
+			sFootnoteRight = &quot;)&quot;
+		Case &quot;( x )&quot;
+			sFootnoteLeft = &quot;( &quot;
+			sFootnoteRight = &quot; )&quot;
+		Case Else
+			sFootnoteLeft = &quot;[&quot;
+			sFootnoteRight = &quot;]&quot;	
+	End Select
+	
+	bServiceExecute = true
+	oServiceDlg.endExecute()
+End Function
+
+</script:module>
