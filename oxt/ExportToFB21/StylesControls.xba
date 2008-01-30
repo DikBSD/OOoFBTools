@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="StylesControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public oStylesDlg As Object
+Private oStylesDlg As Object
 Public sStylesFilename As String
 
 Private bStyleExecute As Boolean
@@ -42,7 +42,7 @@ Function SetUserStyles
 	oStylesDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.StylesDlg)
 	
 	&apos; файл пользовательских стилей
-	sStylesFilename = pmxCurDir() &amp; &quot;/ExportToFB21/styles.xml&quot;
+	sStylesFilename = pmxCurDir() &amp; &quot;/ExportToFB21/styles.txt&quot;
 	
 	&apos; считывание стилей из файла. Если его нет - то задаем по умолчанию
 	If ReadStyles = False Then
@@ -129,8 +129,7 @@ Function SaveStyles
 	Print #iFileNo, &quot;tfLevel8=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text
 	Print #iFileNo, &quot;tfLevel9=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text
 	Print #iFileNo, &quot;tfLevel10=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text
-	
-	
+
 	Close #iFileNo &apos; Закрытие файла
 End Function
 

@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Private oDoc As Object
+Private oReplace As Object
+
+Private sCorrectorSettingsFilename As String
+Private oTextCorrectorDlg As Object
+Private bCorrectorExecute As Boolean
+
+Private bDelSpace As Boolean
+
+Private bDelEmptyPar As Boolean
+Private bBreakLine As Boolean
+Private bDel As Boolean
+Private bPar As Boolean
+Private bDelRazrPerenos As Boolean
+
+Private b2HyphenToDash As Boolean
+Private bHyphenToDash As Boolean
+Private bPoints As Boolean
+Private bC As Boolean
+
+Sub TextCorrector
+	Dim oReplace As Object
+  
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oTextCorrectorDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.TextCorrectorDlg)
+	
+	&apos; файл пользовательских стилей
+	sCorrectorSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/corrector.txt&quot;
+	
+	&apos; считывание настройки из файла. Если его нет - то задаем по умолчанию
+	If ReadCorrectorSettings = False Then
+		SetCorrectorSettingDefault &apos; Задаем настройки очистки текста в контролы по умолчанию
+	End If
+	
+	With oTextCorrectorDlg.Model
+		.Title = &quot;Очистка текста документа&quot;
+	End With
+
+	oTextCorrectorDlg.execute()
+	TextCorrector = bCorrectorExecute
+End Sub
+
+Function ReadCorrectorSettings As Boolean
+	&apos; Читаем настройки очистки текста и задаем значения контролам формы
+	If FileExists(sCorrectorSettingsFilename) Then
+		Dim iFileNo As Integer, sCurrentLine As String
+		&apos; Установление свободного файлового манипулятора
+		iFileNo = Freefile
+		&apos; Открытие файла (в режиме на чтение)
+		Open sCorrectorSettingsFilename For Input As #iFileNo
+		&apos; Проверка, был ли достигнут конец файла
+		Do While NOT eof(iFileNo)
+			&apos; Чтение строки
+			Line Input #iFileNo, sCurrentLine
+			If sCurrentLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные стилей
+				SetCorrectorSettings(sCurrentLine)
+			End If
+		Loop
+		&apos; Закрытие файла
+		Close #iFileNo
+		ReadCorrectorSettings = True
+	Else
+		ReadCorrectorSettings = False
+	End If
+End Function
+
+Function SaveCorrectorSettings
+	&apos; записываем настройки очистки текста
+	Dim iFileNo As Integer, sCurrentLine As String
+	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
+	Open sCorrectorSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	&apos; Работа с пробелами и табуляциями
+	Print #iFileNo, &quot;cboxDelSpace=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
+	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
+	&apos; Работа с абзацами и разрывами
+	Print #iFileNo, &quot;cboxDelEmptyPar=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
+	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
+	Print #iFileNo, &quot;cboxBreakLine=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
+	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
+	Print #iFileNo, &quot;obtnDel=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
+	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
+	Print #iFileNo, &quot;obtnPar=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
+	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
+	Print #iFileNo, &quot;cboxDelRazrPerenos=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDelRazrPerenos&quot;).State
+	bDelRazrPerenos = oTextCorrectorDlg.GetControl(&quot;cboxDelRazrPerenos&quot;).State
+	&apos; Кавычки, Дефисы. Разное
+	Print #iFileNo, &quot;cbox2HyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
+	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
+	Print #iFileNo, &quot;cboxHyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
+	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
+	Print #iFileNo, &quot;cboxPoints=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
+	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
+	Print #iFileNo, &quot;cboxC=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
+	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
+	
+	Close #iFileNo &apos; Закрытие файла
+End Function
+
+Function SetCorrectorSettings(sCurrentLine)
+	Dim sCorrectorSettings() As String
+	sCorrectorSettings = Split(sCurrentLine, &quot;=&quot;)
+	Select Case sCorrectorSettings(0)
+		&apos; Работа с пробелами и табуляциями
+		Case &quot;cboxDelSpace&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		&apos; Работа с абзацами и разрывами
+		Case &quot;cboxDelEmptyPar&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxBreakLine&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxDelRazrPerenos&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;obtnDel&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;obtnPar&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		&apos; Кавычки, Дефисы. Разное
+		Case &quot;cbox2HyphenToDash&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxHyphenToDash&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxPoints&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxC&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+	End Select
+End Function
+
+Function SetCorrectorSettingDefault
+	&apos; Установка настроек по умолчанию в контролы
+	&apos; Работа с пробелами и табуляциями
+	oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 1
+	&apos; Работа с абзацами и разрывами
+	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxDelRazrPerenos&quot;).State = 1
+	&apos; Кавычки, Дефисы. Разное
+	oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
+End Function
+
+Function TextCorrectorDlgCanceled
+	bCorrectorExecute = False
+	oTextCorrectorDlg.endExecute()
+End Function
+
+Function TextCorrectorDlgOk
+	&apos; Принятие параметров чистки текста
+	SaveCorrectorSettings &apos; сохранение настроек чистки текста
+	
+	&apos; Очистка текста
+	oDoc = ThisComponent
+	oReplace = oDoc.createReplaceDescriptor
+	oReplace.SearchRegularExpression = True
+
+	&apos; Работа с пробелами и табуляциями
+	If bDelSpace = True Then
+		&apos; Заменяем все множественные табуляции:
+		oReplace.SearchString = &quot;\t{2,}&quot;
+		oReplace.ReplaceString = &quot; &quot;		
+		oDoc.ReplaceAll(oReplace)	
+		&apos; Удаляем все стартовые пробелы
+		oReplace.SearchString = &quot;^ {1,}&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)	
+		&apos; Удаляем все конечные пробелы
+		oReplace.SearchString = &quot; {1,}$&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)	
+		&apos; Удаляем все множественные пробелы
+		oReplace.SearchString = &quot; {2,}&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)	
+		&apos; Удаляем все стартовые табуляции
+		oReplace.SearchString = &quot;^\t{1,}&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)	
+		&apos; Удаляем все конечные табуляции
+		oReplace.SearchString = &quot;\t{1,}$&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)	
+	End If
+	
+	&apos; Работа с абзацами и разрывами
+	If bDelEmptyPar = True Then
+		&apos; Удаляем все множественные пустые абзацы
+		oReplace.SearchString = &quot;^$&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)	
+	End If
+	If bBreakLine = True Then
+		&apos; Разрывы строк
+		If bDel = True Then
+			&apos; Удаляем разрыв строки
+			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
+			oReplace.ReplaceString = &quot;&quot;
+		Else
+			&apos; Заменяем разрыв строки на абзац
+			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
+			oReplace.ReplaceString = &quot;\n&quot;
+		End If
+		oDoc.ReplaceAll(oReplace)
+	End If
+	If bDelRazrPerenos = True Then
+		&apos; Удаляем все переносы, разорванные абзацем
+		&apos;oReplace.SearchString = &quot;-$&quot;
+		&apos;oReplace.ReplaceString = &quot;&quot;
+		&apos;oDoc.ReplaceAll(oReplace)	
+	End If
+	&apos; Кавычки, Дефисы, Разное
+	If b2HyphenToDash = True Then
+		&apos; Заменить двойной дефис (--) на тире
+		oReplace.SearchString = &quot;--&quot;
+		oReplace.ReplaceString = chr(8213)&apos;8211
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = chr(8213) &amp; chr(8213)
+		oReplace.ReplaceString = chr(8213)
+		oDoc.ReplaceAll(oReplace)
+	End If
+	If bHyphenToDash = True Then
+		&apos; Заменить, дефис используемый вместо тире на тире
+		&apos;(Речь, между слов, но не в &quot;какой-то, где-то...&quot;)
+		oReplace.SearchString = &quot;^-&quot;
+		oReplace.ReplaceString = chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\.-&quot;
+		oReplace.ReplaceString = &quot;. &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\. -&quot;
+		oReplace.ReplaceString = &quot;. &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;,-&quot;
+		oReplace.ReplaceString = &quot;, &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;, -&quot;
+		oReplace.ReplaceString = &quot;, &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;:-&quot;
+		oReplace.ReplaceString = &quot;: &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;: -&quot;
+		oReplace.ReplaceString = &quot;: &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;;-&quot;
+		oReplace.ReplaceString = &quot;; &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot; ;-&quot;
+		oReplace.ReplaceString = &quot;; &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\!-&quot;
+		oReplace.ReplaceString = &quot;! &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\! -&quot;
+		oReplace.ReplaceString = &quot;! &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\?-&quot;
+		oReplace.ReplaceString = &quot;? &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\? -&quot;
+		oReplace.ReplaceString = &quot;? &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;…-&quot;
+		oReplace.ReplaceString = &quot;… &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;… -&quot;
+		oReplace.ReplaceString = &quot;… &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+	End If
+	If bPoints = True Then
+		&apos; Упорядочить многоточие
+		oReplace.SearchString = &quot;\.\.\.&quot;
+		oReplace.ReplaceString = chr(8230)
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\. \. \.&quot;
+		oReplace.ReplaceString = chr(8230)
+		oDoc.ReplaceAll(oReplace)	
+	End If
+	If bC = True Then
+		&apos; Замена на (c) (r) (TM)
+		oReplace.SearchString = &quot;(c)&quot;
+		oReplace.ReplaceString = &quot;©&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(с)&quot;
+		oReplace.ReplaceString = &quot;©&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(C)&quot;
+		oReplace.ReplaceString = &quot;©&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(С)&quot;
+		oReplace.ReplaceString = &quot;©&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(r)&quot;
+		oReplace.ReplaceString = &quot;®&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(R)&quot;
+		oReplace.ReplaceString = &quot;®&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(TM)&quot;
+		oReplace.ReplaceString = &quot;™&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;(ТМ)&quot;
+		oReplace.ReplaceString = &quot;™&quot;
+		oDoc.ReplaceAll(oReplace)
+	End If
+	
+	bCorrectorExecute = True
+	oTextCorrectorDlg.endExecute()
+End Function
+
+</script:module>
