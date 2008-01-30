@@ -20,6 +20,7 @@ Private bDelRazrPerenos As Boolean
 
 Private b2HyphenToDash As Boolean
 Private bHyphenToDash As Boolean
+Private bKav As Boolean
 Private bPoints As Boolean
 Private bC As Boolean
 
@@ -94,6 +95,8 @@ Function SaveCorrectorSettings
 	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
 	Print #iFileNo, &quot;cboxHyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
 	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
+	Print #iFileNo, &quot;cboxKav=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
+	bKav = oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
 	Print #iFileNo, &quot;cboxPoints=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
 	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
 	Print #iFileNo, &quot;cboxC=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
@@ -125,6 +128,8 @@ Function SetCorrectorSettings(sCurrentLine)
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxHyphenToDash&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxKav&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxPoints&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxC&quot;
@@ -145,6 +150,7 @@ Function SetCorrectorSettingDefault
 	&apos; Кавычки, Дефисы. Разное
 	oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
 End Function
@@ -274,6 +280,21 @@ Function TextCorrectorDlgOk
 		oDoc.ReplaceAll(oReplace)
 		oReplace.SearchString = &quot;… -&quot;
 		oReplace.ReplaceString = &quot;… &quot; &amp; chr(8213) &amp; &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+	End If
+	If bKav = True Then
+		&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
+		oReplace.SearchString = &quot;&quot;&quot;\&lt;&quot;
+		oReplace.ReplaceString = chr(171)
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;&quot;&quot;&quot;
+		oReplace.ReplaceString = chr(187)
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;“\&lt;&quot;
+		oReplace.ReplaceString = chr(171)
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;”&quot;
+		oReplace.ReplaceString = chr(187)
 		oDoc.ReplaceAll(oReplace)
 	End If
 	If bPoints = True Then
