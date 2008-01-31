@@ -20,6 +20,7 @@ Private bDelRazrPerenos As Boolean
 
 Private b2HyphenToDash As Boolean
 Private bHyphenToDash As Boolean
+Private bDefis As Boolean
 Private bKav As Boolean
 Private bPoints As Boolean
 Private bC As Boolean
@@ -39,7 +40,7 @@ Sub TextCorrector
 	End If
 	
 	With oTextCorrectorDlg.Model
-		.Title = &quot;Очистка текста документа&quot;
+		.Title = &quot;Корректор текста документа&quot;
 	End With
 
 	oTextCorrectorDlg.execute()
@@ -95,6 +96,8 @@ Function SaveCorrectorSettings
 	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
 	Print #iFileNo, &quot;cboxHyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
 	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
+	Print #iFileNo, &quot;cboxDefis=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
+	bDefis = oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
 	Print #iFileNo, &quot;cboxKav=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
 	bKav = oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
 	Print #iFileNo, &quot;cboxPoints=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
@@ -128,6 +131,8 @@ Function SetCorrectorSettings(sCurrentLine)
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxHyphenToDash&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxDefis&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxKav&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxPoints&quot;
@@ -150,6 +155,7 @@ Function SetCorrectorSettingDefault
 	&apos; Кавычки, Дефисы. Разное
 	oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
@@ -169,40 +175,12 @@ Function TextCorrectorDlgOk
 	oReplace = oDoc.createReplaceDescriptor
 	oReplace.SearchRegularExpression = True
 
-	&apos; Работа с пробелами и табуляциями
-	If bDelSpace = True Then
-		&apos; Заменяем все множественные табуляции:
-		oReplace.SearchString = &quot;\t{2,}&quot;
-		oReplace.ReplaceString = &quot; &quot;		
-		oDoc.ReplaceAll(oReplace)	
-		&apos; Удаляем все стартовые пробелы
-		oReplace.SearchString = &quot;^ {1,}&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)	
-		&apos; Удаляем все конечные пробелы
-		oReplace.SearchString = &quot; {1,}$&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)	
-		&apos; Удаляем все множественные пробелы
-		oReplace.SearchString = &quot; {2,}&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)	
-		&apos; Удаляем все стартовые табуляции
-		oReplace.SearchString = &quot;^\t{1,}&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)	
-		&apos; Удаляем все конечные табуляции
-		oReplace.SearchString = &quot;\t{1,}$&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)	
-	End If
-	
 	&apos; Работа с абзацами и разрывами
 	If bDelEmptyPar = True Then
 		&apos; Удаляем все множественные пустые абзацы
 		oReplace.SearchString = &quot;^$&quot;
 		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)	
+		oDoc.ReplaceAll(oReplace)
 	End If
 	If bBreakLine = True Then
 		&apos; Разрывы строк
@@ -221,16 +199,16 @@ Function TextCorrectorDlgOk
 		&apos; Удаляем все переносы, разорванные абзацем
 		&apos;oReplace.SearchString = &quot;-$&quot;
 		&apos;oReplace.ReplaceString = &quot;&quot;
-		&apos;oDoc.ReplaceAll(oReplace)	
+		&apos;oDoc.ReplaceAll(oReplace)
 	End If
 	&apos; Кавычки, Дефисы, Разное
 	If b2HyphenToDash = True Then
 		&apos; Заменить двойной дефис (--) на тире
 		oReplace.SearchString = &quot;--&quot;
-		oReplace.ReplaceString = chr(8213)&apos;8211
+		oReplace.ReplaceString = &quot; &quot; &amp; chr(8213) &amp; &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
-		oReplace.SearchString = chr(8213) &amp; chr(8213)
-		oReplace.ReplaceString = chr(8213)
+		oReplace.SearchString = chr(8211) &amp; chr(8211)
+		oReplace.ReplaceString = &quot; &quot; &amp; chr(8213) &amp; &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
 	End If
 	If bHyphenToDash = True Then
@@ -282,6 +260,12 @@ Function TextCorrectorDlgOk
 		oReplace.ReplaceString = &quot;… &quot; &amp; chr(8213) &amp; &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
 	End If
+	If bDefis = True Then
+		&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
+		oReplace.SearchString = &quot;\&gt;-\&lt;&quot;
+		oReplace.ReplaceString = chr(8211)
+		oDoc.ReplaceAll(oReplace)
+	End If
 	If bKav = True Then
 		&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 		oReplace.SearchString = &quot;&quot;&quot;\&lt;&quot;
@@ -304,7 +288,7 @@ Function TextCorrectorDlgOk
 		oDoc.ReplaceAll(oReplace)
 		oReplace.SearchString = &quot;\. \. \.&quot;
 		oReplace.ReplaceString = chr(8230)
-		oDoc.ReplaceAll(oReplace)	
+		oDoc.ReplaceAll(oReplace)
 	End If
 	If bC = True Then
 		&apos; Замена на (c) (r) (TM)
@@ -334,8 +318,42 @@ Function TextCorrectorDlgOk
 		oDoc.ReplaceAll(oReplace)
 	End If
 	
+	&apos; Работа с пробелами и табуляциями
+	If bDelSpace = True Then
+		&apos; Заменяем одиночную табуляцию на пробел
+		oReplace.SearchString = &quot;\t&quot;
+		oReplace.ReplaceString = &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		&apos; Удаляем все стартовые табуляции
+		&apos;oReplace.SearchString = &quot;^\t{1,}&quot;
+		&apos;oReplace.ReplaceString = &quot;&quot;
+		&apos;oDoc.ReplaceAll(oReplace)
+		&apos; Удаляем все конечные табуляции
+		&apos;oReplace.SearchString = &quot;\t{1,}$&quot;
+		&apos;oReplace.ReplaceString = &quot;&quot;
+		&apos;oDoc.ReplaceAll(oReplace)
+		&apos; Заменяем все множественные табуляции:
+		&apos;oReplace.SearchString = &quot;\t{2,}&quot;
+		&apos;oReplace.ReplaceString = &quot; &quot;
+		&apos;oDoc.ReplaceAll(oReplace)
+		&apos; Удаляем все стартовые пробелы
+		oReplace.SearchString = &quot;^ {1,}&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		&apos; Удаляем все конечные пробелы
+		oReplace.SearchString = &quot; {1,}$&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		&apos; Удаляем все множественные пробелы
+		oReplace.SearchString = &quot; {1,}&quot;
+		oReplace.ReplaceString = &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+	End If
+	
 	bCorrectorExecute = True
 	oTextCorrectorDlg.endExecute()
+	
+	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sConvertorName
 End Function
 
 </script:module>
