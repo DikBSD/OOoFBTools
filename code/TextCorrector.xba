@@ -16,7 +16,6 @@ Private bDelEmptyPar As Boolean
 Private bBreakLine As Boolean
 Private bDel As Boolean
 Private bPar As Boolean
-Private bDelRazrPerenos As Boolean
 
 Private b2HyphenToDash As Boolean
 Private bHyphenToDash As Boolean
@@ -89,8 +88,6 @@ Function SaveCorrectorSettings
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
 	Print #iFileNo, &quot;obtnPar=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
 	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
-	Print #iFileNo, &quot;cboxDelRazrPerenos=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDelRazrPerenos&quot;).State
-	bDelRazrPerenos = oTextCorrectorDlg.GetControl(&quot;cboxDelRazrPerenos&quot;).State
 	&apos; Кавычки, Дефисы. Разное
 	Print #iFileNo, &quot;cbox2HyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
 	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
@@ -119,8 +116,6 @@ Function SetCorrectorSettings(sCurrentLine)
 		Case &quot;cboxDelEmptyPar&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxBreakLine&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxDelRazrPerenos&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;obtnDel&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
@@ -151,7 +146,6 @@ Function SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxDelRazrPerenos&quot;).State = 1
 	&apos; Кавычки, Дефисы. Разное
 	oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
@@ -194,12 +188,6 @@ Function TextCorrectorDlgOk
 			oReplace.ReplaceString = &quot;\n&quot;
 		End If
 		oDoc.ReplaceAll(oReplace)
-	End If
-	If bDelRazrPerenos = True Then
-		&apos; Удаляем все переносы, разорванные абзацем
-		&apos;oReplace.SearchString = &quot;-$&quot;
-		&apos;oReplace.ReplaceString = &quot;&quot;
-		&apos;oDoc.ReplaceAll(oReplace)
 	End If
 	&apos; Кавычки, Дефисы, Разное
 	If b2HyphenToDash = True Then
@@ -262,6 +250,118 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\&gt; - \&lt;&quot;
 		oReplace.ReplaceString = &quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		
+		oReplace.SearchString = &quot;» - \&lt;&quot;
+		oReplace.ReplaceString = &quot;» — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;»- \&lt;&quot;
+		oReplace.ReplaceString = &quot;» — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;» -\&lt;&quot;
+		oReplace.ReplaceString = &quot;» — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;»-\&lt;&quot;
+		oReplace.ReplaceString = &quot;» — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt; - «&quot;
+		oReplace.ReplaceString = &quot; — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;- «&quot;
+		oReplace.ReplaceString = &quot; — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt; -«&quot;
+		oReplace.ReplaceString = &quot; — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;-«&quot;
+		oReplace.ReplaceString = &quot; — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;» - «&quot;
+		oReplace.ReplaceString = &quot;» — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;»- «&quot;
+		oReplace.ReplaceString = &quot;» — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;» -«&quot;
+		oReplace.ReplaceString = &quot;» — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;»-«&quot;
+		oReplace.ReplaceString = &quot;» — «&quot;
+		oDoc.ReplaceAll(oReplace)
+		
+		oReplace.SearchString = &quot;&quot;&quot; - \&lt;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot;- \&lt;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot; -\&lt;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot;-\&lt;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt; - &quot;&quot;&quot;
+		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;- &quot;&quot;&quot;
+		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt; -&quot;&quot;&quot;
+		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;-&quot;&quot;&quot;
+		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot; - &quot;&quot;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot;- &quot;&quot;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot; -&quot;&quot;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot;-&quot;&quot;&quot;
+		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		
+		
+		oReplace.SearchString = &quot;” - \&lt;&quot;
+		oReplace.ReplaceString = &quot;” — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;”- \&lt;&quot;
+		oReplace.ReplaceString = &quot;” — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;” -\&lt;&quot;
+		oReplace.ReplaceString = &quot;” — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;”-\&lt;&quot;
+		oReplace.ReplaceString = &quot;” — &quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt; - “&quot;
+		oReplace.ReplaceString = &quot; — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;- “&quot;
+		oReplace.ReplaceString = &quot; — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt; -“&quot;
+		oReplace.ReplaceString = &quot; — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;-“&quot;
+		oReplace.ReplaceString = &quot; — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;” - “&quot;
+		oReplace.ReplaceString = &quot;” — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;”- “&quot;
+		oReplace.ReplaceString = &quot;” — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;” -“&quot;
+		oReplace.ReplaceString = &quot;” — “&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;”-“&quot;
+		oReplace.ReplaceString = &quot;” — “&quot;
+		oDoc.ReplaceAll(oReplace)
 	End If
 	If bDefis = True Then
 		&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
@@ -269,28 +369,40 @@ Function TextCorrectorDlgOk
 		oReplace.ReplaceString = chr(8211)
 		oDoc.ReplaceAll(oReplace)
 	End If
-	If bKav = True Then
-		&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
-		oReplace.SearchString = &quot;&quot;&quot;\&lt;&quot;
-		oReplace.ReplaceString = chr(171)
-		oDoc.ReplaceAll(oReplace)
-		oReplace.SearchString = &quot;\&gt;&quot;&quot;&quot;
-		oReplace.ReplaceString = chr(187)
-		oDoc.ReplaceAll(oReplace)
-		oReplace.SearchString = &quot;“\&lt;&quot;
-		oReplace.ReplaceString = chr(171)
-		oDoc.ReplaceAll(oReplace)
-		oReplace.SearchString = &quot;\&gt;”&quot;
-		oReplace.ReplaceString = chr(187)
-		oDoc.ReplaceAll(oReplace)
-	End If
 	If bPoints = True Then
 		&apos; Упорядочить многоточие
 		oReplace.SearchString = &quot;\.\.\.&quot;
-		oReplace.ReplaceString = chr(8230)
+		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
 		oDoc.ReplaceAll(oReplace)
 		oReplace.SearchString = &quot;\. \. \.&quot;
-		oReplace.ReplaceString = chr(8230)
+		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
+		oDoc.ReplaceAll(oReplace)
+	End If
+	If bKav = True Then
+		&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
+		oReplace.SearchString = &quot;&quot;&quot;\&lt;&quot;
+		oReplace.ReplaceString = &quot;«&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;&quot;&quot;&quot;
+		oReplace.ReplaceString = &quot;»&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;“\&lt;&quot;
+		oReplace.ReplaceString = &quot;«&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;\&gt;”&quot;
+		oReplace.ReplaceString = &quot;»&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;…&quot;&quot;&quot;
+		oReplace.ReplaceString = &quot;…»&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;&quot;&quot;…&quot;
+		oReplace.ReplaceString = &quot;«…&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;…”&quot;
+		oReplace.ReplaceString = &quot;…»&quot;
+		oDoc.ReplaceAll(oReplace)
+		oReplace.SearchString = &quot;“…&quot;
+		oReplace.ReplaceString = &quot;«…&quot;
 		oDoc.ReplaceAll(oReplace)
 	End If
 	If bC = True Then
