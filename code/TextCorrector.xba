@@ -5,6 +5,7 @@ Option Explicit
 
 Private oDoc As Object
 Private oReplace As Object
+Private oProgressBar
 
 Private sCorrectorSettingsFilename As String
 Private oTextCorrectorDlg As Object
@@ -162,6 +163,10 @@ Function TextCorrectorDlgOk
 	&apos; Принятие параметров чистки текста
 	SaveCorrectorSettings &apos; сохранение настроек чистки текста
 	
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 82)
+	oProgressBar.setValue(0)
+	
 	&apos; Очистка текста
 	oDoc = ThisComponent
 	oReplace = oDoc.createReplaceDescriptor
@@ -173,6 +178,7 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;^$&quot;
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(1)
 	End If
 	If bBreakLine = True Then
 		&apos; Разрывы строк
@@ -186,6 +192,7 @@ Function TextCorrectorDlgOk
 			oReplace.ReplaceString = &quot;\n&quot;
 		End If
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(2)
 	End If
 	&apos; Кавычки, Дефисы, Разное
 	If b2HyphenToDash = True Then
@@ -193,9 +200,11 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;--&quot;
 		oReplace.ReplaceString = &quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(3)
 		oReplace.SearchString = chr(8211) &amp; chr(8211)
 		oReplace.ReplaceString = &quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(4)
 	End If
 	If bHyphenToDash = True Then
 		&apos; Заменить, дефис используемый вместо тире на тире
@@ -203,210 +212,273 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;^-&quot;
 		oReplace.ReplaceString = &quot;— &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(5)
 		oReplace.SearchString = &quot;\.-&quot;
 		oReplace.ReplaceString = &quot;. — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(6)
 		oReplace.SearchString = &quot;\. -&quot;
 		oReplace.ReplaceString = &quot;. — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(7)
 		oReplace.SearchString = &quot;,-&quot;
 		oReplace.ReplaceString = &quot;, — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(8)
 		oReplace.SearchString = &quot;, -&quot;
 		oReplace.ReplaceString = &quot;, — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(9)
 		oReplace.SearchString = &quot;:-&quot;
 		oReplace.ReplaceString = &quot;: — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(10)
 		oReplace.SearchString = &quot;: -&quot;
 		oReplace.ReplaceString = &quot;: — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(11)
 		oReplace.SearchString = &quot;;-&quot;
 		oReplace.ReplaceString = &quot;; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(12)
 		oReplace.SearchString = &quot; ;-&quot;
 		oReplace.ReplaceString = &quot;; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(13)
 		oReplace.SearchString = &quot;\!-&quot;
 		oReplace.ReplaceString = &quot;! — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(14)
 		oReplace.SearchString = &quot;\! -&quot;
 		oReplace.ReplaceString = &quot;! — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(15)
 		oReplace.SearchString = &quot;\?-&quot;
 		oReplace.ReplaceString = &quot;? — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(16)
 		oReplace.SearchString = &quot;\? -&quot;
 		oReplace.ReplaceString = &quot;? — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(17)
 		oReplace.SearchString = &quot;…-&quot;
 		oReplace.ReplaceString = &quot;… — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(18)
 		oReplace.SearchString = &quot;… -&quot;
 		oReplace.ReplaceString = &quot;… — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(19)
 		oReplace.SearchString = &quot;\&gt; - \&lt;&quot;
 		oReplace.ReplaceString = &quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(20)
 		
 		oReplace.SearchString = &quot;» - \&lt;&quot;
 		oReplace.ReplaceString = &quot;» — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(21)
 		oReplace.SearchString = &quot;»- \&lt;&quot;
 		oReplace.ReplaceString = &quot;» — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(22)
 		oReplace.SearchString = &quot;» -\&lt;&quot;
 		oReplace.ReplaceString = &quot;» — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(23)
 		oReplace.SearchString = &quot;»-\&lt;&quot;
 		oReplace.ReplaceString = &quot;» — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(24)
 		oReplace.SearchString = &quot;\&gt; - «&quot;
 		oReplace.ReplaceString = &quot; — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(25)
 		oReplace.SearchString = &quot;\&gt;- «&quot;
 		oReplace.ReplaceString = &quot; — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(26)
 		oReplace.SearchString = &quot;\&gt; -«&quot;
 		oReplace.ReplaceString = &quot; — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(27)
 		oReplace.SearchString = &quot;\&gt;-«&quot;
 		oReplace.ReplaceString = &quot; — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(28)
 		oReplace.SearchString = &quot;» - «&quot;
 		oReplace.ReplaceString = &quot;» — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(29)
 		oReplace.SearchString = &quot;»- «&quot;
 		oReplace.ReplaceString = &quot;» — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(30)
 		oReplace.SearchString = &quot;» -«&quot;
 		oReplace.ReplaceString = &quot;» — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(31)
 		oReplace.SearchString = &quot;»-«&quot;
 		oReplace.ReplaceString = &quot;» — «&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(32)
 		
 		oReplace.SearchString = &quot;&quot;&quot; - \&lt;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(33)
 		oReplace.SearchString = &quot;&quot;&quot;- \&lt;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(34)
 		oReplace.SearchString = &quot;&quot;&quot; -\&lt;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(35)
 		oReplace.SearchString = &quot;&quot;&quot;-\&lt;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(36)
 		oReplace.SearchString = &quot;\&gt; - &quot;&quot;&quot;
 		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(37)
 		oReplace.SearchString = &quot;\&gt;- &quot;&quot;&quot;
 		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(38)
 		oReplace.SearchString = &quot;\&gt; -&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(39)
 		oReplace.SearchString = &quot;\&gt;-&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(40)
 		oReplace.SearchString = &quot;&quot;&quot; - &quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(41)
 		oReplace.SearchString = &quot;&quot;&quot;- &quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(42)
 		oReplace.SearchString = &quot;&quot;&quot; -&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(43)
 		oReplace.SearchString = &quot;&quot;&quot;-&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(44)
 		
 		
 		oReplace.SearchString = &quot;” - \&lt;&quot;
 		oReplace.ReplaceString = &quot;” — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(45)
 		oReplace.SearchString = &quot;”- \&lt;&quot;
 		oReplace.ReplaceString = &quot;” — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(46)
 		oReplace.SearchString = &quot;” -\&lt;&quot;
 		oReplace.ReplaceString = &quot;” — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(47)
 		oReplace.SearchString = &quot;”-\&lt;&quot;
 		oReplace.ReplaceString = &quot;” — &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(48)
 		oReplace.SearchString = &quot;\&gt; - “&quot;
 		oReplace.ReplaceString = &quot; — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(49)
 		oReplace.SearchString = &quot;\&gt;- “&quot;
 		oReplace.ReplaceString = &quot; — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(50)
 		oReplace.SearchString = &quot;\&gt; -“&quot;
 		oReplace.ReplaceString = &quot; — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(51)
 		oReplace.SearchString = &quot;\&gt;-“&quot;
 		oReplace.ReplaceString = &quot; — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(52)
 		oReplace.SearchString = &quot;” - “&quot;
 		oReplace.ReplaceString = &quot;” — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(53)
 		oReplace.SearchString = &quot;”- “&quot;
 		oReplace.ReplaceString = &quot;” — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(54)
 		oReplace.SearchString = &quot;” -“&quot;
 		oReplace.ReplaceString = &quot;” — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(55)
 		oReplace.SearchString = &quot;”-“&quot;
 		oReplace.ReplaceString = &quot;” — “&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(56)
 	End If
 	If bDefis = True Then
 		&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
 		oReplace.SearchString = &quot;\&gt;-\&lt;&quot;
 		oReplace.ReplaceString = chr(8211)
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(57)
 	End If
 	If bPoints = True Then
 		&apos; Упорядочить многоточие
 		oReplace.SearchString = &quot;\.\.\.&quot;
 		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(58)
 		oReplace.SearchString = &quot;\. \. \.&quot;
 		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(59)
 	End If
 	If bKav = True Then
 		&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 		oReplace.SearchString = &quot;&quot;&quot;\&lt;&quot;
 		oReplace.ReplaceString = &quot;«&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(60)
 		oReplace.SearchString = &quot;\&gt;&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;»&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(61)
 		oReplace.SearchString = &quot;“\&lt;&quot;
 		oReplace.ReplaceString = &quot;«&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(62)
 		oReplace.SearchString = &quot;\&gt;”&quot;
 		oReplace.ReplaceString = &quot;»&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(63)
 		oReplace.SearchString = &quot;…&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;…»&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(64)
 		oReplace.SearchString = &quot;&quot;&quot;…&quot;
 		oReplace.ReplaceString = &quot;«…&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(65)
 		oReplace.SearchString = &quot;…”&quot;
 		oReplace.ReplaceString = &quot;…»&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(66)
 		oReplace.SearchString = &quot;“…&quot;
 		oReplace.ReplaceString = &quot;«…&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(67)
 		
 		oReplace.SearchString = &quot;!&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;!»&quot;
 		oDoc.ReplaceAll(oReplace)
-		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(68)
 		oReplace.SearchString = &quot;!”&quot;
 		oReplace.ReplaceString = &quot;!»&quot;
 		oDoc.ReplaceAll(oReplace)
@@ -414,7 +486,7 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;?&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;?»&quot;
 		oDoc.ReplaceAll(oReplace)
-		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(69)
 		oReplace.SearchString = &quot;?”&quot;
 		oReplace.ReplaceString = &quot;?»&quot;
 		oDoc.ReplaceAll(oReplace)
@@ -422,7 +494,7 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;.&quot;&quot;&quot;
 		oReplace.ReplaceString = &quot;.»&quot;
 		oDoc.ReplaceAll(oReplace)
-		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(70)
 		oReplace.SearchString = &quot;.”&quot;
 		oReplace.ReplaceString = &quot;.»&quot;
 		oDoc.ReplaceAll(oReplace)
@@ -433,27 +505,35 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\(c\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(71)
 		oReplace.SearchString = &quot;\(с\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(72)
 		oReplace.SearchString = &quot;\(C\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(73)
 		oReplace.SearchString = &quot;\(С\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(74)
 		oReplace.SearchString = &quot;\(r\)&quot;
 		oReplace.ReplaceString = &quot;®&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(75)
 		oReplace.SearchString = &quot;\(R\)&quot;
 		oReplace.ReplaceString = &quot;®&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(76)
 		oReplace.SearchString = &quot;\(TM\)&quot;
 		oReplace.ReplaceString = &quot;™&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(77)
 		oReplace.SearchString = &quot;\(ТМ\)&quot;
 		oReplace.ReplaceString = &quot;™&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(78)
 	End If
 	
 	&apos; Работа с пробелами и табуляциями
@@ -462,6 +542,7 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\t&quot;
 		oReplace.ReplaceString = &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(79)
 		&apos; Удаляем все стартовые табуляции
 		&apos;oReplace.SearchString = &quot;^\t{1,}&quot;
 		&apos;oReplace.ReplaceString = &quot;&quot;
@@ -478,20 +559,24 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;^ {1,}&quot;
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(80)
 		&apos; Удаляем все конечные пробелы
 		oReplace.SearchString = &quot; {1,}$&quot;
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(81)
 		&apos; Удаляем все множественные пробелы
 		oReplace.SearchString = &quot; {1,}&quot;
 		oReplace.ReplaceString = &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(82)
 	End If
 	
 	bCorrectorExecute = True
 	oTextCorrectorDlg.endExecute()
 	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sConvertorName
+	oProgressBar.end
 End Function
 
 </script:module>
