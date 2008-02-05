@@ -274,6 +274,15 @@ Function InLineParser(oSect As Object) As String
 			InLineParser = oSect.getString()
 		End If
 	End If
+	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
+	If InLineParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
+		InLineParser = &quot;&lt;emphasis&gt;&lt;/emphasis&quot; OR _
+		InLineParser = &quot;&lt;sub&gt;&lt;/sub&quot; OR _
+		InLineParser = &quot;&lt;sup&gt;&lt;/sup&quot; OR _
+		InLineParser = &quot;&lt;code&gt;&lt;/code&quot; OR _
+		InLineParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&quot; Then
+		InLineParser = &quot;&quot;
+	End If
 End Function			
 
 Function FootEndNoteParser(oSect As Object) As String
