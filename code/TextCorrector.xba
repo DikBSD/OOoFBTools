@@ -17,6 +17,7 @@ Private bDelEmptyPar As Boolean
 Private bBreakLine As Boolean
 Private bDel As Boolean
 Private bPar As Boolean
+Private bSpace As Boolean
 
 Private b2HyphenToDash As Boolean
 Private bHyphenToDash As Boolean
@@ -24,6 +25,10 @@ Private bDefis As Boolean
 Private bKav As Boolean
 Private bPoints As Boolean
 Private bC As Boolean
+Private bImages As Boolean
+Private sAnchor As String
+
+Private sAnchorsList() As String &apos; виды привязки картинки
 
 Sub TextCorrector
 	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
@@ -33,12 +38,14 @@ Sub TextCorrector
 	sCorrectorSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/corrector.txt&quot;
 	
 	&apos; считывание настройки из файла. Если его нет - то задаем по умолчанию
+	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	If ReadCorrectorSettings = False Then
 		SetCorrectorSettingDefault &apos; Задаем настройки очистки текста в контролы по умолчанию
 	End If
 	
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
+		.cbAnchor.StringItemList = sAnchorsList()
 	End With
 
 	oTextCorrectorDlg.execute()
@@ -87,6 +94,9 @@ Function SaveCorrectorSettings
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
 	Print #iFileNo, &quot;obtnPar=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
 	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
+	Print #iFileNo, &quot;obtnSpace=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
+	bSpace = oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
+	
 	&apos; Кавычки, Дефисы. Разное
 	Print #iFileNo, &quot;cbox2HyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
 	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
@@ -100,6 +110,12 @@ Function SaveCorrectorSettings
 	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
 	Print #iFileNo, &quot;cboxC=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
 	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
+	
+	&apos; Картинки
+	Print #iFileNo, &quot;cboxImages=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
+	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
+	Print #iFileNo, &quot;cbAnchor=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text
+	sAnchor = oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text
 	
 	Close #iFileNo &apos; Закрытие файла
 End Function
@@ -120,6 +136,8 @@ Function SetCorrectorSettings(sCurrentLine)
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;obtnPar&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;obtnSpace&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		&apos; Кавычки, Дефисы. Разное
 		Case &quot;cbox2HyphenToDash&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
@@ -133,6 +151,14 @@ Function SetCorrectorSettings(sCurrentLine)
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 		Case &quot;cboxC&quot;
 			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		&apos; Картинки
+		Case &quot;cboxKav&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cboxImages&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+		Case &quot;cbAnchor&quot;
+			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
+		cboxImagesEnabled
 	End Select
 End Function
 
@@ -143,8 +169,9 @@ Function SetCorrectorSettingDefault
 	&apos; Работа с абзацами и разрывами
 	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State = 0
 	&apos; Кавычки, Дефисы. Разное
 	oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
@@ -152,11 +179,25 @@ Function SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
+	&apos; Картинки
+	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
+	oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text = &quot;К абзацу&quot;
+	cboxImagesEnabled
 End Function
 
 Function TextCorrectorDlgCanceled
 	bCorrectorExecute = False
 	oTextCorrectorDlg.endExecute()
+End Function
+
+Function cboxImagesEnabled
+	If oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 1 Then
+		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = True
+	Else
+		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = False
+	End If
 End Function
 
 Function TextCorrectorDlgOk
@@ -171,7 +212,30 @@ Function TextCorrectorDlgOk
 	oDoc = ThisComponent
 	oReplace = oDoc.createReplaceDescriptor
 	oReplace.SearchRegularExpression = True
-
+	
+	&apos; Привязка картинок
+	If bImages = True Then
+		Dim oGraphics As Object 
+		Dim oThisGraphic As Object 
+		Dim nAnchor As Integer
+		Dim i As Integer
+		Select Case sAnchor
+			Case &quot;К абзацу&quot;
+				nAnchor = 0
+			Case &quot;К символу&quot;
+				nAnchor = 4
+			Case &quot;Как символ&quot;
+				nAnchor = 1
+			Case Else
+				nAnchor = 0
+		End Select
+		oGraphics = oDoc.getGraphicObjects()
+	    For i = 0 to oGraphics.Count - 1
+	    	oThisGraphic = oGraphics.GetByIndex(i)
+			oThisGraphic.AnchorType  = nAnchor
+		Next i
+	End If
+	
 	&apos; Работа с абзацами и разрывами
 	If bDelEmptyPar = True Then
 		&apos; Удаляем все множественные пустые абзацы
@@ -186,10 +250,14 @@ Function TextCorrectorDlgOk
 			&apos; Удаляем разрыв строки
 			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
 			oReplace.ReplaceString = &quot;&quot;
-		Else
+		ElseIf bPar = True Then
 			&apos; Заменяем разрыв строки на абзац
 			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
 			oReplace.ReplaceString = &quot;\n&quot;
+		ElseIf bSpace = True Then
+			&apos; Заменяем разрыв строки на 1 пробел
+			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
+			oReplace.ReplaceString = &quot; &quot;
 		End If
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(2)
