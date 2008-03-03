@@ -82,6 +82,8 @@ Function SetSettings(sCurrentLine)
 			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
 		Case &quot;cboxDelEL&quot;
 			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
+		Case &quot;cboxDocLinks&quot;
+			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
 	End Select
 End Function
 
@@ -117,6 +119,7 @@ Function SaveSettings
 	&apos; Разное
 	Print #iFileNo, &quot;cboxCorrect=&quot; &amp; oServiceDlg.GetControl(&quot;cboxCorrect&quot;).State
 	Print #iFileNo, &quot;cboxDelEL=&quot; &amp; oServiceDlg.GetControl(&quot;cboxDelEL&quot;).State
+	Print #iFileNo, &quot;cboxDocLinks=&quot; &amp; oServiceDlg.GetControl(&quot;cboxDocLinks&quot;).State
 	
 	Close #iFileNo &apos; Закрытие файла
 End Function
@@ -148,8 +151,189 @@ Function SetDefaultSettings
 	&apos; Разное
 	oServiceDlg.Model.cboxCorrect.State = 1
 	oServiceDlg.Model.cboxDelEL.State = 0
+	oServiceDlg.Model.cboxDocLinks.State = 0
 	
 	cmbboxTextFrameChange &apos; для доспупности вида выравнивания Текстовых Врезок
+End Function
+
+Function ReadSettingsInVars As Boolean
+	&apos; Читаем настройки в переменные
+	If FileExists(sSettingsFilename) Then
+		Dim iFileNo As Integer, sCurrentLine As String
+		&apos; Установление свободного файлового манипулятора
+		iFileNo = Freefile
+		&apos; Открытие файла (в режиме на чтение)
+		Open sSettingsFilename For Input As #iFileNo
+		&apos; Проверка, был ли достигнут конец файла
+		Do While NOT eof(iFileNo)
+			&apos; Чтение строки
+			Line Input #iFileNo, sCurrentLine
+			If sCurrentLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные стилей
+				SetSettingsInVars(sCurrentLine)
+			End If
+		Loop
+		&apos; Закрытие файла
+		Close #iFileNo
+		ReadSettingsInVars = True
+	Else
+		ReadSettingsInVars = False
+	End If
+End Function
+
+Function SetSettingsInVars(sCurrentLine)
+	Dim sSetting() As String
+	sSetting = Split(sCurrentLine, &quot;=&quot;)
+	Select Case sSetting(0)
+		&apos; Сноски
+		Case &quot;cboxStyleFootnote&quot;
+			bStyleFootnote = sSetting(1)
+		Case &quot;cmbboxStyle&quot;
+			Select Case sSetting(1)
+				Case &quot;[x]&quot;
+					sFootnoteLeft = &quot;[&quot;
+					sFootnoteRight = &quot;]&quot;
+				Case &quot;[ x ]&quot;
+					sFootnoteLeft = &quot;[ &quot;
+					sFootnoteRight = &quot; ]&quot;
+				Case &quot;{x}&quot;
+					sFootnoteLeft = &quot;{&quot;
+					sFootnoteRight = &quot;}&quot;
+				Case &quot;{ x }&quot;
+					sFootnoteLeft = &quot;{ &quot;
+					sFootnoteRight = &quot; }&quot;
+				Case &quot;(x)&quot;
+					sFootnoteLeft = &quot;(&quot;
+					sFootnoteRight = &quot;)&quot;
+				Case &quot;( x )&quot;
+					sFootnoteLeft = &quot;( &quot;
+					sFootnoteRight = &quot; )&quot;
+				Case Else
+					sFootnoteLeft = &quot;[&quot;
+					sFootnoteRight = &quot;]&quot;	
+			End Select
+		Case &quot;cboxSpace&quot;
+			bFootnoteSpace = sSetting(1)
+		&apos; Стихи
+		Case &quot;cboxPoemTitle&quot;
+			bMergePoemTitle = sSetting(1)
+		Case &quot;cboxPoemAuthor&quot;
+			bMergePoemAuthors = sSetting(1)
+		&apos; Эпиграфы
+		Case &quot;cboxEpigAuthor&quot;
+			bMergeEpigraphAuthors = sSetting(1)
+		&apos; SubTitle
+		Case &quot;cboxSubtitle&quot;
+			bMergeSubTitle = sSetting(1)
+		&apos; Цитаты
+		Case &quot;cboxCiteAuthor&quot;
+			bMergeCiteAuthors = sSetting(1)
+		&apos; Картинки
+		Case &quot;cboxImageTitle&quot;
+			bSaveImageTitle = sSetting(1)
+		&apos; Текстовые врезки
+		Case &quot;cmbboxTextFrame&quot;
+			sTextFrameToFB2 = sSetting(1)
+		Case &quot;cmbboxAdjTextFrame&quot;
+			Select Case sSetting(1)
+				Case &quot;Слева&quot;
+					sAdjTextFrame = &quot;left&quot;
+				Case &quot;По Центру&quot;
+					sAdjTextFrame = &quot;center&quot;
+				Case &quot;Справа&quot;
+					sAdjTextFrame = &quot;right&quot;
+				Case Else
+					sAdjTextFrame = &quot;left&quot;
+			End Select
+		&apos; Таблицы
+		Case &quot;cmbboxHeaderTRA&quot;
+			Select Case sSetting(1)
+				Case &quot;Слева&quot;
+					sHeaderTRA = &quot;left&quot;
+				Case &quot;По Центру&quot;
+					sHeaderTRA = &quot;center&quot;
+				Case &quot;Справа&quot;
+					sHeaderTRA = &quot;right&quot;
+				Case Else
+					sHeaderTRA = &quot;center&quot;
+			End Select
+		Case &quot;cmbboxHeaderTHV&quot;
+			Select Case sSetting(1)
+				Case &quot;Сверху&quot;
+					sHeaderTVA = &quot;top&quot;
+				Case &quot;По Центру&quot;
+					sHeaderTVA = &quot;middle&quot;
+				Case &quot;Снизу&quot;
+					sHeaderTVA = &quot;bottom&quot;
+				Case Else
+					sHeaderTVA =  &quot;middle&quot;
+			End Select
+		Case &quot;cmbboxLineTRA&quot;
+			Select Case sSetting(1)
+				Case &quot;Слева&quot;
+					sLineTRA = &quot;left&quot;
+				Case &quot;По Центру&quot;
+					sLineTRA = &quot;center&quot;
+				Case &quot;Справа&quot;
+					sLineTRA = &quot;right&quot;
+				Case Else
+					sLineTRA = &quot;center&quot;
+			End Select
+		Case &quot;cmbboxLineTDV&quot;
+			Select Case sSetting(1)
+				Case &quot;Сверху&quot;
+					sLineTVA = &quot;top&quot;
+				Case &quot;По Центру&quot;
+					sLineTVA = &quot;middle&quot;
+				Case &quot;Снизу&quot;
+					sLineTVA = &quot;bottom&quot;
+				Case Else
+					sLineTVA =  &quot;middle&quot;
+			End Select
+		&apos; Разное
+		Case &quot;cboxCorrect&quot;
+			bCorrectPara = sSetting(1)
+		Case &quot;cboxDelEL&quot;
+			bDelEL = sSetting(1)
+		Case &quot;cboxDocLinks&quot;
+			bDocLinks = sSetting(1)
+	End Select
+End Function
+
+Function SetDefaultSettingsInVars
+	&apos; значения по умолчанию для сносок	
+	sFootnoteLeft = &quot;[&quot;
+	sFootnoteRight = &quot;]&quot;
+	bFootnoteSpace = False
+	&apos; значения по умолчанию для SubTitle
+	bMergeSubTitle = True
+	&apos; значения по умолчанию для Авторов епиграфа
+	bMergeEpigraphAuthors = False
+	&apos; значения по умолчанию для заголовков стихов
+	bMergePoemTitle = False
+	&apos; значения по умолчанию для авторов стихов
+	bMergePoemAuthors = False
+	&apos; значения по умолчанию для авторов цитат
+	bMergeCiteAuthors = False
+	&apos; значения по умолчанию для удаления пустых строк
+	bDelEL = False
+	&apos; значения по умолчанию для применения стиля к тексту сносок
+	bStyleFootnote = True
+	&apos; значения по умолчанию для обработкb &quot;проблемных&quot; знаков (&lt; &gt;)
+	bCorrectPara = True
+	&apos; значения по умолчанию для сохранения названия картинки, как аттрибута &quot;title&apos;
+	bSaveImageTitle = True
+	&apos; значение по умолчанию для обработки ссылок внутри документа
+	bDocLinks = False
+	
+	&apos; значения по умолчанию для выравнивания элементов таблиц
+	sHeaderTRA	 = &quot;center&quot;
+	sLineTRA	 = &quot;center&quot;
+	sHeaderTVA	 = &quot;middle&quot;
+	sLineTVA	 = &quot;middle&quot;
+
+	sTextFrameToFB2	 = &quot;Таблица&quot;
+	sAdjTextFrame	 = &quot;left&quot;
 End Function
 
 </script:module>

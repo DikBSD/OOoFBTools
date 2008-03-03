@@ -23,6 +23,8 @@ Public bDelEL As Boolean
 Public bStyleFootnote As Boolean
 &apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
 Public bCorrectPara As Boolean
+&apos; обработка ссылок внутри документа
+Public bDocLinks As Boolean
 &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
 Public bSaveImageTitle
 
@@ -135,6 +137,21 @@ Sub DocumentParser
 					sPara = sPara + FootEndNoteParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
 					sPara = sPara &amp; InLineParser(oSect)
+				ElseIf oSect.TextPortionType = &quot;Bookmark&quot; Then
+					&apos; закладки
+					If bDocLinks = True Then
+						&apos; сохраняем позицию ОТКУДА ссылка и ее ID
+						&apos; не заносим дважды одну и туже закладку...
+						If UBound(sLinksTo) = -1 Then
+							AddLinksToArray(UBound(sBodyParagraphs)+1, oSect.Bookmark.Name)
+						Else
+							If sLinksTo(UBound(sLinksTo), 0) &lt;&gt; UBound(sBodyParagraphs)+1 AND _
+								sLinksTo(UBound(sLinksTo), 1) &lt;&gt; oSect.Bookmark.Name Then
+								AddLinksToArray(UBound(sBodyParagraphs)+1, oSect.Bookmark.Name)
+							End If
+						End If
+					End If
+					&apos;MsgBox &quot;Закладка - &quot; &amp; oSect.Bookmark.Name
 				&apos;Else
 				&apos;	MsgBox &quot;Что-то другое : &quot; &amp; oSect.TextPortionType
 				End If
@@ -666,6 +683,18 @@ Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 			oProgressBar.setValue(l) &apos; Статусбар
 		End If
 	End If
+End Function
+
+Function AddLinksToArray(lTo As Long, sID As String)
+	&apos; формирование строк массива  КУДА (№ строки массива sBodyParagraphs)
+	Dim l As Long
+	l = Ubound(sLinksTo(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sLinksTo(l, 1)
+	Else Redim sLinksTo(l, 1)
+	End If
+	sLinksTo(l,0) = lTo
+	sLinksTo(l,1) = sID
 End Function
 
 Function OOoWriterVersion() As String
