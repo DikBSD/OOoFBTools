@@ -78,10 +78,10 @@ Sub ExportToFB21
 	MsgBox &quot;Создание книги в fb2 формате завершено!&quot;, 64, sConvertorName
 End Sub
 
-Function SaveCloseSection(Count As Integer) As Long
+Function SaveCloseSection(nCount As Integer) As Long
 	Dim i As Integer
-	If Count &gt; 0 Then
-		For i = 0 To Count-1
+	If nCount &gt; 0 Then
+		For i = 0 To nCount-1
 			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 		Next i
 	End If
@@ -119,7 +119,6 @@ Function IndexOf1Section As Long
 	&apos; индекс 1-й секции
 	Dim i As Long
 	For i = 0 To UBound(sBodyParagraphs)
-&apos;		If Instr(sBodyParagraphs(i,1),&quot;Level &quot;) &gt; 0 Then
 		If IsLevel(sBodyParagraphs(i,1)) = True Then
 			IndexOf1Section = i
 			Exit For
@@ -133,7 +132,6 @@ Function IndexOfEndSection As Long
 	&apos; индекс последней секции
 	Dim i As Long
 	For i = UBound(sBodyParagraphs) To 0 Step -1 
-&apos;		If Instr(sBodyParagraphs(i,1),&quot;Level &quot;) &gt; 0 Then
 		If  IsLevel(sBodyParagraphs(i,1)) = True Then
 			IndexOfEndSection = i
 			Exit For
@@ -162,7 +160,6 @@ Function GetIndexOfNextLevel(lIndexOfCurrentLevel As Long) As Long
 	End If
 	For i = lIndexOfCurrentLevel+1 To UBound(sBodyParagraphs)
 		sInput = sBodyParagraphs(i,1)
-&apos;		If Instr(sInput,&quot;Level &quot;) &gt; 0 Then
 		If  IsLevel(sInput) = True Then
 			GetIndexOfNextLevel = i
 			Exit For
@@ -198,107 +195,107 @@ End Function
 
 Function MakeBookTitle As String
 	&apos; формируем заглавие книги
-	Dim sBT As String, i As Integer
+	Dim sBT As String, l As Long
 	sBT = &quot;&lt;title&gt;&quot; &amp; chr(10)
-	For i = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(i,1) = sStyleBookAuthor OR sBodyParagraphs(i,1) = sStyleBookTitle Then
-			sBT = sBT &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStyleBookAuthor OR sBodyParagraphs(l,1) = sStyleBookTitle Then
+			sBT = sBT &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Else Exit For
 		End If
-	Next i
-	lCurrentElement = i
+	Next l
+	lCurrentElement = l
 	sBT = sBT &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
 	MakeBookTitle = sBT
 End Function
 
 Function MakeAnnotation As String
-	Dim sAnnot As String, i As Integer
+	Dim sAnnot As String, l As Long
 	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
-	For i = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(i,1) = sStyleAnnotation Then
-			sAnnot = sAnnot &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStyleAnnotation Then
+			sAnnot = sAnnot &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Else Exit For
 		End If
-	Next i
-	lCurrentElement = i
+	Next l
+	lCurrentElement = l
 	sAnnot = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
 	MakeAnnotation = sAnnot
 End Function
 
 Function MakePoemTitle
-	Dim i As Integer
+	Dim l As Long
 	sPoemTitle = sPoemTitle &amp; &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
 	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
 		sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot;
-		For i = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(i,1) = sStylePoemTitle Then
-				sPoemTitle = sPoemTitle &amp; sBodyParagraphs(i,0) &amp;  &quot; &quot;
+		For l = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(l,1) = sStylePoemTitle Then
+				sPoemTitle = sPoemTitle &amp; sBodyParagraphs(l,0) &amp;  &quot; &quot;
 				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 			Else Exit For
 			End If
-		Next i
+		Next l
 		sPoemTitle = Mid(sPoemTitle, 1, Len(sPoemTitle)-1)
 		sPoemTitle = sPoemTitle &amp; &quot;&lt;/p&gt;&quot;
-		lCurrentElement = i
+		lCurrentElement = l
 	Else &apos; Заголовки стиха не будут собираться в одну строку, а будут один под другим
-		For i = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(i,1) = sStylePoemTitle Then
-				sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+		For l = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(l,1) = sStylePoemTitle Then
+				sPoemTitle = sPoemTitle &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 			Else Exit For
 			End If
-		Next i
-		lCurrentElement = i
+		Next l
+		lCurrentElement = l
 	End If
 	sPoemTitle = sPoemTitle &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
 End Function
 
 Function MakePoem As String
-	Dim sPoem As String, bEndPar As Boolean, i As Integer
+	Dim sPoem As String, l As Long
 	If sPoemTitle = &quot;&quot; Then	&apos; стихи без заголовка
 		sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 	Else 
 		sPoem = sPoemTitle
 	End If
-	For i = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(i,1) = sStylePoem Then
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStylePoem Then
 			If sBodyParagraphs(i,0) = &quot;&quot; Then
 				sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 			Else
-				sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+				sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 			End If
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Else 
 			Exit For
 		End If
-	Next i
+	Next l
 	sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
-	lCurrentElement = i
+	lCurrentElement = l
 	If sBodyParagraphs(lCurrentElement,1) = sStylePoemAuthor Then
 		If bMergePoemAuthors = True Then &apos; собираем Авторов стиха, идущих один за другим в одну строку
 			sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot;
-			For i = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(i,1) = sStylePoemAuthor Then
-					sPoem = sPoem &amp; sBodyParagraphs(i,0) &amp; &quot;, &quot;
+			For l = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(l,1) = sStylePoemAuthor Then
+					sPoem = sPoem &amp; sBodyParagraphs(l,0) &amp; &quot;, &quot;
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else Exit For
 				End If
-			Next i
+			Next l
 			sPoem = Mid(sPoem, 1, Len(sPoem)-2)
 			sPoem = sPoem &amp; &quot;&lt;/text-author&gt;&quot;
-			lCurrentElement = i
+			lCurrentElement = l
 		Else &apos; Авторы стиха не будут собираться в одну строку, а будут один под другим
-			For i = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(i,1) = sStylePoemAuthor Then
-					sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+			For l = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(l,1) = sStylePoemAuthor Then
+					sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else 
 					Exit For
 				End If
-			Next i
-			lCurrentElement = i
+			Next l
+			lCurrentElement = l
 		End If
 	End If
 	sPoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
@@ -307,39 +304,39 @@ Function MakePoem As String
 End Function
 
 Function MakeEpigraph As String
-	Dim sEpig As String, bEndPar As Boolean, i As Integer
+	Dim sEpig As String, l As Long
 	sEpig = sEpig &amp; &quot;&lt;epigraph&gt;&quot; &amp; chr(10)
-	For i = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(i,1) = sStyleEpigraph Then
-			sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStyleEpigraph Then
+			sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Else Exit For
 		End If
-	Next i
-	lCurrentElement = i
+	Next l
+	lCurrentElement = l
 	If sBodyParagraphs(lCurrentElement,1) = sStyleEpigraphAuthor Then
 		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
 			sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot;
-			For i = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(i,1) = sStyleEpigraphAuthor Then
-					sEpig = sEpig &amp; sBodyParagraphs(i,0) &amp; &quot;, &quot;
+			For l = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(l,1) = sStyleEpigraphAuthor Then
+					sEpig = sEpig &amp; sBodyParagraphs(l,0) &amp; &quot;, &quot;
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else 
 					Exit For
 				End If
-			Next i
+			Next l
 			sEpig = Mid(sEpig, 1, Len(sEpig)-2)
 			sEpig = sEpig &amp; &quot;&lt;/text-author&gt;&quot;
-			lCurrentElement = i
+			lCurrentElement = l
 		Else &apos; Авторы епиграфа не будут собираться в одну строку, а будут один под другим
-			For i = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(i,1) = sStyleEpigraphAuthor Then
-					sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+			For l = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(l,1) = sStyleEpigraphAuthor Then
+					sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else Exit For
 				End If
-			Next i
-			lCurrentElement = i
+			Next l
+			lCurrentElement = l
 		End If
 	End If
 	sEpig = sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
@@ -347,39 +344,39 @@ Function MakeEpigraph As String
 End Function
 
 Function MakeCite As String
-	Dim sCite As String, bEndPar As Boolean, i As Integer
+	Dim sCite As String, l As Long
 	sCite = &quot;&lt;cite&gt;&quot; &amp; chr(10)
-	For i = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(i,1) = sStyleCite Then
-			sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStyleCite Then
+			sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Else 
 			Exit For
 		End If
-	Next i
-	lCurrentElement = i
+	Next l
+	lCurrentElement = l
 	If sBodyParagraphs(lCurrentElement,1) = sStyleCiteAuthor Then
 		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
 			sCite = sCite &amp; &quot;&lt;text-author&gt;&quot;
-			For i = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(i,1) = sStyleCiteAuthor Then
-					sCite = sCite &amp; sBodyParagraphs(i,0) &amp; &quot;, &quot;
+			For l = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(l,1) = sStyleCiteAuthor Then
+					sCite = sCite &amp; sBodyParagraphs(l,0) &amp; &quot;, &quot;
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else Exit For
 				End If
-			Next i
+			Next l
 			sCite = Mid(sCite, 1, Len(sCite)-2)
 			sCite = sCite &amp; &quot;&lt;/text-author&gt;&quot;
-			lCurrentElement = i
+			lCurrentElement = l
 		Else &apos; Авторы цитаты не будут собираться в одну строку, а будут один под другим
-			For i = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(i,1) = sStyleCiteAuthor Then
-					sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+			For l = lCurrentElement To UBound(sBodyParagraphs)
+				If sBodyParagraphs(l,1) = sStyleCiteAuthor Then
+					sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else Exit For
 				End If
-			Next i
-			lCurrentElement = i
+			Next l
+			lCurrentElement = l
 		End If
 	End If
 	sCite = sCite &amp; &quot;&lt;/cite&gt;&quot;
@@ -387,33 +384,33 @@ Function MakeCite As String
 End Function
 
 Function MakeSubtitle As String
-	Dim sSubtitle As String, bEndPar As Boolean, i As Integer
+	Dim sSubtitle As String, l As Long
 	If bMergeSubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
 		sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot;
-		For i = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(i,1) = sStyleSubTitle Then
-				sSubtitle = sSubtitle &amp; sBodyParagraphs(i,0) &amp; &quot; &quot;
+		For l = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(l,1) = sStyleSubTitle Then
+				sSubtitle = sSubtitle &amp; sBodyParagraphs(l,0) &amp; &quot; &quot;
 				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 			Else Exit For
 			End If
-		Next i
-		lCurrentElement = i
+		Next l
+		lCurrentElement = l
 		sSubtitle = sSubtitle &amp; &quot;&lt;/subtitle&gt;&quot;
 	Else &apos; подзаголовки не будут собираться в одну строку, а будут один под другим
-		For i = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(i,1) = sStyleSubTitle Then
-				sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sBodyParagraphs(i,0) &amp; &quot;&lt;/subtitle&gt;&quot;
+		For l = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(l,1) = sStyleSubTitle Then
+				sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
 				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 			Else Exit For
 			End If
-		Next i
-		lCurrentElement = i
+		Next l
+		lCurrentElement = l
 	End If
 	MakeSubtitle = sSubtitle
 End Function
 
 Function MakeSection(sLevel As String) As String
-	Dim sSect As String, bEndPar As Boolean, i As Integer
+	Dim sSect As String
 	sSect = sSect &amp; &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
 	sSect = sSect &amp; sBodyParagraphs(lCurrentElement,0) &amp; chr(10)
 	sSect = sSect  &amp; &quot;&lt;/title&gt;&quot;
