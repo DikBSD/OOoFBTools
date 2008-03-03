@@ -26,8 +26,6 @@ Public bCorrectPara As Boolean
 &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
 Public bSaveImageTitle
 
-Dim lCurrentBodyPara As Long &apos; текущий параграф в документе - для парсинга
-
 Dim sFootnoteText() As String
 Dim iFootnoteCount As Integer
 Dim iImgCurrent As Integer &apos; для формирования номера картинки
@@ -640,34 +638,32 @@ Function CorrectPara(sPara As String) As String
 End Function
 
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
-	Dim i As Integer
-	i = Ubound(sBodyParagraphs(), 1) + 1
+	Dim l As Long
+	l = Ubound(sBodyParagraphs(), 1) + 1
 	&apos; для уровней - проверка на несколько строк
 	If bLevel = False Then &apos; это не уровни  ( старый код: If InStr(TextType,&quot;Level &quot;) = 0 Then &apos; это не уровни)
-		If i &gt; 0 Then
-			ReDim Preserve sBodyParagraphs(i, 1)
-		Else Redim sBodyParagraphs(i, 1)
+		If l &gt; 0 Then
+			ReDim Preserve sBodyParagraphs(l, 1)
+		Else Redim sBodyParagraphs(l, 1)
 		End If
 	
-		sBodyParagraphs(lCurrentBodyPara,0) = sPara
-		sBodyParagraphs(lCurrentBodyPara,1) = TextType
-		oProgressBar.setValue(lCurrentBodyPara) &apos; Статусбар
-		lCurrentBodyPara = lCurrentBodyPara + 1
+		sBodyParagraphs(l,0) = sPara
+		sBodyParagraphs(l,1) = TextType
+		oProgressBar.setValue(l) &apos; Статусбар
 	Else
 		If TextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
-			If i &gt; 0 Then
-				ReDim Preserve sBodyParagraphs(i, 1)
-			Else Redim sBodyParagraphs(i, 1)
+			If l &gt; 0 Then
+				ReDim Preserve sBodyParagraphs(l, 1)
+			Else Redim sBodyParagraphs(l, 1)
 			End If
-			sBodyParagraphs(lCurrentBodyPara,0) = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-			sBodyParagraphs(lCurrentBodyPara,1) = TextType
-			oProgressBar.setValue(lCurrentBodyPara) &apos; Статусбар
-			lCurrentBodyPara = lCurrentBodyPara + 1
+			sBodyParagraphs(l,0) = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			sBodyParagraphs(l,1) = TextType
+			oProgressBar.setValue(l) &apos; Статусбар
 		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
 			Dim sText As String
 			sText = sBodyParagraphs(UBound(sBodyParagraphs),0)
 			sBodyParagraphs(UBound(sBodyParagraphs),0) = sText &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-			oProgressBar.setValue(lCurrentBodyPara) &apos; Статусбар
+			oProgressBar.setValue(l) &apos; Статусбар
 		End If
 	End If
 End Function
