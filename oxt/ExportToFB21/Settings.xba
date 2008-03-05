@@ -175,63 +175,27 @@ Function SetSettingsInVars(sCurrentLine)
 			bSaveImageTitle = sSetting(1)
 		&apos; Текстовые врезки
 		Case &quot;cmbboxTextFrame&quot;
-			sTextFrameToFB2 = sSetting(1)
-		Case &quot;cmbboxAdjTextFrame&quot;
 			Select Case sSetting(1)
-				Case &quot;Слева&quot;
-					sAdjTextFrame = &quot;left&quot;
-				Case &quot;По Центру&quot;
-					sAdjTextFrame = &quot;center&quot;
-				Case &quot;Справа&quot;
-					sAdjTextFrame = &quot;right&quot;
+				Case &quot;Таблица&quot;
+					sTextFrameToFB2 = &quot;Таблица&quot;
+				Case &quot;Текст&quot;
+					sTextFrameToFB2 = &quot;Текст&quot;
+				Case &quot;Цитата&quot;
+					sTextFrameToFB2 = &quot;Цитата&quot;
 				Case Else
-					sAdjTextFrame = &quot;left&quot;
+					sTextFrameToFB2 = &quot;Таблица&quot;
 			End Select
+		Case &quot;cmbboxAdjTextFrame&quot;
+			sAdjTextFrame = GetLCR(sSetting(1))
 		&apos; Таблицы
 		Case &quot;cmbboxHeaderTRA&quot;
-			Select Case sSetting(1)
-				Case &quot;Слева&quot;
-					sHeaderTRA = &quot;left&quot;
-				Case &quot;По Центру&quot;
-					sHeaderTRA = &quot;center&quot;
-				Case &quot;Справа&quot;
-					sHeaderTRA = &quot;right&quot;
-				Case Else
-					sHeaderTRA = &quot;center&quot;
-			End Select
+			sHeaderTRA 	= GetLCR(sSetting(1))
 		Case &quot;cmbboxHeaderTHV&quot;
-			Select Case sSetting(1)
-				Case &quot;Сверху&quot;
-					sHeaderTVA = &quot;top&quot;
-				Case &quot;По Центру&quot;
-					sHeaderTVA = &quot;middle&quot;
-				Case &quot;Снизу&quot;
-					sHeaderTVA = &quot;bottom&quot;
-				Case Else
-					sHeaderTVA =  &quot;middle&quot;
-			End Select
+			sHeaderTVA 	= GetTMB(sSetting(1))
 		Case &quot;cmbboxLineTRA&quot;
-			Select Case sSetting(1)
-				Case &quot;Слева&quot;
-					sLineTRA = &quot;left&quot;
-				Case &quot;По Центру&quot;
-					sLineTRA = &quot;center&quot;
-				Case &quot;Справа&quot;
-					sLineTRA = &quot;right&quot;
-				Case Else
-					sLineTRA = &quot;center&quot;
-			End Select
+			sLineTRA 	= GetLCR(sSetting(1))
 		Case &quot;cmbboxLineTDV&quot;
-			Select Case sSetting(1)
-				Case &quot;Сверху&quot;
-					sLineTVA = &quot;top&quot;
-				Case &quot;По Центру&quot;
-					sLineTVA = &quot;middle&quot;
-				Case &quot;Снизу&quot;
-					sLineTVA = &quot;bottom&quot;
-				Case Else
-					sLineTVA =  &quot;middle&quot;
-			End Select
+			sLineTVA	= GetTMB(sSetting(1))
 		&apos; Разное
 		Case &quot;cboxCorrect&quot;
 			bCorrectPara = sSetting(1)
@@ -239,6 +203,32 @@ Function SetSettingsInVars(sCurrentLine)
 			bDelEL = sSetting(1)
 		Case &quot;cboxDocLinks&quot;
 			bDocLinks = sSetting(1)
+	End Select
+End Function
+
+Function GetLCR(sSetting) As String
+	Select Case sSetting
+		Case &quot;Слева&quot;
+			GetLCR = &quot;left&quot;
+		Case &quot;По Центру&quot;
+			GetLCR = &quot;center&quot;
+		Case &quot;Справа&quot;
+			GetLCR = &quot;right&quot;
+		Case Else
+			GetLCR = &quot;center&quot;
+	End Select
+End Function
+
+Function GetTMB(sSetting) As String
+	Select Case sSetting
+		Case &quot;Сверху&quot;
+			GetTMB = &quot;top&quot;
+		Case &quot;По Центру&quot;
+			GetTMB = &quot;middle&quot;
+		Case &quot;Снизу&quot;
+			GetTMB = &quot;bottom&quot;
+		Case Else
+			GetTMB =  &quot;middle&quot;
 	End Select
 End Function
 

@@ -90,100 +90,16 @@ Function ServiceDlgOk
 		Exit Function
 	End If
 
-	bFootnoteSpace = oServiceDlg.GetControl(&quot;cboxSpace&quot;).State
-	bMergeSubTitle = oServiceDlg.GetControl(&quot;cboxSubtitle&quot;).State
-	bMergeEpigraphAuthors = oServiceDlg.GetControl(&quot;cboxEpigAuthor&quot;).State
-	bMergePoemTitle = oServiceDlg.GetControl(&quot;cboxPoemTitle&quot;).State
-	bMergePoemAuthors = oServiceDlg.GetControl(&quot;cboxPoemAuthor&quot;).State
-	bMergeCiteAuthors = oServiceDlg.GetControl(&quot;cboxCiteAuthor&quot;).State
-	bDelEL = oServiceDlg.GetControl(&quot;cboxDelEL&quot;).State
-	bStyleFootnote = oServiceDlg.GetControl(&quot;cboxStyleFootnote&quot;).State
-	bCorrectPara = oServiceDlg.GetControl(&quot;cboxCorrect&quot;).State
-	bDocLinks = oServiceDlg.GetControl(&quot;cboxDocLinks&quot;).State
-	bSaveImageTitle = oServiceDlg.GetControl(&quot;cboxImageTitle&quot;).State
-	
-	Select Case oServiceDlg.GetControl(&quot;cmbboxStyle&quot;).Text
-		Case &quot;[x]&quot;
-			sFootnoteLeft = &quot;[&quot;
-			sFootnoteRight = &quot;]&quot;
-		Case &quot;[ x ]&quot;
-			sFootnoteLeft = &quot;[ &quot;
-			sFootnoteRight = &quot; ]&quot;
-		Case &quot;{x}&quot;
-			sFootnoteLeft = &quot;{&quot;
-			sFootnoteRight = &quot;}&quot;
-		Case &quot;{ x }&quot;
-			sFootnoteLeft = &quot;{ &quot;
-			sFootnoteRight = &quot; }&quot;
-		Case &quot;(x)&quot;
-			sFootnoteLeft = &quot;(&quot;
-			sFootnoteRight = &quot;)&quot;
-		Case &quot;( x )&quot;
-			sFootnoteLeft = &quot;( &quot;
-			sFootnoteRight = &quot; )&quot;
-		Case Else
-			sFootnoteLeft = &quot;[&quot;
-			sFootnoteRight = &quot;]&quot;	
-	End Select
-	
-	sHeaderTRA = GetTRA(&quot;cmbboxHeaderTRA&quot;)
-	sLineTRA = GetTRA(&quot;cmbboxLineTRA&quot;)
-	sHeaderTVA = GetTVA(&quot;cmbboxHeaderTHV&quot;)
-	sLineTVA = GetTVA(&quot;cmbboxLineTDV&quot;)
-	
-	Select Case oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).Text
-		Case &quot;Таблица&quot;
-			sTextFrameToFB2 = &quot;Таблица&quot;
-		Case &quot;Текст&quot;
-			sTextFrameToFB2 = &quot;Текст&quot;
-		Case &quot;Цитата&quot;
-			sTextFrameToFB2 = &quot;Цитата&quot;
-		Case Else
-			sTextFrameToFB2 = &quot;Таблица&quot;
-	End Select
-
-	Select Case oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Text
-		Case &quot;Слева&quot;
-			sAdjTextFrame = &quot;left&quot;
-		Case &quot;По Центру&quot;
-			sAdjTextFrame = &quot;center&quot;
-		Case &quot;Справа&quot;
-			sAdjTextFrame = &quot;right&quot;
-		Case Else
-			sAdjTextFrame = &quot;left&quot;
-	End Select
-
 	&apos; Сохраняем настройки в файл
 	SaveSettings
 	
+	&apos; считываем настройки или задаем по умолчанию
+	If ReadSettingsInVars = False Then
+		SetDefaultSettingsInVars &apos; Задаем настройки в контролы по умолчанию
+	End If
+
 	bServiceExecute = True
 	oServiceDlg.endExecute()
-End Function
-
-Function GetTRA(sComboBox) As String
-	Select Case oServiceDlg.GetControl(sComboBox).Text
-		Case &quot;Слева&quot;
-			GetTRA = &quot;left&quot;
-		Case &quot;По Центру&quot;
-			GetTRA = &quot;center&quot;
-		Case &quot;Справа&quot;
-			GetTRA = &quot;right&quot;
-		Case Else
-			GetTRA =  &quot;center&quot;
-	End Select
-End Function
-
-Function GetTVA(sComboBox) As String
-	Select Case oServiceDlg.GetControl(sComboBox).Text
-		Case &quot;Сверху&quot;
-			GetTVA = &quot;top&quot;
-		Case &quot;По Центру&quot;
-			GetTVA = &quot;middle&quot;
-		Case &quot;Снизу&quot;
-			GetTVA = &quot;bottom&quot;
-		Case Else
-			GetTVA =  &quot;middle&quot;
-	End Select
 End Function
 
 Function cmbboxTextFrameChange
