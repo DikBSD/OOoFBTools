@@ -343,7 +343,7 @@ Function FormatFootnoteText(oSect)
 	oFootnoteCursor.gotoEndOfParagraph(True)
 	
 	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
-	Dim sParagF As String
+	Dim sParagF As String, sFNTH As String
 		sParagF = &quot;&quot;
 	Do
 		oFootnoteCursor.gotoEndOfParagraph(True)
@@ -355,9 +355,18 @@ Function FormatFootnoteText(oSect)
 				oTextPortionF = oSecEnumF.nextElement
 				If oTextPortionF.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
 					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/a&gt;&quot;
+						&apos; Если последний элемент строки сноски - гиперссылка, то в oSecEnumF она отображается дважды (не разобрался пока. почему)
+						&apos; Поэтому ставим защиту от этого
+						If sFNTH &lt;&gt; CorrectPara(oTextPortionF.String) Then
+							sFNTH = CorrectPara(oTextPortionF.String)
+							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
+						End If
 					Else
-						sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/a&gt;&quot;
+						&apos; Поэтому ставим защиту от этого
+						If sFNTH &lt;&gt; oTextPortionF.String Then
+							sFNTH = oTextPortionF.String
+							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
+						End If
 					End If
 				Elseif oTextPortionF.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
 					If bCorrectPara = True Then
