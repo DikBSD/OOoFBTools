@@ -38,53 +38,13 @@ End Function
 Function SetSettings(sCurrentLine)
 	Dim sSetting() As String
 	sSetting = Split(sCurrentLine, &quot;=&quot;)
-	Select Case sSetting(0)
-		&apos; Сноски
-		Case &quot;cboxStyleFootnote&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		Case &quot;cmbboxStyle&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		Case &quot;cboxSpace&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		&apos; Стихи
-		Case &quot;cboxPoemTitle&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		Case &quot;cboxPoemAuthor&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		&apos; Эпиграфы
-		Case &quot;cboxEpigAuthor&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		&apos; SubTitle
-		Case &quot;cboxSubtitle&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		&apos; Цитаты
-		Case &quot;cboxCiteAuthor&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		&apos; Картинки
-		Case &quot;cboxImageTitle&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		&apos; Текстовые врезки
-		Case &quot;cmbboxTextFrame&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		Case &quot;cmbboxAdjTextFrame&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		&apos; Таблицы
-		Case &quot;cmbboxHeaderTRA&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		Case &quot;cmbboxHeaderTHV&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		Case &quot;cmbboxLineTRA&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		Case &quot;cmbboxLineTDV&quot;
-			oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		&apos; Разное
-		Case &quot;cboxCorrect&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		Case &quot;cboxDelEL&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-		Case &quot;cboxDocLinks&quot;
-			oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-	End Select
+	
+	If oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
+	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+		oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
+	End If
+	
 End Function
 
 Function SaveSettings
@@ -93,33 +53,15 @@ Function SaveSettings
 	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 	Open sSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
 	
-	&apos; Сноски
-	Print #iFileNo, &quot;cboxStyleFootnote=&quot; &amp; oServiceDlg.GetControl(&quot;cboxStyleFootnote&quot;).State
-	Print #iFileNo, &quot;cmbboxStyle=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxStyle&quot;).Text
-	Print #iFileNo, &quot;cboxSpace=&quot; &amp; oServiceDlg.GetControl(&quot;cboxSpace&quot;).State
-	&apos; Стихи
-	Print #iFileNo, &quot;cboxPoemTitle=&quot; &amp; oServiceDlg.GetControl(&quot;cboxPoemTitle&quot;).State
-	Print #iFileNo, &quot;cboxPoemAuthor=&quot; &amp; oServiceDlg.GetControl(&quot;cboxPoemAuthor&quot;).State
-	&apos; Эпиграфы
-	Print #iFileNo, &quot;cboxEpigAuthor=&quot; &amp; oServiceDlg.GetControl(&quot;cboxEpigAuthor&quot;).State
-	&apos; SubTitle
-	Print #iFileNo, &quot;cboxSubtitle=&quot; &amp; oServiceDlg.GetControl(&quot;cboxSubtitle&quot;).State
-	&apos; Цитаты
-	Print #iFileNo, &quot;cboxCiteAuthor=&quot; &amp; oServiceDlg.GetControl(&quot;cboxCiteAuthor&quot;).State
-	&apos; Картинки
-	Print #iFileNo, &quot;cboxImageTitle=&quot; &amp; oServiceDlg.GetControl(&quot;cboxImageTitle&quot;).State
-	&apos; Текстовые врезки
-	Print #iFileNo, &quot;cmbboxTextFrame=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).Text
-	Print #iFileNo, &quot;cmbboxAdjTextFrame=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Text
-	&apos; Таблицы
-	Print #iFileNo, &quot;cmbboxHeaderTRA=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxHeaderTRA&quot;).Text
-	Print #iFileNo, &quot;cmbboxHeaderTHV=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxHeaderTHV&quot;).Text
-	Print #iFileNo, &quot;cmbboxLineTRA=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxLineTRA&quot;).Text
-	Print #iFileNo, &quot;cmbboxLineTDV=&quot; &amp; oServiceDlg.GetControl(&quot;cmbboxLineTDV&quot;).Text
-	&apos; Разное
-	Print #iFileNo, &quot;cboxCorrect=&quot; &amp; oServiceDlg.GetControl(&quot;cboxCorrect&quot;).State
-	Print #iFileNo, &quot;cboxDelEL=&quot; &amp; oServiceDlg.GetControl(&quot;cboxDelEL&quot;).State
-	Print #iFileNo, &quot;cboxDocLinks=&quot; &amp; oServiceDlg.GetControl(&quot;cboxDocLinks&quot;).State
+	Dim ctrl As Object, i As Integer
+	ctrl = oServiceDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		End If
+	Next i
 	
 	Close #iFileNo &apos; Закрытие файла
 End Function
