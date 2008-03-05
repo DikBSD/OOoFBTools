@@ -82,40 +82,18 @@ Function SaveCorrectorSettings
 	Dim iFileNo As Integer, sCurrentLine As String
 	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 	Open sCorrectorSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
-	&apos; Работа с пробелами и табуляциями
-	Print #iFileNo, &quot;cboxDelSpace=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
-	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
-	&apos; Работа с абзацами и разрывами
-	Print #iFileNo, &quot;cboxDelEmptyPar=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
-	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
-	Print #iFileNo, &quot;cboxBreakLine=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
-	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
-	Print #iFileNo, &quot;obtnDel=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
-	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
-	Print #iFileNo, &quot;obtnPar=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
-	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
-	Print #iFileNo, &quot;obtnSpace=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
-	bSpace = oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
 	
-	&apos; Кавычки, Дефисы. Разное
-	Print #iFileNo, &quot;cbox2HyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
-	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
-	Print #iFileNo, &quot;cboxHyphenToDash=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
-	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
-	Print #iFileNo, &quot;cboxDefis=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
-	bDefis = oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
-	Print #iFileNo, &quot;cboxKav=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
-	bKav = oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
-	Print #iFileNo, &quot;cboxPoints=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
-	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
-	Print #iFileNo, &quot;cboxC=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
-	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
-	
-	&apos; Картинки
-	Print #iFileNo, &quot;cboxImages=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
-	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
-	Print #iFileNo, &quot;cbAnchor=&quot; &amp; oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text
-	sAnchor = oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text
+	Dim ctrl As Object, i As Integer
+	ctrl = oTextCorrectorDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		End If
+	Next i
 	
 	Close #iFileNo &apos; Закрытие файла
 End Function
@@ -123,43 +101,17 @@ End Function
 Function SetCorrectorSettings(sCurrentLine)
 	Dim sCorrectorSettings() As String
 	sCorrectorSettings = Split(sCurrentLine, &quot;=&quot;)
-	Select Case sCorrectorSettings(0)
-		&apos; Работа с пробелами и табуляциями
-		Case &quot;cboxDelSpace&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		&apos; Работа с абзацами и разрывами
-		Case &quot;cboxDelEmptyPar&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxBreakLine&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;obtnDel&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;obtnPar&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;obtnSpace&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		&apos; Кавычки, Дефисы. Разное
-		Case &quot;cbox2HyphenToDash&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxHyphenToDash&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxDefis&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxKav&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxPoints&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxC&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		&apos; Картинки
-		Case &quot;cboxKav&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cboxImages&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-		Case &quot;cbAnchor&quot;
-			oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
-		cboxImagesEnabled
-	End Select
+	
+	If oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
+	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
+	End If
+
+	cboxImagesEnabled
+	
 End Function
 
 Function SetCorrectorSettingDefault
@@ -439,7 +391,6 @@ Function TextCorrectorDlgOk
 		oReplace.ReplaceString = &quot;&quot;&quot; — &quot;&quot;&quot;
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(44)
-		
 		
 		oReplace.SearchString = &quot;” - \&lt;&quot;
 		oReplace.ReplaceString = &quot;” — &quot;
