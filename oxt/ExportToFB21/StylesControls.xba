@@ -101,85 +101,22 @@ Function SaveStyles
 	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 	Open sStylesFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
 	
-	&apos; Данные книги
-	Print #iFileNo, &quot;tfBookAuthor=&quot; &amp; oStylesDlg.GetControl(&quot;tfBookAuthor&quot;).Text
-	Print #iFileNo, &quot;tfBookTitle=&quot; &amp; oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text
-	&apos; Анотация
-	Print #iFileNo, &quot;tfAnnotation=&quot; &amp; oStylesDlg.GetControl(&quot;tfAnnotation&quot;).Text
-	&apos; Эпиграф
-	Print #iFileNo, &quot;tfEpigraph=&quot; &amp; oStylesDlg.GetControl(&quot;tfEpigraph&quot;).Text
-	Print #iFileNo, &quot;tfEpigraphAuthor=&quot; &amp; oStylesDlg.GetControl(&quot;tfEpigraphAuthor&quot;).Text
-	&apos; Цитата
-	Print #iFileNo, &quot;tfCite=&quot; &amp; oStylesDlg.GetControl(&quot;tfCite&quot;).Text
-	Print #iFileNo, &quot;tfCiteAuthor=&quot; &amp; oStylesDlg.GetControl(&quot;tfCiteAuthor&quot;).Text
-	&apos; Поема
-	Print #iFileNo, &quot;tfPoemTitle=&quot; &amp; oStylesDlg.GetControl(&quot;tfPoemTitle&quot;).Text
-	Print #iFileNo, &quot;tfPoem=&quot; &amp; oStylesDlg.GetControl(&quot;tfPoem&quot;).Text
-	Print #iFileNo, &quot;tfPoemAuthor=&quot; &amp; oStylesDlg.GetControl(&quot;tfPoemAuthor&quot;).Text
-	&apos; Подзаголовок
-	Print #iFileNo, &quot;tfSubTitle=&quot; &amp; oStylesDlg.GetControl(&quot;tfSubTitle&quot;).Text
-	&apos; Уровни
-	Print #iFileNo, &quot;tfLevel1=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text
-	Print #iFileNo, &quot;tfLevel2=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text
-	Print #iFileNo, &quot;tfLevel3=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text
-	Print #iFileNo, &quot;tfLevel4=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text
-	Print #iFileNo, &quot;tfLevel5=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text
-	Print #iFileNo, &quot;tfLevel6=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text
-	Print #iFileNo, &quot;tfLevel7=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text
-	Print #iFileNo, &quot;tfLevel8=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text
-	Print #iFileNo, &quot;tfLevel9=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text
-	Print #iFileNo, &quot;tfLevel10=&quot; &amp; oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text
-
+	Dim ctrl As Object, i As Integer
+	ctrl = oStylesDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		&apos; сохраняем данные только Edit
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		End If
+	Next
+	
 	Close #iFileNo &apos; Закрытие файла
 End Function
 
 Function SetStyles(sCurrentLine)
 	Dim sStyles() As String
 	sStyles = Split(sCurrentLine, &quot;=&quot;)
-	Select Case sStyles(0)
-		Case &quot;tfBookAuthor&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfBookTitle&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfAnnotation&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfEpigraph&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfEpigraphAuthor&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfCite&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfCiteAuthor&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfPoemTitle&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfPoem&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfPoemAuthor&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfSubTitle&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel1&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel2&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel3&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel4&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel5&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel6&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel7&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel8&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel9&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-		Case &quot;tfLevel10&quot;
-			oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-	End Select
+	oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
 End Function
 
 Function SetStylesControlsDefault
