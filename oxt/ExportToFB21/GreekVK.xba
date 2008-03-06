@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="GreekVK" script:language="StarBasic">REM  *****  BASIC  *****
+Public oVKDlg As Object
+
+Function GreekKeyboard
+						
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oVKDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.GreekVKDlg)
+
+	oVKDlg.Model.Step = 0
+	
+	oVKDlg.execute()
+
+End Function
+
+Sub InsertSymbol(o)
+	Dim oText As Object, oVCurs As Object, oTCurs As Object
+	oText = ThisComponent.Text
+	oVCurs = ThisComponent.CurrentController.getViewCursor()
+	oTCurs = oText.createTextCursorByRange(oVCurs.getStart())
+	&apos; Вставляем символ - метка кнопки, вызвавшее это событие
+	oText.insertString(oTCurs, o.Source.Model.Label, FALSE)
+End Sub
+
+Sub InsertSpace(o)
+	Dim oText As Object, oVCurs As Object, oTCurs As Object
+	oText = ThisComponent.Text
+	oVCurs = ThisComponent.CurrentController.getViewCursor()
+	oTCurs = oText.createTextCursorByRange(oVCurs.getStart())
+	&apos; Вставляем пробел
+	oText.insertString(oTCurs, &quot; &quot;, FALSE)
+End Sub
+
+</script:module>
