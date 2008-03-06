@@ -41,19 +41,7 @@ Function ServiceDlgExec As Boolean
 	End With
 
 	&apos; центрирование на экране
-	Dim CurPosSize As New com.sun.star.awt.Rectangle
-	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
-	oFrame = ThisComponent.getCurrentController().Frame
-	FramePosSize = oFrame.getComponentWindow.PosSize
-	xWindowPeer = oServiceDlg.getPeer()
-	CurPosSize = oServiceDlg.getPosSize()
-	WindowHeight = FramePosSize.Height
-	WindowWidth = FramePosSize.Width
-	DialogWidth = CurPosSize.Width
-	DialogHeight = CurPosSize.Height
-	iXPos = ((WindowWidth/2) - (DialogWidth/2))
-	iYPos = ((WindowHeight/2) - (DialogHeight/2))
-	oServiceDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
+	ToScreenCenter(oServiceDlg)
 	
 	oServiceDlg.Model.Step = 0
 	
@@ -110,6 +98,24 @@ Function cmbboxTextFrameChange
 		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = False
 		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = False
 	End If
+End Function
+
+
+Function ToScreenCenter(oDlg)
+	&apos; центрирование на экране
+	Dim CurPosSize As New com.sun.star.awt.Rectangle
+	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
+	oFrame = ThisComponent.getCurrentController().Frame
+	FramePosSize = oFrame.getComponentWindow.PosSize
+	xWindowPeer = oDlg.getPeer()
+	CurPosSize = oDlg.getPosSize()
+	WindowHeight = FramePosSize.Height
+	WindowWidth = FramePosSize.Width
+	DialogWidth = CurPosSize.Width
+	DialogHeight = CurPosSize.Height
+	iXPos = ((WindowWidth/2) - (DialogWidth/2))
+	iYPos = ((WindowHeight/2) - (DialogHeight/2))
+	oDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
 End Function
 
 </script:module>
