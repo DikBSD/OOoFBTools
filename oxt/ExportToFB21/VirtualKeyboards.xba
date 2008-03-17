@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="VirtualKeyboards" script:language="StarBasic">REM  *****  BASIC  *****
+Public oVKDlg As Object
+Public oGVKDlg As Object
+Public oHVKDlg As Object
+Private sOldCharFontName As String
+
+Function GreekKeyboard
+						
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oGVKDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.GreekVKDlg)
+
+	ChangeGreekGeneralKeys
+	
+	oGVKDlg.execute()
+
+End Function
+
+Function HebrewKeyboard
+						
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oHVKDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.HebrewVKDlg)
+
+	oHVKDlg.Model.Step = 0
+	&apos; центрирование на экране
+	ToScreenCenter(oHVKDlg)
+	
+	oHVKDlg.execute()
+
+End Function
+
+Function SymbolsKeyboard
+						
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oVKDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.VKDlg)
+
+	oVKDlg.Model.Step = 0
+	&apos; центрирование на экране
+	ToScreenCenter(oVKDlg)
+	
+	oVKDlg.execute()
+
+End Function
+
+Sub InsertSymbol(o)
+	Dim oText As Object, oVCurs As Object, oTCurs As Object
+	oText = ThisComponent.Text
+	oVCurs = ThisComponent.CurrentController.getViewCursor()
+	oTCurs = oText.createTextCursorByRange(oVCurs.getStart())
+	&apos; Мекняем шрифт на Tahoma
+	sOldCharFontName = oTCurs.Start.CharFontName
+	oTCurs.Start.CharFontName=&quot;Tahoma&quot;
+	&apos; Вставляем символ - метка кнопки, вызвавшее это событие
+	oText.insertString(oTCurs, o.Source.Model.Label, FALSE)
+	oTCurs.Start.CharFontName = sOldCharFontName
+End Sub
+
+Sub InsertSpace(o)
+	Dim oText As Object, oVCurs As Object, oTCurs As Object
+	oText = ThisComponent.Text
+	oVCurs = ThisComponent.CurrentController.getViewCursor()
+	oTCurs = oText.createTextCursorByRange(oVCurs.getStart())
+	&apos; Мекняем шрифт на Tahoma
+	sOldCharFontName = oTCurs.Start.CharFontName
+	oTCurs.Start.CharFontName=&quot;Tahoma&quot;
+	&apos; Вставляем пробел
+	oText.insertString(oTCurs, &quot; &quot;, FALSE)
+	oTCurs.Start.CharFontName = sOldCharFontName
+End Sub
+
+Sub ChangeKeys(o)
+	If o.Source.Model.Name = &quot;obtn_00&quot; Then
+		ChangeGreekGeneralKeys
+	ElseIf o.Source.Model.Name = &quot;obtn_01&quot; Then
+		ChangeGreekCapitalKeys
+	ElseIf o.Source.Model.Name = &quot;obtn_02&quot; Then
+		ChangeGreekSmallKeys
+	End If
+End Sub
+
+Function ChangeGreekGeneralKeys
+	oGVKDlg.Model.Step = 1
+	oGVKDlg.Model.cmdVKSpace.PositionY = 65
+	oGVKDlg.Model.cmdVKSpace.PositionX = 1
+	oGVKDlg.Model.Width = 403
+	oGVKDlg.Model.Height = 85
+	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - 3
+	&apos; центрирование на экране
+	ToScreenCenter(oGVKDlg)
+End Function
+
+Function ChangeGreekCapitalKeys
+	oGVKDlg.Model.Step = 2
+	oGVKDlg.Model.cmdVKSpace.PositionY = 90
+	oGVKDlg.Model.cmdVKSpace.PositionX = 49
+	oGVKDlg.Model.cmdVKSpace.Width = 223
+	oGVKDlg.Model.Width = 370
+	oGVKDlg.Model.Height = 136
+	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - oGVKDlg.Model.cmdVKSpace.PositionX - 3
+	&apos; центрирование на экране
+	ToScreenCenter(oGVKDlg)
+End Function
+
+Function ChangeGreekSmallKeys
+	oGVKDlg.Model.Step = 3
+	oGVKDlg.Model.cmdVKSpace.PositionY = 90
+	oGVKDlg.Model.cmdVKSpace.PositionX = 49
+	oGVKDlg.Model.cmdVKSpace.Width = 223
+	oGVKDlg.Model.Width = 498
+	oGVKDlg.Model.Height = 136
+	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - oGVKDlg.Model.cmdVKSpace.PositionX - 3
+	&apos; центрирование на экране
+	ToScreenCenter(oGVKDlg)
+End Function
+
+</script:module>

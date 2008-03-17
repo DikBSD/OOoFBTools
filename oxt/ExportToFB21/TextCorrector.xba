@@ -48,6 +48,9 @@ Sub TextCorrector
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
 
+	&apos; центрирование на экране
+	ToScreenCenter(oTextCorrectorDlg)
+	
 	oTextCorrectorDlg.execute()
 	TextCorrector = bCorrectorExecute
 End Sub
@@ -96,6 +99,22 @@ Function SaveCorrectorSettings
 	Next i
 	
 	Close #iFileNo &apos; Закрытие файла
+	&apos; заполняем переменные
+	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
+	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
+	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
+	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
+	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
+	bSpace = oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
+	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
+	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
+	bDefis = oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
+	bKav = oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
+	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
+	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
+	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
+	sAnchor = oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text
+	
 End Function
 
 Function SetCorrectorSettings(sCurrentLine)
