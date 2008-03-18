@@ -5,8 +5,15 @@ Option Explicit
 
 Public sProfileFilename As String
 
-Function ReadProfile
+Function ReadUserProfile
+	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
+		Exit Function
+	End If
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
+	ReadProfile
+End Function
+
+Function ReadProfile
 	If FileExists(sProfileFilename) Then
 		Dim iFileNo As Integer, sCurrentLine As String
 		&apos; Установление свободного файлового манипулятора
@@ -71,7 +78,7 @@ End Function
 
 Function SaveProfile
 	&apos; записываем установки
-	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot;,128 + 32 + 1,sConvertorName) = 2 Then
+	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Если вы раньше сохраняли свой профиль, то он будет перезаписан!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
 		Exit Function
 	End If
 	Dim iFileNo As Integer, sCurrentLine As String
