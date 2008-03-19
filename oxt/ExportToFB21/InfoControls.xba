@@ -5,10 +5,6 @@ Option Explicit
 
 Public oInfoDlg As Object
 
-Const oDlgWidth = 388
-Const oDlgHeight = 343
-Const oDlgX = 50
-Const oDlgY = 50
 Const oDlgTitle = &quot;Данные о книге&quot;
 
 Public sGenres() As String REM book&apos;s genres
@@ -29,7 +25,7 @@ Function InfoDlgExec As Boolean
 	&apos; файл настроек
 	sSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/settings.txt&quot;
 	&apos; файл профиля Автора fb2 документа
-	sProfileFilename = pmxCurDir() &amp; &quot;/ExportToFB21/profile.txt&quot;
+	sFB2AuthorFilename = pmxCurDir() &amp; &quot;/ExportToFB21/profile.txt&quot;
 	
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
@@ -92,10 +88,6 @@ Function InfoDlgExec As Boolean
 	Dim sNow As String
 	sNow = Now
 	With oInfoDlg.Model
-		.Width = oDlgWidth
-		.Height = oDlgHeight
-		.PositionX = oDlgX
-		.PositionY = oDlgY
 		.Title = oDlgTitle
 		.GenreComboBox.StringItemList = sGLN()
 		.NumericFieldMatch.Value = &quot;100&quot;
@@ -114,7 +106,7 @@ Function InfoDlgExec As Boolean
 	ToScreenCenter(oInfoDlg)
 	
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
-	ReadProfile
+	ReadProfile(sFB2AuthorFilename, 2)
 	
 	&apos; считываем настройки или задаем по умолчанию
 	If ReadSettingsInVars = False Then
@@ -176,7 +168,12 @@ Function SaveAs
 		.setDefaultName(sFName)
 	End With
 	If oFileDlg.execute() Then
-		oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(oFileDlg.Files(0))
+		Dim sFile As String
+		sFile = ConvertFromUrl(oFileDlg.Files(0))
+		IF (InStr(sFile,&quot;.fb2&quot;)=0) Then
+			sFile = sFile + &quot;.fb2&quot;
+		End If
+		oInfoDlg.Model.FilenameTextField.Text = sFile
 	End If
 	oFileDlg.Dispose()
 End Function

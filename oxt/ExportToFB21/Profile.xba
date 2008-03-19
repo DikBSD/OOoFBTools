@@ -3,30 +3,35 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Profile" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public sProfileFilename As String
+Public sFB2AuthorFilename As String &apos; файл профиля автора fb2-документа
 
 Function ReadUserProfile
 	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
 		Exit Function
 	End If
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
-	ReadProfile
+	ReadProfile(sFB2AuthorFilename, 2)
 End Function
 
-Function ReadProfile
-	If FileExists(sProfileFilename) Then
+Function ReadProfile(sFilename As String, nN As Integer)
+	&apos; nN - идентификатор типа профиля: 0 - для Автора Книги, 2 - для Автора fb2-документа
+	If FileExists(sFilename) Then
 		Dim iFileNo As Integer, sCurrentLine As String
 		&apos; Установление свободного файлового манипулятора
 		iFileNo = Freefile
 		&apos; Открытие файла (в режиме на чтение)
-		Open sProfileFilename For Input As #iFileNo
+		Open sFilename For Input As #iFileNo
 		&apos; Проверка, был ли достигнут конец файла
 		Do While NOT eof(iFileNo)
 			&apos; Чтение строки
 			Line Input #iFileNo, sCurrentLine
 			If sCurrentLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные профиля
-				SetProfile(sCurrentLine)
+				If nN = 0 Then &apos; профиль Автора Книги
+					SetBookAuthorProfile(sCurrentLine)
+				ElseIf nN = 2 Then &apos; профиль Автора fb2-документа
+					SetProfile(sCurrentLine)
+				End If
 			End If
 		Loop
 		&apos; Закрытие файла
@@ -83,7 +88,7 @@ Function SaveProfile
 	End If
 	Dim iFileNo As Integer, sCurrentLine As String
 	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
-	Open sProfileFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	Open sFB2AuthorFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
 	
 	Print #iFileNo, &quot;diFirstField=&quot; &amp; oInfoDlg.Model.diFirstField.Text
 	Print #iFileNo, &quot;diMiddleField=&quot; &amp; oInfoDlg.Model.diMiddleField.Text
@@ -95,6 +100,117 @@ Function SaveProfile
 	Print #iFileNo, &quot;HistoryTextField=&quot; &amp; oInfoDlg.Model.HistoryTextField.Text
 	
 	Close #iFileNo &apos; Закрытие файла
+End Function
+
+&apos;//////////////////////////////
+&apos;/// Профили Авторов Книги ////
+&apos;//////////////////////////////
+Function LoadBookAuthorProfile
+	&apos; Загрузка Автора Книга из файла профиля этого Автора
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
+		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
+		.setTitle(&quot;Открыть профиль автора книги ...&quot;)
+	End With
+	If oFileDlg.execute() Then
+		&apos; Читаем данные и задаем значения контролам профиля автора книги
+		ReadProfile(ConvertFromUrl(oFileDlg.Files(0)), 0)
+	End If
+	oFileDlg.Dispose()
+
+End Function
+
+Function SaveBookAuthorProfile
+	&apos; Сохранение Автора Книга в файл профиля этого Автора
+	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND _
+		Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND _
+		Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните, пожалуйста, хотя бы одно поле для Автора Книги!&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sFile As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
+		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
+		.setTitle(&quot;Сохранить профиль для автора книги ...&quot;)
+	End With
+	If oFileDlg.execute() Then
+		&apos; Читаем данные контролов профиля автора книги и сохраняем в файл профиля для этого автора
+		Dim iFileNo As Integer, sCurrentLine As String
+		sFile = ConvertFromUrl(oFileDlg.Files(0))
+		iFileNo = Freefile &apos; Установление свободного файлового манипулятора
+		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
+			sFile = sFile + &quot;.txt&quot;
+		End If
+		Open sFile For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	
+		Print #iFileNo, &quot;tiFirst=&quot; &amp; oInfoDlg.Model.tiFirst.Text
+		Print #iFileNo, &quot;tiMiddle=&quot; &amp; oInfoDlg.Model.tiMiddle.Text
+		Print #iFileNo, &quot;tiLast=&quot; &amp; oInfoDlg.Model.tiLast.Text
+		Print #iFileNo, &quot;tiNickname=&quot; &amp; oInfoDlg.Model.tiNickname.Text
+		Print #iFileNo, &quot;tiEmail=&quot; &amp; oInfoDlg.Model.tiEmail.Text
+		Print #iFileNo, &quot;tiHomepage=&quot; &amp; oInfoDlg.Model.tiHomepage.Text
+		Print #iFileNo, &quot;GenreComboBox=&quot; &amp; oInfoDlg.Model.GenreComboBox.Text
+	
+		Close #iFileNo &apos; Закрытие файла
+	End If
+	oFileDlg.Dispose()
+	
+End Function
+
+Function SetBookAuthorProfile(sCurrentLine)
+	Dim sProfile() As String
+	sProfile = Split(sCurrentLine, &quot;=&quot;)
+	Select Case sProfile(0)
+		Case &quot;tiFirst&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;tiMiddle&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;tiLast&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;tiNickname&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;tiEmail&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;tiHomepage&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;GenreComboBox&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+	End Select
+End Function
+
+Function ClearBookAuthorFields
+	&apos; Очистка всех полей для Автора Книги
+	oInfoDlg.Model.tiFirst.Text = &quot;&quot;
+	oInfoDlg.Model.tiMiddle.Text = &quot;&quot;
+	oInfoDlg.Model.tiLast.Text = &quot;&quot;
+	oInfoDlg.Model.tiNickname.Text = &quot;&quot;
+	oInfoDlg.Model.tiEmail.Text = &quot;&quot;
+	oInfoDlg.Model.tiHomepage.Text = &quot;&quot;
+	oInfoDlg.Model.GenreComboBox.Text = &quot;&quot;
 End Function
 
 </script:module>
