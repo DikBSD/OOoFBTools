@@ -5,16 +5,8 @@ Option Explicit
 
 Public sFB2AuthorFilename As String &apos; файл профиля автора fb2-документа
 
-Function ReadUserProfile
-	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
-		Exit Function
-	End If
-	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
-	ReadProfile(sFB2AuthorFilename, 2)
-End Function
-
 Function ReadProfile(sFilename As String, nN As Integer)
-	&apos; nN - идентификатор типа профиля: 0 - для Автора Книги, 2 - для Автора fb2-документа
+	&apos; nN - идентификатор типа профиля: 0 - для Автора Книги, 1 - для Автора fb2-документа
 	If FileExists(sFilename) Then
 		Dim iFileNo As Integer, sCurrentLine As String
 		&apos; Установление свободного файлового манипулятора
@@ -29,16 +21,27 @@ Function ReadProfile(sFilename As String, nN As Integer)
 				&apos; Устанавливаем данные профиля
 				If nN = 0 Then &apos; профиль Автора Книги
 					SetBookAuthorProfile(sCurrentLine)
-				ElseIf nN = 2 Then &apos; профиль Автора fb2-документа
+				ElseIf nN = 1 Then &apos; профиль Автора fb2-документа
 					SetProfile(sCurrentLine)
+				ElseIf nN = 2 Then &apos; профиль Bplfntkmcndf
+					SetPublisherProfile(sCurrentLine)
 				End If
 			End If
 		Loop
 		&apos; Закрытие файла
 		Close #iFileNo
-		&apos; Добавляем автора документа в список
-		&apos;AppendDocAuthorInArray
 	End If
+End Function
+
+&apos;/////////////////////////////////////
+&apos;/// Профиль Автора fb2-документа ////
+&apos;/////////////////////////////////////
+Function ReadUserProfile
+	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
+		Exit Function
+	End If
+	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
+	ReadProfile(sFB2AuthorFilename, 1)
 End Function
 
 Function SetProfile(sCurrentLine)
@@ -211,6 +214,100 @@ Function ClearBookAuthorFields
 	oInfoDlg.Model.tiEmail.Text = &quot;&quot;
 	oInfoDlg.Model.tiHomepage.Text = &quot;&quot;
 	oInfoDlg.Model.GenreComboBox.Text = &quot;&quot;
+End Function
+
+&apos;////////////////////////////
+&apos;/// Профили Издательств ////
+&apos;////////////////////////////
+Function LoadPublisherProfile
+	&apos; Загрузка данных Издательства из файла профиля этого Издательства
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
+		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
+		.setTitle(&quot;Открыть профиль автора книги ...&quot;)
+	End With
+	If oFileDlg.execute() Then
+		&apos; Читаем данные и задаем значения контролам профиля издательства
+		ReadProfile(ConvertFromUrl(oFileDlg.Files(0)), 2)
+	End If
+	oFileDlg.Dispose()
+
+End Function
+
+Function SavePublisherProfile
+	&apos; Сохранение Автора Книга в файл профиля этого Автора
+	If Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните, пожалуйста, хотя бы одно поле для Издательства!&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sFile As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
+		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
+		.setTitle(&quot;Сохранить профиль для автора книги ...&quot;)
+	End With
+	If oFileDlg.execute() Then
+		&apos; Читаем данные контролов профиля издательства и сохраняем в файл профиля для издательства
+		Dim iFileNo As Integer, sCurrentLine As String
+		sFile = ConvertFromUrl(oFileDlg.Files(0))
+		iFileNo = Freefile &apos; Установление свободного файлового манипулятора
+		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
+			sFile = sFile + &quot;.txt&quot;
+		End If
+		Open sFile For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	
+		Print #iFileNo, &quot;pubPublisherTextField=&quot; &amp; oInfoDlg.Model.pubPublisherTextField.Text
+		Print #iFileNo, &quot;pubCityTextField=&quot; &amp; oInfoDlg.Model.pubCityTextField.Text
+	
+		Close #iFileNo &apos; Закрытие файла
+	End If
+	oFileDlg.Dispose()
+	
+End Function
+
+Function SetPublisherProfile(sCurrentLine)
+	Dim sProfile() As String
+	sProfile = Split(sCurrentLine, &quot;=&quot;)
+	Select Case sProfile(0)
+		Case &quot;pubPublisherTextField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;pubCityTextField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+	End Select
+End Function
+
+Function ClearPaperBookFields
+	&apos; Очистка всех полей для Бумажной книги
+	oInfoDlg.Model.pubBookNameTextField.Text = &quot;&quot;
+	oInfoDlg.Model.pubISBNTextField.Text = &quot;&quot;
+	oInfoDlg.Model.pubPublisherTextField.Text = &quot;&quot;
+	oInfoDlg.Model.pubCityTextField.Text = &quot;&quot;
+	oInfoDlg.Model.pubYearTextField.Text = &quot;&quot;
+	oInfoDlg.Model.pubSequenseTextField.Text = &quot;&quot;
+	oInfoDlg.Model.pubSequenseNumberTextField.Text = &quot;&quot;
 End Function
 
 </script:module>
