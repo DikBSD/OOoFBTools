@@ -136,12 +136,13 @@ Sub DocumentParser
 					&apos; парсер сносок
 					sPara = sPara + FootEndNoteParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
+					&apos; текстовые поля
 					sPara = sPara &amp; InLineParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
 					If bDocLinks = True Then
 						&apos; сохраняем позицию ОТКУДА ссылка и ее ID
-						&apos; не заносим дважды одну и туже закладку...
+						&apos; не заносим дважды одну и ту же закладку...
 						If UBound(sLinksTo) = -1 Then
 							AddLinksToArray(UBound(sBodyParagraphs)+1, oSect.Bookmark.Name)
 						Else
@@ -232,7 +233,14 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 			Case sStyleLevel10
 				AddBodyArray(sPara, sParaStyleName, True)
 			Case Else &apos; что-то другое или просто параграф
-				AddBodyArray(sPara, &quot;Para&quot;, False)
+				&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
+				&apos; они не должны быть в основном тексте книги
+				If sParaStyleName &lt;&gt; sStyleBookAnnotation AND sParaStyleName &lt;&gt; sStylePaperBookName AND _
+					sParaStyleName &lt;&gt; sStylePaperBookPublisher AND sParaStyleName &lt;&gt; sStylePaperBookCity AND _
+					sParaStyleName &lt;&gt; sStylePaperBookYear AND sParaStyleName &lt;&gt; sStylePaperBookISBN AND _
+					sParaStyleName &lt;&gt; sStylePaperBookSequence AND sParaStyleName &lt;&gt; sStylePaperBookSequenceNumber Then
+					AddBodyArray(sPara, &quot;Para&quot;, False)
+				End If
 		End Select
 	End If
 	sPrevStyle = sParaStyleName

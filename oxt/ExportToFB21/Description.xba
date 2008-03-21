@@ -33,7 +33,13 @@ Function SaveDescription
 	
 	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; chr(10) &amp; Trim(oInfoDlg.Model.BookTitleField.Text) &amp; chr(10) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
 	If Trim(oInfoDlg.Model.AnnotationTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; Trim(oInfoDlg.Model.AnnotationTextField.Text) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/annotation&gt;&quot; &amp; chr(10))
+		Dim sBookAnnot() As String
+		sBookAnnot = Split(Trim(oInfoDlg.Model.AnnotationTextField.Text), chr(10))
+		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10)
+		For i = 0 To UBound(sBookAnnot)
+			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sBookAnnot(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+		Next i
+		oTextOutputStream.writeString(&quot;&lt;/annotation&gt;&quot; &amp; chr(10)
 	End If
 	
 	If oInfoDlg.Model.KeywordsField.Text &lt;&gt; &quot;&quot; Then
