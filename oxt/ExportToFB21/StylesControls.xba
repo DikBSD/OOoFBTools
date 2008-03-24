@@ -4,9 +4,9 @@
 Option Explicit
 
 Private oStylesDlg As Object
-Public sStylesFilename As String
-
 Private bStyleExecute As Boolean
+
+Public sStylesFilename As String
 
 &apos; Данные книги
 Public sStyleBookAuthor As String
@@ -47,7 +47,6 @@ Public sStylePaperBookISBN As String
 Public sStylePaperBookSequence As String
 Public sStylePaperBookSequenceNumber As String
 
-
 Function SetUserStyles
 	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
 	oStylesDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.StylesDlg)
@@ -55,19 +54,32 @@ Function SetUserStyles
 	&apos; файл пользовательских стилей
 	sStylesFilename = pmxCurDir() &amp; &quot;/ExportToFB21/styles.txt&quot;
 	
-	&apos; считывание стилей из файла. Если его нет - то задаем по умолчанию
-	If ReadStyles = False Then
-		SetStylesControlsDefault &apos; Задаем название стилей в контролы по умолчанию
-	End If
+	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
+	&apos; т.к. конвертор развивается, и в диалоге Переопределения пользовательских стилей появляются НОВЫЕ поля стилей,
+	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых полей нет,
+	&apos; то при работе конвертора может произойти либо ошибка, либо экспорт выделенных новыми стилями абзацев
+	&apos; будет сделан, как просто абзацы (&lt;p&gt;......&lt;/p&gt;), а при запуске формы Стилей новые поля будут пустыми, что не верно.
+	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetStylesVarsDefault, SetStylesControlsDefault),
+	&apos; а потом - считываем из файла значения (ReadStyles).
+	&apos; Для тех новых полей, которых еще нет в файле styles.txt значения будут по умолчанию, а для остальных - считаны из файла.
+	&apos; Когда же User запустит форму и пересохранит ВСЕ стили, то вне переменные и контролы будут иметь значения из файла!
+	
+	&apos; Установка стилей по умолчанию
+	SetStylesVarsDefault
+	&apos; Задаем название стилей в контролы по умолчанию
+	SetStylesControlsDefault
+	&apos; Только теперь считывание стилей из файла
+	ReadStyles
 	
 	With oStylesDlg.Model
 		.Title = &quot;Определение пользовательских стилей&quot;
 	End With
 	
+	oStylesDlg.execute()
+	
 	&apos; центрирование на экране
 	ToScreenCenter(oStylesDlg)
 	
-	oStylesDlg.execute()
 	SetUserStyles = bStyleExecute
 End Function
 
@@ -134,45 +146,50 @@ Function SetStyles(sCurrentLine)
 End Function
 
 Function SetStylesControlsDefault
-	&apos; Установка стилей по умолчанию в контролы
+	&apos; // Установка стилей по умолчанию в контролы //
+	
+	&apos; Установка стилей по умолчанию в переменные
+	SetStylesVarsDefault
+	
+	&apos; Установка стилей по умолчанию в контролы	
 	&apos; Данные книги
-	oStylesDlg.GetControl(&quot;tfBookAuthor&quot;).Text = &quot;Book Author&quot;
-	oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text = &quot;Book Title&quot;
+	oStylesDlg.GetControl(&quot;tfBookAuthor&quot;).Text = sStyleBookAuthor
+	oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text = sStyleBookTitle
 	&apos; Анотация
-	oStylesDlg.GetControl(&quot;tfAnnotation&quot;).Text = &quot;Annotation&quot;
+	oStylesDlg.GetControl(&quot;tfAnnotation&quot;).Text = sStyleAnnotation
 	&apos; Эпиграф
-	oStylesDlg.GetControl(&quot;tfEpigraph&quot;).Text = &quot;Epigraph&quot;
-	oStylesDlg.GetControl(&quot;tfEpigraphAuthor&quot;).Text = &quot;Epigraph Author&quot;
+	oStylesDlg.GetControl(&quot;tfEpigraph&quot;).Text = sStyleEpigraph
+	oStylesDlg.GetControl(&quot;tfEpigraphAuthor&quot;).Text = sStyleEpigraphAuthor
 	&apos; Поэма
-	oStylesDlg.GetControl(&quot;tfPoemTitle&quot;).Text = &quot;Poem Title&quot;
-	oStylesDlg.GetControl(&quot;tfPoem&quot;).Text = &quot;Poem&quot;
-	oStylesDlg.GetControl(&quot;tfPoemAuthor&quot;).Text = &quot;Poem Author&quot;
+	oStylesDlg.GetControl(&quot;tfPoemTitle&quot;).Text = sStylePoemTitle
+	oStylesDlg.GetControl(&quot;tfPoem&quot;).Text = sStylePoem
+	oStylesDlg.GetControl(&quot;tfPoemAuthor&quot;).Text = sStylePoemAuthor 
 	&apos; Цитата
-	oStylesDlg.GetControl(&quot;tfCite&quot;).Text = &quot;Cite&quot;
-	oStylesDlg.GetControl(&quot;tfCiteAuthor&quot;).Text = &quot;Cite Author&quot;
+	oStylesDlg.GetControl(&quot;tfCite&quot;).Text = sStyleCite
+	oStylesDlg.GetControl(&quot;tfCiteAuthor&quot;).Text = sStyleCiteAuthor
 	&apos; Подзаголовок
-	oStylesDlg.GetControl(&quot;tfSubTitle&quot;).Text = &quot;SubTitle&quot;
+	oStylesDlg.GetControl(&quot;tfSubTitle&quot;).Text = sStyleSubTitle
 	&apos; Уровни
-	oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text = &quot;Level 1&quot;
-	oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text = &quot;Level 2&quot;
-	oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text = &quot;Level 3&quot;
-	oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text = &quot;Level 4&quot;
-	oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text = &quot;Level 5&quot;
-	oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text = &quot;Level 6&quot;
-	oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text = &quot;Level 7&quot;
-	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text = &quot;Level 8&quot;
-	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text = &quot;Level 9&quot;
-	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text = &quot;Level 10&quot;
+	oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text = sStyleLevel1
+	oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text = sStyleLevel2
+	oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text = sStyleLevel3
+	oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text = sStyleLevel4
+	oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text = sStyleLevel5
+	oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text = sStyleLevel6
+	oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text = sStyleLevel7
+	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text = sStyleLevel8
+	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text = sStyleLevel9
+	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text = sStyleLevel10
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	&apos; Анотация Книги
-	oStylesDlg.GetControl(&quot;tfBookAnnotation&quot;).Text = &quot;Book Annotation&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookName&quot;).Text = &quot;PaperBook Name&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookPublisher&quot;).Text = &quot;PaperBook Publisher&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookCity&quot;).Text = &quot;PaperBook City&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookYear&quot;).Text = &quot;PaperBook Year&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookISBN&quot;).Text = &quot;PaperBook ISBN&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookSequence&quot;).Text = &quot;PaperBook Sequence&quot;
-	oStylesDlg.GetControl(&quot;tfPaperBookSequenceNumber&quot;).Text = &quot;PaperBook SequenceNumber&quot;
+	oStylesDlg.GetControl(&quot;tfBookAnnotation&quot;).Text = sStyleBookAnnotation
+	oStylesDlg.GetControl(&quot;tfPaperBookName&quot;).Text = sStylePaperBookName
+	oStylesDlg.GetControl(&quot;tfPaperBookPublisher&quot;).Text = sStylePaperBookPublisher
+	oStylesDlg.GetControl(&quot;tfPaperBookCity&quot;).Text = sStylePaperBookCity
+	oStylesDlg.GetControl(&quot;tfPaperBookYear&quot;).Text = sStylePaperBookYear
+	oStylesDlg.GetControl(&quot;tfPaperBookISBN&quot;).Text = sStylePaperBookISBN
+	oStylesDlg.GetControl(&quot;tfPaperBookSequence&quot;).Text = sStylePaperBookSequence
+	oStylesDlg.GetControl(&quot;tfPaperBookSequenceNumber&quot;).Text = sStylePaperBookSequenceNumber
 
 End Function
 
@@ -310,13 +327,13 @@ End Function
 Function SetStylesVarsDefault
 	&apos; Установка стилей по умолчанию в переменные
 	&apos; Данные книги
-	sStyleBookAuthor = &quot;Book Author&quot;
-	sStyleBookTitle	 = &quot;Book Title&quot;
+	sStyleBookAuthor		= &quot;Book Author&quot;
+	sStyleBookTitle	 		= &quot;Book Title&quot;
 	&apos; Анотация
-	sStyleAnnotation = &quot;Annotation&quot;
+	sStyleAnnotation	 	= &quot;Annotation&quot;
 	&apos; Эпиграф
-	sStyleEpigraph		= &quot;Epigraph&quot;
-	sStyleEpigraphAuthor= &quot;Epigraph Author&quot;
+	sStyleEpigraph			= &quot;Epigraph&quot;
+	sStyleEpigraphAuthor	= &quot;Epigraph Author&quot;
 	&apos; Поэма
 	sStylePoemTitle	 = &quot;Poem Title&quot;
 	sStylePoem		 = &quot;Poem&quot;
@@ -339,14 +356,14 @@ Function SetStylesVarsDefault
 	sStyleLevel10 	 = &quot;Level 10&quot;
 	
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-	sStyleBookAnnotation = &quot;Book Annotation&quot;
-	sStylePaperBookName = &quot;PaperBook Name&quot;
-	sStylePaperBookPublisher = &quot;PaperBook Publisher&quot;
-	sStylePaperBookCity = &quot;PaperBook City&quot;
-	sStylePaperBookYear = &quot;PaperBook Year&quot;
-	sStylePaperBookISBN = &quot;PaperBook ISBN&quot;
-	sStylePaperBookSequence = &quot;PaperBook Sequence&quot;
-	sStylePaperBookSequenceNumber = &quot;PaperBook SequenceNumber&quot;
+	sStyleBookAnnotation			 = &quot;Book Annotation&quot;
+	sStylePaperBookName 			 = &quot;PaperBook Name&quot;
+	sStylePaperBookPublisher		 = &quot;PaperBook Publisher&quot;
+	sStylePaperBookCity				 = &quot;PaperBook City&quot;
+	sStylePaperBookYear				 = &quot;PaperBook Year&quot;
+	sStylePaperBookISBN				 = &quot;PaperBook ISBN&quot;
+	sStylePaperBookSequence			 = &quot;PaperBook Sequence&quot;
+	sStylePaperBookSequenceNumber	 = &quot;PaperBook SequenceNumber&quot;
 
 End Function
 

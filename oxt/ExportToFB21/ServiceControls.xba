@@ -31,24 +31,20 @@ Function ServiceDlgExec As Boolean
 		.cmbboxLineTDV.StringItemList = sHVList()
 		.cmbboxTextFrame.StringItemList = sTFList()
 		.cmbboxAdjTextFrame.StringItemList = sHRList()
-		.cmbboxStyle.Text		 = &quot;[x]&quot;
-		.cmbboxHeaderTRA.Text	 = &quot;По Центру&quot;
-		.cmbboxHeaderTHV.Text	 = &quot;По Центру&quot;
-		.cmbboxLineTRA.Text		 = &quot;По Центру&quot;
-		.cmbboxLineTDV.Text		 = &quot;По Центру&quot;
-		.cmbboxTextFrame.Text	 = &quot;Таблица&quot;
-		.cmbboxAdjTextFrame.Text = &quot;Слева&quot;
 	End With
-
-	&apos; центрирование на экране
-	ToScreenCenter(oServiceDlg)
 	
-	oServiceDlg.Model.Step = 0
-	
+	&apos; Настройки По умолчанию - в контролы
+	SetDefaultSettings
 	&apos; Считываем и устанавливаем настройки
 	ReadSettings
 	
+	oServiceDlg.Model.Step = 0
+	
 	oServiceDlg.execute()
+
+	&apos; центрирование на экране
+	ToScreenCenter(oServiceDlg)
+
 	ServiceDlgExec = bServiceExecute
 
 End Function
@@ -81,10 +77,22 @@ Function ServiceDlgOk
 	&apos; Сохраняем настройки в файл
 	SaveSettings
 	
-	&apos; считываем настройки или задаем по умолчанию
-	If ReadSettingsInVars = False Then
-		SetDefaultSettingsInVars &apos; Задаем настройки в контролы по умолчанию
-	End If
+	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
+	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
+	&apos; а у пользователей УЖЕ СОХРАНЕН файл settings.txt, где данных для этих новых опций нет,
+	&apos; то при работе Корректора может произойти либо ошибка, либо экспорт произведется не так, как ожидается,
+	&apos; а при запуске формы Настроек новые опции будут не такими, как ожидал User,
+	&apos; Поэтому, сначала устанавливаем значения переменных по умолчанию (SetDefaultSettingsInVars),
+	&apos; а потом - считываем из файла значения опций в переменные (ReadSettingsInVars).
+	&apos; Для тех новых опций, которых еще нет в файле settings.txt значения будут по умолчанию,
+	&apos; а для остальных - считаны из файла.
+	&apos; Когда же User запустит форму Настроек и пересохранит ВСЕ настройки Конвертора,
+	&apos; то вне переменные и контролы будут иметь значения из файла!
+	
+	&apos; Задаем настройки в контролы по умолчанию
+	SetDefaultSettingsInVars
+	&apos; только теперь считываем настройки из файла
+	ReadSettingsInVars
 
 	bServiceExecute = True
 	oServiceDlg.endExecute()

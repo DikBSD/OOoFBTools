@@ -37,21 +37,35 @@ Sub TextCorrector
 	&apos; файл пользовательских стилей
 	sCorrectorSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/corrector.txt&quot;
 	
-	&apos; считывание настройки из файла. Если его нет - то задаем по умолчанию
-	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
-	If ReadCorrectorSettings = False Then
-		SetCorrectorSettingDefault &apos; Задаем настройки очистки текста в контролы по умолчанию
-	End If
 	
+	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
-
+	
+	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
+	&apos; т.к. Корректор развивается, и в диалоге Корректора Текста появляются НОВЫЕ опции (контролы),
+	&apos; а у пользователей УЖЕ СОХРАНЕН файл corrector.txt, где данных для этих новых опций нет,
+	&apos; то при работе Корректора может произойти либо ошибка, либо коректура произведется не так, как ожидается,
+	&apos; а при запуске формы Корректора новые опции будут не такими, как ожидал User,
+	&apos; Поэтому, сначала устанавливаем значения переменных по умолчанию (SetCorrectorSettingDefault),
+	&apos; а потом - считываем из файла значения опций в переменные (ReadCorrectorSettings).
+	&apos; Для тех новых опций, которых еще нет в файле corrector.txt значения будут по умолчанию,
+	&apos; а для остальных - считаны из файла.
+	&apos; Когда же User запустит форму и пересохранит ВСЕ настройки Корректора,
+	&apos; то вне переменные и контролы будут иметь значения из файла!
+		
+	&apos; Задаем настройки очистки текста в контролы по умолчанию
+	SetCorrectorSettingDefault
+	&apos; только теперь считывание настройки из файла
+	ReadCorrectorSettings
+	
+	oTextCorrectorDlg.execute()
+	
 	&apos; центрирование на экране
 	ToScreenCenter(oTextCorrectorDlg)
 	
-	oTextCorrectorDlg.execute()
 	TextCorrector = bCorrectorExecute
 End Sub
 
