@@ -32,25 +32,23 @@ Function SaveDescription
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; chr(10) &amp; Trim(oInfoDlg.Model.BookTitleField.Text) &amp; chr(10) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
-	If Trim(oInfoDlg.Model.AnnotationTextField.Text) &lt;&gt; &quot;&quot; Then
-		Dim sBookAnnot() As String
-		sBookAnnot = Split(Trim(oInfoDlg.Model.AnnotationTextField.Text), chr(10))
+	If UBound(sBookAnnotation) &lt;&gt; -1 Then
 		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10)
-		For i = 0 To UBound(sBookAnnot)
-			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sBookAnnot(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+		For i = 0 To UBound(sBookAnnotation)
+			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sBookAnnotation(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
 		Next i
 		oTextOutputStream.writeString(&quot;&lt;/annotation&gt;&quot; &amp; chr(10)
 	End If
 	
-	If oInfoDlg.Model.KeywordsField.Text &lt;&gt; &quot;&quot; Then
+	If Trim(oInfoDlg.Model.KeywordsField.Text) &lt;&gt; &quot;&quot; Then
 		oTextOutputStream.writeString(&quot;&lt;keywords&gt;&quot; &amp; Trim(oInfoDlg.Model.KeywordsField.Text) &amp; &quot;&lt;/keywords&gt;&quot; &amp; chr(10))
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; Trim(oInfoDlg.Model.LangComboBox.Text) &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
 	
-	If oInfoDlg.Model.SrcLangComboBox.Text &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; oInfoDlg.Model.SrcLangComboBox.Text &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
+	If Trim(oInfoDlg.Model.SrcLangComboBox.Text) &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; Trim(oInfoDlg.Model.SrcLangComboBox.Text) &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
 	End If
 	
 	If UBound(sTranslators) &lt;&gt; -1 Then
@@ -98,7 +96,13 @@ Function SaveDescription
 	oTextOutputStream.writeString(&quot;&lt;id&gt;&quot; &amp; Trim(oInfoDlg.Model.IDField.Text) &amp; &quot;&lt;/id&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;version&gt;&quot; &amp; Trim(oInfoDlg.Model.VersionField.Text) &amp; &quot;&lt;/version&gt;&quot; &amp; chr(10))
 	If Trim(oInfoDlg.Model.HistoryTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;history&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; Trim(oInfoDlg.Model.HistoryTextField.Text) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/history&gt;&quot; &amp; chr(10))
+		Dim sHistory() As String
+		sHistory = Split(Trim(oInfoDlg.Model.HistoryTextField.Text), chr(10))
+		oTextOutputStream.writeString(&quot;&lt;history&gt;&quot; &amp; chr(10))
+		For i = 0 To UBound(sHistory)
+			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sHistory(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+		Next i
+		oTextOutputStream.writeString(&quot;&lt;/history&gt;&quot; &amp; chr(10))
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/document-info&gt;&quot; &amp; chr(10))
 	SavePublisher

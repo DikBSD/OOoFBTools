@@ -232,13 +232,15 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 				AddBodyArray(sPara, sParaStyleName, True)
 			Case sStyleLevel10
 				AddBodyArray(sPara, sParaStyleName, True)
+			Case sStyleBookAnnotation
+				AddBookAnnotation(sPara)
 			Case Else &apos; что-то другое или просто параграф
 				&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
-				&apos; они не должны быть в основном тексте книги
-				If sParaStyleName &lt;&gt; sStyleBookAnnotation AND sParaStyleName &lt;&gt; sStylePaperBookName AND _
-					sParaStyleName &lt;&gt; sStylePaperBookPublisher AND sParaStyleName &lt;&gt; sStylePaperBookCity AND _
-					sParaStyleName &lt;&gt; sStylePaperBookYear AND sParaStyleName &lt;&gt; sStylePaperBookISBN AND _
-					sParaStyleName &lt;&gt; sStylePaperBookSequence AND sParaStyleName &lt;&gt; sStylePaperBookSequenceNumber Then
+				&apos; они не должны быть в основном тексте книги  в fb2 файле.
+				If sParaStyleName &lt;&gt; sStylePaperBookName AND sParaStyleName &lt;&gt; sStylePaperBookPublisher AND _
+					sParaStyleName &lt;&gt; sStylePaperBookCity AND sParaStyleName &lt;&gt; sStylePaperBookYear AND _
+					sParaStyleName &lt;&gt; sStylePaperBookISBN AND sParaStyleName &lt;&gt; sStylePaperBookSequence AND _
+					sParaStyleName &lt;&gt; sStylePaperBookSequenceNumber Then
 					AddBodyArray(sPara, &quot;Para&quot;, False)
 				End If
 		End Select
@@ -723,4 +725,14 @@ Function OOoWriterVersion() As String
 	oSet = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;,oParm())
 	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
 End Function
+
+Function AddBookAnnotation(sPara As String)
+	&apos; Собираем всю &quot;отформатированную&quot; Аннотацию на Книгу
+	Dim l As Long
+	l = Ubound(sBookAnnotation()) + 1
+	ReDim Preserve sBookAnnotation(l)
+	sBookAnnotation(l) = sPara
+	oProgressBar.setValue(UBound(sBodyParagraphs),0 + UBound(sBookAnnotation) &apos; Статусбар
+End Function
+
 </script:module>
