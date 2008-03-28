@@ -151,7 +151,7 @@ End Function
 Function SavePublisher
 	If Trim(oInfoDlg.Model.pubBookNameTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.pubYearTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; AND _
-		Trim(oInfoDlg.Model.pubISBNTextField.Text) = &quot;&quot; AND sPubSequences(0, 0) = &quot;&quot; AND sPubSequences(0, 1) = &quot;&quot; Then
+		Trim(oInfoDlg.Model.pubISBNTextField.Text) = &quot;&quot; AND UBound(sPubSequences) = -1 Then
 		Exit Function
 	End If
 	oTextOutputStream.writeString(&quot;&lt;publish-info&gt;&quot; &amp; chr(10))
@@ -171,16 +171,10 @@ Function SavePublisher
 		oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; Trim(oInfoDlg.Model.pubISBNTextField.Text) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
 	End If
 	If UBound(sPubSequences) &lt;&gt; -1 Then
-		If UBound(sPubSequences) &gt; 0 Then
-			Dim i As Integer
-			For i = 0 To UBound(sPubSequences)-1
-				oTextOutputStream.writeString(&quot;&lt;sequence name=&quot;&quot;&quot; &amp; sPubSequences(i, 0) &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; sPubSequences(i, 1) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10))
-			Next i
-		Else
-			If sPubSequences(0, 0) &lt;&gt; &quot;&quot; or sPubSequences(0, 1) &lt;&gt; &quot;&quot; Then
-				oTextOutputStream.writeString(&quot;&lt;sequence name=&quot;&quot;&quot; &amp; sPubSequences(0, 0) &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; sPubSequences(0, 1) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10))
-			End If
-		End If
+		Dim i As Integer
+		For i = 0 To UBound(sPubSequences)
+			oTextOutputStream.writeString(&quot;&lt;sequence name=&quot;&quot;&quot; &amp; sPubSequences(i, 0) &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; sPubSequences(i, 1) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10))
+		Next i
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/publish-info&gt;&quot; &amp; chr(10))
 End Function
