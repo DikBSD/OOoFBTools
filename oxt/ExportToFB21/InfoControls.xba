@@ -107,8 +107,10 @@ Function InfoDlgExec As Boolean
 		.pubISBNTextField.Text = FindTextOfStyle(sStylePaperBookISBN, true)
 	End With
 	
+	&apos; считываем данные на Серии книги
+	FindSequences(sSequences, sStyleBookSequence, sStyleBookSequenceNumber, oInfoDlg.GetControl(&quot;lblSequences&quot;))
 	&apos; считываем данные на Серии Бумажной книги
-	FindPubSequences
+	FindSequences(sPubSequences, sStylePaperBookSequence, sStylePaperBookSequenceNumber, oInfoDlg.GetControl(&quot;lblPubSequences&quot;))
 	&apos; центрирование на экране
 	ToScreenCenter(oInfoDlg)
 	
@@ -156,7 +158,9 @@ Function ConvertingFile
 	AppendBookAuthor
 	AppendBookTranslator
 	AppendBookSequence
-	AppendDocAuthor
+	If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
+		AddDocAuthor
+	End If
 	If Trim(oInfoDlg.Model.pubSequenseTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) &lt;&gt; &quot;&quot; Then
 		AddPublisherSequence
 	End If
@@ -396,7 +400,7 @@ Function AddPublisherSequence
 		.pubSequenseTextField.Text = &quot;&quot;
 		.pubSequenseNumberTextField.Text = &quot;&quot;
 	End With
-	oInfoDlg.GetControl(&quot;lblPubSequence&quot;).Text = i+1
+	oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = i+1
 End Function
 
 Function AppendCustomInfos
@@ -455,20 +459,20 @@ Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	FindTextOfStyle = sResult
 End Function
 
-Function FindPubSequences
+Function FindSequences(sSeq() As String, sStyle As String, sStyleNumber As String, oLabel As Object)
 	Dim oStr As Object, oSeqEnum As Object, oSeqNumberEnum As Object, oDesc As Object, iCount As Integer
 	oDesc = ThisComponent.createSearchDescriptor()
 	
 	&apos; ищем все серии Бумажной Книги
 	With oDesc
 		.SearchStyles = true
-		.setSearchString(sStylePaperBookSequence)
+		.setSearchString(sStyle)
 	End With
 	oSeqEnum = ThisComponent.findAll(oDesc)
 	&apos; ищем все номера серий Бумажной Книги
 	With oDesc
 		.SearchStyles = true
-		.setSearchString(sStylePaperBookSequenceNumber)
+		.setSearchString(sStyleNumber)
 	End With
 	oSeqNumberEnum = ThisComponent.findAll(oDesc)
 	
@@ -478,23 +482,48 @@ Function FindPubSequences
 	
 	&apos; переопределяем размерность массива
 	If oSeqEnum.getCount &gt; oSeqNumberEnum.getCount Then
-		ReDim sPubSequences(oSeqEnum.getCount()-1, 1) As String
+		ReDim sSeq(oSeqEnum.getCount()-1, 1) As String
 	Else
-		ReDim sPubSequences(oSeqNumberEnum.getCount()-1, 1) As String
+		ReDim sSeq(oSeqNumberEnum.getCount()-1, 1) As String
 	End If
 
 	&apos; заполняем массив серий Бумажной Книги
 	For iCount = 0 to oSeqEnum.getCount() - 1
 		oStr = oSeqEnum.getByIndex(iCount)
-		sPubSequences(iCount, 0) = oStr.getString()
+		sSeq(iCount, 0) = oStr.getString()
 	Next iCount
 	
 	For iCount = 0 to oSeqNumberEnum.getCount() - 1
 		oStr = oSeqNumberEnum.getByIndex(iCount)
-		sPubSequences(iCount, 1) = oStr.getString()
+		sSeq(iCount, 1) = oStr.getString()
 	Next iCount
-	oInfoDlg.GetControl(&quot;lblPubSequence&quot;).Text = Ubound(sPubSequences())+1
+	oLabel.Text = Ubound(sSeq())+1
 	
+End Function
+
+Function ShowBookSequencesCount
+	Dim sStr As String, sLine As String
+	sLine = &quot;----------------------------&quot;
+	sStr = &quot;№ п/п | Серия | Номер&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	If UBound(sSequences) &lt;&gt; -1 Then
+		Dim i As Integer
+		For i = 0 To UBound(sSequences)
+			sStr = sStr &amp; i &amp; &quot;. | &quot; &amp; sSequences(i, 0) &amp; &quot; | &quot; &amp; sSequences(i, 1) &amp; chr(10)
+		Next i
+		sStr = sStr &amp; sLine &amp; chr(10)
+		If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
+			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+					Trim(oInfoDlg.Model.SequenceTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.SequenceNumberTextField.Text)
+		End If
+	Else
+		If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
+			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+					Trim(oInfoDlg.Model.SequenceTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.SequenceNumberTextField.Text)
+		Else
+			sStr = &quot;Список Серий пуст!&quot;
+		End If
+	End If
+	MsgBox sStr, 64, &quot;Список серий для Книги&quot;
 End Function
 
 Function ShowPubSequencesCount
