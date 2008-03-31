@@ -15,6 +15,8 @@ Public sDocAuthors() As String REM doc&apos;s authors
 Public sPubSequences() As String REM publisher book&apos;s sequences
 Public sCustomInfos() As String  REM данные пользователя
 
+Public oProgressBar
+
 Private sLangList() As String
 Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
 
@@ -22,6 +24,10 @@ Private bExecute As Boolean
 Private bAppendBtn As Boolean
 
 Function InfoDlgExec As Boolean
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
+	oProgressBar.setValue(0)
+	
 	&apos; файл настроек
 	sSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/settings.txt&quot;
 	&apos; файл профиля Автора fb2 документа
@@ -100,17 +106,41 @@ Function InfoDlgExec As Boolean
 		.ProgrammUsedField.Text = &quot;ExportToFB21&quot;
 		.IDField.Text = &quot;OOo-ExportToFB21-&quot; &amp; Year(sNow) &amp; Month(sNow) &amp; Day(sNow) &amp; Hour(sNow) &amp; Minute(sNow) &amp; Second(sNow)
 		.VersionField.Text = &quot;1.0&quot;
-		.pubBookNameTextField.Text = FindTextOfStyle(sStylePaperBookName, true)
-		.pubPublisherTextField.Text = FindTextOfStyle(sStylePaperBookPublisher, true)
-		.pubCityTextField.Text = FindTextOfStyle(sStylePaperBookCity, true)
-		.pubYearTextField.Text = FindTextOfStyle(sStylePaperBookYear, true)
-		.pubISBNTextField.Text = FindTextOfStyle(sStylePaperBookISBN, true)
+		.KeywordsField.Text = FindTextOfStyle(sStyle_BookKeywords, true)
 	End With
 	
-	&apos; считываем данные на Серии книги
-	FindSequences(sSequences, sStyleBookSequence, sStyleBookSequenceNumber, oInfoDlg.GetControl(&quot;lblSequences&quot;))
-	&apos; считываем данные на Серии Бумажной книги
-	FindSequences(sPubSequences, sStylePaperBookSequence, sStylePaperBookSequenceNumber, oInfoDlg.GetControl(&quot;lblPubSequences&quot;))
+	Dim oSect As Object, oCEnum As Object, oContent As Object
+	Dim oCursor As Object, lPara As Long &apos; для статусбара
+	oCursor = ThisComponent.Text.createTextCursor()
+	oCursor.gotoStart(False)
+	lPara = 0
+	Do
+		lPara = lPara+1
+		oCursor.gotoEndOfParagraph(True)
+		Select Case oCursor.ParaStyleName
+		Case sStyleBookAuthor
+			Exit Do
+		Case sStyleBookTitle
+			Exit Do
+		Case sStyle_BookAuthor
+			ReadBookuthorsOrTranslatorsInfo(oCursor, sAuthors)
+			oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
+		Case sStyle_BookTranslator
+			ReadBookuthorsOrTranslatorsInfo(oCursor, sTranslators)
+			oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
+		Case sStyle_BookSeries
+			ReadSequencesInfo(oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber)
+			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
+		Case sStyle_PaperBookSeries
+			ReadSequencesInfo(oCursor, sPubSequences, sStyle_PaperBookSequence, sStyle_PaperBookSequenceNumber)
+			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
+		Case sStyle_PaperBook
+			ReadPaperBookInfo(oCursor)
+		End Select
+		oProgressBar.setValue(lPara) &apos; Статусбар
+	Loop While oCursor.gotoNextParagraph(False)
+	oProgressBar.end
+	
 	&apos; центрирование на экране
 	ToScreenCenter(oInfoDlg)
 	
@@ -155,16 +185,27 @@ Function ConvertingFile
 	If Not AppendBookGenre Then
 		Exit Function
 	End If
-	AppendBookAuthor
-	AppendBookTranslator
-	AppendBookSequence
+	If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; OR _
+		Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiHomepage.Text) &lt;&gt; &quot;&quot; Then 
+		AddBookAuthor
+	End If
+	If Trim(oInfoDlg.Model.tiTransFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransLast.Text) &lt;&gt; &quot;&quot; OR _
+		Trim(oInfoDlg.Model.tiTransNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransHomepage.Text) &lt;&gt; &quot;&quot; Then 
+		AddBookTranslator
+	End If
 	If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
+		AddBookSequence
+	End If
+	If Trim(oInfoDlg.Model.diFirstField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diMiddleField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diLastField.Text) &lt;&gt; &quot;&quot; OR _
+		Trim(oInfoDlg.Model.diNicknameField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diEmailField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
 		AddDocAuthor
 	End If
 	If Trim(oInfoDlg.Model.pubSequenseTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) &lt;&gt; &quot;&quot; Then
 		AddPublisherSequence
 	End If
-	AppendCustomInfos
+	If Trim(oInfoDlg.Model.cusTypeTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) &lt;&gt; &quot;&quot; Then
+		AddCustomInfos
+	End If
 	bExecute = True
 	oInfoDlg.endExecute()
 End Function
@@ -249,12 +290,10 @@ Function AppendBookGenre As Boolean
 End Function
 
 Function AppendBookAuthor
-	IF bAppendBtn = True Then
-		If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
-			 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
-			Exit Function
-		End If
+	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
+		 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
+		Exit Function
 	End If
 	AddBookAuthor
 End Function
@@ -284,12 +323,10 @@ Function AddBookAuthor
 End Function
 
 Function AppendBookTranslator
-	IF bAppendBtn = True Then
-		If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
-			Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
-			Exit Function
-		End If
+	If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
+		Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
+		Exit Function
 	End If
 	AddBookTranslator
 End Function
@@ -319,11 +356,9 @@ Function AddBookTranslator
 End Function
 
 Function AppendBookSequence
-	IF bAppendBtn = True Then
-		If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
-			Exit Function
-		End If
+	If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
+		Exit Function
 	End If
 	AddBookSequence
 End Function
@@ -345,12 +380,10 @@ Function AddBookSequence
 End Function
 
 Function AppendDocAuthor
-	IF bAppendBtn = True Then
-		If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
-			Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
-			Exit Function
-		End If
+	If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
+		Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
+		Exit Function
 	End If
 	AddDocAuthor
 End Function
@@ -404,11 +437,9 @@ Function AddPublisherSequence
 End Function
 
 Function AppendCustomInfos
-	IF bAppendBtn = True Then
-		If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
-			MsgBox &quot;Заполните оба поля для Custom Info&quot;, 64, sConvertorName
-			Exit Function
-		End If
+	If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните оба поля для Custom Info&quot;, 64, sConvertorName
+		Exit Function
 	End If
 	AddCustomInfos
 End Function
@@ -459,56 +490,199 @@ Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	FindTextOfStyle = sResult
 End Function
 
-Function FindSequences(sSeq() As String, sStyle As String, sStyleNumber As String, oLabel As Object)
-	Dim oStr As Object, oSeqEnum As Object, oSeqNumberEnum As Object, oDesc As Object, iCount As Integer
-	oDesc = ThisComponent.createSearchDescriptor()
-	
-	&apos; ищем все серии Бумажной Книги
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyle)
-	End With
-	oSeqEnum = ThisComponent.findAll(oDesc)
-	&apos; ищем все номера серий Бумажной Книги
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyleNumber)
-	End With
-	oSeqNumberEnum = ThisComponent.findAll(oDesc)
-	
-	If oSeqEnum.getCount = 0 AND oSeqNumberEnum.getCount = 0 Then 
+Function ReadBookuthorsOrTranslatorsInfo(oCursor, sArray())
+	If oCursor.String = &quot;&quot; Then	&apos;
 		Exit Function
 	End If
 	
-	&apos; переопределяем размерность массива
-	If oSeqEnum.getCount &gt; oSeqNumberEnum.getCount Then
-		ReDim sSeq(oSeqEnum.getCount()-1, 1) As String
-	Else
-		ReDim sSeq(oSeqNumberEnum.getCount()-1, 1) As String
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	Dim i As Integer
+	
+	i = Ubound(sArray(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sArray(i, 5)
+	Else Redim sArray(i, 5)
 	End If
+	
+	oEnum = oCursor.createEnumeration
+		While oEnum.hasMoreElements
+			oText = oEnum.nextElement
+			oSecEnum = oText.createEnumeration
+			While oSecEnum.hasMoreElements
+				oTextPortion = oSecEnum.nextElement	
+				If oTextPortion.CharStyleName = sStyle_Name Then
+					sArray(i, 0) = sArray(i, 0) + oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
+					sArray(i, 1) = sArray(i, 1) + oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Family Then
+					sArray(i, 2) = sArray(i, 2) + oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Nick Then
+					sArray(i, 3) = sArray(i, 3) + oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Email Then
+					sArray(i, 4) = sArray(i, 4) + oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_WebSite Then
+					sArray(i, 5) = sArray(i, 5) +  oTextPortion.getString()
+				End If
+			Wend
+		Wend
+End Function
 
-	&apos; заполняем массив серий Бумажной Книги
-	For iCount = 0 to oSeqEnum.getCount() - 1
-		oStr = oSeqEnum.getByIndex(iCount)
-		sSeq(iCount, 0) = oStr.getString()
-	Next iCount
+Function ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumber)
+	If oCursor.String = &quot;&quot; Then	&apos;
+		Exit Function
+	End If
 	
-	For iCount = 0 to oSeqNumberEnum.getCount() - 1
-		oStr = oSeqNumberEnum.getByIndex(iCount)
-		sSeq(iCount, 1) = oStr.getString()
-	Next iCount
-	oLabel.Text = Ubound(sSeq())+1
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	Dim i As Integer
 	
+	i = Ubound(sArray(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sArray(i, 1)
+	Else Redim sArray(i, 1)
+	End If
+	
+	oEnum = oCursor.createEnumeration
+		While oEnum.hasMoreElements
+			oText = oEnum.nextElement
+			oSecEnum = oText.createEnumeration
+			While oSecEnum.hasMoreElements
+				oTextPortion = oSecEnum.nextElement	
+				If oTextPortion.CharStyleName = sStyleSequence Then
+					sArray(i, 0) = sArray(i, 0) + oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyleSequenceNumber Then
+					sArray(i, 1) = sArray(i, 1) + oTextPortion.getString()
+				End If
+			Wend
+		Wend
+End Function
+
+Function ReadPaperBookInfo(oCursor)
+	If oCursor.String = &quot;&quot; Then
+		Exit Function
+	End If
+	
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	
+	oEnum = oCursor.createEnumeration
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.CharStyleName = sStyle_PaperBookName Then
+				oInfoDlg.Model.pubBookNameTextField.Text = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
+				oInfoDlg.Model.pubPublisherTextField.Text = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
+				oInfoDlg.Model.pubCityTextField.Text = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
+				oInfoDlg.Model.pubYearTextField.Text = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
+				oInfoDlg.Model.pubISBNTextField.Text = oTextPortion.getString()
+			End If
+		Wend
+	Wend
+End Function
+
+Function ShowBookAuthorsCount
+	Dim sStr As String, sLine As String
+	sLine = &quot;---------------------------------------------------------&quot;
+	sStr = &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	If UBound(sAuthors) &lt;&gt; -1 Then
+		Dim i As Integer
+		For i = 0 To UBound(sAuthors)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sAuthors(i, 0) &amp; &quot; | &quot; &amp; sAuthors(i, 1) &amp; &quot; | &quot; &amp; sAuthors(i, 2) &amp; &quot; | &quot; &amp; _
+					sAuthors(i, 3) &amp; &quot; | &quot; &amp; sAuthors(i, 4) &amp; &quot; | &quot; &amp; sAuthors(i, 5) &amp; chr(10)
+		Next i
+		sStr = sStr &amp; sLine &amp; chr(10)
+		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; OR _
+			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiHomepage.Text) &lt;&gt; &quot;&quot; Then
+			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+					Trim(oInfoDlg.Model.tiFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiLast.Text)  &amp; &quot; | &quot; &amp; _
+					Trim(oInfoDlg.Model.tiNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiHomepage.Text)
+		End If
+	Else
+		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; OR _
+			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiHomepage.Text) &lt;&gt; &quot;&quot; Then
+			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+					Trim(oInfoDlg.Model.tiFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiLast.Text)  &amp; &quot; | &quot; &amp; _
+					Trim(oInfoDlg.Model.tiNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiHomepage.Text)
+		Else
+			sStr = &quot;Список Авторов Книги пуст!&quot;
+		End If
+	End If
+	MsgBox sStr, 64, &quot;Список Авторов Книги&quot;
+End Function
+
+Function ShowBookTranslatorsCount
+	Dim sStr As String, sLine As String
+	sLine = &quot;---------------------------------------------------------&quot;
+	sStr = &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	If UBound(sTranslators) &lt;&gt; -1 Then
+		Dim i As Integer
+		For i = 0 To UBound(sTranslators)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sTranslators(i, 0) &amp; &quot; | &quot; &amp; sTranslators(i, 1) &amp; &quot; | &quot; &amp; _
+					sTranslators(i, 2) &amp; &quot; | &quot; &amp; sTranslators(i, 3) &amp; &quot; | &quot; &amp; sTranslators(i, 4) &amp; &quot; | &quot; &amp; _
+					sTranslators(i, 5) &amp; chr(10)
+		Next i
+		sStr = sStr &amp; sLine &amp; chr(10)
+		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransLast.Text) &lt;&gt; &quot;&quot; OR _
+			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransHomepage.Text) &lt;&gt; &quot;&quot; Then
+			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+					Trim(oInfoDlg.Model.tiTransFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransLast.Text)  &amp; &quot; | &quot; &amp; _
+					Trim(oInfoDlg.Model.tiTransNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransHomepage.Text)
+		End If
+	Else
+		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransLast.Text) &lt;&gt; &quot;&quot; OR _
+			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransHomepage.Text) &lt;&gt; &quot;&quot; Then
+			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+					Trim(oInfoDlg.Model.tiTransFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tTransiMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransLast.Text)  &amp; &quot; | &quot; &amp; _
+					Trim(oInfoDlg.Model.tiTransNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransHomepage.Text)
+		Else
+			sStr = &quot;Список Переводчиков Книги пуст!&quot;
+		End If
+	End If
+	MsgBox sStr, 64, &quot;Список Переводчиков Книги&quot;
+End Function
+
+Function ShowDocAuthorsCount
+	Dim sStr As String, sLine As String
+	sLine = &quot;---------------------------------------------------------&quot;
+	sStr = &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	If UBound(sDocAuthors) &lt;&gt; -1 Then
+		Dim i As Integer
+		For i = 0 To UBound(sDocAuthors)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sDocAuthors(i, 0) &amp; &quot; | &quot; &amp; sDocAuthors(i, 1) &amp; &quot; | &quot; &amp; sDocAuthors(i, 2) &amp; &quot; | &quot; &amp; _
+					sDocAuthors(i, 3) &amp; &quot; | &quot; &amp; sDocAuthors(i, 4) &amp; &quot; | &quot; &amp; sDocAuthors(i, 5) &amp; chr(10)
+		Next i
+		sStr = sStr &amp; sLine &amp; chr(10)
+		If Trim(oInfoDlg.Model.diFirstField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diMiddleField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diLastField.Text) &lt;&gt; &quot;&quot; OR _
+			Trim(oInfoDlg.Model.diNicknameField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diEmailField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
+			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+					Trim(oInfoDlg.Model.diFirstField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diMiddleField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diLastField.Text)  &amp; &quot; | &quot; &amp; _
+					Trim(oInfoDlg.Model.diNicknameField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diEmailField.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diHomepageField.Text)
+		End If
+	Else
+		If Trim(oInfoDlg.Model.diFirstField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diMiddleField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diLastField.Text) &lt;&gt; &quot;&quot; OR _
+			Trim(oInfoDlg.Model.diNicknameField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diEmailField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
+			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+					Trim(oInfoDlg.Model.diFirstField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diMiddleField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diLastField.Text)  &amp; &quot; | &quot; &amp; _
+					Trim(oInfoDlg.Model.diNicknameField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diEmailField.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diHomepageField.Text)
+		Else
+			sStr = &quot;Список Авторов fb2 Документа пуст!&quot;
+		End If
+	End If
+	MsgBox sStr, 64, &quot;Список Авторов fb2 Документа&quot;
 End Function
 
 Function ShowBookSequencesCount
 	Dim sStr As String, sLine As String
-	sLine = &quot;----------------------------&quot;
+	sLine = &quot;-------------------------&quot;
 	sStr = &quot;№ п/п | Серия | Номер&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sSequences) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sSequences)
-			sStr = sStr &amp; i &amp; &quot;. | &quot; &amp; sSequences(i, 0) &amp; &quot; | &quot; &amp; sSequences(i, 1) &amp; chr(10)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sSequences(i, 0) &amp; &quot; | &quot; &amp; sSequences(i, 1) &amp; chr(10)
 		Next i
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
@@ -528,12 +702,12 @@ End Function
 
 Function ShowPubSequencesCount
 	Dim sStr As String, sLine As String
-	sLine = &quot;----------------------------&quot;
+	sLine = &quot;-------------------------&quot;
 	sStr = &quot;№ п/п | Серия | Номер&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sPubSequences) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sPubSequences)
-			sStr = sStr &amp; i &amp; &quot;. | &quot; &amp; sPubSequences(i, 0) &amp; &quot; | &quot; &amp; sPubSequences(i, 1) &amp; chr(10)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sPubSequences(i, 0) &amp; &quot; | &quot; &amp; sPubSequences(i, 1) &amp; chr(10)
 		Next i
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.pubSequenseTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) &lt;&gt; &quot;&quot; Then

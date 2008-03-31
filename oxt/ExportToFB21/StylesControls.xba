@@ -37,17 +37,31 @@ Public sStyleLevel8 As String
 Public sStyleLevel9 As String
 Public sStyleLevel10 As String
 
-&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-Public sStyleBookAnnotation As String
-Public sStyleBookSequence As String
-Public sStyleBookSequenceNumber As String
-Public sStylePaperBookName As String
-Public sStylePaperBookPublisher As String
-Public sStylePaperBookCity As String
-Public sStylePaperBookYear As String
-Public sStylePaperBookISBN As String
-Public sStylePaperBookSequence As String
-Public sStylePaperBookSequenceNumber As String
+&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; - для всего абзаца
+Public sStyle_BookAnnotation As String
+Public sStyle_BookAuthor As String
+Public sStyle_BookTranslator As String
+Public sStyle_BookSeries As String
+Public sStyle_BookKeywords As String
+Public sStyle_PaperBook As String
+Public sStyle_PaperBookSeries As String
+&apos; Inline &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; - в пределах абзаца - Авторы и Переводчики
+Public sStyle_Name As String
+Public sStyle_Patronymic As String
+Public sStyle_Family As String
+Public sStyle_Nick As String
+Public sStyle_Email As String
+Public sStyle_WebSite As String
+Public sStyle_Sequence As String
+Public sStyle_SequenceNumber As String
+&apos; Inline &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; - в пределах абзаца - Бумажная книга
+Public sStyle_PaperBookName As String
+Public sStyle_PaperBookPublisher As String
+Public sStyle_PaperBookCity As String
+Public sStyle_PaperBookYear As String
+Public sStyle_PaperBookISBN As String
+Public sStyle_PaperBookSequence As String
+Public sStyle_PaperBookSequenceNumber As String
 
 Function SetUserStyles
 	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
@@ -61,7 +75,8 @@ Function SetUserStyles
 	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых полей нет,
 	&apos; то при работе конвертора может произойти либо ошибка, либо экспорт выделенных новыми стилями абзацев
 	&apos; будет сделан, как просто абзацы (&lt;p&gt;......&lt;/p&gt;), а при запуске формы Стилей новые поля будут пустыми, что не верно.
-	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetStylesVarsDefault, SetStylesControlsDefault),
+	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetStylesVarsDefault,
+	&apos; SetGeneralStylesControlsDefault, SetServiceStylesControlsDefault),
 	&apos; а потом - считываем из файла значения (ReadStyles).
 	&apos; Для тех новых полей, которых еще нет в файле styles.txt значения будут по умолчанию, а для остальных - считаны из файла.
 	&apos; Когда же User запустит форму и пересохранит ВСЕ стили, то вне переменные и контролы будут иметь значения из файла!
@@ -69,7 +84,8 @@ Function SetUserStyles
 	&apos; Установка стилей по умолчанию
 	SetStylesVarsDefault
 	&apos; Задаем название стилей в контролы по умолчанию
-	SetStylesControlsDefault
+	SetGeneralStylesControlsDefault
+	SetServiceStylesControlsDefault
 	&apos; Только теперь считывание стилей из файла
 	ReadStyles
 	
@@ -142,9 +158,12 @@ Function SaveStyles
 End Function
 
 Function SetStyles(sCurrentLine)
+	On Error Goto ErrorHandler
 	Dim sStyles() As String
 	sStyles = Split(sCurrentLine, &quot;=&quot;)
 	oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
+	Exit Function
+	ErrorHandler: &apos; идем дальше
 End Function
 
 Function SetStylesControlsDefault
@@ -153,7 +172,17 @@ Function SetStylesControlsDefault
 	&apos; Установка стилей по умолчанию в переменные
 	SetStylesVarsDefault
 	
-	&apos; Установка стилей по умолчанию в контролы	
+	If oStylesDlg.Model.Step = 1 Then
+		&apos; Установка Основных стилей по умолчанию в контролы
+		SetGeneralStylesControlsDefault
+	Else	
+		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
+		SetServiceStylesControlsDefault
+	End If
+End Function
+
+Function SetGeneralStylesControlsDefault
+	&apos; // Установка Основных стилей по умолчанию в контролы //
 	&apos; Данные книги
 	oStylesDlg.GetControl(&quot;tfBookAuthor&quot;).Text = sStyleBookAuthor
 	oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text = sStyleBookTitle
@@ -182,19 +211,36 @@ Function SetStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text = sStyleLevel8
 	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text = sStyleLevel9
 	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text = sStyleLevel10
+End Function
+
+Function SetServiceStylesControlsDefault
+	&apos; // Установка &quot;Служебных&quot; стилей по умолчанию в контролы //
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	&apos; Анотация Книги
-	oStylesDlg.GetControl(&quot;tfBookAnnotation&quot;).Text = sStyleBookAnnotation
-	oStylesDlg.GetControl(&quot;tfBookSequence&quot;).Text = sStyleBookSequence
-	oStylesDlg.GetControl(&quot;tfBookSequenceNumber&quot;).Text = sStyleBookSequenceNumber
-	oStylesDlg.GetControl(&quot;tfPaperBookName&quot;).Text = sStylePaperBookName
-	oStylesDlg.GetControl(&quot;tfPaperBookPublisher&quot;).Text = sStylePaperBookPublisher
-	oStylesDlg.GetControl(&quot;tfPaperBookCity&quot;).Text = sStylePaperBookCity
-	oStylesDlg.GetControl(&quot;tfPaperBookYear&quot;).Text = sStylePaperBookYear
-	oStylesDlg.GetControl(&quot;tfPaperBookISBN&quot;).Text = sStylePaperBookISBN
-	oStylesDlg.GetControl(&quot;tfPaperBookSequence&quot;).Text = sStylePaperBookSequence
-	oStylesDlg.GetControl(&quot;tfPaperBookSequenceNumber&quot;).Text = sStylePaperBookSequenceNumber
+	oStylesDlg.GetControl(&quot;tf_BookAnnotation&quot;).Text = sStyle_BookAnnotation
+	oStylesDlg.GetControl(&quot;tf_BookAuthor&quot;).Text = sStyle_BookAuthor
+	oStylesDlg.GetControl(&quot;tf_BookTranslator&quot;).Text = sStyle_BookTranslator
+	oStylesDlg.GetControl(&quot;tf_BookSeries&quot;).Text = sStyle_BookSeries
+	oStylesDlg.GetControl(&quot;tf_BookKeywords&quot;).Text = sStyle_BookKeywords
+	oStylesDlg.GetControl(&quot;tf_PaperBook&quot;).Text = sStyle_PaperBook
+	oStylesDlg.GetControl(&quot;tf_PaperBookSeries&quot;).Text = sStyle_PaperBookSeries
 
+	oStylesDlg.GetControl(&quot;tf_Name&quot;).Text = sStyle_Name
+	oStylesDlg.GetControl(&quot;tf_Patronymic&quot;).Text = sStyle_Patronymic
+	oStylesDlg.GetControl(&quot;tf_Family&quot;).Text = sStyle_Family
+	oStylesDlg.GetControl(&quot;tf_Nick&quot;).Text = sStyle_Nick
+	oStylesDlg.GetControl(&quot;tf_Email&quot;).Text = sStyle_Email
+	oStylesDlg.GetControl(&quot;tf_WebSite&quot;).Text = sStyle_WebSite
+	oStylesDlg.GetControl(&quot;tf_Sequence&quot;).Text = sStyle_Sequence
+	oStylesDlg.GetControl(&quot;tf_SequenceNumber&quot;).Text = sStyle_SequenceNumber
+
+	oStylesDlg.GetControl(&quot;tf_PaperBookName&quot;).Text = sStyle_PaperBookName
+	oStylesDlg.GetControl(&quot;tf_PaperBookPublisher&quot;).Text = sStyle_PaperBookPublisher
+	oStylesDlg.GetControl(&quot;tf_PaperBookCity&quot;).Text = sStyle_PaperBookCity
+	oStylesDlg.GetControl(&quot;tf_PaperBookYear&quot;).Text = sStyle_PaperBookYear
+	oStylesDlg.GetControl(&quot;tf_PaperBookISBN&quot;).Text = sStyle_PaperBookISBN
+	oStylesDlg.GetControl(&quot;tf_PaperBookSequence&quot;).Text = sStyle_PaperBookSequence
+	oStylesDlg.GetControl(&quot;tf_PaperBookSequenceNumber&quot;).Text = sStyle_PaperBookSequenceNumber
 End Function
 
 Function ReadStylesInVars As Boolean
@@ -309,26 +355,52 @@ Function SetStylesInVars(sCurrentLine)
 				sStyleLevel10 = sStyles(1)
 			End If
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-		Case &quot;tfBookAnnotation&quot;
-			sStyleBookAnnotation = sStyles(1)
-		Case &quot;tfBookSequence&quot;
-			sStyleBookSequence = sStyles(1)
-		Case &quot;tfBookSequenceNumber&quot;
-			sStyleBookSequenceNumber = sStyles(1)
-		Case &quot;tfPaperBookName&quot;
-			sStylePaperBookName = sStyles(1)
-		Case &quot;tfPaperBookPublisher&quot;
-			sStylePaperBookPublisher = sStyles(1)
-		Case &quot;tfPaperBookCity&quot;
-			sStylePaperBookCity = sStyles(1)
-		Case &quot;tfPaperBookYear&quot;
-			sStylePaperBookYear = sStyles(1)
-		Case &quot;tfPaperBookISBN&quot;
-			sStylePaperBookISBN = sStyles(1)
-		Case &quot;tfPaperBookSequence&quot;
-			sStylePaperBookSequence = sStyles(1)
-		Case &quot;tfPaperBookSequenceNumber&quot;
-			sStylePaperBookSequenceNumber = sStyles(1)
+		Case &quot;tf_BookAnnotation&quot;
+			sStyle_BookAnnotation = sStyles(1)
+		Case &quot;tf_BookAuthor&quot;
+			sStyle_BookAuthor = sStyles(1)
+		Case &quot;tf_BookTranslator&quot;
+			sStyle_BookTranslator = sStyles(1)
+		Case &quot;tf_BookSeries&quot;
+			sStyle_BookSeries = sStyles(1)
+		Case &quot;tf_BookKeywords&quot;
+			sStyle_BookKeywords = sStyles(1)	
+		Case &quot;tf_PaperBook&quot;
+			sStyle_PaperBook = sStyles(1)
+		Case &quot;tf_PaperBookSeries&quot;
+			sStyle_PaperBookSeries = sStyles(1)
+			
+		Case &quot;tf_Name&quot;
+			sStyle_Name = sStyles(1)
+		Case &quot;tf_Patronymic&quot;
+			sStyle_Patronymic = sStyles(1)
+		Case &quot;tf_Family&quot;
+			sStyle_Family = sStyles(1)
+		Case &quot;tf_Nick&quot;
+			sStyle_Nick = sStyles(1)
+		Case &quot;tf_Email&quot;
+			sStyle_Email = sStyles(1)
+		Case &quot;tf_WebSite&quot;
+			sStyle_WebSite = sStyles(1)
+		Case &quot;tf_Sequence&quot;
+			sStyle_Sequence	= sStyles(1)
+		Case &quot;tf_SequenceNumber&quot;
+			sStyle_SequenceNumber = sStyles(1)
+				
+		Case &quot;tf_PaperBookName&quot;
+			sStyle_PaperBookName = sStyles(1)
+		Case &quot;tf_PaperBookPublisher&quot;
+			sStyle_PaperBookPublisher = sStyles(1)
+		Case &quot;tf_PaperBookCity&quot;
+			sStyle_PaperBookCity = sStyles(1)
+		Case &quot;tf_PaperBookYear&quot;
+			sStyle_PaperBookYear = sStyles(1)
+		Case &quot;tf_PaperBookISBN&quot;
+			sStyle_PaperBookISBN = sStyles(1)
+		Case &quot;tf_PaperBookSequence&quot;
+			sStyle_PaperBookSequence	= sStyles(1)
+		Case &quot;tf_PaperBookSequenceNumber&quot;
+			sStyle_PaperBookSequenceNumber = sStyles(1)
 	End Select
 End Function
 
@@ -364,19 +436,39 @@ Function SetStylesVarsDefault
 	sStyleLevel10 	 = &quot;Level 10&quot;
 	
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-	sStyleBookAnnotation			 = &quot;Book Annotation&quot;
+	sStyle_BookAnnotation	= &quot;#Book Annotation&quot;
+	sStyle_BookAuthor	 	= &quot;#Book Author&quot;
+	sStyle_BookTranslator	= &quot;#Book Translator&quot;
+	sStyle_BookSeries	 	= &quot;#Book Series&quot;
+	sStyle_BookKeywords		= &quot;#Book Keywords&quot;
+	sStyle_PaperBook	 	= &quot;#PaperBook&quot;
+	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
+		
+	sStyle_Name			 = &quot;_Name&quot;
+	sStyle_Patronymic	 = &quot;_Patronymic&quot;
+	sStyle_Family		 = &quot;_Family&quot;
+	sStyle_Nick			 = &quot;_Nick&quot;
+	sStyle_Email		 = &quot;_Email&quot;
+	sStyle_WebSite		 = &quot;_WebSite&quot;
+	sStyle_Sequence		 = &quot;_Sequence&quot;
+	sStyle_SequenceNumber= &quot;_SequenceNumber&quot;
 	
-	sStyleBookSequence				 = &quot;Book Sequence&quot;
-	sStyleBookSequenceNumber	 	 = &quot;Book SequenceNumber&quot;
-	sStylePaperBookName 			 = &quot;PaperBook Name&quot;
-	
-	sStylePaperBookPublisher		 = &quot;PaperBook Publisher&quot;
-	sStylePaperBookCity				 = &quot;PaperBook City&quot;
-	sStylePaperBookYear				 = &quot;PaperBook Year&quot;
-	sStylePaperBookISBN				 = &quot;PaperBook ISBN&quot;
-	sStylePaperBookSequence			 = &quot;PaperBook Sequence&quot;
-	sStylePaperBookSequenceNumber	 = &quot;PaperBook SequenceNumber&quot;
+	sStyle_PaperBookName		= &quot;#PaperBook Name&quot;
+	sStyle_PaperBookPublisher	= &quot;#PaperBook Publisher&quot;
+	sStyle_PaperBookCity		= &quot;#PaperBook City&quot;
+	sStyle_PaperBookYear		= &quot;#PaperBook Year&quot;
+	sStyle_PaperBookISBN		= &quot;#PaperBook ISBN&quot;
+	sStyle_PaperBookSequence		= &quot;#PaperBook Sequence&quot;
+	sStyle_PaperBookSequenceNumber	= &quot;#PaperBook SequenceNumber&quot;
 
 End Function
+
+Sub ChangeStyles(o)
+	If o.Source.Model.Name		= &quot;optbtnGeneral&quot; Then
+		oStylesDlg.Model.Step = 1
+	ElseIf o.Source.Model.Name	= &quot;optbtnService&quot; Then
+		oStylesDlg.Model.Step = 2
+	End If
+End Sub
 
 </script:module>

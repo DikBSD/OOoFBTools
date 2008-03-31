@@ -26,7 +26,9 @@ Public bCorrectPara As Boolean
 &apos; обработка ссылок внутри документа
 Public bDocLinks As Boolean
 &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
-Public bSaveImageTitle
+Public bSaveImageTitle As Boolean
+
+Public lBATIndex As Long &apos; Указатель на индекс ячейки массива sBodyParagraphs, хранящей стиль Book Author или Book Title
 
 Dim sFootnoteText() As String
 Dim iFootnoteCount As Integer
@@ -52,6 +54,8 @@ Sub DocumentParser
 	iCurrentTable = 0
 	&apos; номер текущей картинки, если она есть
 	iImgCurrent = 0
+	
+	lBATIndex = -1 &apos; пока нет ни Автора Книги, ни Названия Книги
 			
 	&apos; Перебрать параграфы. Таблицы перебираются одновременно с параграфами
 	oParEnum = ThisComponent.getText().createEnumeration()
@@ -192,8 +196,14 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 		Select Case sParaStyleName
 			Case sStyleBookAuthor
 				AddBodyArray(sPara, sParaStyleName, False)
+				If lBATIndex = -1 Then
+					lBATIndex = UBound(sBodyParagraphs())
+				End If
 			Case sStyleBookTitle
 				AddBodyArray(sPara, sParaStyleName, False)
+				If lBATIndex = -1 Then
+					lBATIndex = UBound(sBodyParagraphs())
+				End If
 			Case sStylePoemTitle
 				AddBodyArray(sPara, sParaStyleName, False)
 			Case sStylePoem
@@ -232,15 +242,14 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 				AddBodyArray(sPara, sParaStyleName, True)
 			Case sStyleLevel10
 				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleBookAnnotation
+			Case sStyle_BookAnnotation
 				AddBookAnnotation(sPara)
 			Case Else &apos; что-то другое или просто параграф
 				&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
 				&apos; они не должны быть в основном тексте книги  в fb2 файле.
-				If sParaStyleName &lt;&gt; sStylePaperBookName AND sParaStyleName &lt;&gt; sStylePaperBookPublisher AND _
-					sParaStyleName &lt;&gt; sStylePaperBookCity AND sParaStyleName &lt;&gt; sStylePaperBookYear AND _
-					sParaStyleName &lt;&gt; sStylePaperBookISBN AND sParaStyleName &lt;&gt; sStylePaperBookSequence AND _
-					sParaStyleName &lt;&gt; sStylePaperBookSequenceNumber Then
+				If sParaStyleName &lt;&gt; sStyle_BookAuthor AND sParaStyleName &lt;&gt; sStyle_BookTranslator AND _
+					sParaStyleName &lt;&gt; sStyle_BookSeries AND sParaStyleName &lt;&gt; sStyle_PaperBook AND _
+					sParaStyleName &lt;&gt; sStyle_PaperBookSeries AND sParaStyleName &lt;&gt; sStyle_BookKeywords Then
 					AddBodyArray(sPara, &quot;Para&quot;, False)
 				End If
 		End Select
@@ -677,7 +686,7 @@ Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	Dim l As Long
 	l = Ubound(sBodyParagraphs(), 1) + 1
 	&apos; для уровней - проверка на несколько строк
-	If bLevel = False Then &apos; это не уровни  ( старый код: If InStr(TextType,&quot;Level &quot;) = 0 Then &apos; это не уровни)
+	If bLevel = False Then 
 		If l &gt; 0 Then
 			ReDim Preserve sBodyParagraphs(l, 1)
 		Else Redim sBodyParagraphs(l, 1)

@@ -22,13 +22,9 @@ Function SaveDescription
 	End If
 	
 	If UBound(sAuthors) &lt;&gt; -1 Then
-		If UBound(sAuthors) &gt; 0 Then
-			For i = 0 To UBound(sAuthors)-1
-				SaveAuthor(sAuthors(i, 0), sAuthors(i, 1), sAuthors(i, 2), sAuthors(i, 3), sAuthors(i, 4), sAuthors(i, 5))
-			Next i
-		Else
-			SaveAuthor(sAuthors(0, 0), sAuthors(0, 1), sAuthors(0, 2), sAuthors(0, 3), sAuthors(0, 4), sAuthors(0, 5))
-		End If
+		For i = 0 To UBound(sAuthors)
+			SaveAuthor(sAuthors(i, 0), sAuthors(i, 1), sAuthors(i, 2), sAuthors(i, 3), sAuthors(i, 4), sAuthors(i, 5))
+		Next i
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; chr(10) &amp; Trim(oInfoDlg.Model.BookTitleField.Text) &amp; chr(10) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
@@ -52,33 +48,23 @@ Function SaveDescription
 	End If
 	
 	If UBound(sTranslators) &lt;&gt; -1 Then
-		If UBound(sTranslators) &gt; 0 Then
-			For i = 0 To UBound(sTranslators)-1
-				SaveTranslator(sTranslators(i, 0), sTranslators(i, 1), sTranslators(i, 2), sTranslators(i, 3), sTranslators(i, 4), sTranslators(i, 5))
-			Next i
-		Else
-			SaveTranslator(sTranslators(0, 0), sTranslators(0, 1), sTranslators(0, 2), sTranslators(0, 3), sTranslators(0, 4), sTranslators(0, 5))
-		End If
+		For i = 0 To UBound(sTranslators)
+			SaveTranslator(sTranslators(i, 0), sTranslators(i, 1), sTranslators(i, 2), sTranslators(i, 3), sTranslators(i, 4), sTranslators(i, 5))
+		Next i
 	End If
 	
 	If UBound(sSequences) &lt;&gt; -1 Then
-		If UBound(sSequences) &gt; 0 Then
-			For i = 0 To UBound(sSequences)
-				oTextOutputStream.writeString(&quot;&lt;sequence name=&quot;&quot;&quot; &amp; sSequences(i, 0) &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; sSequences(i, 1) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10))
-			Next i
-		End If
+		For i = 0 To UBound(sSequences)
+			oTextOutputStream.writeString(&quot;&lt;sequence name=&quot;&quot;&quot; &amp; sSequences(i, 0) &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; sSequences(i, 1) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10))
+		Next i
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/title-info&gt;&quot; &amp; chr(10))
 
 	oTextOutputStream.writeString(&quot;&lt;document-info&gt;&quot; &amp; chr(10))
 	If UBound(sDocAuthors) &lt;&gt; -1 Then
-		If UBound(sDocAuthors) &gt; 0 Then
-			For i = 0 To UBound(sDocAuthors)-1
-				SaveAuthor(sDocAuthors(i, 0), sDocAuthors(i, 1), sDocAuthors(i, 2), sDocAuthors(i, 3), sDocAuthors(i, 4), sDocAuthors(i, 5))
-			Next i
-		Else
-			SaveAuthor(sDocAuthors(0, 0), sDocAuthors(0, 1), sDocAuthors(0, 2), sDocAuthors(0, 3), sDocAuthors(0, 4), sDocAuthors(0, 5))
-		End If
+		For i = 0 To UBound(sDocAuthors)
+			SaveAuthor(sDocAuthors(i, 0), sDocAuthors(i, 1), sDocAuthors(i, 2), sDocAuthors(i, 3), sDocAuthors(i, 4), sDocAuthors(i, 5))
+		Next i
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; Trim(oInfoDlg.Model.ProgrammUsedField.Text) &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
@@ -176,20 +162,11 @@ Function SavePublisher
 End Function
 
 Function SaveCustomInfo
-	If sCustomInfos(0, 0) = &quot;&quot; AND sCustomInfos(0, 1) = &quot;&quot;  Then
-		Exit Function
-	End If
 	If UBound(sCustomInfos) &lt;&gt; -1 Then
-		If UBound(sCustomInfos) &gt; 0 Then
-			Dim i As Integer
-			For i = 0 To UBound(sCustomInfos)-1
-				oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; sCustomInfos(i, 0) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCustomInfos(i, 1) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
-			Next i
-		Else
-			If sCustomInfos(0, 0) &lt;&gt; &quot;&quot; or sCustomInfos(0, 1) &lt;&gt; &quot;&quot; Then
-				oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; sCustomInfos(0, 0) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCustomInfos(0, 1) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
-			End If
-		End If
+		Dim i As Integer
+		For i = 0 To UBound(sCustomInfos)
+			oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; sCustomInfos(i, 0) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCustomInfos(i, 1) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
+		Next i
 	End If
 End Function
 

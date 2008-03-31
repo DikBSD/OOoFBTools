@@ -36,6 +36,7 @@ Function ReadSettings
 End Function
 
 Function SetSettings(sCurrentLine)
+	On Error Goto ErrorHandler
 	Dim sSetting() As String
 	sSetting = Split(sCurrentLine, &quot;=&quot;)
 	
@@ -44,7 +45,8 @@ Function SetSettings(sCurrentLine)
 	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
 		oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
 	End If
-	
+	Exit Function
+	ErrorHandler: &apos; идем дальше
 End Function
 
 Function SaveSettings

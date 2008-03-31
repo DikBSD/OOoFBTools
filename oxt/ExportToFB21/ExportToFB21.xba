@@ -10,9 +10,8 @@ Public sBodyParagraphs() As String &apos; массив хранит &quot;обр
 Public sLinksTo() As String	&apos; массив ссылок КУДА и их ID
 Public sConvertorName As String &apos; название конвертора
 
-Dim lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
-Dim sPoemTitle As String
-Dim oProgressBar
+Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
+Private sPoemTitle As String
 
 Sub ExportToFB21
 	Dim oDoc As Object
@@ -39,7 +38,6 @@ Sub ExportToFB21
 	Dim oOutputStream As Object
 	Dim oFileAccess As Object
 
-	oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	oDoc = ThisComponent
@@ -205,27 +203,30 @@ End Function
 
 Function MakeBookTitle As String
 	&apos; формируем заглавие книги
-	Dim sBT As String, l As Long, sID As String, sBookTag As String
-	sBT = &quot;&lt;title&gt;&quot; &amp; chr(10)
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStyleBookAuthor OR sBodyParagraphs(l,1) = sStyleBookTitle Then
-			If bDocLinks = True Then
-				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-					sBookTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
-				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-					sBookTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
+	If lBATIndex &gt; -1 Then
+		lCurrentElement = lBATIndex &apos; если есть автор или название книги, то все, что &quot;выше&quot; - игнорируем - служебная зона
+		Dim sBT As String, l As Long, sID As String, sBookTag As String
+		sBT = &quot;&lt;title&gt;&quot; &amp; chr(10)
+		For l = lCurrentElement To UBound(sBodyParagraphs)
+			If sBodyParagraphs(l,1) = sStyleBookAuthor OR sBodyParagraphs(l,1) = sStyleBookTitle Then
+				If bDocLinks = True Then
+					&apos; обработка ссылок внутри документа
+					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sBookTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
+					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+						sBookTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
+					End If
+				Else
+					sBookTag = &quot;&lt;p&gt;&quot;
 				End If
-			Else
-				sBookTag = &quot;&lt;p&gt;&quot;
+				sBT = sBT &amp; sBookTag &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			Else Exit For
 			End If
-			sBT = sBT &amp; sBookTag &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-		Else Exit For
-		End If
-	Next l
-	lCurrentElement = l
-	MakeBookTitle = sBT &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
+		Next l
+		lCurrentElement = l
+		MakeBookTitle = sBT &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
+	End If
 End Function
 
 Function MakeAnnotation As String
