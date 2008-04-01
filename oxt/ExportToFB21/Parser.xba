@@ -27,6 +27,8 @@ Public bCorrectPara As Boolean
 Public bDocLinks As Boolean
 &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
 Public bSaveImageTitle As Boolean
+&apos; &quot;Служебная область&quot; для &quot;служебных стилей&quot; (по умолчанию - верх документа)
+Public bUp As Boolean
 
 Public lBATIndex As Long &apos; Указатель на индекс ячейки массива sBodyParagraphs, хранящей стиль Book Author или Book Title
 
@@ -194,11 +196,6 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 		End If
 	Else
 		Select Case sParaStyleName
-			Case sStyleBookAuthor
-				AddBodyArray(sPara, sParaStyleName, False)
-				If lBATIndex = -1 Then
-					lBATIndex = UBound(sBodyParagraphs())
-				End If
 			Case sStyleBookTitle
 				AddBodyArray(sPara, sParaStyleName, False)
 				If lBATIndex = -1 Then
@@ -248,8 +245,12 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 				&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
 				&apos; они не должны быть в основном тексте книги  в fb2 файле.
 				If sParaStyleName &lt;&gt; sStyle_BookAuthor AND sParaStyleName &lt;&gt; sStyle_BookTranslator AND _
-					sParaStyleName &lt;&gt; sStyle_BookSeries AND sParaStyleName &lt;&gt; sStyle_PaperBook AND _
-					sParaStyleName &lt;&gt; sStyle_PaperBookSeries AND sParaStyleName &lt;&gt; sStyle_BookKeywords Then
+					sParaStyleName &lt;&gt; sStyle_BookSeries AND sParaStyleName &lt;&gt; sStyle_PaperBookName AND _
+					sParaStyleName &lt;&gt; sStyle_PaperBookPublisher AND sParaStyleName &lt;&gt; sStyle_PaperBookCity AND _
+					sParaStyleName &lt;&gt; sStyle_PaperBookYear AND sParaStyleName &lt;&gt; sStyle_PaperBookISBN AND _
+					sParaStyleName &lt;&gt; sStyle_PaperBookSeries AND sParaStyleName &lt;&gt; sStyle_BookKeywords AND _
+					sParaStyleName &lt;&gt; sStyle_DateText AND sParaStyleName &lt;&gt; sStyle_DateValue AND _
+					sParaStyleName &lt;&gt; sStyle_CustomInfo Then
 					AddBodyArray(sPara, &quot;Para&quot;, False)
 				End If
 		End Select

@@ -9,7 +9,6 @@ Private bStyleExecute As Boolean
 Public sStylesFilename As String
 
 &apos; Данные книги
-Public sStyleBookAuthor As String
 Public sStyleBookTitle As String
 &apos; Анотация
 Public sStyleAnnotation As String
@@ -37,15 +36,13 @@ Public sStyleLevel8 As String
 Public sStyleLevel9 As String
 Public sStyleLevel10 As String
 
-&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; - для всего абзаца
+&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 Public sStyle_BookAnnotation As String
 Public sStyle_BookAuthor As String
 Public sStyle_BookTranslator As String
 Public sStyle_BookSeries As String
 Public sStyle_BookKeywords As String
-Public sStyle_PaperBook As String
 Public sStyle_PaperBookSeries As String
-&apos; Inline &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; - в пределах абзаца - Авторы и Переводчики
 Public sStyle_Name As String
 Public sStyle_Patronymic As String
 Public sStyle_Family As String
@@ -54,7 +51,8 @@ Public sStyle_Email As String
 Public sStyle_WebSite As String
 Public sStyle_Sequence As String
 Public sStyle_SequenceNumber As String
-&apos; Inline &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; - в пределах абзаца - Бумажная книга
+Public sStyle_DateText As String
+Public sStyle_DateValue As String
 Public sStyle_PaperBookName As String
 Public sStyle_PaperBookPublisher As String
 Public sStyle_PaperBookCity As String
@@ -62,6 +60,9 @@ Public sStyle_PaperBookYear As String
 Public sStyle_PaperBookISBN As String
 Public sStyle_PaperBookSequence As String
 Public sStyle_PaperBookSequenceNumber As String
+Public sStyle_CustomInfo As String
+Public sStyle_CustomInfoType As String
+Public sStyle_CustomInfoValue As String
 
 Function SetUserStyles
 	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
@@ -184,7 +185,6 @@ End Function
 Function SetGeneralStylesControlsDefault
 	&apos; // Установка Основных стилей по умолчанию в контролы //
 	&apos; Данные книги
-	oStylesDlg.GetControl(&quot;tfBookAuthor&quot;).Text = sStyleBookAuthor
 	oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text = sStyleBookTitle
 	&apos; Анотация
 	oStylesDlg.GetControl(&quot;tfAnnotation&quot;).Text = sStyleAnnotation
@@ -222,7 +222,6 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_BookTranslator&quot;).Text = sStyle_BookTranslator
 	oStylesDlg.GetControl(&quot;tf_BookSeries&quot;).Text = sStyle_BookSeries
 	oStylesDlg.GetControl(&quot;tf_BookKeywords&quot;).Text = sStyle_BookKeywords
-	oStylesDlg.GetControl(&quot;tf_PaperBook&quot;).Text = sStyle_PaperBook
 	oStylesDlg.GetControl(&quot;tf_PaperBookSeries&quot;).Text = sStyle_PaperBookSeries
 
 	oStylesDlg.GetControl(&quot;tf_Name&quot;).Text = sStyle_Name
@@ -233,6 +232,8 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_WebSite&quot;).Text = sStyle_WebSite
 	oStylesDlg.GetControl(&quot;tf_Sequence&quot;).Text = sStyle_Sequence
 	oStylesDlg.GetControl(&quot;tf_SequenceNumber&quot;).Text = sStyle_SequenceNumber
+	oStylesDlg.GetControl(&quot;tf_DateText&quot;).Text = sStyle_DateText
+	oStylesDlg.GetControl(&quot;tf_DateValue&quot;).Text = sStyle_DateValue
 
 	oStylesDlg.GetControl(&quot;tf_PaperBookName&quot;).Text = sStyle_PaperBookName
 	oStylesDlg.GetControl(&quot;tf_PaperBookPublisher&quot;).Text = sStyle_PaperBookPublisher
@@ -241,6 +242,10 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_PaperBookISBN&quot;).Text = sStyle_PaperBookISBN
 	oStylesDlg.GetControl(&quot;tf_PaperBookSequence&quot;).Text = sStyle_PaperBookSequence
 	oStylesDlg.GetControl(&quot;tf_PaperBookSequenceNumber&quot;).Text = sStyle_PaperBookSequenceNumber
+	
+	oStylesDlg.GetControl(&quot;tf_CustomInfo&quot;).Text = sStyle_CustomInfo
+	oStylesDlg.GetControl(&quot;tf_CustomInfoType&quot;).Text = sStyle_CustomInfoType
+	oStylesDlg.GetControl(&quot;tf_CustomInfoValue&quot;).Text = sStyle_CustomInfoValue
 End Function
 
 Function ReadStylesInVars As Boolean
@@ -272,8 +277,6 @@ Function SetStylesInVars(sCurrentLine)
 	Dim sStyles() As String
 	sStyles = Split(sCurrentLine, &quot;=&quot;)
 	Select Case sStyles(0)
-		Case &quot;tfBookAuthor&quot;
-			sStyleBookAuthor = sStyles(1)
 		Case &quot;tfBookTitle&quot;
 			sStyleBookTitle = sStyles(1)
 		Case &quot;tfAnnotation&quot;
@@ -364,9 +367,7 @@ Function SetStylesInVars(sCurrentLine)
 		Case &quot;tf_BookSeries&quot;
 			sStyle_BookSeries = sStyles(1)
 		Case &quot;tf_BookKeywords&quot;
-			sStyle_BookKeywords = sStyles(1)	
-		Case &quot;tf_PaperBook&quot;
-			sStyle_PaperBook = sStyles(1)
+			sStyle_BookKeywords = sStyles(1)
 		Case &quot;tf_PaperBookSeries&quot;
 			sStyle_PaperBookSeries = sStyles(1)
 			
@@ -386,6 +387,10 @@ Function SetStylesInVars(sCurrentLine)
 			sStyle_Sequence	= sStyles(1)
 		Case &quot;tf_SequenceNumber&quot;
 			sStyle_SequenceNumber = sStyles(1)
+		Case &quot;tf_DateText&quot;
+			sStyle_DateText = sStyles(1)
+		Case &quot;tf_DateValue&quot;
+			sStyle_DateValue = sStyles(1)
 				
 		Case &quot;tf_PaperBookName&quot;
 			sStyle_PaperBookName = sStyles(1)
@@ -401,13 +406,19 @@ Function SetStylesInVars(sCurrentLine)
 			sStyle_PaperBookSequence	= sStyles(1)
 		Case &quot;tf_PaperBookSequenceNumber&quot;
 			sStyle_PaperBookSequenceNumber = sStyles(1)
+			
+		Case &quot;tf_CustonInfo&quot;
+			sStyle_CustomInfo = sStyles(1)
+		Case &quot;tf_CustonInfoType&quot;
+			sStyle_CustomInfoType = sStyles(1)
+		Case &quot;tf_CustonInfoValue&quot;
+			sStyle_CustomInfoValue = sStyles(1)
 	End Select
 End Function
 
 Function SetStylesVarsDefault
 	&apos; Установка стилей по умолчанию в переменные
 	&apos; Данные книги
-	sStyleBookAuthor		= &quot;Book Author&quot;
 	sStyleBookTitle	 		= &quot;Book Title&quot;
 	&apos; Анотация
 	sStyleAnnotation	 	= &quot;Annotation&quot;
@@ -436,30 +447,35 @@ Function SetStylesVarsDefault
 	sStyleLevel10 	 = &quot;Level 10&quot;
 	
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-	sStyle_BookAnnotation	= &quot;#Book Annotation&quot;
+	sStyle_BookAnnotation	= &quot;_Book Annotation&quot;
 	sStyle_BookAuthor	 	= &quot;#Book Author&quot;
 	sStyle_BookTranslator	= &quot;#Book Translator&quot;
 	sStyle_BookSeries	 	= &quot;#Book Series&quot;
-	sStyle_BookKeywords		= &quot;#Book Keywords&quot;
-	sStyle_PaperBook	 	= &quot;#PaperBook&quot;
+	sStyle_BookKeywords		= &quot;_Book Keywords&quot;
 	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
 		
-	sStyle_Name			 = &quot;_Name&quot;
-	sStyle_Patronymic	 = &quot;_Patronymic&quot;
-	sStyle_Family		 = &quot;_Family&quot;
-	sStyle_Nick			 = &quot;_Nick&quot;
-	sStyle_Email		 = &quot;_Email&quot;
-	sStyle_WebSite		 = &quot;_WebSite&quot;
-	sStyle_Sequence		 = &quot;_Sequence&quot;
-	sStyle_SequenceNumber= &quot;_SequenceNumber&quot;
+	sStyle_Name			 = &quot;#Name&quot;
+	sStyle_Patronymic	 = &quot;#Patronymic&quot;
+	sStyle_Family		 = &quot;#Family&quot;
+	sStyle_Nick			 = &quot;#Nick&quot;
+	sStyle_Email		 = &quot;#Email&quot;
+	sStyle_WebSite		 = &quot;#WebSite&quot;
+	sStyle_Sequence		 = &quot;#Sequence&quot;
+	sStyle_SequenceNumber= &quot;#Sequence Number&quot;
+	sStyle_DateText		 = &quot;_Book Date Text&quot;
+	sStyle_DateValue	 = &quot;_Book Date Value&quot;
 	
-	sStyle_PaperBookName		= &quot;#PaperBook Name&quot;
-	sStyle_PaperBookPublisher	= &quot;#PaperBook Publisher&quot;
-	sStyle_PaperBookCity		= &quot;#PaperBook City&quot;
-	sStyle_PaperBookYear		= &quot;#PaperBook Year&quot;
-	sStyle_PaperBookISBN		= &quot;#PaperBook ISBN&quot;
+	sStyle_PaperBookName		= &quot;_PaperBook Name&quot;
+	sStyle_PaperBookPublisher	= &quot;_PaperBook Publisher&quot;
+	sStyle_PaperBookCity		= &quot;_PaperBook City&quot;
+	sStyle_PaperBookYear		= &quot;_PaperBook Year&quot;
+	sStyle_PaperBookISBN		= &quot;_PaperBook ISBN&quot;
 	sStyle_PaperBookSequence		= &quot;#PaperBook Sequence&quot;
-	sStyle_PaperBookSequenceNumber	= &quot;#PaperBook SequenceNumber&quot;
+	sStyle_PaperBookSequenceNumber	= &quot;#PaperBook Sequence Number&quot;
+	
+	sStyle_CustomInfo		= &quot;#Custom Info&quot;
+	sStyle_CustomInfoType	= &quot;#Custom Info Type&quot;
+	sStyle_CustomInfoValue	= &quot;#Custom Info Value&quot;
 
 End Function
 

@@ -65,7 +65,8 @@ Function InfoDlgExec As Boolean
 				&quot;Ценные бумаги, Инвестиции&quot;, &quot;Бухучет, Налогообложение, Аудит&quot;, &quot;Внешнеэкономическая деятельность&quot;,_
 				&quot;Экономика&quot;, &quot;Отраслевые издания&quot;, &quot;Корпоративная культура&quot;, &quot;Личные финансы&quot;, &quot;Недвижимость&quot;, &quot;Популярно о бизнесе&quot;,_
 				&quot;Малый бизнес&quot;, &quot;Делопроизводство&quot;, &quot;Справочники&quot; )
- 
+	oProgressBar.setValue(1) &apos; Статусбар
+	
  	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
 			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
 			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;prose_military&quot;,&quot;child_prose&quot;,_
@@ -82,12 +83,14 @@ Function InfoDlgExec As Boolean
 			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
 			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
+	oProgressBar.setValue(2) &apos; Статусбар
 
 	sLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
 						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
 						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
 						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
-						
+	oProgressBar.setValue(3) &apos; Статусбар
+
 	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
 	oInfoDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.InfoDlg)
 	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(sCurDocFile)
@@ -107,45 +110,22 @@ Function InfoDlgExec As Boolean
 		.IDField.Text = &quot;OOo-ExportToFB21-&quot; &amp; Year(sNow) &amp; Month(sNow) &amp; Day(sNow) &amp; Hour(sNow) &amp; Minute(sNow) &amp; Second(sNow)
 		.VersionField.Text = &quot;1.0&quot;
 		.KeywordsField.Text = FindTextOfStyle(sStyle_BookKeywords, true)
+		.pubBookNameTextField.Text = FindTextOfStyle(sStyle_PaperBookName, true)
+		.pubPublisherTextField.Text = FindTextOfStyle(sStyle_PaperBookPublisher, true)
+		.pubCityTextField.Text = FindTextOfStyle(sStyle_PaperBookCity, true)
+		.pubYearTextField.Text = FindTextOfStyle(sStyle_PaperBookYear, true)
+		.pubISBNTextField.Text = FindTextOfStyle(sStyle_PaperBookISBN, true)
+		.tiDateTextField.Text = FindTextOfStyle(sStyle_DateText, true)
+		.tiDateValueField.Text = FindTextOfStyle(sStyle_DateValue, true)
 	End With
-	
-	Dim oSect As Object, oCEnum As Object, oContent As Object
-	Dim oCursor As Object, lPara As Long &apos; для статусбара
-	oCursor = ThisComponent.Text.createTextCursor()
-	oCursor.gotoStart(False)
-	lPara = 0
-	Do
-		lPara = lPara+1
-		oCursor.gotoEndOfParagraph(True)
-		Select Case oCursor.ParaStyleName
-		Case sStyleBookAuthor
-			Exit Do
-		Case sStyleBookTitle
-			Exit Do
-		Case sStyle_BookAuthor
-			ReadBookuthorsOrTranslatorsInfo(oCursor, sAuthors)
-			oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
-		Case sStyle_BookTranslator
-			ReadBookuthorsOrTranslatorsInfo(oCursor, sTranslators)
-			oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
-		Case sStyle_BookSeries
-			ReadSequencesInfo(oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber)
-			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
-		Case sStyle_PaperBookSeries
-			ReadSequencesInfo(oCursor, sPubSequences, sStyle_PaperBookSequence, sStyle_PaperBookSequenceNumber)
-			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
-		Case sStyle_PaperBook
-			ReadPaperBookInfo(oCursor)
-		End Select
-		oProgressBar.setValue(lPara) &apos; Статусбар
-	Loop While oCursor.gotoNextParagraph(False)
-	oProgressBar.end
 	
 	&apos; центрирование на экране
 	ToScreenCenter(oInfoDlg)
+	oProgressBar.setValue(4) &apos; Статусбар
 	
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 	ReadProfile(sFB2AuthorFilename, 1)
+	oProgressBar.setValue(5) &apos; Статусбар
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
@@ -161,14 +141,51 @@ Function InfoDlgExec As Boolean
 	
 	&apos; Задаем настройки в переменные по умолчанию
 	SetDefaultSettingsInVars
+	oProgressBar.setValue(6) &apos; Статусбар
 	&apos; только теперь считываем настройки из файла
 	ReadSettingsInVars
+	oProgressBar.setValue(7) &apos; Статусбар
+	
+	ReadServiceStyles(7)
 	
 	bAppendBtn = True
 	oInfoDlg.Model.Step = 1
 	oInfoDlg.execute()
 	InfoDlgExec = bExecute
 
+End Function
+
+Function ReadServiceStyles(lProgress As Long)
+	Dim oSect As Object, oCEnum As Object, oContent As Object
+	Dim oCursor As Object, lPara As Long &apos; для статусбара
+	oCursor = ThisComponent.Text.createTextCursor()
+	oCursor.gotoStart(False)
+	lPara = lProgress
+	Do
+		lPara = lPara+1
+		oCursor.gotoEndOfParagraph(True)
+		Select Case oCursor.ParaStyleName
+		Case sStyleBookTitle
+			If bUp = True Then Exit Do
+		Case sStyle_BookAuthor
+			ReadBookuthorsOrTranslatorsInfo(oCursor, sAuthors)
+			oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
+		Case sStyle_BookTranslator
+			ReadBookuthorsOrTranslatorsInfo(oCursor, sTranslators)
+			oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
+		Case sStyle_BookSeries
+			ReadSequencesInfo(oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber)
+			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
+		Case sStyle_CustomInfo
+			ReadCustomInfo(oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue)
+			oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = Ubound(sCustomInfos())+1
+		Case sStyle_PaperBookSeries
+			ReadSequencesInfo(oCursor, sPubSequences, sStyle_PaperBookSequence, sStyle_PaperBookSequenceNumber)
+			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
+		End Select
+		oProgressBar.setValue(lPara) &apos; Статусбар
+	Loop While oCursor.gotoNextParagraph(False)
+	oProgressBar.end
 End Function
 
 Function InfoDlgCanceled
@@ -556,12 +573,19 @@ Function ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumb
 		Wend
 End Function
 
-Function ReadPaperBookInfo(oCursor)
-	If oCursor.String = &quot;&quot; Then
+Function ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue)
+	If oCursor.String = &quot;&quot; Then	&apos;
 		Exit Function
 	End If
 	
 	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	Dim i As Integer
+	
+	i = Ubound(sArray(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sArray(i, 1)
+	Else Redim sArray(i, 1)
+	End If
 	
 	oEnum = oCursor.createEnumeration
 	While oEnum.hasMoreElements
@@ -569,16 +593,10 @@ Function ReadPaperBookInfo(oCursor)
 		oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.CharStyleName = sStyle_PaperBookName Then
-				oInfoDlg.Model.pubBookNameTextField.Text = oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
-				oInfoDlg.Model.pubPublisherTextField.Text = oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
-				oInfoDlg.Model.pubCityTextField.Text = oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
-				oInfoDlg.Model.pubYearTextField.Text = oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
-				oInfoDlg.Model.pubISBNTextField.Text = oTextPortion.getString()
+			If oTextPortion.CharStyleName = sStyleCustomInfoType Then
+				sArray(i, 0) = sArray(i, 0) + oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyleCustomInfoValue Then
+				sArray(i, 1) = sArray(i, 1) + oTextPortion.getString()
 			End If
 		Wend
 	Wend
@@ -723,6 +741,31 @@ Function ShowPubSequencesCount
 		End If
 	End If
 	MsgBox sStr, 64, &quot;Список серий для Бумажной Книги&quot;
+End Function
+
+Function ShowCustomInfoCount
+	Dim sStr As String, sLine As String
+	sLine = &quot;-------------------------&quot;
+	sStr = &quot;№ п/п | Type | Value&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	If UBound(sCustomInfos) &lt;&gt; -1 Then
+		Dim i As Integer
+		For i = 0 To UBound(sCustomInfos)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sCustomInfos(i, 0) &amp; &quot; | &quot; &amp; sCustomInfos(i, 1) &amp; chr(10)
+		Next i
+		sStr = sStr &amp; sLine &amp; chr(10)
+		If Trim(oInfoDlg.Model.cusTypeTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) &lt;&gt; &quot;&quot; Then
+			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+					Trim(oInfoDlg.Model.cusTypeTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.cusValueTextField.Text)
+		End If
+	Else
+		If Trim(oInfoDlg.Model.cusTypeTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) &lt;&gt; &quot;&quot; Then
+			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+					Trim(oInfoDlg.Model.cusTypeTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.cusValueTextField.Text)
+		Else
+			sStr = &quot;Список Custom Info пуст!&quot;
+		End If
+	End If
+	MsgBox sStr, 64, &quot;Список серий для Custom Info&quot;
 End Function
 
 </script:module>

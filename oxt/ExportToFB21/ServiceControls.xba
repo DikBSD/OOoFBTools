@@ -34,7 +34,7 @@ Function ServiceDlgExec As Boolean
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
-	SetDefaultSettings
+	SetDefaultSettingsInControls
 	&apos; Считываем и устанавливаем настройки
 	ReadSettings
 	
@@ -94,8 +94,24 @@ Function ServiceDlgOk
 	&apos; только теперь считываем настройки из файла
 	ReadSettingsInVars
 
+	&apos; Инициализация поиска &quot;служебных стилей&quot;
+	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
+	ReDim  sAuthors() As String
+	ReDim  sTranslators() As String
+	ReDim  sSequences() As String
+	ReDim  sPubSequences() As String
+	oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
+	oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
+	oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
+	oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
+	&apos; Поиск &quot;служебных стилей&quot;
+	oServiceDlg.Enable = False
+	ReadServiceStyles(0)
+	oServiceDlg.Enable = True	
+
 	bServiceExecute = True
 	oServiceDlg.endExecute()
+
 End Function
 
 Function cmbboxTextFrameChange
@@ -107,7 +123,6 @@ Function cmbboxTextFrameChange
 		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = False
 	End If
 End Function
-
 
 Function ToScreenCenter(oDlg)
 	&apos; центрирование на экране

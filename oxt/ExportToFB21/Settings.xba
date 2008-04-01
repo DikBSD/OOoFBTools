@@ -44,6 +44,8 @@ Function SetSettings(sCurrentLine)
 		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
 	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
 		oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
+	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
 	End If
 	Exit Function
 	ErrorHandler: &apos; идем дальше
@@ -62,13 +64,15 @@ Function SaveSettings
 			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
 			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
 		End If
 	Next i
 	
 	Close #iFileNo &apos; Закрытие файла
 End Function
 
-Function SetDefaultSettings
+Function SetDefaultSettingsInControls
 	&apos; Настройки По умолчанию - в контролы
 	&apos; Сноски
 	oServiceDlg.Model.cboxStyleFootnote.State = 1
@@ -97,6 +101,9 @@ Function SetDefaultSettings
 	oServiceDlg.Model.cboxCorrect.State = 1
 	oServiceDlg.Model.cboxDelEL.State = 0
 	oServiceDlg.Model.cboxDocLinks.State = 0
+	&apos; &quot;Служебная область&quot;
+	oServiceDlg.Model.obtnUp.State = 1
+	oServiceDlg.Model.obtnAny.State = 0
 	
 	cmbboxTextFrameChange &apos; для доспупности вида выравнивания Текстовых Врезок
 End Function
@@ -206,6 +213,9 @@ Function SetSettingsInVars(sCurrentLine)
 			bDelEL = sSetting(1)
 		Case &quot;cboxDocLinks&quot;
 			bDocLinks = sSetting(1)
+		&apos; &quot;Служебная область&quot;
+		Case &quot;obtnUp&quot;
+			bUp = sSetting(1)
 	End Select
 End Function
 
@@ -269,6 +279,10 @@ Function SetDefaultSettingsInVars
 
 	sTextFrameToFB2	 = &quot;Таблица&quot;
 	sAdjTextFrame	 = &quot;left&quot;
+	
+	&apos; &quot;Служебная область&quot; сверху документа до Автора Книги или Названия Книги
+	bUp	= True
+	
 End Function
 
 </script:module>
