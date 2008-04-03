@@ -394,6 +394,11 @@ Function MakePoem As String
 			lCurrentElement = l
 		End If
 	End If
+	&apos; Дата написания поэмы - согласно схемы допускается только одна дата. Если есть еще одна строка с датой, то она будет просто текстом (&lt;p&gt;XXX&lt;/p&gt;)
+	sPoem = sPoem &amp; &quot;&lt;date&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
+	oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+	lCurrentElement = lCurrentElement + 1
+	
 	sPoemTitle = &quot;&quot;
 	MakePoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
 End Function
