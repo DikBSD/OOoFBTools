@@ -316,23 +316,20 @@ End Function
 
 Function MakePoem As String
 	Dim sPoem As String, l As Long, sID As String
-&apos;	If sPoemTitle = &quot;&quot; Then	&apos; стихи без заголовка
-&apos;		If sPoemEpigraph = &quot;&quot; Then &apos; стихи без заголовка и без эпиграфа
-&apos;			sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-&apos;		Else &apos; без заголовка но с эпиграфом
-&apos;			sPoem = sPoemEpigraph
-&apos;		End If
-&apos;	Else &apos; стихи с заголовком
-&apos;		If sPoemEpigraph = &quot;&quot; Then &apos; стихи с заголовком но без эпиграфа
-&apos;			sPoem = sPoemTitle
-&apos;		Else &apos; стихи с заголовком и с эпиграфа
-&apos;			sPoem = sPoemTitle &amp; chr(10) &amp; sPoemEpigraph
-&apos;		End If
-&apos;	End If
+	sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 	If sPoemTitle = &quot;&quot; Then &apos; стихи без заголовка
-		sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-	Else 
-		sPoem = sPoem &amp; &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10) &amp; sPoemTitle
+		If sPoemEpigraph = &quot;&quot; Then &apos; стихи без заголовка и без эпиграфа
+			&apos;sPoem = sPoem
+		Else &apos; без заголовка но с эпиграфом
+			sPoem = sPoem &amp; sPoemEpigraph
+		End If
+	Else  &apos; стихи с заголовком
+		sPoem = sPoem &amp; &quot;&lt;title&gt;&quot; &amp; chr(10) &amp; sPoemTitle
+		If sPoemEpigraph = &quot;&quot; Then &apos; стихи с заголовком но без эпиграфа
+			&apos;sPoem = sPoem
+		Else &apos; стихи с заголовком и с эпиграфа
+			sPoem = sPoem &amp; chr(10) &amp; sPoemEpigraph
+		End If
 	End If
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStylePoem Then
