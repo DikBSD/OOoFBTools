@@ -12,6 +12,7 @@ Public sConvertorName As String &apos; название конвертора
 
 Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 Private sPoemTitle As String
+Private sPoemEpigraph As String
 
 Sub ExportToFB21
 	Dim oDoc As Object
@@ -255,7 +256,6 @@ End Function
 
 Function MakePoemTitle
 	Dim l As Long, sID As String, sPTag As String
-	sPoemTitle = sPoemTitle &amp; &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
 	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
 		Dim nCount As Integer, nCountTag As String &apos; число заголовков с закладками
 		nCount = 0
@@ -310,12 +310,29 @@ Function MakePoemTitle
 	sPoemTitle = sPoemTitle &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
 End Function
 
+Function MakePoemEpigraph
+	sPoemEpigraph = MakeEpigraph(sStylePoemEpigraph)
+End Function
+
 Function MakePoem As String
 	Dim sPoem As String, l As Long, sID As String
-	If sPoemTitle = &quot;&quot; Then	&apos; стихи без заголовка
+&apos;	If sPoemTitle = &quot;&quot; Then	&apos; стихи без заголовка
+&apos;		If sPoemEpigraph = &quot;&quot; Then &apos; стихи без заголовка и без эпиграфа
+&apos;			sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+&apos;		Else &apos; без заголовка но с эпиграфом
+&apos;			sPoem = sPoemEpigraph
+&apos;		End If
+&apos;	Else &apos; стихи с заголовком
+&apos;		If sPoemEpigraph = &quot;&quot; Then &apos; стихи с заголовком но без эпиграфа
+&apos;			sPoem = sPoemTitle
+&apos;		Else &apos; стихи с заголовком и с эпиграфа
+&apos;			sPoem = sPoemTitle &amp; chr(10) &amp; sPoemEpigraph
+&apos;		End If
+&apos;	End If
+	If sPoemTitle = &quot;&quot; Then &apos; стихи без заголовка
 		sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 	Else 
-		sPoem = sPoemTitle
+		sPoem = sPoem &amp; &quot;&lt;poem&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10) &amp; sPoemTitle
 	End If
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStylePoem Then
@@ -394,20 +411,23 @@ Function MakePoem As String
 			lCurrentElement = l
 		End If
 	End If
+	lCurrentElement = l
 	&apos; Дата написания поэмы - согласно схемы допускается только одна дата. Если есть еще одна строка с датой, то она будет просто текстом (&lt;p&gt;XXX&lt;/p&gt;)
-	sPoem = sPoem &amp; &quot;&lt;date&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
-	oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-	lCurrentElement = lCurrentElement + 1
+	If sBodyParagraphs(lCurrentElement,1) = sStylePoemDate Then
+		sPoem = sPoem &amp; &quot;&lt;date&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
+		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		lCurrentElement = lCurrentElement + 1
+	End If
 	
 	sPoemTitle = &quot;&quot;
 	MakePoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
 End Function
 
-Function MakeEpigraph As String
+Function MakeEpigraph(sStyle_Epigraph) As String
 	Dim sEpig As String, l As Long, sID As String
 	sEpig = sEpig &amp; &quot;&lt;epigraph&gt;&quot; &amp; chr(10)
 	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStyleEpigraph Then
+		If sBodyParagraphs(l,1) = sStyle_Epigraph Then
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
 				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
@@ -630,10 +650,12 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 	Select Case sParaStyleName
 		Case sStylePoemTitle
 			MakePoemTitle
+		Case sStylePoemEpigraph
+			MakePoemEpigraph
 		Case sStylePoem
 			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStyleEpigraph
-			oTextOutputStream.writeString(MakeEpigraph &amp; chr(10))
+			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph) &amp; chr(10))
 		Case sStyleCite
 			oTextOutputStream.writeString(MakeCite &amp; chr(10))
 		Case sStyleAnnotation

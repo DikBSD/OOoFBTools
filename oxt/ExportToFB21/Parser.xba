@@ -168,6 +168,10 @@ Sub DocumentParser
 			If sPara = &quot;&quot; Then
 				If bDelEL = False Then
 					StyleParser(oPar.ParaStyleName, sPara)
+				Else &apos; если удалять пустые абзацы
+					If oPar.ParaStyleName = sStylePoem Then &apos; только не для стиля Poem - для разных видов стихов
+						StyleParser(oPar.ParaStyleName, sPara)
+					End If
 				End If
 			Else
 				If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then &apos; заголовки стиля Heading игнорируются
@@ -202,6 +206,8 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 					lBATIndex = UBound(sBodyParagraphs())
 				End If
 			Case sStylePoemTitle
+				AddBodyArray(sPara, sParaStyleName, False)
+			Case sStylePoemEpigraph
 				AddBodyArray(sPara, sParaStyleName, False)
 			Case sStylePoem
 				AddBodyArray(sPara, sParaStyleName, False)
@@ -313,11 +319,11 @@ Function InLineParser(oSect As Object) As String
 	End If
 	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
 	If InLineParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
-		InLineParser = &quot;&lt;emphasis&gt;&lt;/emphasis&quot; OR _
-		InLineParser = &quot;&lt;sub&gt;&lt;/sub&quot; OR _
-		InLineParser = &quot;&lt;sup&gt;&lt;/sup&quot; OR _
-		InLineParser = &quot;&lt;code&gt;&lt;/code&quot; OR _
-		InLineParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&quot; Then
+		InLineParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
+		InLineParser = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
+		InLineParser = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
+		InLineParser = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
+		InLineParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
 		InLineParser = &quot;&quot;
 	End If
 End Function			
