@@ -311,7 +311,7 @@ Function MakePoemTitle
 End Function
 
 Function MakePoemEpigraph
-	sPoemEpigraph = MakeEpigraph(sStylePoemEpigraph)
+	sPoemEpigraph = MakeEpigraph(sStylePoemEpigraph, sStylePoemEpigraphAuthor)
 End Function
 
 Function MakePoem As String
@@ -417,10 +417,11 @@ Function MakePoem As String
 	End If
 	
 	sPoemTitle = &quot;&quot;
+	sPoemEpigraph = &quot;&quot;
 	MakePoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
 End Function
 
-Function MakeEpigraph(sStyle_Epigraph) As String
+Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 	Dim sEpig As String, l As Long, sID As String
 	sEpig = sEpig &amp; &quot;&lt;epigraph&gt;&quot; &amp; chr(10)
 	For l = lCurrentElement To UBound(sBodyParagraphs)
@@ -441,14 +442,14 @@ Function MakeEpigraph(sStyle_Epigraph) As String
 	Next l
 	lCurrentElement = l
 	&apos; Авторы Эпиграфа
-	If sBodyParagraphs(lCurrentElement,1) = sStyleEpigraphAuthor Then
+	If sBodyParagraphs(lCurrentElement,1) = sStyle_EpigraphAuthor Then
 		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов эпиграфа с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sAETag As String
 			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStyleEpigraphAuthor Then
+				If sBodyParagraphs(l,1) = sStyle_EpigraphAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
 						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
@@ -476,7 +477,7 @@ Function MakeEpigraph(sStyle_Epigraph) As String
 			lCurrentElement = l
 		Else &apos; Авторы епиграфа не будут собираться в одну строку, а будут один под другим
 			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStyleEpigraphAuthor Then
+				If sBodyParagraphs(l,1) = sStyle_EpigraphAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
 						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
@@ -652,7 +653,7 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 		Case sStylePoem
 			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStyleEpigraph
-			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph) &amp; chr(10))
+			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor) &amp; chr(10))
 		Case sStyleCite
 			oTextOutputStream.writeString(MakeCite &amp; chr(10))
 		Case sStyleAnnotation
