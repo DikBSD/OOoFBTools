@@ -11,9 +11,6 @@ Public sLinksTo() As String	&apos; массив ссылок КУДА и их ID
 Public sConvertorName As String &apos; название конвертора
 
 Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
-Private sPoemTitle As String
-Private sPoemSubTitle As String
-Private sPoemEpigraph As String
 
 Sub ExportToFB21
 	Dim oDoc As Object
@@ -255,8 +252,10 @@ Function MakeAnnotation As String
 	MakeAnnotation = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
 End Function
 
-Function MakePoemTitle
+Function MakePoemTitle As String
 	Dim l As Long, sID As String, sPTag As String
+	Dim sPoemTitle As String
+	sPoemTitle = &quot;&quot;
 	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
 		Dim nCount As Integer, nCountTag As String &apos; число заголовков с закладками
 		nCount = 0
@@ -308,121 +307,106 @@ Function MakePoemTitle
 		Next l
 		lCurrentElement = l
 	End If
-	sPoemTitle = sPoemTitle &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
-End Function
-
-Function MakePoemEpigraph
-	sPoemEpigraph = MakeEpigraph(sStylePoemEpigraph, sStylePoemEpigraphAuthor)
-End Function
-
-Function MakePoemSubTitle
-	sPoemSubTitle = MakeSubTitle(sStylePoemSubTitle)
+	If sPoemTitle &lt;&gt; &quot;&quot; Then
+		MakePoemTitle = &quot;&lt;title&gt;&quot; &amp; sPoemTitle &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
+	Else
+		MakePoemTitle = &quot;&quot;
+	End If
 End Function
 
 Function MakePoem As String
 	Dim sPoem As String, l As Long, sID As String
-	sPoem = &quot;&lt;poem&gt;&quot; &amp; chr(10)
-	If sPoemTitle = &quot;&quot; Then &apos; стихи без заголовка
-		If sPoemEpigraph = &quot;&quot; Then &apos; стихи без заголовка и без эпиграфа
-			&apos;sPoem = sPoem
-		Else &apos; без заголовка но с эпиграфом
-			sPoem = sPoem &amp; sPoemEpigraph
-		End If
-	Else  &apos; стихи с заголовком
-		sPoem = sPoem &amp; &quot;&lt;title&gt;&quot; &amp; chr(10) &amp; sPoemTitle
-		If sPoemEpigraph = &quot;&quot; Then &apos; стихи с заголовком но без эпиграфа
-			&apos;sPoem = sPoem
-		Else &apos; стихи с заголовком и с эпиграфа
-			sPoem = sPoem &amp; sPoemEpigraph
-		End If
+	Dim sPoemTitle As String, sPoemSubTitle As String, sPoemEpigraph As String, sStanza As String
+	sPoem = &quot;&quot;
+	&apos; Заголовок поэмы
+	sPoemTitle = MakePoemTitle
+	If sPoemTitle &lt;&gt; &quot;&quot; Then &apos; стихи с заголовка
+		sPoem = sPoem &amp; chr(10) &amp; sPoemTitle
 	End If
-
+	&apos; Эпиграф Поэмы
+	sPoemEpigraph = MakeEpigraph(sStylePoemEpigraph, sStylePoemEpigraphAuthor)
+	If sPoemEpigraph &lt;&gt; &quot;&quot; Then &apos; стихи с эпиграфом
+		sPoem = sPoem &amp; sPoemEpigraph
+	End If
+	&apos; Подзаголовок Поэмы
+	sPoemSubTitle = MakeSubTitle(sStylePoemSubTitle)
 	If sPoemSubTitle &lt;&gt; &quot;&quot; Then
 		sPoem = sPoem &amp; sPoemSubTitle &amp; chr(10)
 	End If
+	&apos; Stanza Поэмы
+	sStanza = MakeStanza
+	If sStanza &lt;&gt; &quot;&quot; Then
+		sPoem = sPoem &amp; sStanza
+	End If
 	
-&apos;	sPoem = sPoem &amp; MakeStanza(sPoem)
-	sPoem = sPoem &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStylePoem Then
-			If sBodyParagraphs(l,0) = &quot;&quot; Then
-				sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-			Else
-				If bDocLinks = True Then
-					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-						sPoem = sPoem &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-						sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-					End If
-				Else
-					sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-				End If
-			End If
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-		Else 
-			If sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
-				lCurrentElement = l
-				sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
-				sPoem = sPoem &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
-				sPoem = sPoem &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-			Else
-				Exit For
-			End If
-		End If
-	Next l
-	sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
-	lCurrentElement = l
-	
-	
+	&apos; Заглушка, на случай, если есть Заголовок и (или) Эпиграф поэмы, а обязательного Подзаголовка или Станзы - нет
+	If (sPoemTitle &lt;&gt; &quot;&quot; OR sPoemEpigraph &lt;&gt; &quot;&quot;) AND (sPoemSubTitle = &quot;&quot; AND sStanza = &quot;&quot;) Then
+		sPoem = sPoem &amp; &quot;&lt;stanza&gt;&lt;v&gt;?&lt;/v&gt;&lt;/stanza&gt;&quot; &amp; chr(10)
+	End If
 	
 	&apos; Авторы поэмы, если они есть
 	sPoem = sPoem &amp; MakePoemAuthor
 	&apos; Дата написания поэмы, если она есть
 	sPoem = sPoem &amp; MakePoemDate
-	
-	&apos; Обнуляем переменные, чтобы в других стихах книги они не &quot;вылезли&quot;
-	sPoemTitle = &quot;&quot;
-	sPoemEpigraph = &quot;&quot;
-	sPoemSubTitle = &quot;&quot;
-	
-	MakePoem = sPoem &amp; &quot;&lt;/poem&gt;&quot;
+
+	MakePoem = &quot;&lt;poem&gt;&quot; &amp; sPoem &amp; &quot;&lt;/poem&gt;&quot;
 End Function
 
-Function MakeStanza(sPoem) As String
-	Dim l As Long, sID As String
-	sPoem = sPoem &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+Function MakeStanza As String
+	Dim l As Long, sID As String, sStanza As String
+	sStanza =  &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStylePoem Then
 			If sBodyParagraphs(l,0) = &quot;&quot; Then
-				sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 			Else
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
 					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-						sPoem = sPoem &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+						sStanza = sStanza &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-						sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+						sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					End If
 				Else
-					sPoem = sPoem &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+					sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 				End If
 			End If
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Else 
 			If sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
 				lCurrentElement = l
-				sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
-				sPoem = sPoem &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
-				sPoem = sPoem &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+				sStanza = sStanza &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
+				sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 			Else
 				Exit For
 			End If
 		End If
 	Next l
-	sPoem = sPoem &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 	lCurrentElement = l
-	MakeStanza = sPoem
+	If sStanza &lt;&gt; &quot;&quot; Then
+		MakeStanza = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+	Else
+		MakeStanza = &quot;&quot;
+	End If
+End Function
+
+Function DelEmptyStanza(sPara As String) As String
+	&apos; корректировка абзаца - отлов последовательности символов &quot;&lt;stanza&gt; &amp; chr(10) &amp; &lt;/stanza&gt;&quot;
+	Dim SA() As String
+	Dim i As Integer, iLen As Integer
+	Dim newPara As String, sChar As String, s As String
+	s = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/stanza&gt;&quot;
+	iLen = Len(sPara)&apos; длина анализируемой строки
+	For i = 1 To iLen
+		sChar = Mid(sPara, i, 1)
+		If sChar = s Then
+			newPara = newPara + &quot;&amp;amp;&quot;
+		Else
+			newPara = newPara + sChar
+		End If
+	Next i
+	DelEmptyStanza = newPara
 End Function
 
 Function MakePoemAuthor As String
@@ -488,6 +472,7 @@ End Function
 
 Function MakePoemDate As String
 	Dim sSTR As String
+	sSTR = &quot;&quot;
 	&apos; Дата написания поэмы - согласно схемы допускается только одна дата.
 	&apos; Если есть еще одна строка с датой, то она будет просто текстом (&lt;p&gt;XXX&lt;/p&gt;)
 	If sBodyParagraphs(lCurrentElement,1) = sStylePoemDate Then
@@ -500,7 +485,7 @@ End Function
 
 Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 	Dim sEpig As String, l As Long, sID As String
-	sEpig = sEpig &amp; &quot;&lt;epigraph&gt;&quot; &amp; chr(10)
+	sEpig = &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStyle_Epigraph Then
 			If bDocLinks = True Then
@@ -572,12 +557,16 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 			lCurrentElement = l
 		End If
 	End If
-	MakeEpigraph = sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
+	IF sEpig &lt;&gt; &quot;&quot; Then
+		MakeEpigraph = &quot;&lt;epigraph&gt;&quot; &amp; chr(10) &amp; sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
+	Else
+		MakeEpigraph = &quot;&quot;
+	End If
 End Function
 
 Function MakeCite As String
 	Dim sCite As String, l As Long, sID As String
-	sCite = &quot;&lt;cite&gt;&quot; &amp; chr(10)
+	sCite = &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStyleCite Then
 			If bDocLinks = True Then
@@ -649,7 +638,11 @@ Function MakeCite As String
 			lCurrentElement = l
 		End If
 	End If
-	MakeCite = sCite &amp; &quot;&lt;/cite&gt;&quot;
+	IF sCite &lt;&gt; &quot;&quot; Then
+		MakeCite = &quot;&lt;cite&gt;&quot; &amp; chr(10) &amp; sCite &amp; &quot;&lt;/cite&gt;&quot;
+	Else
+		MakeCite = &quot;&quot;
+	End If
 End Function
 
 Function MakeSubtitle(sStyle_SubTitle) As String
@@ -678,7 +671,9 @@ Function MakeSubtitle(sStyle_SubTitle) As String
 			End If
 		Next l
 		lCurrentElement = l
-		sSubtitle = sSubTag &amp; sSubtitle &amp; &quot;&lt;/subtitle&gt;&quot;
+		If sSubTag &lt;&gt; &quot;&quot; AND sSubtitle &lt;&gt; &quot;&quot; Then
+			sSubtitle = sSubTag &amp; sSubtitle &amp; &quot;&lt;/subtitle&gt;&quot;
+		End If
 	Else &apos; подзаголовки не будут собираться в одну строку, а будут один под другим
 		For l = lCurrentElement To UBound(sBodyParagraphs)
 			If sBodyParagraphs(l,1) = sStyle_SubTitle Then
@@ -724,11 +719,11 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 	&apos; перебор по стилям
 	Select Case sParaStyleName
 		Case sStylePoemTitle
-			MakePoemTitle
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStylePoemSubTitle
-			MakePoemSubTitle
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStylePoemEpigraph
-			MakePoemEpigraph
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStylePoem
 			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStyleEpigraph
