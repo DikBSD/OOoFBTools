@@ -391,24 +391,6 @@ Function SwitchSubTitleStanza As String
 	End If
 End Function
 
-Function DelEmptyStanza(sPara As String) As String
-	&apos; корректировка абзаца - отлов последовательности символов &quot;&lt;stanza&gt; &amp; chr(10) &amp; &lt;/stanza&gt;&quot;
-	Dim SA() As String
-	Dim i As Integer, iLen As Integer
-	Dim newPara As String, sChar As String, s As String
-	s = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/stanza&gt;&quot;
-	iLen = Len(sPara)&apos; длина анализируемой строки
-	For i = 1 To iLen
-		sChar = Mid(sPara, i, 1)
-		If sChar = s Then
-			newPara = newPara + &quot;&amp;amp;&quot;
-		Else
-			newPara = newPara + sChar
-		End If
-	Next i
-	DelEmptyStanza = newPara
-End Function
-
 Function MakePoemAuthor As String
 	&apos; Авторы поэмы
 	Dim sPoem As String, l As Long, sID As String
