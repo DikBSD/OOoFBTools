@@ -334,7 +334,7 @@ Function MakePoem As String
 		sPoem = sPoem &amp; sPoemSubTitle &amp; chr(10)
 	End If
 	&apos; Stanza Поэмы
-	sStanza = MakeStanza
+	sStanza = SwitchSubTitleStanza
 	If sStanza &lt;&gt; &quot;&quot; Then
 		sPoem = sPoem &amp; sStanza
 	End If
@@ -352,7 +352,7 @@ Function MakePoem As String
 	MakePoem = &quot;&lt;poem&gt;&quot; &amp; sPoem &amp; &quot;&lt;/poem&gt;&quot;
 End Function
 
-Function MakeStanza As String
+Function SwitchSubTitleStanza As String
 	Dim l As Long, sID As String, sStanza As String
 	sStanza =  &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
@@ -385,9 +385,9 @@ Function MakeStanza As String
 	Next l
 	lCurrentElement = l
 	If sStanza &lt;&gt; &quot;&quot; Then
-		MakeStanza = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+		SwitchSubTitleStanza = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 	Else
-		MakeStanza = &quot;&quot;
+		SwitchSubTitleStanza = &quot;&quot;
 	End If
 End Function
 
