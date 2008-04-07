@@ -353,39 +353,37 @@ Function MakePoem As String
 End Function
 
 Function SwitchSubTitleStanza As String
-	Dim l As Long, sID As String, sStanza As String
-	sStanza =  &quot;&quot;
+	Dim l As Long, sID As String, sText As String
+	sText =  &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStylePoem Then
 			If sBodyParagraphs(l,0) = &quot;&quot; Then
-				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+				sText = sText &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 			Else
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
 					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-						sStanza = sStanza &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+						sText = sText &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-						sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+						sText = sText &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					End If
 				Else
-					sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+					sText = sText &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 				End If
 			End If
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-		Else 
-			If sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
+		ElseIf sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
 				lCurrentElement = l
-				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
-				sStanza = sStanza &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
-				sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-			Else
-				Exit For
-			End If
+				sText = sText &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+				sText = sText &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
+				sText = sText &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+		Else
+			Exit For
 		End If
+		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 	Next l
 	lCurrentElement = l
-	If sStanza &lt;&gt; &quot;&quot; Then
-		SwitchSubTitleStanza = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+	If sText &lt;&gt; &quot;&quot; Then
+		SwitchSubTitleStanza = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; sText &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 	Else
 		SwitchSubTitleStanza = &quot;&quot;
 	End If
