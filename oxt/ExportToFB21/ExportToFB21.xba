@@ -316,7 +316,7 @@ End Function
 
 Function MakePoem As String
 	Dim sPoem As String, l As Long, sID As String
-	Dim sPoemTitle As String, sPoemSubTitle As String, sPoemEpigraph As String, sStanza As String
+	Dim sPoemTitle As String, sPoemEpigraph As String, sSwitch As String
 	sPoem = &quot;&quot;
 	&apos; Заголовок поэмы
 	sPoemTitle = MakePoemTitle
@@ -328,19 +328,14 @@ Function MakePoem As String
 	If sPoemEpigraph &lt;&gt; &quot;&quot; Then &apos; стихи с эпиграфом
 		sPoem = sPoem &amp; sPoemEpigraph
 	End If
-	&apos; Подзаголовок Поэмы
-	sPoemSubTitle = MakeSubTitle(sStylePoemSubTitle)
-	If sPoemSubTitle &lt;&gt; &quot;&quot; Then
-		sPoem = sPoem &amp; sPoemSubTitle &amp; chr(10)
-	End If
-	&apos; Stanza Поэмы
-	sStanza = SwitchSubTitleStanza
-	If sStanza &lt;&gt; &quot;&quot; Then
-		sPoem = sPoem &amp; sStanza
+	&apos; Переключатель - Stanza или SubTitle Поэмы
+	sSwitch = SwitchSubTitleStanza
+	If sSwitch &lt;&gt; &quot;&quot; Then
+		sPoem = sPoem &amp; sSwitch
 	End If
 	
 	&apos; Заглушка, на случай, если есть Заголовок и (или) Эпиграф поэмы, а обязательного Подзаголовка или Станзы - нет
-	If (sPoemTitle &lt;&gt; &quot;&quot; OR sPoemEpigraph &lt;&gt; &quot;&quot;) AND (sPoemSubTitle = &quot;&quot; AND sStanza = &quot;&quot;) Then
+	If (sPoemTitle &lt;&gt; &quot;&quot; OR sPoemEpigraph &lt;&gt; &quot;&quot;) AND sSwitch = &quot;&quot; Then
 		sPoem = sPoem &amp; &quot;&lt;stanza&gt;&lt;v&gt;?&lt;/v&gt;&lt;/stanza&gt;&quot; &amp; chr(10)
 	End If
 	
@@ -357,25 +352,10 @@ Function SwitchSubTitleStanza As String
 	sText =  &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
 		If sBodyParagraphs(l,1) = sStylePoem Then
-			If sBodyParagraphs(l,0) = &quot;&quot; Then
-				sText = sText &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10) &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
-			Else
-				If bDocLinks = True Then
-					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-						sText = sText &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-						sText = sText &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-					End If
-				Else
-					sText = sText &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
-				End If
-			End If
+			sText = sText &amp; MakeStanza
 		ElseIf sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
-				lCurrentElement = l
-				sText = sText &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
-				sText = sText &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
-				sText = sText &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+			lCurrentElement = l
+			sText = sText &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
 		Else
 			Exit For
 		End If
@@ -383,9 +363,56 @@ Function SwitchSubTitleStanza As String
 	Next l
 	lCurrentElement = l
 	If sText &lt;&gt; &quot;&quot; Then
-		SwitchSubTitleStanza = &quot;&lt;stanza&gt;&quot; &amp; chr(10) &amp; sText &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+		SwitchSubTitleStanza = sText
 	Else
 		SwitchSubTitleStanza = &quot;&quot;
+	End If
+End Function
+
+Function MakeStanza As String
+	Dim l As Long, sID As String, sStanza As String
+	sStanza =  &quot;&quot;
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStylePoem Then
+			If sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then &apos; стих есть
+				&apos; смотрим предыдущий элемент
+				If l &gt;0 Then
+					If sBodyParagraphs(l-1,1) &lt;&gt; sStylePoem Then &apos; не стих - открываем stanza
+						sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+					End If
+				End If
+				If bDocLinks = True Then &apos; обработка ссылок внутри документа
+					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sStanza = sStanza &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+						sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+					End If
+				Else
+					sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+				End If
+				&apos; смотрим следующий элемент
+				If l &lt; UBound(sBodyParagraphs) Then
+					If sBodyParagraphs(l+1,1) &lt;&gt; sStylePoem Then &apos; не стих - закрываем stanza
+						sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+					End If
+				End If
+			Else &apos; пустой абзай-стих - закрываем stanza
+				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+				&apos; смотрим следующий элемент
+				If l &lt; UBound(sBodyParagraphs) Then
+					If sBodyParagraphs(l+1,1) = sStylePoem Then &apos; стих - открываем stanza
+						sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+					End If
+				End If
+			End If
+		Else Exit For
+		End If
+	Next l
+	lCurrentElement = l
+	If sStanza &lt;&gt; &quot;&quot; Then
+		MakeStanza = sStanza
+	Else
+		MakeStanza = &quot;&quot;
 	End If
 End Function
 
