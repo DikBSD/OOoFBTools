@@ -355,7 +355,7 @@ Function SwitchSubTitleStanza As String
 			sText = sText &amp; MakeStanza
 		ElseIf sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
 		&apos;	lCurrentElement = l
-			sText = sText &amp; MakeSubTitle(sStylePoemSubTitle)
+			sText = sText &amp; MakeSubTitle(sStylePoemSubTitle, bMergePoemSubTitle)
 		&apos;	l = lCurrentElement-1
 		Else
 			Exit For
@@ -595,7 +595,7 @@ Function MakeCite As String
 		ElseIf sBodyParagraphs(l,1) = sStyleCiteSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
 			&apos; подзаголовки
 			lCurrentElement = l
-			sCite = sCite &amp; MakeSubTitle(sStyleCiteSubTitle)
+			sCite = sCite &amp; MakeSubTitle(sStyleCiteSubTitle, bMergeCiteSubTitle)
 			l = lCurrentElement-1
 		Else 
 			Exit For
@@ -674,9 +674,9 @@ Function MakeCiteAuthor As String
 	MakeCiteAuthor = sCite
 End Function	
 	
-Function MakeSubtitle(sStyle_SubTitle) As String
+Function MakeSubtitle(sStyle_SubTitle, bMerge_SubTitle) As String
 	Dim sSubtitle As String, l As Long, sSubTag As String, sID As String
-	If bMergeSubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
+	If bMerge_SubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
 		Dim nCount As Integer &apos; число подзаголовков с закладками
 		nCount = 0
 		For l = lCurrentElement To UBound(sBodyParagraphs)
@@ -764,7 +764,7 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 		Case sStyleAnnotation
 			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
 		Case sStyleSubTitle
-			oTextOutputStream.writeString(MakeSubTitle(sStyleSubTitle) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSubTitle(sStyleSubTitle, bMergeSubTitle) &amp; chr(10))
 		Case sStyleLevel1
 			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
 		Case sStyleLevel2
