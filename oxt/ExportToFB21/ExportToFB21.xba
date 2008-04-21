@@ -200,6 +200,74 @@ Function GetLevelNumber(Level As String) As Integer
 	End Select
 End Function
 
+Function SaveElements(sParaStyleName As String, sPara As String)
+	&apos; перебор по стилям
+	Select Case sParaStyleName
+		Case sStylePoemTitle
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+		Case sStylePoemSubTitle
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+		Case sStylePoemEpigraph
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+		Case sStylePoem
+			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+		Case sStyleEpigraph
+			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor) &amp; chr(10))
+		Case sStyleCite
+			oTextOutputStream.writeString(MakeCite &amp; chr(10))
+		Case sStyleCiteSubTitle
+			oTextOutputStream.writeString(MakeCite &amp; chr(10))
+		Case sStyleAnnotation
+			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
+		Case sStyleSubTitle
+			oTextOutputStream.writeString(MakeSubTitle(sStyleSubTitle, bMergeSubTitle) &amp; chr(10))
+		Case sStyleLevel1
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel2
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel3
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel4
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel5
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel6
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel7
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel8
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel9
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case sStyleLevel10
+			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+		Case &quot;&quot; &apos; &lt;empty-line/&gt;
+			oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case &quot;Table&quot; 
+			oTextOutputStream.writeString(sPara &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case &quot;Image&quot; 
+			oTextOutputStream.writeString(sPara &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case Else &apos; что-то другое или просто параграф - записываем как параграф
+			Dim sP As String
+			If bDocLinks = True Then
+				&apos; обработка ссылок внутри документа
+				Dim sID As String
+				If FindIndexForID(lCurrentElement, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sP = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+					sP = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				End If
+			Else
+				sP = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			End If
+			oTextOutputStream.writeString(sP)
+			lCurrentElement = lCurrentElement+1
+	End Select
+End Function
+
 Function MakeBookTitle As String
 	&apos; формируем заглавие книги
 	If lBATIndex &gt; -1 Then
@@ -592,11 +660,19 @@ Function MakeCite As String
 		ElseIf sBodyParagraphs(l,1) = sStyleCite AND sBodyParagraphs(l,0) = &quot;&quot; Then
 			&apos; пустые строки
 			sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
-		ElseIf sBodyParagraphs(l,1) = sStyleCiteSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
+		ElseIf sBodyParagraphs(l,1) = sStyleCiteSubTitle Then
 			&apos; подзаголовки
 			lCurrentElement = l
 			sCite = sCite &amp; MakeSubTitle(sStyleCiteSubTitle, bMergeCiteSubTitle)
 			l = lCurrentElement-1
+		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
+				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStylePoemEpigraph Then
+			lCurrentElement = l
+			sCite = sCite &amp; MakePoem
+			l = lCurrentElement-1
+		ElseIf sBodyParagraphs(l,1) = &quot;Table&quot; Then
+			&apos; таблица в цитате
+			sCite = sCite &amp; sBodyParagraphs(l,0) &amp; chr(10)
 		Else 
 			Exit For
 		End If
@@ -742,74 +818,6 @@ Function MakeSection(sLevel As String) As String
 	oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 	lCurrentElement = lCurrentElement+1
 	MakeSection = sSect
-End Function
-
-Function SaveElements(sParaStyleName As String, sPara As String)
-	&apos; перебор по стилям
-	Select Case sParaStyleName
-		Case sStylePoemTitle
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
-		Case sStylePoemSubTitle
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
-		Case sStylePoemEpigraph
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
-		Case sStylePoem
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
-		Case sStyleEpigraph
-			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor) &amp; chr(10))
-		Case sStyleCite
-			oTextOutputStream.writeString(MakeCite &amp; chr(10))
-		Case sStyleCiteSubTitle
-			oTextOutputStream.writeString(MakeCite &amp; chr(10))
-		Case sStyleAnnotation
-			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
-		Case sStyleSubTitle
-			oTextOutputStream.writeString(MakeSubTitle(sStyleSubTitle, bMergeSubTitle) &amp; chr(10))
-		Case sStyleLevel1
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel2
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel3
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel4
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel5
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel6
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel7
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel8
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel9
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case sStyleLevel10
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
-		Case &quot;&quot; &apos; &lt;empty-line/&gt;
-			oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
-			lCurrentElement = lCurrentElement+1
-		Case &quot;Table&quot; 
-			oTextOutputStream.writeString(sPara &amp; chr(10))
-			lCurrentElement = lCurrentElement+1
-		Case &quot;Image&quot; 
-			oTextOutputStream.writeString(sPara &amp; chr(10))
-			lCurrentElement = lCurrentElement+1
-		Case Else &apos; что-то другое или просто параграф - записываем как параграф
-			Dim sP As String
-			If bDocLinks = True Then
-				&apos; обработка ссылок внутри документа
-				Dim sID As String
-				If FindIndexForID(lCurrentElement, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-					sP = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-					sP = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-				End If
-			Else
-				sP = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-			End If
-			oTextOutputStream.writeString(sP)
-			lCurrentElement = lCurrentElement+1
-	End Select
 End Function
 
 Function FindIndexForID(lCurElement As Long, sID As String) As Long
