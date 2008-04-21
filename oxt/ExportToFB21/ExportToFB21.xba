@@ -396,7 +396,7 @@ Function MakeStanza As String
 						sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 					End If
 				End If
-			Else &apos; пустой абзай-стих - закрываем stanza
+			Else &apos; пустой абзац-стих - закрываем stanza
 				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 				&apos; смотрим следующий элемент
 				If l &lt; UBound(sBodyParagraphs) Then
@@ -575,7 +575,8 @@ Function MakeCite As String
 	Dim sCite As String, l As Long, sID As String
 	sCite = &quot;&quot;
 	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStyleCite Then
+		&apos; Просто абзацы цитаты или пустая строка
+		If sBodyParagraphs(l,1) = sStyleCite AND sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
 				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
@@ -587,11 +588,29 @@ Function MakeCite As String
 				sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			End If
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-		Else Exit For
+		ElseIf sBodyParagraphs(l,1) = sStyleCite AND sBodyParagraphs(l,0) = &quot;&quot; Then
+			&apos; пустые строки &lt;empty-line/&gt;
+			sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
+		Else 
+			Exit For
 		End If
 	Next l
 	lCurrentElement = l
-	&apos; Авторы Цитаты
+	
+	&apos; Авторы цитаты, если они есть
+	sCite = sCite &amp; MakeCiteAuthor
+	
+	IF sCite &lt;&gt; &quot;&quot; Then
+		MakeCite = &quot;&lt;cite&gt;&quot; &amp; chr(10) &amp; sCite &amp; &quot;&lt;/cite&gt;&quot;
+	Else
+		MakeCite = &quot;&quot;
+	End If
+End Function
+
+Function MakeCiteAuthor As String
+	&apos; Авторы цитаты
+	Dim sCite As String, l As Long, sID As String
+	l = lCurrentElement
 	If sBodyParagraphs(lCurrentElement,1) = sStyleCiteAuthor Then
 		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов цитаты с закладками
@@ -645,13 +664,10 @@ Function MakeCite As String
 			lCurrentElement = l
 		End If
 	End If
-	IF sCite &lt;&gt; &quot;&quot; Then
-		MakeCite = &quot;&lt;cite&gt;&quot; &amp; chr(10) &amp; sCite &amp; &quot;&lt;/cite&gt;&quot;
-	Else
-		MakeCite = &quot;&quot;
-	End If
-End Function
-
+	lCurrentElement = l
+	MakeCiteAuthor = sCite
+End Function	
+	
 Function MakeSubtitle(sStyle_SubTitle) As String
 	Dim sSubtitle As String, l As Long, sSubTag As String, sID As String
 	If bMergeSubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку

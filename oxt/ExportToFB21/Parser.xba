@@ -169,7 +169,8 @@ Sub DocumentParser
 				If bDelEL = False Then
 					StyleParser(oPar.ParaStyleName, sPara)
 				Else &apos; если удалять пустые абзацы
-					If oPar.ParaStyleName = sStylePoem Then &apos; только не для стиля Poem - для разных видов стихов
+					If oPar.ParaStyleName = sStylePoem OR oPar.ParaStyleName = sStyleCite Then
+						&apos; только не для стиля Poem - для разных видов стихов, не для пустых строк цитат
 						StyleParser(oPar.ParaStyleName, sPara)
 					End If
 				End If
@@ -194,6 +195,9 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 	If sPara = &quot;&quot; Then
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
+			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+		ElseIf sParaStyleName = sStyleCite Then
+			&apos; для пустых строк в цитатах
 			AddBodyArray(&quot;&quot;, sParaStyleName, False)
 		Else
 			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
