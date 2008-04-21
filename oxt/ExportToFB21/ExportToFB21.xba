@@ -354,8 +354,9 @@ Function SwitchSubTitleStanza As String
 		If sBodyParagraphs(l,1) = sStylePoem Then
 			sText = sText &amp; MakeStanza
 		ElseIf sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
-			lCurrentElement = l
-			sText = sText &amp; MakeSubTitle(sStylePoemSubTitle) &amp; chr(10)
+		&apos;	lCurrentElement = l
+			sText = sText &amp; MakeSubTitle(sStylePoemSubTitle)
+		&apos;	l = lCurrentElement-1
 		Else
 			Exit For
 		End If
@@ -589,8 +590,13 @@ Function MakeCite As String
 			End If
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		ElseIf sBodyParagraphs(l,1) = sStyleCite AND sBodyParagraphs(l,0) = &quot;&quot; Then
-			&apos; пустые строки &lt;empty-line/&gt;
+			&apos; пустые строки
 			sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
+		ElseIf sBodyParagraphs(l,1) = sStyleCiteSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
+			&apos; подзаголовки
+			lCurrentElement = l
+			sCite = sCite &amp; MakeSubTitle(sStyleCiteSubTitle)
+			l = lCurrentElement-1
 		Else 
 			Exit For
 		End If
@@ -695,7 +701,7 @@ Function MakeSubtitle(sStyle_SubTitle) As String
 		Next l
 		lCurrentElement = l
 		If sSubTag &lt;&gt; &quot;&quot; AND sSubtitle &lt;&gt; &quot;&quot; Then
-			sSubtitle = sSubTag &amp; sSubtitle &amp; &quot;&lt;/subtitle&gt;&quot;
+			sSubtitle = sSubTag &amp; Trim(sSubtitle) &amp; &quot;&lt;/subtitle&gt;&quot;
 		End If
 	Else &apos; подзаголовки не будут собираться в одну строку, а будут один под другим
 		For l = lCurrentElement To UBound(sBodyParagraphs)
@@ -752,6 +758,8 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 		Case sStyleEpigraph
 			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor) &amp; chr(10))
 		Case sStyleCite
+			oTextOutputStream.writeString(MakeCite &amp; chr(10))
+		Case sStyleCiteSubTitle
 			oTextOutputStream.writeString(MakeCite &amp; chr(10))
 		Case sStyleAnnotation
 			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
