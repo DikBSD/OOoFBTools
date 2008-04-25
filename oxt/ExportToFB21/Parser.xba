@@ -169,28 +169,17 @@ Sub DocumentParser
 			Loop
 			
 			&apos; Теперь - парсер элементов - по стилям
-			If sPara = &quot;&quot; Then
-				If bDelEL = False Then
-					StyleParser(oPar.ParaStyleName, sPara)
-				Else &apos; если удалять пустые абзацы
-					&apos; Оставляем &quot;&quot; для : 1. стиля Poem - для разных видов стихов,
-					&apos; 2. пустых строк цитат, 3. отделения цитат от цитат, поэм от поэм и т.д.
-					If oPar.ParaStyleName = sStylePoem OR oPar.ParaStyleName = sStyleCite Then
-						StyleParser(oPar.ParaStyleName, sPara)
-					End If
+			If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then
+				&apos; заголовки стиля Heading игнорируются
+				Dim sMarker As String
+				sMarker = Mid(oPar.getString(), 1, Len(oPar.getString())-Len(sAllSectString))
+				sPara = sMarker &amp; &quot; &quot; &amp; sPara
+				If sMarker = &quot;&quot; Then &apos; для маркеров • и других
+					sPara = &quot;• &quot; &amp; sPara 
 				End If
-			Else
-				If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then &apos; заголовки стиля Heading игнорируются
-					Dim sMarker As String
-					sMarker = Mid(oPar.getString(), 1, Len(oPar.getString())-Len(sAllSectString))
-					sPara = sMarker &amp; &quot; &quot; &amp; sPara
-					If sMarker = &quot;&quot; Then &apos; для маркеров • и других
-						sPara = &quot;• &quot; &amp; sPara 
-					End If
-					sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
-				End If
-				StyleParser(oPar.ParaStyleName, sPara)
+				sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
 			End If
+			StyleParser(oPar.ParaStyleName, sPara)
 		End If
 	Loop
 End Sub

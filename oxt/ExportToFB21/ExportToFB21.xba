@@ -242,7 +242,9 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 		Case sStyleLevel10
 			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
 		Case &quot;&quot; &apos; &lt;empty-line/&gt;
-			oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			If bDelEL = False Then
+				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			End If
 			lCurrentElement = lCurrentElement+1
 		Case &quot;Table&quot; 
 			oTextOutputStream.writeString(sPara &amp; chr(10))
@@ -673,7 +675,7 @@ Function MakeCite As String
 		ElseIf sBodyParagraphs(l,1) = &quot;Table&quot; Then
 			&apos; таблица в цитате
 			sCite = sCite &amp; sBodyParagraphs(l,0) &amp; chr(10)
-		Else 
+		Else
 			Exit For
 		End If
 	Next l
