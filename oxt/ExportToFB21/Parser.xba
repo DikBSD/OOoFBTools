@@ -7,6 +7,8 @@ Option Explicit
 Public sFootnoteLeft As String
 Public sFootnoteRight As String
 Public bFootnoteSpace As Boolean
+&apos; для аннотации
+Public bMergeAnnotationSubTitle As Boolean
 &apos; оформление подзаголовков
 Public bMergeSubTitle As Boolean
 &apos; оформление авторов эпиграфов
@@ -193,6 +195,9 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 		ElseIf sParaStyleName = sStyleCite Then
 			&apos; для пустых строк в цитатах
 			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+		ElseIf sParaStyleName = sStyleAnnotation Then
+			&apos; для пустых строк в аннотациях
+			AddBodyArray(&quot;&quot;, sParaStyleName, False)
 		Else
 			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
 		End If
@@ -233,7 +238,9 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 				
 			Case sStyleAnnotation
 				AddBodyArray(sPara, sParaStyleName, False)
-				
+			Case sStyleAnnotationSubTitle
+				AddBodyArray(sPara, sParaStyleName, False)
+					
 			Case sStyleSubTitle
 				AddBodyArray(sPara, sParaStyleName, False)
 				

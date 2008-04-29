@@ -219,6 +219,8 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 			oTextOutputStream.writeString(MakeCite &amp; chr(10))
 		Case sStyleAnnotation
 			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
+		Case sStyleAnnotationSubTitle
+			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
 		Case sStyleSubTitle
 			oTextOutputStream.writeString(MakeSubTitle(sStyleSubTitle, bMergeSubTitle) &amp; chr(10))
 		Case sStyleLevel1
@@ -296,30 +298,6 @@ Function MakeBookTitle As String
 		lCurrentElement = l
 		MakeBookTitle = sBT &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10)
 	End If
-End Function
-
-Function MakeAnnotation As String
-	Dim sAnnot As String, l As Long, sID As String, sAnnotTag As String
-	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStyleAnnotation Then
-			If bDocLinks = True Then
-				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-					sAnnotTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
-				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-					sAnnotTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
-				End If
-			Else
-				sAnnotTag = &quot;&lt;p&gt;&quot;
-			End If
-			sAnnot = sAnnot &amp; sAnnotTag &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-			oProgressBar.setValue(l) &apos; Статусбар
-		Else Exit For
-		End If
-	Next l
-	lCurrentElement = l
-	MakeAnnotation = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
 End Function
 
 Function MakePoemTitle As String
@@ -640,6 +618,53 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 	Else
 		MakeEpigraph = &quot;&quot;
 	End If
+End Function
+
+Function MakeAnnotation As String
+	Dim sAnnot As String, l As Long, sID As String, sAnnotTag As String
+	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
+	For l = lCurrentElement To UBound(sBodyParagraphs)
+		If sBodyParagraphs(l,1) = sStyleAnnotation AND sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then
+			If bDocLinks = True Then
+				&apos; обработка ссылок внутри документа
+				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sAnnotTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
+				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+					sAnnotTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
+				End If
+			Else
+				sAnnotTag = &quot;&lt;p&gt;&quot;
+			End If
+			sAnnot = sAnnot &amp; sAnnotTag &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			oProgressBar.setValue(l) &apos; Статусбар
+		ElseIf sBodyParagraphs(l,1) = sStyleAnnotation AND sBodyParagraphs(l,0) = &quot;&quot; Then
+			&apos; пустые строки
+			sAnnot = sAnnot &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
+		ElseIf sBodyParagraphs(l,1) = sStyleAnnotationSubTitle Then
+			&apos; подзаголовки
+			lCurrentElement = l
+			sAnnot = sAnnot &amp; MakeSubTitle(sStyleAnnotationSubTitle, bMergeAnnotationSubTitle)
+			l = lCurrentElement-1
+		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
+				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStylePoemEpigraph Then
+			&apos; поэмы внутри аннотации
+			lCurrentElement = l
+			sAnnot = sAnnot &amp; MakePoem
+			l = lCurrentElement-1
+		ElseIf sBodyParagraphs(l,1) = sStyleCite OR sBodyParagraphs(l,1) = sStyleCiteSubTitle Then
+			&apos; цитаты внутри аннотации
+			lCurrentElement = l
+			sAnnot = sAnnot &amp; MakeCite
+			l = lCurrentElement-1
+		ElseIf sBodyParagraphs(l,1) = &quot;Table&quot; Then
+			&apos; таблица в аннотации
+			sAnnot = sAnnot &amp; sBodyParagraphs(l,0) &amp; chr(10)
+		Else
+			Exit For
+		End If
+	Next l
+	lCurrentElement = l
+	MakeAnnotation = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
 End Function
 
 Function MakeCite As String
