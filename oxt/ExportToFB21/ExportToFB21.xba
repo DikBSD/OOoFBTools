@@ -559,7 +559,21 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 		End If
 	Next l
 	lCurrentElement = l
-	&apos; Авторы Эпиграфа
+	
+	&apos; Авторы цитаты, если они есть
+	sEpig = sEpig &amp; MakeEpigraphAuthor(sStyle_EpigraphAuthor)
+	
+	IF sEpig &lt;&gt; &quot;&quot; Then
+		MakeEpigraph = &quot;&lt;epigraph&gt;&quot; &amp; chr(10) &amp; sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
+	Else
+		MakeEpigraph = &quot;&quot;
+	End If
+End Function
+
+Function MakeEpigraphAuthor(sStyle_EpigraphAuthor) As String
+	&apos; Авторы эпиграфа
+	Dim sEpig As String, l As Long, sID As String
+	l = lCurrentElement
 	If sBodyParagraphs(lCurrentElement,1) = sStyle_EpigraphAuthor Then
 		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов эпиграфа с закладками
@@ -613,11 +627,8 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 			lCurrentElement = l
 		End If
 	End If
-	IF sEpig &lt;&gt; &quot;&quot; Then
-		MakeEpigraph = &quot;&lt;epigraph&gt;&quot; &amp; chr(10) &amp; sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
-	Else
-		MakeEpigraph = &quot;&quot;
-	End If
+	lCurrentElement = l
+	MakeEpigraphAuthor = sEpig
 End Function
 
 Function MakeAnnotation As String
