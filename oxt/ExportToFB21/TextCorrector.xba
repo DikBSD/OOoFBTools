@@ -193,7 +193,7 @@ Function TextCorrectorDlgOk
 	SaveCorrectorSettings &apos; сохранение настроек чистки текста
 	
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 82)
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 84)
 	oProgressBar.setValue(0)
 	
 	&apos; Очистка текста
@@ -553,6 +553,16 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;.”&quot;
 		oReplace.ReplaceString = &quot;.»&quot;
 		oDoc.ReplaceAll(oReplace)
+		
+		oReplace.SearchString = &quot;„\&lt;&quot;
+		oReplace.ReplaceString = &quot;«&quot;
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(71)
+		
+		oReplace.SearchString = &quot;„…&quot;
+		oReplace.ReplaceString = &quot;«…&quot;
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(72)
 
 	End If
 	If bC = True Then
@@ -560,35 +570,35 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\(c\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(71)
+		oProgressBar.setValue(73)
 		oReplace.SearchString = &quot;\(с\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(72)
+		oProgressBar.setValue(74)
 		oReplace.SearchString = &quot;\(C\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(73)
+		oProgressBar.setValue(75)
 		oReplace.SearchString = &quot;\(С\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(74)
+		oProgressBar.setValue(76)
 		oReplace.SearchString = &quot;\(r\)&quot;
 		oReplace.ReplaceString = &quot;®&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(75)
+		oProgressBar.setValue(77)
 		oReplace.SearchString = &quot;\(R\)&quot;
 		oReplace.ReplaceString = &quot;®&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(76)
+		oProgressBar.setValue(78)
 		oReplace.SearchString = &quot;\(TM\)&quot;
 		oReplace.ReplaceString = &quot;™&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(77)
+		oProgressBar.setValue(79)
 		oReplace.SearchString = &quot;\(ТМ\)&quot;
 		oReplace.ReplaceString = &quot;™&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(78)
+		oProgressBar.setValue(80)
 	End If
 	
 	&apos; Работа с пробелами и табуляциями
@@ -597,7 +607,7 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\t&quot;
 		oReplace.ReplaceString = &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(79)
+		oProgressBar.setValue(81)
 		&apos; Удаляем все стартовые табуляции
 		&apos;oReplace.SearchString = &quot;^\t{1,}&quot;
 		&apos;oReplace.ReplaceString = &quot;&quot;
@@ -614,17 +624,17 @@ Function TextCorrectorDlgOk
 		oReplace.SearchString = &quot;^ {1,}&quot;
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(80)
+		oProgressBar.setValue(82)
 		&apos; Удаляем все конечные пробелы
 		oReplace.SearchString = &quot; {1,}$&quot;
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(81)
+		oProgressBar.setValue(83)
 		&apos; Удаляем все множественные пробелы
 		oReplace.SearchString = &quot; {1,}&quot;
 		oReplace.ReplaceString = &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(82)
+		oProgressBar.setValue(84)
 	End If
 	
 	bCorrectorExecute = True

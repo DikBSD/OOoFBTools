@@ -207,8 +207,6 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStylePoemSubTitle
 			oTextOutputStream.writeString(MakePoem &amp; chr(10))
-		Case sStylePoemEpigraph
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStylePoem
 			oTextOutputStream.writeString(MakePoem &amp; chr(10))
 		Case sStyleEpigraph
@@ -372,8 +370,8 @@ Function MakePoem As String
 		sPoem = sPoem &amp; chr(10) &amp; sPoemTitle
 	End If
 	&apos; Эпиграф Поэмы
-	If sBodyParagraphs(lCurrentElement,1) = sStylePoemEpigraph Then &apos; против зацикливания - из Поэмы в Эпиграф и обратно
-		sPoemEpigraph = MakeEpigraph(sStylePoemEpigraph, sStylePoemEpigraphAuthor)
+	If sBodyParagraphs(lCurrentElement,1) = sStyleEpigraph Then &apos; против зацикливания - из Поэмы в Эпиграф и обратно
+		sPoemEpigraph = MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor)
 	End If
 
 	If sPoemEpigraph &lt;&gt; &quot;&quot; Then &apos; стихи с эпиграфом
@@ -563,7 +561,7 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 			&apos; пустые строки
 			sEpig = sEpig &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
 		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
-				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStylePoemEpigraph Then
+				sBodyParagraphs(l,1) = sStylePoemSubTitle Then
 			lCurrentElement = l
 			sEpig = sEpig &amp; MakePoem
 			l = lCurrentElement-1
@@ -674,7 +672,7 @@ Function MakeAnnotation As String
 			sAnnot = sAnnot &amp; MakeSubTitle(sStyleAnnotationSubTitle, bMergeAnnotationSubTitle)
 			l = lCurrentElement-1
 		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
-				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStylePoemEpigraph Then
+				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStyleEpigraph Then
 			&apos; поэмы внутри аннотации
 			lCurrentElement = l
 			sAnnot = sAnnot &amp; MakePoem
@@ -721,7 +719,7 @@ Function MakeCite As String
 			sCite = sCite &amp; MakeSubTitle(sStyleCiteSubTitle, bMergeCiteSubTitle)
 			l = lCurrentElement-1
 		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
-				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStylePoemEpigraph Then
+				sBodyParagraphs(l,1) = sStylePoemSubTitle Then
 			lCurrentElement = l
 			sCite = sCite &amp; MakePoem
 			l = lCurrentElement-1
