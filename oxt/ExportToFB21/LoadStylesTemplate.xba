@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="StylesTemplateLoad" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Sub LoadStylesTemplate
+	&apos; Загрузить шаблон стилей конвертора
+	Dim oDoc, oDesktop, oTemplate, oPathSettings
+	Dim sFile As String, sPath As String, sPathArray() As String
+	Dim i As Integer
+
+	oDoc = ThisComponent
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	sPathArray = Split(oPathSettings.Template,&quot;;&quot;)
+	sFile = &quot;fb21_styles.ott&quot;
+	
+	&apos; Ищем папку, хранящую наш шаблон
+	For i = LBound(sPathArray) To UBound(sPathArray)
+		If FileExists(sPathArray(i) &amp; &quot;/&quot; &amp; sFile) Then
+			sPath = sPathArray(i) &amp; &quot;/&quot; &amp; sFile
+			Exit For
+		End If
+	Next i
+	
+	&apos;Загрузка шаблона в переменную
+	oDesktop =   createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	Dim aArgs(1)  As New com.sun.star.beans.PropertyValue
+	aArgs(0).Name = &quot;AsTemplate&quot;
+	aArgs(0).Value = False
+	aArgs(1).Name=&quot;Hidden&quot;
+   	aArgs(1).Value=True
+	oTemplate = oDesktop.loadComponentFromURL( sPath, &quot;_blank&quot;, 0, aArgs() )
+		
+	&apos; Загрузка и переименовывание стилей для докуменета из шаблона
+    aArgs(0).Name = &quot;OverwriteStyles&quot;
+    aArgs(0).Value = True
+    aArgs(1).Name = &quot;&quot;
+    aArgs(1).Value = &quot;&quot;
+    oDoc.stylefamilies.loadStylesFromURL( sPath, aArgs() )
+	
+	&apos; привязываем наш документ к шаблону
+    oDoc.DocumentInfo.Template = oTemplate.DocumentInfo.Title
+    oDoc.DocumentInfo.TemplateFileName = sPath
+       
+    oTemplate.Close (false)
+End Sub
+</script:module>
