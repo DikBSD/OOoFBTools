@@ -151,7 +151,11 @@ Function SaveNotes
 		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; iCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
 		sNotePars = Split(sFootnoteText(iCount),chr(10))
 		For i=0 To UBound(sNotePars)-1
-			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sNotePars(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+			If sNotePars(i) = &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sNotePars(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+			End If
 		Next i
 		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
