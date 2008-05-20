@@ -161,21 +161,30 @@ Function SaveNotes
 		oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; lCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
 		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; lCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
 		sNotePars = Split(sFootnoteText(lCount), chr(10))
-		Dim sNote As String, sType As String
-		Dim sPars() As String
-		For l=0 To UBound(sNotePars)
-			If IsEvenNumber(l) Then
-				sNote = sNotePars(l)
-			Else
-				sType = sNotePars(l)
-			End If
-			If Not IsEvenNumber(l) Then
-				AddNewItemToArray2(sPars, sNote, sType)
-			End If
-		Next l
-
-		lCurrentElement = 0
-		MakeBody(sPars, False)
+		If bNotesElements = True Then &apos; экспортируем сложные структуры текста сносок
+			Dim sNote As String, sType As String
+			Dim sPars() As String
+			For l=0 To UBound(sNotePars)
+				If IsEvenNumber(l) Then
+					sNote = sNotePars(l)
+				Else
+					sType = sNotePars(l)
+				End If
+				If Not IsEvenNumber(l) Then
+					AddNewItemToArray2(sPars, sNote, sType)
+				End If
+			Next l
+			lCurrentElement = 0
+			MakeBody(sPars, False)
+		Else	
+			For l=0 To UBound(sNotePars)-1
+				If sNotePars(l) = &quot;&quot; Then
+					oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+				Else
+					oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sNotePars(l) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+				End If
+			Next l
+		End If
 		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 	Next lCount

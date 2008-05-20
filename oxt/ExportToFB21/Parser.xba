@@ -361,28 +361,40 @@ Function FootEndNoteParser(oSect As Object) As String
 	sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; i &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; i &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
 	
 	ReDim Preserve sFootnoteText(iFootnoteCount) As String
-	&apos;Dim j As Long
-	&apos;j = Ubound(sAuthors(), 1) + 1
-	&apos;If Ubound(sFootnoteText(), 1) + 1 &gt; 0 Then
-	&apos;	ReDim Preserve sFootnoteText(j, 1)
-	&apos;Else Redim sFootnoteText(j, 1)
-	&apos;End If
 
-	If bStyleFootnote = True Then &apos; форматирование текста сноски по стилям
+	If bStyleFootnote = True Then &apos; форматирование текста сноски по inline-стилям
 		&apos; отформатированный текст сноски сохраняем в массив
 		FormatFootnoteText(oSect)
-	Else &apos; не применяем стили к тексту сносок
+	Else &apos; не применяем inline-стили к тексту сносок
 		oFootnoteCursor = oSect.Footnote.createTextCursor()
 		oFootnoteCursor.gotoStart(False)
-		Do
-			oFootnoteCursor.gotoEndOfParagraph(True)
-			sNoteText = sNoteText &amp; oFootnoteCursor.String &amp; chr(10)
-		Loop While oFootnoteCursor.gotoNextParagraph(False)
+		If bNotesElements = True Then &apos; Экспорт сложных структур
+			Dim sTextArray() As String &apos; временный массив для хранения всех строк одного абзаца
+			Dim sType As String &apos; тип абзаца - стих, абзац, цитата...
+			Do
+				oFootnoteCursor.gotoEndOfParagraph(True)
+				
+				If bCorrectPara = True Then
+					sNoteText = CorrectPara(oFootnoteCursor.String)
+				Else
+					sNoteText = oFootnoteCursor.String
+				End If
+			
+				sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sNoteText)
+				sTextArray(UBound(sTextArray())) = sTextArray(UBound(sTextArray())) &amp; chr(10) &amp; sType
+			Loop While oFootnoteCursor.gotoNextParagraph(False)
+			sFootnoteText(iFootnoteCount) = Join(sTextArray(), chr(10))
+		Else &apos; Не экспортируем сложные структуры текста сносок
+			Do
+				oFootnoteCursor.gotoEndOfParagraph(True)
+				sNoteText = sNoteText &amp; oFootnoteCursor.String &amp; chr(10)
+			Loop While oFootnoteCursor.gotoNextParagraph(False)
 	
-		If bCorrectPara = True Then
-			sFootnoteText(iFootnoteCount) = CorrectPara(sNoteText)
-		Else
-			sFootnoteText(iFootnoteCount) = sNoteText
+			If bCorrectPara = True Then
+				sFootnoteText(iFootnoteCount) = CorrectPara(sNoteText)
+			Else
+				sFootnoteText(iFootnoteCount) = sNoteText
+			End If
 		End If
 	End If
 	
@@ -472,13 +484,21 @@ Function FormatFootnoteText(oSect)
 				End If
 			Wend
 			&apos; парсер стилей сносок
-			sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sParagF)
-			sTextArray(UBound(sTextArray())) = sTextArray(UBound(sTextArray())) &amp; chr(10) &amp; sType
-			sParagF = &quot;&quot;
+			If bNotesElements = True Then
+				sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sParagF)
+				sTextArray(UBound(sTextArray())) = sTextArray(UBound(sTextArray())) &amp; chr(10) &amp; sType
+				sParagF = &quot;&quot;
+			End If	
 		Wend
+		If bNotesElements = False Then
+			sParagF = sParagF &amp; chr(10)
+		End If
 	Loop While oFootnoteCursor.gotoNextParagraph(False)
-
-	sFootnoteText(iFootnoteCount) = Join(sTextArray(), chr(10))
+	If bNotesElements = True Then
+		sFootnoteText(iFootnoteCount) = Join(sTextArray(), chr(10))
+	Else
+		sFootnoteText(iFootnoteCount) = sParagF
+	End If
 End Function
 
 Function TextGraphicObjectParagraphParser(oContent As Object)
