@@ -768,4 +768,25 @@ Function ShowCustomInfoCount
 	MsgBox sStr, 64, &quot;Список серий для Custom Info&quot;
 End Function
 
+Function ShowGenresCount
+	Dim sStr As String, sLine As String
+	sLine = &quot;-------------------------&quot;
+	sStr = &quot;№ п/п | Жанр | Match, %&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	If UBound(sGenres) &lt;&gt; -1 Then
+		Dim i As Integer
+		For i = 0 To UBound(sGenres)
+			sStr = sStr &amp; i+1 &amp; &quot;. | &quot; &amp; sGenres(i, 0) &amp; &quot; | &quot; &amp; sGenres(i, 1) &amp; chr(10)
+		Next i
+		sStr = sStr &amp; sLine &amp; chr(10)
+	Else
+		If Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text) &lt;&gt; &quot;&quot; Then
+			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+					Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text)
+		Else
+			sStr = &quot;Список Жанров пуст!&quot;
+		End If
+	End If
+	MsgBox sStr, 64, &quot;Список Жанров Книги&quot;
+End Function
+
 </script:module>
