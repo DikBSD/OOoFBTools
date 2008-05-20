@@ -10,6 +10,7 @@ Public sTextFrameToFB2 As String &apos; экспортировать врезк�
 Public sAdjTextFrame As String  &apos; выравнивание текста врезок, если экспорт как таблицы
 
 Private sFootStyleList() As String &apos; стиль сносок
+Private sFootTitleList() As String &apos; Название секции сносок
 Private sHRList() As String &apos; выравнивание ячеек
 Private sHVList() As String &apos; выравнивание по высоте
 Private sTFList() As String &apos; вид экспорта врезок
@@ -17,6 +18,7 @@ Private bServiceExecute As Boolean
 
 Function ServiceDlgExec As Boolean
 	sFootStyleList() = Array(&quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
+	sFootTitleList() = Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
 	sHRList() = Array(&quot;Слева&quot;, &quot;По Центру&quot;, &quot;Справа&quot;)
 	sHVList() = Array(&quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
 	sTFList() = Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;)
@@ -25,6 +27,7 @@ Function ServiceDlgExec As Boolean
 	With oServiceDlg.Model
 		.Title = &quot;Дополнительные настройки&quot;
 		.cmbboxStyle.StringItemList = sFootStyleList()
+		.cmbboxTitle.StringItemList = sFootTitleList()
 		.cmbboxHeaderTRA.StringItemList = sHRList()
 		.cmbboxHeaderTHV.StringItemList = sHVList()
 		.cmbboxLineTRA.StringItemList = sHRList()
@@ -57,6 +60,10 @@ End Function
 Function ServiceDlgOk
 	If Trim(oServiceDlg.Model.cmbboxStyle.Text) = &quot;&quot; Then
 		MsgBox &quot;Выберите стиль сносок&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oServiceDlg.Model.cmbboxTitle.Text) = &quot;&quot; Then
+		MsgBox &quot;Выберите название заголовка секции сносок&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	If Trim(oServiceDlg.Model.cmbboxHeaderTRA.Text) = &quot;&quot; OR _
