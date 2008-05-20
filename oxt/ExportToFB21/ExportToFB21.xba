@@ -122,11 +122,11 @@ Function IsLevel(sStyle As String) As Boolean
 		End Select
 End Function
 
-Function IndexOf1Section As Long
+Function IndexOf1Section(sArray As String) As Long
 	&apos; индекс 1-й секции
 	Dim i As Long
-	For i = 0 To UBound(sBodyParagraphs)
-		If IsLevel(sBodyParagraphs(i,1)) = True Then
+	For i = 0 To UBound(sArray)
+		If IsLevel(sArray(i,1)) = True Then
 			IndexOf1Section = i
 			Exit For
 		Else
@@ -135,11 +135,11 @@ Function IndexOf1Section As Long
 	Next i
 End Function
 
-Function IndexOfEndSection As Long
+Function IndexOfEndSection(sArray As String) As Long
 	&apos; индекс последней секции
 	Dim i As Long
-	For i = UBound(sBodyParagraphs) To 0 Step -1 
-		If  IsLevel(sBodyParagraphs(i,1)) = True Then
+	For i = UBound(sArray) To 0 Step -1 
+		If  IsLevel(sArray(i,1)) = True Then
 			IndexOfEndSection = i
 			Exit For
 		Else
@@ -148,25 +148,25 @@ Function IndexOfEndSection As Long
 	Next i
 End Function
 
-Function GetCountSection(lIndexOfCurrentLevel As Long, lIndexOfNextLevel As Long, lIndexOfEndSection As Long) As Integer
+Function GetCountSection(sArray As String, lIndexOfCurrentLevel As Long, lIndexOfNextLevel As Long, lIndexOfEndSection As Long) As Integer
 	&apos; сравнение по индексам, расчет по номерам уровней
 	If lIndexOfCurrentLevel &lt; lIndexOfEndSection Then 
-		GetCountSection = ( GetLevelNumber(sBodyParagraphs(lIndexOfCurrentLevel,1)) - _
-							GetLevelNumber(sBodyParagraphs(lIndexOfNextLevel,1)) ) + 1
+		GetCountSection = ( GetLevelNumber(sArray(lIndexOfCurrentLevel,1)) - _
+							GetLevelNumber(sArray(lIndexOfNextLevel,1)) ) + 1
 	Else
-		GetCountSection = GetLevelNumber(sBodyParagraphs(lIndexOfEndSection,1))
+		GetCountSection = GetLevelNumber(sArray(lIndexOfEndSection,1))
 	End If
 End Function
 
-Function GetIndexOfNextLevel(lIndexOfCurrentLevel As Long) As Long
+Function GetIndexOfNextLevel(sArray As String, lIndexOfCurrentLevel As Long) As Long
 	Dim i As Long, sInput As String
 	&apos; Ищем следующий индекс уровеня после LevelCurrent
-	If lIndexOfCurrentLevel = UBound(sBodyParagraphs) Then
+	If lIndexOfCurrentLevel = UBound(sArray) Then
 		GetIndexOfNextLevel = lIndexOfCurrentLevel
 		Exit Function
 	End If
-	For i = lIndexOfCurrentLevel+1 To UBound(sBodyParagraphs)
-		sInput = sBodyParagraphs(i,1)
+	For i = lIndexOfCurrentLevel+1 To UBound(sArray)
+		sInput = sArray(i,1)
 		If  IsLevel(sInput) = True Then
 			GetIndexOfNextLevel = i
 			Exit For
@@ -200,47 +200,47 @@ Function GetLevelNumber(Level As String) As Integer
 	End Select
 End Function
 
-Function SaveElements(sParaStyleName As String, sPara As String)
+Function SaveElements(sArray As String, sParaStyleName As String, sPara As String, bBody As Boolean)
 	&apos; перебор по стилям
 	Select Case sParaStyleName
 		Case sStylePoemTitle
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+			oTextOutputStream.writeString(MakePoem(sArray, bBody) &amp; chr(10))
 		Case sStylePoemSubTitle
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+			oTextOutputStream.writeString(MakePoem(sArray, bBody) &amp; chr(10))
 		Case sStylePoem
-			oTextOutputStream.writeString(MakePoem &amp; chr(10))
+			oTextOutputStream.writeString(MakePoem(sArray, bBody) &amp; chr(10))
 		Case sStyleEpigraph
-			oTextOutputStream.writeString(MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor) &amp; chr(10))
+			oTextOutputStream.writeString(MakeEpigraph(sArray, sStyleEpigraph, sStyleEpigraphAuthor, bBody) &amp; chr(10))
 		Case sStyleCite
-			oTextOutputStream.writeString(MakeCite &amp; chr(10))
+			oTextOutputStream.writeString(MakeCite(sArray, bBody) &amp; chr(10))
 		Case sStyleCiteSubTitle
-			oTextOutputStream.writeString(MakeCite &amp; chr(10))
+			oTextOutputStream.writeString(MakeCite(sArray, bBody) &amp; chr(10))
 		Case sStyleAnnotation
-			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
+			oTextOutputStream.writeString(MakeAnnotation(sArray, bBody) &amp; chr(10))
 		Case sStyleAnnotationSubTitle
-			oTextOutputStream.writeString(MakeAnnotation &amp; chr(10))
+			oTextOutputStream.writeString(MakeAnnotation(sArray, bBody) &amp; chr(10))
 		Case sStyleSubTitle
-			oTextOutputStream.writeString(MakeSubTitle(sStyleSubTitle, bMergeSubTitle) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSubTitle(sArray, sStyleSubTitle, bMergeSubTitle, bBody) &amp; chr(10))
 		Case sStyleLevel1
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel2
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel3
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel4
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel5
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel6
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel7
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel8
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel9
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case sStyleLevel10
-			oTextOutputStream.writeString(MakeSection(sParaStyleName) &amp; chr(10))
+			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
 		Case &quot;&quot; &apos; &lt;empty-line/&gt;
 			If bDelEL = False Then
 				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
@@ -257,7 +257,7 @@ Function SaveElements(sParaStyleName As String, sPara As String)
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
 				Dim sID As String
-				If FindIndexForID(lCurrentElement, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+				If FindIndexForID(lCurrentElement, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 					sP = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 					sP = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
@@ -280,7 +280,7 @@ Function MakeBookTitle As String
 			If sBodyParagraphs(l,1) = sStyleBookTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					If FindIndexForID(l, sID, True) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 						sBookTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						sBookTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -298,7 +298,7 @@ Function MakeBookTitle As String
 	End If
 End Function
 
-Function MakePoemTitle As String
+Function MakePoemTitle(sArray As String, bBody As Boolean) As String
 	Dim l As Long, sID As String, sPTag As String
 	Dim sPoemTitle As String
 	sPoemTitle = &quot;&quot;
@@ -306,11 +306,11 @@ Function MakePoemTitle As String
 		Dim nCount As Integer, nCountTag As String &apos; число заголовков с закладками
 		nCount = 0
 		nCountTag = 0
-		For l = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(l,1) = sStylePoemTitle Then
+		For l = lCurrentElement To UBound(sArray)
+			If sArray(l,1) = sStylePoemTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 						sPTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 						nCount = nCount+1 &apos;счетчик закладок
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -325,7 +325,7 @@ Function MakePoemTitle As String
 					sPoemTitle = sPoemTitle &amp; sPTag
 					nCountTag = nCountTag+1 &apos;счетчик закладок
 				End If
-				sPoemTitle = sPoemTitle &amp; sBodyParagraphs(l,0) &amp;  &quot; &quot;
+				sPoemTitle = sPoemTitle &amp; sArray(l,0) &amp;  &quot; &quot;
 				oProgressBar.setValue(l) &apos; Статусбар
 			Else Exit For
 			End If
@@ -334,11 +334,11 @@ Function MakePoemTitle As String
 		sPoemTitle = sPoemTitle &amp; &quot;&lt;/p&gt;&quot;
 		lCurrentElement = l
 	Else &apos; Заголовки стиха не будут собираться в одну строку, а будут один под другим
-		For l = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(l,1) = sStylePoemTitle Then
+		For l = lCurrentElement To UBound(sArray)
+			If sArray(l,1) = sStylePoemTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 						sPTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						sPTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -346,7 +346,7 @@ Function MakePoemTitle As String
 				Else
 					sPTag = &quot;&lt;p&gt;&quot;
 				End If
-				sPoemTitle = sPoemTitle &amp; sPTag &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				sPoemTitle = sPoemTitle &amp; sPTag &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				oProgressBar.setValue(l) &apos; Статусбар
 			Else Exit For
 			End If
@@ -360,25 +360,25 @@ Function MakePoemTitle As String
 	End If
 End Function
 
-Function MakePoem As String
+Function MakePoem(sArray As String, bBody As Boolean) As String
 	Dim sPoem As String, l As Long, sID As String
 	Dim sPoemTitle As String, sPoemEpigraph As String, sSwitch As String
 	sPoem = &quot;&quot;
 	&apos; Заголовок поэмы
-	sPoemTitle = MakePoemTitle
+	sPoemTitle = MakePoemTitle(sArray, bBody)
 	If sPoemTitle &lt;&gt; &quot;&quot; Then &apos; стихи с заголовка
 		sPoem = sPoem &amp; chr(10) &amp; sPoemTitle
 	End If
 	&apos; Эпиграф Поэмы
-	If sBodyParagraphs(lCurrentElement,1) = sStyleEpigraph Then &apos; против зацикливания - из Поэмы в Эпиграф и обратно
-		sPoemEpigraph = MakeEpigraph(sStyleEpigraph, sStyleEpigraphAuthor)
+	If sArray(lCurrentElement,1) = sStyleEpigraph Then &apos; против зацикливания - из Поэмы в Эпиграф и обратно
+		sPoemEpigraph = MakeEpigraph(sArray, sStyleEpigraph, sStyleEpigraphAuthor, bBody)
 	End If
 
 	If sPoemEpigraph &lt;&gt; &quot;&quot; Then &apos; стихи с эпиграфом
 		sPoem = sPoem &amp; sPoemEpigraph
 	End If
 	&apos; Переключатель - Stanza или SubTitle Поэмы
-	sSwitch = SwitchSubTitleStanza
+	sSwitch = SwitchSubTitleStanza(sArray, bBody)
 	If sSwitch &lt;&gt; &quot;&quot; Then
 		sPoem = sPoem &amp; sSwitch
 	End If
@@ -389,22 +389,22 @@ Function MakePoem As String
 	End If
 	
 	&apos; Авторы поэмы, если они есть
-	sPoem = sPoem &amp; MakePoemAuthor
+	sPoem = sPoem &amp; MakePoemAuthor(sArray, bBody)
 	&apos; Дата написания поэмы, если она есть
-	sPoem = sPoem &amp; MakePoemDate
+	sPoem = sPoem &amp; MakePoemDate(sArray, bBody)
 
 	MakePoem = &quot;&lt;poem&gt;&quot; &amp; sPoem &amp; &quot;&lt;/poem&gt;&quot;
 End Function
 
-Function SwitchSubTitleStanza As String
+Function SwitchSubTitleStanza(sArray As String, bBody As Boolean) As String
 	Dim l As Long, sID As String, sText As String
 	sText =  &quot;&quot;
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStylePoem Then
-			sText = sText &amp; MakeStanza
-		ElseIf sBodyParagraphs(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
+	For l = lCurrentElement To UBound(sArray)
+		If sArray(l,1) = sStylePoem Then
+			sText = sText &amp; MakeStanza(sArray, bBody)
+		ElseIf sArray(l,1) = sStylePoemSubTitle Then &apos; чередование &lt;stanza&gt; и &lt;subtitle&gt;
 		&apos;	lCurrentElement = l
-			sText = sText &amp; MakeSubTitle(sStylePoemSubTitle, bMergePoemSubTitle)
+			sText = sText &amp; MakeSubTitle(sArray, sStylePoemSubTitle, bMergePoemSubTitle, bBody)
 		&apos;	l = lCurrentElement-1
 		Else
 			Exit For
@@ -419,38 +419,38 @@ Function SwitchSubTitleStanza As String
 	End If
 End Function
 
-Function MakeStanza As String
+Function MakeStanza(sArray As String, bBody As Boolean) As String
 	Dim l As Long, sID As String, sStanza As String
 	sStanza =  &quot;&quot;
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStylePoem Then
-			If sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then &apos; стих есть
+	For l = lCurrentElement To UBound(sArray)
+		If sArray(l,1) = sStylePoem Then
+			If sArray(l,0) &lt;&gt; &quot;&quot; Then &apos; стих есть
 				&apos; смотрим предыдущий элемент
 				If l &gt;0 Then
-					If sBodyParagraphs(l-1,1) &lt;&gt; sStylePoem Then &apos; не стих - открываем stanza
+					If sArray(l-1,1) &lt;&gt; sStylePoem Then &apos; не стих - открываем stanza
 						sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 					End If
 				End If
 				If bDocLinks = True Then &apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-						sStanza = sStanza &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sStanza = sStanza &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-						sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+						sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					End If
 				Else
-					sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
+					sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 				End If
 				&apos; смотрим следующий элемент
-				If l &lt; UBound(sBodyParagraphs) Then
-					If sBodyParagraphs(l+1,1) &lt;&gt; sStylePoem Then &apos; не стих - закрываем stanza
+				If l &lt; UBound(sArray) Then
+					If sArray(l+1,1) &lt;&gt; sStylePoem Then &apos; не стих - закрываем stanza
 						sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 					End If
 				End If
 			Else &apos; пустой абзац-стих - закрываем stanza
 				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 				&apos; смотрим следующий элемент
-				If l &lt; UBound(sBodyParagraphs) Then
-					If sBodyParagraphs(l+1,1) = sStylePoem Then &apos; стих - открываем stanza
+				If l &lt; UBound(sArray) Then
+					If sArray(l+1,1) = sStylePoem Then &apos; стих - открываем stanza
 						sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 					End If
 				End If
@@ -466,21 +466,21 @@ Function MakeStanza As String
 	End If
 End Function
 
-Function MakePoemAuthor As String
+Function MakePoemAuthor(sArray As String, bBody As Boolean) As String
 	&apos; Авторы поэмы
 	Dim sPoem As String, l As Long, sID As String
 	l = lCurrentElement
-	If sBodyParagraphs(lCurrentElement,1) = sStylePoemAuthor Then
+	If sArray(lCurrentElement,1) = sStylePoemAuthor Then
 		If bMergePoemAuthors = True Then &apos; собираем Авторов стиха, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов поэмы с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sAPTag As String
-			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStylePoemAuthor Then
+			For l = lCurrentElement To UBound(sArray)
+				If sArray(l,1) = sStylePoemAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 							sAPTag = &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 							nCount = nCount+1 &apos;счетчик закладок
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -495,7 +495,7 @@ Function MakePoemAuthor As String
 						sPoem = sPoem &amp; sAPTag
 						nCountTag = nCountTag+1 &apos;счетчик закладок
 					End If
-					sPoem = sPoem &amp; sBodyParagraphs(l,0) &amp; &quot;, &quot;
+					sPoem = sPoem &amp; sArray(l,0) &amp; &quot;, &quot;
 					oProgressBar.setValue(l) &apos; Статусбар
 				Else Exit For
 				End If
@@ -504,17 +504,17 @@ Function MakePoemAuthor As String
 			sPoem = sPoem &amp; &quot;&lt;/text-author&gt;&quot;
 			lCurrentElement = l
 		Else &apos; Авторы стиха не будут собираться в одну строку, а будут один под другим
-			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStylePoemAuthor Then
+			For l = lCurrentElement To UBound(sArray)
+				If sArray(l,1) = sStylePoemAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-							sPoem = sPoem &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+							sPoem = sPoem &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-							sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+							sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						End If
 					Else
-						sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+						sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 					End If
 					oProgressBar.setValue(l) &apos; Статусбар
 				Else Exit For
@@ -527,48 +527,48 @@ Function MakePoemAuthor As String
 	MakePoemAuthor = sPoem
 End Function
 
-Function MakePoemDate As String
+Function MakePoemDate(sArray As String) As String
 	Dim sSTR As String
 	sSTR = &quot;&quot;
 	&apos; Дата написания поэмы - согласно схемы допускается только одна дата.
 	&apos; Если есть еще одна строка с датой, то она будет просто текстом (&lt;p&gt;XXX&lt;/p&gt;)
-	If sBodyParagraphs(lCurrentElement,1) = sStylePoemDate Then
-		sSTR = sSTR &amp; &quot;&lt;date&gt;&quot; &amp; sBodyParagraphs(lCurrentElement,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
+	If sArray(lCurrentElement,1) = sStylePoemDate Then
+		sSTR = sSTR &amp; &quot;&lt;date&gt;&quot; &amp; sArray(lCurrentElement,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
 		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		lCurrentElement = lCurrentElement + 1
 	End If
 	MakePoemDate = sSTR
 End Function
 
-Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
+Function MakeEpigraph(sArray As String, sStyle_Epigraph, sStyle_EpigraphAuthor, bBody As Boolean) As String
 	Dim sEpig As String, l As Long, sID As String
 	sEpig = &quot;&quot;
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStyle_Epigraph AND sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then
+	For l = lCurrentElement To UBound(sArray)
+		If sArray(l,1) = sStyle_Epigraph AND sArray(l,0) &lt;&gt; &quot;&quot; Then
 			&apos; Просто абзацы цитаты или пустая строка
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-					sEpig = sEpig &amp; &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sEpig = sEpig &amp; &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-					sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				End If
 			Else
-				sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			End If
 			oProgressBar.setValue(l) &apos; Статусбар
-		ElseIf sBodyParagraphs(l,1) = sStyle_Epigraph AND sBodyParagraphs(l,0) = &quot;&quot; Then
+		ElseIf sArray(l,1) = sStyle_Epigraph AND sArray(l,0) = &quot;&quot; Then
 			&apos; пустые строки
 			sEpig = sEpig &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
-		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
-				sBodyParagraphs(l,1) = sStylePoemSubTitle Then
+		ElseIf sArray(l,1) = sStylePoem OR sArray(l,1) = sStylePoemTitle OR _
+				sArray(l,1) = sStylePoemSubTitle Then
 			lCurrentElement = l
-			sEpig = sEpig &amp; MakePoem
+			sEpig = sEpig &amp; MakePoem(sArray, bBody)
 			l = lCurrentElement-1
-		ElseIf sBodyParagraphs(l,1) = sStyleCite OR sBodyParagraphs(l,1) = sStyleCiteSubTitle Then
+		ElseIf sArray(l,1) = sStyleCite OR sArray(l,1) = sStyleCiteSubTitle Then
 			&apos; цитаты внутри аннотации
 			lCurrentElement = l
-			sEpig = sEpig &amp; MakeCite
+			sEpig = sEpig &amp; MakeCite(sArray, bBody)
 			l = lCurrentElement-1
 		Else Exit For
 		End If
@@ -576,7 +576,7 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 	lCurrentElement = l
 	
 	&apos; Авторы цитаты, если они есть
-	sEpig = sEpig &amp; MakeEpigraphAuthor(sStyle_EpigraphAuthor)
+	sEpig = sEpig &amp; MakeEpigraphAuthor(sArray, sStyle_EpigraphAuthor, bBody)
 	
 	IF sEpig &lt;&gt; &quot;&quot; Then
 		MakeEpigraph = &quot;&lt;epigraph&gt;&quot; &amp; chr(10) &amp; sEpig &amp; &quot;&lt;/epigraph&gt;&quot;
@@ -585,21 +585,21 @@ Function MakeEpigraph(sStyle_Epigraph, sStyle_EpigraphAuthor) As String
 	End If
 End Function
 
-Function MakeEpigraphAuthor(sStyle_EpigraphAuthor) As String
+Function MakeEpigraphAuthor(sArray As String, sStyle_EpigraphAuthor As String, bBody As Boolean) As String
 	&apos; Авторы эпиграфа
 	Dim sEpig As String, l As Long, sID As String
 	l = lCurrentElement
-	If sBodyParagraphs(lCurrentElement,1) = sStyle_EpigraphAuthor Then
+	If sArray(lCurrentElement,1) = sStyle_EpigraphAuthor Then
 		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов эпиграфа с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sAETag As String
-			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStyle_EpigraphAuthor Then
+			For l = lCurrentElement To UBound(sArray)
+				If sArray(l,1) = sStyle_EpigraphAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 							sAETag = &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 							nCount = nCount+1 &apos;счетчик закладок
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -614,7 +614,7 @@ Function MakeEpigraphAuthor(sStyle_EpigraphAuthor) As String
 						sEpig = sEpig &amp; sAETag
 						nCountTag = nCountTag+1 &apos;счетчик закладок
 					End If
-					sEpig = sEpig &amp; sBodyParagraphs(l,0) &amp; &quot;, &quot;
+					sEpig = sEpig &amp; sArray(l,0) &amp; &quot;, &quot;
 					oProgressBar.setValue(l) &apos; Статусбар
 				Else Exit For
 				End If
@@ -623,17 +623,17 @@ Function MakeEpigraphAuthor(sStyle_EpigraphAuthor) As String
 			sEpig = sEpig &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 			lCurrentElement = l
 		Else &apos; Авторы епиграфа не будут собираться в одну строку, а будут один под другим
-			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStyle_EpigraphAuthor Then
+			For l = lCurrentElement To UBound(sArray)
+				If sArray(l,1) = sStyle_EpigraphAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-							sEpig = sEpig &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+							sEpig = sEpig &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-							sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+							sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						End If
 					Else
-						sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+						sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 					End If
 					oProgressBar.setValue(l) &apos; Статусбар
 				Else Exit For
@@ -646,14 +646,14 @@ Function MakeEpigraphAuthor(sStyle_EpigraphAuthor) As String
 	MakeEpigraphAuthor = sEpig
 End Function
 
-Function MakeAnnotation As String
+Function MakeAnnotation(sArray As String, bBody As Boolean) As String
 	Dim sAnnot As String, l As Long, sID As String, sAnnotTag As String
 	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
-	For l = lCurrentElement To UBound(sBodyParagraphs)
-		If sBodyParagraphs(l,1) = sStyleAnnotation AND sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then
+	For l = lCurrentElement To UBound(sArray)
+		If sArray(l,1) = sStyleAnnotation AND sArray(l,0) &lt;&gt; &quot;&quot; Then
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+				If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 					sAnnotTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 					sAnnotTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -661,30 +661,30 @@ Function MakeAnnotation As String
 			Else
 				sAnnotTag = &quot;&lt;p&gt;&quot;
 			End If
-			sAnnot = sAnnot &amp; sAnnotTag &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			sAnnot = sAnnot &amp; sAnnotTag &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			oProgressBar.setValue(l) &apos; Статусбар
-		ElseIf sBodyParagraphs(l,1) = sStyleAnnotation AND sBodyParagraphs(l,0) = &quot;&quot; Then
+		ElseIf sArray(l,1) = sStyleAnnotation AND sArray(l,0) = &quot;&quot; Then
 			&apos; пустые строки
 			sAnnot = sAnnot &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
-		ElseIf sBodyParagraphs(l,1) = sStyleAnnotationSubTitle Then
+		ElseIf sArray(l,1) = sStyleAnnotationSubTitle Then
 			&apos; подзаголовки
 			lCurrentElement = l
-			sAnnot = sAnnot &amp; MakeSubTitle(sStyleAnnotationSubTitle, bMergeAnnotationSubTitle)
+			sAnnot = sAnnot &amp; MakeSubTitle(sArray, sStyleAnnotationSubTitle, bMergeAnnotationSubTitle, bBody)
 			l = lCurrentElement-1
-		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
-				sBodyParagraphs(l,1) = sStylePoemSubTitle OR sBodyParagraphs(l,1) = sStyleEpigraph Then
+		ElseIf sArray(l,1) = sStylePoem OR sArray(l,1) = sStylePoemTitle OR _
+				sArray(l,1) = sStylePoemSubTitle OR sArray(l,1) = sStyleEpigraph Then
 			&apos; поэмы внутри аннотации
 			lCurrentElement = l
-			sAnnot = sAnnot &amp; MakePoem
+			sAnnot = sAnnot &amp; MakePoem(sArray, bBody)
 			l = lCurrentElement-1
-		ElseIf sBodyParagraphs(l,1) = sStyleCite OR sBodyParagraphs(l,1) = sStyleCiteSubTitle Then
+		ElseIf sArray(l,1) = sStyleCite OR sArray(l,1) = sStyleCiteSubTitle Then
 			&apos; цитаты внутри аннотации
 			lCurrentElement = l
-			sAnnot = sAnnot &amp; MakeCite
+			sAnnot = sAnnot &amp; MakeCite(sArray, bBody)
 			l = lCurrentElement-1
-		ElseIf sBodyParagraphs(l,1) = &quot;Table&quot; Then
+		ElseIf sArray(l,1) = &quot;Table&quot; Then
 			&apos; таблица в аннотации
-			sAnnot = sAnnot &amp; sBodyParagraphs(l,0) &amp; chr(10)
+			sAnnot = sAnnot &amp; sArray(l,0) &amp; chr(10)
 		Else
 			Exit For
 		End If
@@ -693,39 +693,39 @@ Function MakeAnnotation As String
 	MakeAnnotation = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
 End Function
 
-Function MakeCite As String
+Function MakeCite(sArray As String, bBody As Boolean) As String
 	Dim sCite As String, l As Long, sID As String
 	sCite = &quot;&quot;
-	For l = lCurrentElement To UBound(sBodyParagraphs)
+	For l = lCurrentElement To UBound(sArray)
 		&apos; Просто абзацы цитаты или пустая строка
-		If sBodyParagraphs(l,1) = sStyleCite AND sBodyParagraphs(l,0) &lt;&gt; &quot;&quot; Then
+		If sArray(l,1) = sStyleCite AND sArray(l,0) &lt;&gt; &quot;&quot; Then
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-					sCite = sCite &amp; &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sCite = sCite &amp; &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-					sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				End If
 			Else
-				sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			End If
 			oProgressBar.setValue(l) &apos; Статусбар
-		ElseIf sBodyParagraphs(l,1) = sStyleCite AND sBodyParagraphs(l,0) = &quot;&quot; Then
+		ElseIf sArray(l,1) = sStyleCite AND sArray(l,0) = &quot;&quot; Then
 			&apos; пустые строки
 			sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
-		ElseIf sBodyParagraphs(l,1) = sStyleCiteSubTitle Then
+		ElseIf sArray(l,1) = sStyleCiteSubTitle Then
 			&apos; подзаголовки
 			lCurrentElement = l
-			sCite = sCite &amp; MakeSubTitle(sStyleCiteSubTitle, bMergeCiteSubTitle)
+			sCite = sCite &amp; MakeSubTitle(sArray, sStyleCiteSubTitle, bMergeCiteSubTitle, bBody)
 			l = lCurrentElement-1
-		ElseIf sBodyParagraphs(l,1) = sStylePoem OR sBodyParagraphs(l,1) = sStylePoemTitle OR _
-				sBodyParagraphs(l,1) = sStylePoemSubTitle Then
+		ElseIf sArray(l,1) = sStylePoem OR sArray(l,1) = sStylePoemTitle OR _
+				sArray(l,1) = sStylePoemSubTitle Then
 			lCurrentElement = l
-			sCite = sCite &amp; MakePoem
+			sCite = sCite &amp; MakePoem(sArray, bBody)
 			l = lCurrentElement-1
-		ElseIf sBodyParagraphs(l,1) = &quot;Table&quot; Then
+		ElseIf sArray(l,1) = &quot;Table&quot; Then
 			&apos; таблица в цитате
-			sCite = sCite &amp; sBodyParagraphs(l,0) &amp; chr(10)
+			sCite = sCite &amp; sArray(l,0) &amp; chr(10)
 		Else
 			Exit For
 		End If
@@ -733,7 +733,7 @@ Function MakeCite As String
 	lCurrentElement = l
 	
 	&apos; Авторы цитаты, если они есть
-	sCite = sCite &amp; MakeCiteAuthor
+	sCite = sCite &amp; MakeCiteAuthor(sArray, bBody)
 	
 	IF sCite &lt;&gt; &quot;&quot; Then
 		MakeCite = &quot;&lt;cite&gt;&quot; &amp; chr(10) &amp; sCite &amp; &quot;&lt;/cite&gt;&quot;
@@ -742,21 +742,21 @@ Function MakeCite As String
 	End If
 End Function
 
-Function MakeCiteAuthor As String
+Function MakeCiteAuthor(sArray As String, bBody As Boolean) As String
 	&apos; Авторы цитаты
 	Dim sCite As String, l As Long, sID As String
 	l = lCurrentElement
-	If sBodyParagraphs(lCurrentElement,1) = sStyleCiteAuthor Then
+	If sArray(lCurrentElement,1) = sStyleCiteAuthor Then
 		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов цитаты с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sACTag As String
-			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStyleCiteAuthor Then
+			For l = lCurrentElement To UBound(sArray)
+				If sArray(l,1) = sStyleCiteAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 							sACTag = &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 							nCount = nCount+1 &apos;счетчик закладок
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -771,7 +771,7 @@ Function MakeCiteAuthor As String
 						sCite = sCite &amp; sACTag
 						nCountTag = nCountTag+1 &apos;счетчик закладок
 					End If
-					sCite = sCite &amp; sBodyParagraphs(l,0) &amp; &quot;, &quot;
+					sCite = sCite &amp; sArray(l,0) &amp; &quot;, &quot;
 					oProgressBar.setValue(l) &apos; Статусбар
 				Else Exit For
 				End If
@@ -780,17 +780,17 @@ Function MakeCiteAuthor As String
 			sCite = sCite &amp; &quot;&lt;/text-author&gt;&quot;
 			lCurrentElement = l
 		Else &apos; Авторы цитаты не будут собираться в одну строку, а будут один под другим
-			For l = lCurrentElement To UBound(sBodyParagraphs)
-				If sBodyParagraphs(l,1) = sStyleCiteAuthor Then
+			For l = lCurrentElement To UBound(sArray)
+				If sArray(l,1) = sStyleCiteAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-							sCite = sCite &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+							sCite = sCite &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-							sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+							sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						End If
 					Else
-						sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
+						sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 					End If
 					oProgressBar.setValue(l) &apos; Статусбар
 				Else Exit For
@@ -803,16 +803,16 @@ Function MakeCiteAuthor As String
 	MakeCiteAuthor = sCite
 End Function	
 	
-Function MakeSubtitle(sStyle_SubTitle, bMerge_SubTitle) As String
+Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTitle As String, bBody As Boolean) As String
 	Dim sSubtitle As String, l As Long, sSubTag As String, sID As String
 	If bMerge_SubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
 		Dim nCount As Integer &apos; число подзаголовков с закладками
 		nCount = 0
-		For l = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(l,1) = sStyle_SubTitle Then
+		For l = lCurrentElement To UBound(sArray)
+			If sArray(l,1) = sStyle_SubTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 						sSubTag = &quot;&lt;subtitle &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 						nCount = nCount+1 &apos;счетчик закладок
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -823,7 +823,7 @@ Function MakeSubtitle(sStyle_SubTitle, bMerge_SubTitle) As String
 				Else
 					sSubTag = &quot;&lt;subtitle&gt;&quot;
 				End If
-				sSubtitle = sSubtitle &amp; sBodyParagraphs(l,0) &amp; &quot; &quot;
+				sSubtitle = sSubtitle &amp; sArray(l,0) &amp; &quot; &quot;
 				oProgressBar.setValue(l) &apos; Статусбар
 			Else Exit For
 			End If
@@ -833,17 +833,17 @@ Function MakeSubtitle(sStyle_SubTitle, bMerge_SubTitle) As String
 			sSubtitle = sSubTag &amp; Trim(sSubtitle) &amp; &quot;&lt;/subtitle&gt;&quot;
 		End If
 	Else &apos; подзаголовки не будут собираться в одну строку, а будут один под другим
-		For l = lCurrentElement To UBound(sBodyParagraphs)
-			If sBodyParagraphs(l,1) = sStyle_SubTitle Then
+		For l = lCurrentElement To UBound(sArray)
+			If sArray(l,1) = sStyle_SubTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-						sSubtitle = sSubtitle &amp; &quot;&lt;subtitle &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
+					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sSubtitle = sSubtitle &amp; &quot;&lt;subtitle &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-						sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
+						sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
 					End If
 				Else
-					sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sBodyParagraphs(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
+					sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/subtitle&gt;&quot;
 				End If
 				oProgressBar.setValue(l) &apos; Статусбар
 			Else Exit For
@@ -854,12 +854,12 @@ Function MakeSubtitle(sStyle_SubTitle, bMerge_SubTitle) As String
 	MakeSubtitle = sSubtitle
 End Function
 
-Function MakeSection(sLevel As String) As String
+Function MakeSection(sArray As String, sLevel As String, bBody As Boolean) As String
 	Dim sSect As String, sSectTag As String
 	If bDocLinks = True Then
 		&apos; обработка ссылок внутри документа
 		Dim sID As String
-		If FindIndexForID(lCurrentElement, sID) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+		If FindIndexForID(lCurrentElement, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
 			sSectTag = &quot;&lt;section &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
 		Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 			sSectTag = &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
@@ -867,15 +867,18 @@ Function MakeSection(sLevel As String) As String
 	Else
 		sSectTag = &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
 	End If
-	sSect = sSectTag &amp; sBodyParagraphs(lCurrentElement,0) &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot;
+	sSect = sSectTag &amp; sArray(lCurrentElement,0) &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot;
 	oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 	lCurrentElement = lCurrentElement+1
 	MakeSection = sSect
 End Function
 
-Function FindIndexForID(lCurElement As Long, sID As String) As Long
+Function FindIndexForID(lCurElement As Long, sID As String, bBody As Boolean) As Long
 	&apos; поиск номера(индекса) абзаца из массива sLinksTo, соответствующему текущему элементу из sParaStyleName (если такое соответствие есть)
 	FindIndexForID = -1
+	If bBody = False Then &apos; ссылки только для основного текста книги, а не для сносок
+		Exit Function
+	End If
 	Dim l As Long
 	For l=0 To UBound(sLinksTo)
 		If sLinksTo(l,0) = lCurElement Then

@@ -38,7 +38,7 @@ Public bUp As Boolean
 
 Public lBATIndex As Long 	&apos; Указатель на индекс ячейки массива sBodyParagraphs, хранящей стиль Book Author или Book Title
 
-Dim sFootnoteText() As String
+Public sFootnoteText() As String
 Dim iFootnoteCount As Integer
 Dim iImgCurrent As Integer	&apos; для формирования номера картинки
 Dim sPrevStyle As String 	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
@@ -358,8 +358,15 @@ Function FootEndNoteParser(oSect As Object) As String
 	sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; i &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; i &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
 	
 	ReDim Preserve sFootnoteText(iFootnoteCount) As String
+	&apos;Dim j As Long
+	&apos;j = Ubound(sAuthors(), 1) + 1
+	&apos;If Ubound(sFootnoteText(), 1) + 1 &gt; 0 Then
+	&apos;	ReDim Preserve sFootnoteText(j, 1)
+	&apos;Else Redim sFootnoteText(j, 1)
+	&apos;End If
 
 	If bStyleFootnote = True Then &apos; форматирование текста сноски по стилям
+		&apos; отформатированный текст сноски сохраняем в массив
 		FormatFootnoteText(oSect)
 	Else &apos; не применяем стили к тексту сносок
 		oFootnoteCursor = oSect.Footnote.createTextCursor()
@@ -375,6 +382,7 @@ Function FootEndNoteParser(oSect As Object) As String
 			sFootnoteText(iFootnoteCount) = sNoteText
 		End If
 	End If
+	
 	iFootnoteCount = iFootnoteCount + 1
 	
 	FootEndNoteParser = sNote
@@ -390,6 +398,9 @@ Function FormatFootnoteText(oSect)
 	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
 	Dim sParagF As String, sFNTH As String
 		sParagF = &quot;&quot;
+	Dim sTextArray() As String &apos; временный массив для хранения всех строк одного абзаца
+	Dim sType As String &apos; тип абзаца - стих, абзац, цитата...
+	
 	Do
 		oFootnoteCursor.gotoEndOfParagraph(True)
 		oEnumF = oFootnoteCursor.createEnumeration
@@ -457,11 +468,14 @@ Function FormatFootnoteText(oSect)
 					End If
 				End If
 			Wend
+			&apos; парсер стилей сносок
+			sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sParagF)
+			sTextArray(UBound(sTextArray())) = sTextArray(UBound(sTextArray())) &amp; chr(10) &amp; sType
+			sParagF = &quot;&quot;
 		Wend
-		sParagF = sParagF &amp; chr(10)
 	Loop While oFootnoteCursor.gotoNextParagraph(False)
-	&apos; теперь отфолрматированный текст сноски сохраняем в массив
-	sFootnoteText(iFootnoteCount) = sParagF
+
+	sFootnoteText(iFootnoteCount) = Join(sTextArray(), chr(10))
 End Function
 
 Function TextGraphicObjectParagraphParser(oContent As Object)
@@ -768,6 +782,129 @@ Function AddBookAnnotation(sPara As String)
 	ReDim Preserve sBookAnnotation(l)
 	sBookAnnotation(l) = sPara
 	oProgressBar.setValue(UBound(sBodyParagraphs),0 + UBound(sBookAnnotation) &apos; Статусбар
+End Function
+
+Function AddNotesArray(sTextArray As String, TextType As String, sPara As String, bLevel As Boolean)
+	Dim l As Long
+	l = Ubound(sTextArray()) + 1
+	&apos; для уровней - проверка на несколько строк
+	If bLevel = False Then 
+		If l &gt; 0 Then
+			ReDim Preserve sTextArray(l)
+		Else Redim sTextArray(l)
+		End If
+		sTextArray(l) = sPara
+		oProgressBar.setValue(l) &apos; Статусбар
+	Else
+		If TextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
+			If l &gt; 0 Then
+				ReDim Preserve sTextArray(l)
+			Else Redim sTextArray(l)
+			End If
+			sTextArray(l) = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			oProgressBar.setValue(l) &apos; Статусбар
+		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
+			&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
+			DelEndType(sTextArray)
+			sTextArray(UBound(sTextArray)) = sTextArray(UBound(sTextArray)) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			oProgressBar.setValue(l) &apos; Статусбар
+		End If
+	End If
+End Function
+
+Function DelEndType(sTextArray As String)
+	&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
+	Dim sTempArray() As String, i As Integer, sResult As String
+	sTempArray = Split(sTextArray(UBound(sTextArray))), chr(10))
+	sResult = &quot;&quot;
+	For i=LBound(sTempArray) To UBound(sTempArray)-1
+		sResult = sResult &amp; sTempArray(i)
+	Next i
+	sTextArray(UBound(sTextArray)) = sResult
+End Function
+
+Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPara As String) As String
+	&apos; перебор по стилям
+	Dim sParaType As String
+	sParaType = sParaStyleName
+	If sPara = &quot;&quot; Then
+		If sParaStyleName = sStylePoem Then
+			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
+			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+		ElseIf sParaStyleName = sStyleCite Then
+			&apos; для пустых строк в цитатах
+			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+		ElseIf sParaStyleName = sStyleAnnotation Then
+			&apos; для пустых строк в аннотациях
+			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+		ElseIf sParaStyleName = sStyleEpigraph Then
+			&apos; для пустых строк в эпиграфах
+			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+		Else
+			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+			sParaType = &quot;&quot;
+		End If
+	Else
+		Select Case sParaStyleName
+			Case sStylePoemTitle
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStylePoemSubTitle
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStylePoem
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStylePoemAuthor
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStylePoemDate
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+				
+			Case sStyleEpigraph
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStyleEpigraphAuthor
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+				
+			Case sStyleCite
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStyleCiteSubTitle
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStyleCiteAuthor
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+				
+			Case sStyleAnnotation
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Case sStyleAnnotationSubTitle
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+					
+			Case sStyleSubTitle
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+				
+			Case sStyleLevel1
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel2
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel3
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel4
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel5
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel6
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel7
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel8
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel9
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+			Case sStyleLevel10
+				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+				
+			Case Else &apos; что-то другое или просто параграф
+				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+				sParaType = &quot;Para&quot;
+		End Select
+	End If
+	sPrevStyle = sParaStyleName
+	FootnoteStyleParser = sParaType
 End Function
 
 </script:module>
