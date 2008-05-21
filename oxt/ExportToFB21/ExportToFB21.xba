@@ -47,7 +47,18 @@ Sub ExportToFB21
 		MsgBox &quot;Сохраните ООо файл&quot;, 64, sConvertorName
 		Exit Sub
 	End If
-	Mid(sCurDocFile, Len(sCurDocFile)-2, 3, &quot;fb2&quot;)
+	
+	&apos; меняем расширение на fb2
+	Dim sFile() As String, i As Integer
+	sFile = Split(sCurDocFile, &quot;.&quot;)
+	If UBound(sFile) &gt; 0 Then
+		For i=0 To UBound(sFile)
+			sFile(UBound(sFile)) = &quot;fb2&quot;
+		Next i
+		sCurDocFile = Join(sFile, &quot;.&quot;)
+	Else &apos; файл без точки расширения
+		sCurDocFile = sCurDocFile &amp; &quot;.fb2&quot;
+	End If
 	
 	If Not InfoDlgExec Then
 		Exit Sub
