@@ -43,7 +43,7 @@ Function SaveBody
 	End If
 	
 	lParaCount = UBound(sBodyParagraphs)
-	oProgressBar.start(&quot;Экспортирование в FB2: Создание файла&quot;, (lParaCount+UBound(sFootnoteText()))
+	oProgressBar.start(&quot;Экспортирование в FB2: Создание файла&quot;, (lParaCount))
 	oProgressBar.setValue(0)
 	
 	lCurrentElement = 0
@@ -155,6 +155,10 @@ End Function
 Function SaveNotes
 	Dim lCount As Long, l As Long
 	Dim sNotePars() As String
+	
+	oProgressBar.start(&quot;Экспортирование в FB2: Сохранение сносок&quot;, UBound(sFootnoteText())
+	oProgressBar.setValue(0)
+	
 	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
 	For lCount = 0 To UBound(sFootnoteText())
@@ -186,7 +190,7 @@ Function SaveNotes
 			Next l
 		End If
 		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
-		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		oProgressBar.setValue(lCount) &apos; Статусбар
 	Next lCount
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 End Function
