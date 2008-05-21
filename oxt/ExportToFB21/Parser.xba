@@ -757,7 +757,6 @@ Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	
 		sBodyParagraphs(l,0) = sPara
 		sBodyParagraphs(l,1) = TextType
-		oProgressBar.setValue(l) &apos; Статусбар
 	Else
 		If TextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
 			If l &gt; 0 Then
@@ -766,14 +765,13 @@ Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 			End If
 			sBodyParagraphs(l,0) = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
 			sBodyParagraphs(l,1) = TextType
-			oProgressBar.setValue(l) &apos; Статусбар
 		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
 			Dim sText As String
 			sText = sBodyParagraphs(UBound(sBodyParagraphs),0)
 			sBodyParagraphs(UBound(sBodyParagraphs),0) = sText &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-			oProgressBar.setValue(l) &apos; Статусбар
 		End If
 	End If
+	oProgressBar.setValue(l) &apos; Статусбар
 End Function
 
 Function AddLinksToArray(lTo As Long, sID As String)
@@ -817,7 +815,6 @@ Function AddNotesArray(sTextArray As String, TextType As String, sPara As String
 		Else Redim sTextArray(l)
 		End If
 		sTextArray(l) = sPara
-		oProgressBar.setValue(l) &apos; Статусбар
 	Else
 		If TextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
 			If l &gt; 0 Then
@@ -825,12 +822,10 @@ Function AddNotesArray(sTextArray As String, TextType As String, sPara As String
 			Else Redim sTextArray(l)
 			End If
 			sTextArray(l) = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-			oProgressBar.setValue(l) &apos; Статусбар
 		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
 			&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
 			DelEndType(sTextArray)
 			sTextArray(UBound(sTextArray)) = sTextArray(UBound(sTextArray)) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-			oProgressBar.setValue(l) &apos; Статусбар
 		End If
 	End If
 End Function
