@@ -10,6 +10,10 @@ Public sBodyParagraphs() As String &apos; массив хранит &quot;обр
 Public sLinksTo() As String	&apos; массив ссылок КУДА и их ID
 Public sConvertorName As String &apos; название конвертора
 
+&apos; Чистка fb2 кода
+Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
+Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
+
 Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 
 Sub ExportToFB21
@@ -212,52 +216,193 @@ End Function
 
 Function SaveElements(sArray As String, sParaStyleName As String, sPara As String, bBody As Boolean)
 	&apos; перебор по стилям
+	Dim sStr As String, bFB2Clear As Boolean
 	Select Case sParaStyleName
 		Case sStylePoemTitle
-			oTextOutputStream.writeString(MakePoem(sArray, bBody) &amp; chr(10))
+			sStr = MakePoem(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStylePoemSubTitle
-			oTextOutputStream.writeString(MakePoem(sArray, bBody) &amp; chr(10))
+			sStr = MakePoem(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStylePoem
-			oTextOutputStream.writeString(MakePoem(sArray, bBody) &amp; chr(10))
+			sStr = MakePoem(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleEpigraph
-			oTextOutputStream.writeString(MakeEpigraph(sArray, sStyleEpigraph, sStyleEpigraphAuthor, bBody) &amp; chr(10))
+			sStr = MakeEpigraph(sArray, sStyleEpigraph, sStyleEpigraphAuthor, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleCite
-			oTextOutputStream.writeString(MakeCite(sArray, bBody) &amp; chr(10))
+			sStr = MakeCite(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleCiteSubTitle
-			oTextOutputStream.writeString(MakeCite(sArray, bBody) &amp; chr(10))
+			sStr = MakeCite(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleAnnotation
-			oTextOutputStream.writeString(MakeAnnotation(sArray, bBody) &amp; chr(10))
+			sStr = MakeAnnotation(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleAnnotationSubTitle
-			oTextOutputStream.writeString(MakeAnnotation(sArray, bBody) &amp; chr(10))
+			sStr = MakeAnnotation(sArray, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleSubTitle
-			oTextOutputStream.writeString(MakeSubTitle(sArray, sStyleSubTitle, bMergeSubTitle, bBody) &amp; chr(10))
+			sStr = MakeSubTitle(sArray, sStyleSubTitle, bMergeSubTitle, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel1
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel2
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel3
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel4
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel5
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel6
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel7
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel8
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel9
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case sStyleLevel10
-			oTextOutputStream.writeString(MakeSection(sArray, sParaStyleName, bBody) &amp; chr(10))
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 		Case &quot;&quot; &apos; &lt;empty-line/&gt;
 			If bDelEL = False Then
 				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
 			End If
 			lCurrentElement = lCurrentElement+1
 		Case &quot;Table&quot; 
-			oTextOutputStream.writeString(sPara &amp; chr(10))
+			sStr = sPara
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sStr)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
+			End If
+			oTextOutputStream.writeString(sStr &amp; chr(10))
 			lCurrentElement = lCurrentElement+1
 		Case &quot;Image&quot; 
 			oTextOutputStream.writeString(sPara &amp; chr(10))
@@ -274,6 +419,12 @@ Function SaveElements(sArray As String, sParaStyleName As String, sPara As Strin
 				End If
 			Else
 				sP = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			End If
+			If bSuperfluous = True Then
+				RemoveSuperfluous(sP)
+			End If
+			If bStyleSpace = True Then
+				ClearStyleSpace(sStr)
 			End If
 			oTextOutputStream.writeString(sP)
 			lCurrentElement = lCurrentElement+1

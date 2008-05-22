@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FB2Cleaner" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; FB2Cleaner - модуль &quot;чистки&quot; fb2 файлов от &quot;мусора&quot;: &lt;/emphasis&gt;&lt;emphasis&gt;, &lt;/strong&gt;&lt;strong&gt; и другое
+
+Function ReplaceFromString(sSource As String, sDel As String, sReplace As String)
+	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
+	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
+	Dim i As Integer
+	i = InStr(sSource, sDel)
+	Do While i &gt; 0
+		Mid(sSource, i, Len(sDel), sReplace)
+		i = InStr(i, sSource, sDel)
+	Loop
+End Function
+
+Function RemoveSuperfluous(sSource As String)
+	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
+	ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
+	ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
+	ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
+	ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
+	ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
+	ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
+End Function
+
+Function ClearStyleSpace(sSource As String)
+	&apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
+	ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;emphasis&gt; &lt;/emphasis&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;sub&gt; &lt;/sub&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;sup&gt; &lt;/sup&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;code&gt; &lt;/code&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;strikethrough&gt; &lt;/strikethrough&gt;&quot;, &quot; &quot;)
+	
+	ReplaceFromString(sSource, &quot;&lt;/strong&gt; &lt;strong&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;/emphasis&gt; &lt;emphasis&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;/sub&gt; &lt;sub&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;/sup&gt; &lt;sup&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;/code&gt; &lt;code&gt;&quot;, &quot; &quot;)
+	ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt; &lt;strikethrough&gt;&quot;, &quot; &quot;)
+End Function
+
+
+</script:module>
