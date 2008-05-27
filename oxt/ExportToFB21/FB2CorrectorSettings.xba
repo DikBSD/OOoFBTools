@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FB2CorrectorSettings" script:language="StarBasic">REM  *****  BASIC  *****
+
+Public oFB2CorrectorDlg As Object
+Private bFB2CorrectorExecute As Boolean
+Private sFB2ConvertorName As String
+
+Private sFB2CorrectorSettingsFilename As String
+Private bFB2MakeBackup As Boolean
+Private bFB2Superfluous As Boolean
+Private bFB2StyleSpace As Boolean
+
+Sub FB2FileCorrector
+				
+	DialogLibraries.LoadLibrary(&quot;ExportToFictionBook&quot;)
+	oFB2CorrectorDlg = CreateUnoDialog(DialogLibraries.ExportToFictionBook.FB2CorrectorDlg)
+	
+	sFB2ConvertorName = &quot;FB2 Corrector&quot;
+	&apos; файл настроек FB2Corrector
+	sFB2CorrectorSettingsFilename = pmxCurDir() &amp; &quot;/ExportToFB21/fb2corrector.txt&quot;
+	
+	&apos; Настройки По умолчанию - в контролы
+	SetDefaultFB2CorrectorSettingsInControls
+	&apos; Считываем и устанавливаем настройки
+	ReadFB2CorrectorSettings
+	
+	With oFB2CorrectorDlg.Model
+		.Title = &quot;FB2 Corrector (Коррекция fb2 файла)&quot;
+	End With
+	
+	oFB2CorrectorDlg.Model.Step = 0
+	oFB2CorrectorDlg.execute()
+
+	&apos; центрирование на экране
+	ToScreenCenter(oFB2CorrectorDlg)
+
+	FB2FileCorrector = bFB2CorrectorExecute
+
+End Sub
+
+Function FB2CorrectorDlgCanceled
+	bFB2CorrectorExecute = False
+	oFB2CorrectorDlg.endExecute()
+End Function
+
+Function ReadFB2CorrectorSettings As Boolean
+	&apos; Читаем настройки очистки текста и задаем значения контролам формы
+	If FileExists(sFB2CorrectorSettingsFilename) Then
+		Dim iFileNo As Integer, sCurrentLine As String
+		&apos; Установление свободного файлового манипулятора
+		iFileNo = Freefile
+		&apos; Открытие файла (в режиме на чтение)
+		Open sFB2CorrectorSettingsFilename For Input As #iFileNo
+		&apos; Проверка, был ли достигнут конец файла
+		Do While NOT eof(iFileNo)
+			&apos; Чтение строки
+			Line Input #iFileNo, sCurrentLine
+			If sCurrentLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные настроек
+				SetFB2CorrectorSettings(sCurrentLine)
+			End If
+		Loop
+		&apos; Закрытие файла
+		Close #iFileNo
+		ReadFB2CorrectorSettings = True
+	Else
+		ReadFB2CorrectorSettings = False
+	End If
+End Function
+
+Function SaveFB2CorrectorSettings
+	&apos; записываем настройки очистки текста
+	Dim iFileNo As Integer, sCurrentLine As String
+	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
+	Open sFB2CorrectorSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	
+	Dim ctrl As Object, i As Integer
+	ctrl = oFB2CorrectorDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		End If
+	Next i
+	
+	Close #iFileNo &apos; Закрытие файла
+	&apos; заполняем переменные
+	bFB2MakeBackup = oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State
+	bFB2Superfluous = oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State
+	bFB2StyleSpace = oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State
+
+End Function
+
+Function SetFB2CorrectorSettings(sCurrentLine)
+	On Error Goto ErrorHandler
+	Dim sFB2CorrectorSettings() As String
+	sFB2CorrectorSettings = Split(sCurrentLine, &quot;=&quot;)
+	
+	If oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+		oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).State = sFB2CorrectorSettings(1)
+	ElseIf oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+		oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).Text = sFB2CorrectorSettings(1)
+	End If
+
+	Exit Function
+	
+	ErrorHandler: &apos; идем дальше
+End Function
+
+Function SetDefaultFB2CorrectorSettingsInControls
+	&apos; Установка настроек по умолчанию в контролы
+	oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State = 1
+	oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State = 1
+	oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State = 1
+End Function
+
+Function OpenFB2File
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sPath As String, sInitPath As String
+	Dim oUcb as object
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+	
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	oUcb = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot;)
+		.setTitle(&quot;Выберите fb2 файл...&quot;)
+		.setDefaultName(sInitPath)
+	End With
+	
+	sInitPath = ConvertToUrl(oFB2CorrectorDlg.GetControl(&quot;tfFB2File&quot;).Text)
+	If oUcb.Exists(sInitPath) Then
+		&apos; Открываем папку файла
+		oFileDlg.SetDisplayDirectory( Trim(Left(sInitPath, (Len(sInitPath)-Len(Dir$(sInitPath))))) )
+	Else
+		&apos; Открываем домашнюю папку
+		oFileDlg.SetDisplayDirectory( GetPathSettings(&quot;Work&quot;) )
+	End If
+	
+	If oFileDlg.execute() Then
+		sPath = oFileDlg.Files(0)
+		If oUcb.Exists(sPath) Then
+			oFB2CorrectorDlg.GetControl(&quot;tfFB2File&quot;).Text = ConvertFromUrl(sPath)
+		End If
+	End If
+	oFileDlg.Dispose()
+End Function
+
+Function FB2CorrectorDlgOk
+	If Trim(oFB2CorrectorDlg.Model.tfFB2File.Text) = &quot;&quot; Then
+		MsgBox &quot;Выберите fb2 файл для корректуры&quot;, 64, sFB2ConvertorName
+		Exit Function
+	End If
+	If oFB2CorrectorDlg.Model.cboxFB2Superfluous.State = 0 And oFB2CorrectorDlg.Model.cboxFB2StyleSpace.State = 0 Then
+		MsgBox &quot;Выберите хоть одну опцию корректуры fb2 файла&quot;, 64, sFB2ConvertorName
+		Exit Function
+	End If
+	If Not FileExists(Trim(oFB2CorrectorDlg.Model.tfFB2File.Text)) Then
+		MsgBox &quot;Указанный файл не найден!&quot;, 64, sFB2ConvertorName
+		Exit Function
+	End If
+	
+	&apos; Сохраняем настройки в файл
+	SaveFB2CorrectorSettings
+	
+	&apos; Начинаем корректировать выбранный fb2 файл
+	Dim oProgressBar
+	Dim sFile As String
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start(&quot;Чтение fb2 файла:&quot;, 2000)
+	sFile = Trim(oFB2CorrectorDlg.GetControl(&quot;tfFB2File&quot;).Text)
+	&apos; создаем бэкап файла, если эта опция выбрана
+	If bFB2MakeBackup = True Then
+		FileCopy sFile, sFile &amp; &quot;.bak&quot;
+	End If
+	&apos; загружаем файл в память
+	Dim sFB2() As String
+	ReadFB2File(sFile, sFB2, oProgressBar)
+	
+	&apos; обрабатываем его
+	Dim oTextOutputStream As Object, oOutputStream As Object
+	Dim sEncoding As String, sLine As String, l As Long
+	oProgressBar.start(&quot;Коррекция fb2 файла:&quot;, UBound(sFB2))
+
+	&apos; сохраняем откорректированный файл
+	Dim iResult1(5) As Integer, iResult2(5) As Integer, iResult3(5) As Integer &apos; массивы-счетчики
+	SaveCorrectedFB2File(sFile, sFB2, oProgressBar, iResult1, iResult2, iResult3)
+	&apos; Вывод сообщения
+	Dim sMsg As String
+	sMsg = &quot;Результаты корректировки fb2 файла:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;1. Убрано пустышек типа &lt;/x&gt;&lt;x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(0) &amp; &quot; - &lt;/strong&gt;&lt;strong&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(1) &amp; &quot; - &lt;/emphasis&gt;&lt;emphasis&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(2) &amp; &quot; - &lt;/sub&gt;&lt;sub&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(3) &amp; &quot; - &lt;/sup&gt;&lt;sup&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(4) &amp; &quot; - &lt;/code&gt;&lt;code&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(5) &amp; &quot; - &lt;/strikethrough&gt;&lt;strikethrough&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;2. Обработано пробелов внутри стилей &lt;x&gt; &lt;/x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(0) &amp; &quot; - &lt;strong&gt; &lt;/strong&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(1) &amp; &quot; - &lt;emphasis&gt; &lt;/emphasis&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(2) &amp; &quot; - &lt;sub&gt; &lt;/sub&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(3) &amp; &quot; - &lt;sup&gt; &lt;/sup&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(4) &amp; &quot; - &lt;code&gt; &lt;/code&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(5) &amp; &quot; - &lt;strikethrough&gt; &lt;/strikethrough&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;3. Обработано пробелов внутри стилей &lt;/x&gt; &lt;x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(0) &amp; &quot; - &lt;/strong&gt; &lt;strong&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(1) &amp; &quot; - &lt;/emphasis&gt; &lt;emphasis&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(2) &amp; &quot; - &lt;/sub&gt; &lt;sub&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(3) &amp; &quot; - &lt;/sup&gt; &lt;sup&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(4) &amp; &quot; - &lt;/code&gt; &lt;code&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(5) &amp; &quot; - &lt;/strikethrough&gt; &lt;strikethrough&gt;&quot; &amp; chr(10)
+	
+	bFB2CorrectorExecute = True
+	oFB2CorrectorDlg.endExecute()
+	
+	MsgBox sMsg, 64, sFB2ConvertorName
+	oProgressBar.end
+
+End Function
+
+</script:module>

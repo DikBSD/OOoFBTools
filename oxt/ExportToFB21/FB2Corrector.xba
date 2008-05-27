@@ -3,42 +3,123 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="FB2Corrector" script:language="StarBasic">REM  *****  BASIC  *****
 &apos; FB2Cleaner - модуль &quot;чистки&quot; fb2 файлов от &quot;мусора&quot;: &lt;/emphasis&gt;&lt;emphasis&gt;, &lt;/strong&gt;&lt;strong&gt; и другое
 
-Function ReplaceFromString(sSource As String, sDel As String, sReplace As String)
+Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
 	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
 	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
-	Dim i As Integer
+	Dim i As Integer, c As Integer
+	c = 0 &apos; счетчик число изменений в строке
 	i = InStr(sSource, sDel)
+	If i=0 Then
+		ReplaceFromString = 0
+		Exit Function
+	End If
 	Do While i &gt; 0
 		Mid(sSource, i, Len(sDel), sReplace)
 		i = InStr(i, sSource, sDel)
+		c = c+1
 	Loop
+	ReplaceFromString = c
 End Function
 
-Function RemoveSuperfluous(sSource As String)
+Function RemoveSuperfluous(sSource As String, iResult As Integer)
 	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
-	ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
-	ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
-	ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
-	ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
-	ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
-	ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
+	iResult(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
+	iResult(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
+	iResult(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
+	iResult(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
+	iResult(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
+	iResult(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
 End Function
 
-Function ClearStyleSpace(sSource As String)
+Function ClearStyleSpace(sSource As String, iResult1 As Integer, iResult2 As Integer)
 	&apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
-	ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;emphasis&gt; &lt;/emphasis&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;sub&gt; &lt;/sub&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;sup&gt; &lt;/sup&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;code&gt; &lt;/code&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;strikethrough&gt; &lt;/strikethrough&gt;&quot;, &quot; &quot;)
+	iResult1(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
+	iResult1(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt; &lt;/emphasis&gt;&quot;, &quot; &quot;)
+	iResult1(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt; &lt;/sub&gt;&quot;, &quot; &quot;)
+	iResult1(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt; &lt;/sup&gt;&quot;, &quot; &quot;)
+	iResult1(4) = ReplaceFromString(sSource, &quot;&lt;code&gt; &lt;/code&gt;&quot;, &quot; &quot;)
+	iResult1(5) = ReplaceFromString(sSource, &quot;&lt;strikethrough&gt; &lt;/strikethrough&gt;&quot;, &quot; &quot;)
 	
-	ReplaceFromString(sSource, &quot;&lt;/strong&gt; &lt;strong&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;/emphasis&gt; &lt;emphasis&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;/sub&gt; &lt;sub&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;/sup&gt; &lt;sup&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;/code&gt; &lt;code&gt;&quot;, &quot; &quot;)
-	ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt; &lt;strikethrough&gt;&quot;, &quot; &quot;)
+	iResult2(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt; &lt;strong&gt;&quot;, &quot; &quot;)
+	iResult2(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt; &lt;emphasis&gt;&quot;, &quot; &quot;)
+	iResult2(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt; &lt;sub&gt;&quot;, &quot; &quot;)
+	iResult2(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt; &lt;sup&gt;&quot;, &quot; &quot;)
+	iResult2(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt; &lt;code&gt;&quot;, &quot; &quot;)
+	iResult2(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt; &lt;strikethrough&gt;&quot;, &quot; &quot;)
+End Function
+
+&apos; функции для FB2Corrector - диалога
+
+Function AddLineInArray(sTextArray() As String, sText As String, oProgressBar)
+	Dim l As Long
+	l = Ubound(sTextArray()) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sTextArray(l)
+	Else Redim sTextArray(l)
+	End If
+	sTextArray(l) = sText
+	oProgressBar.setValue(l)
+End Function
+
+Function FBCorrectText(sStr As String, iResult1 As Integer, iResult2 As Integer, iResult3 As Integer)
+	Dim iR1(5) As Integer, iR2(5) As Integer, iR3(5) As Integer
+	Dim i As Integer
+	If bFB2Superfluous = True Then
+		RemoveSuperfluous(sStr, iR1)
+		For i=0 To UBound(iR1)
+			iResult1(i) = iResult1(i) + iR1(i)
+		Next i
+	End If
+	If bFB2StyleSpace = True Then
+		ClearStyleSpace(sStr, iR2, iR3)
+		For i=0 To UBound(iR2)
+			iResult2(i) = iResult2(i) + iR2(i)
+			iResult3(i) = iResult3(i) + iR3(i)
+		Next i
+	End If
+End Function
+
+Function SaveCorrectedFB2File(sFile As String, sTextArray() As String, oProgressBar, iResult1() As Integer, iResult2() As Integer, iResult3() As Integer)
+	&apos; записываем настройки очистки текста
+	Dim iFileNo As Integer, sLine As String, l As Long
+	
+	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
+	Open sFile For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+
+	For l=LBound(sTextArray) To UBound(sTextArray)
+		sLine = sTextArray(l)
+		FBCorrectText(sLine, iResult1, iResult2, iResult3)
+		Print #iFileNo, sLine
+		oProgressBar.setValue(l)
+	Next l
+	
+	Close #iFileNo &apos; Закрытие файла
+
+End Function
+
+Function ReadFB2File(sFile As String, sTextArray() As String, oProgressBar) As Boolean
+	&apos; Читаем fb2 файл в память
+	If FileExists(sFile) Then
+		Dim iFileNo As Integer, sCurrentLine As String
+		&apos; Установление свободного файлового манипулятора
+		iFileNo = Freefile
+		&apos; Открытие файла (в режиме на чтение)
+		Open sFile For Input As #iFileNo
+		&apos; Проверка, был ли достигнут конец файла
+		Do While NOT eof(iFileNo)
+			&apos; Чтение строки
+			Line Input #iFileNo, sCurrentLine
+			If sCurrentLine &lt;&gt; &quot;&quot; Then
+				&apos; Загружаем fb2 файл в память
+				AddLineInArray(sTextArray, sCurrentLine, oProgressBar)
+			End If
+		Loop
+		&apos; Закрытие файла
+		Close #iFileNo
+		ReadFB2File = True
+	Else
+		ReadFB2File = False
+	End If
 End Function
 
 
