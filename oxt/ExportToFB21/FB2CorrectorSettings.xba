@@ -5,11 +5,13 @@
 Public oFB2CorrectorDlg As Object
 Private bFB2CorrectorExecute As Boolean
 Private sFB2ConvertorName As String
+Public sTags() As String, sTagsAttr() As String
 
 Private sFB2CorrectorSettingsFilename As String
 Private bFB2MakeBackup As Boolean
 Private bFB2Superfluous As Boolean
 Private bFB2StyleSpace As Boolean
+Private bFB2BadSymbols As Boolean
 
 Sub FB2FileCorrector
 				
@@ -90,6 +92,7 @@ Function SaveFB2CorrectorSettings
 	bFB2MakeBackup = oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State
 	bFB2Superfluous = oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State
 	bFB2StyleSpace = oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State
+	bFB2BadSymbols = oFB2CorrectorDlg.GetControl(&quot;cboxFB2BadSymbols&quot;).State
 
 End Function
 
@@ -114,6 +117,7 @@ Function SetDefaultFB2CorrectorSettingsInControls
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State = 1
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State = 1
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State = 1
+	oFB2CorrectorDlg.GetControl(&quot;cboxFB2BadSymbols&quot;).State = 1
 End Function
 
 Function OpenFB2File
@@ -160,7 +164,9 @@ Function FB2CorrectorDlgOk
 		MsgBox &quot;Выберите fb2 файл для корректуры&quot;, 64, sFB2ConvertorName
 		Exit Function
 	End If
-	If oFB2CorrectorDlg.Model.cboxFB2Superfluous.State = 0 And oFB2CorrectorDlg.Model.cboxFB2StyleSpace.State = 0 Then
+	If oFB2CorrectorDlg.Model.cboxFB2Superfluous.State = 0 And _
+		oFB2CorrectorDlg.Model.cboxFB2StyleSpace.State = 0 And _
+		oFB2CorrectorDlg.Model.cboxFB2BadSymbols.State = 0 Then
 		MsgBox &quot;Выберите хоть одну опцию корректуры fb2 файла&quot;, 64, sFB2ConvertorName
 		Exit Function
 	End If
@@ -172,6 +178,23 @@ Function FB2CorrectorDlgOk
 	&apos; Сохраняем настройки в файл
 	SaveFB2CorrectorSettings
 	
+	&apos; заполняем массив тэгов
+	sTags = Array(&quot;&lt;p&gt;&quot;,&quot;&lt;/p&gt;&quot;,&quot;&lt;/a&gt;&quot;,&quot;&lt;empty-line/&gt;&quot;, _
+					&quot;&lt;strong&gt;&quot;,&quot;&lt;/strong&gt;&quot;,&quot;&lt;emphasis&gt;&quot;,&quot;&lt;/emphasis&gt;&quot;, _
+					&quot;&lt;sub&gt;&quot;,&quot;&lt;/sub&gt;&quot;,&quot;&lt;sup&gt;&quot;,&quot;&lt;/sup&gt;&quot;,&quot;&lt;code&gt;&quot;,&quot;&lt;/code&gt;&quot;,&quot;&lt;strikethrough&gt;&quot;,&quot;&lt;/strikethrough&gt;&quot;, _
+					&quot;&lt;section&gt;&quot;,&quot;&lt;/section&gt;&quot;,&quot;&lt;body&gt;&quot;,&quot;&lt;/body&gt;&quot;, _
+					&quot;&lt;title&gt;&quot;,&quot;&lt;/title&gt;&quot;,&quot;&lt;subtitle&gt;&quot;,&quot;&lt;/subtitle&gt;&quot;, _
+					&quot;&lt;epigraph&gt;&quot;,&quot;&lt;/epigraph&gt;&quot;, _
+					&quot;&lt;cite&gt;&quot;,&quot;&lt;/cite&gt;&quot;, _
+					&quot;&lt;poem&gt;&quot;,&quot;&lt;/poem&gt;&quot;,&quot;&lt;stanza&gt;&quot;,&quot;&lt;/stanza&gt;&quot;,&quot;&lt;v&gt;&quot;,&quot;&lt;/v&gt;&quot;, _
+					&quot;&lt;annotation&gt;&quot;,&quot;&lt;/annotation&gt;&quot;, _
+					&quot;&lt;text-author&gt;&quot;,&quot;&lt;/text-author&gt;&quot;, _
+					&quot;&lt;table&gt;&quot;,&quot;&lt;/table&gt;&quot;,&quot;&lt;tr&gt;&quot;,&quot;&lt;/tr&gt;&quot;,&quot;&lt;th&gt;&quot;,&quot;&lt;/th&gt;&quot;,&quot;&lt;td&gt;&quot;,&quot;&lt;/td&gt;&quot;, _
+					&quot;&lt;date&gt;&quot;,&quot;&lt;/date&gt;&quot;, _
+					&quot;&lt;/style&gt;&quot;)
+	sTagsAttr = Array(&quot;&lt;section &quot;,&quot;&lt;p &quot;,&quot;&lt;a &quot;,&quot;&lt;poem &quot;,&quot;&lt;v &quot;,&quot;&lt;cite &quot;,&quot;&lt;epigraph &quot;,&quot;&lt;annotation &quot;, _
+						&quot;&lt;table &quot;,&quot;&lt;td &quot;,&quot;&lt;th &quot;,&quot;&lt;tr &quot;,&quot;&lt;image &quot;,&quot;&lt;binary &quot;, _
+						&quot;&lt;subtitle &quot;,&quot;&lt;text-author &quot;,&quot;&lt;date &quot;,&quot;&lt;body &quot;,&quot;&lt;style &quot;)
 	&apos; Начинаем корректировать выбранный fb2 файл
 	Dim oProgressBar
 	Dim sFile As String
@@ -180,7 +203,10 @@ Function FB2CorrectorDlgOk
 	sFile = Trim(oFB2CorrectorDlg.GetControl(&quot;tfFB2File&quot;).Text)
 	&apos; создаем бэкап файла, если эта опция выбрана
 	If bFB2MakeBackup = True Then
-		FileCopy sFile, sFile &amp; &quot;.bak&quot;
+		Dim sNow As String
+		sNow = Now
+		FileCopy sFile, sFile &amp; &quot;.bak-&quot; &amp; Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;(&quot; &amp; _
+											Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; &quot;)&quot;
 	End If
 	&apos; загружаем файл в память
 	Dim sFB2() As String
@@ -192,26 +218,31 @@ Function FB2CorrectorDlgOk
 	oProgressBar.start(&quot;Коррекция fb2 файла:&quot;, UBound(sFB2))
 
 	&apos; сохраняем откорректированный файл
-	Dim iResult1(5) As Integer, iResult2(5) As Integer, iResult3(5) As Integer &apos; массивы-счетчики
-	SaveCorrectedFB2File(sFile, sFB2, oProgressBar, iResult1, iResult2, iResult3)
+	Dim iResult1(5) As Integer, iResult2(5) As Integer, iResult3(5) As Integer, iResult4(2) As Integer &apos; массивы-счетчики
+	SaveCorrectedFB2File(sFile, sFB2, oProgressBar, iResult1, iResult2, iResult3, iResult4)
+
 	&apos; Вывод сообщения
 	Dim sMsg As String
 	sMsg = &quot;Результаты корректировки fb2 файла:&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;1. Убрано пустышек типа &lt;/x&gt;&lt;x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;1. Обработано символов &lt;,&gt; и &amp; :&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(0) &amp; &quot; - &lt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(1) &amp; &quot; - &gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(2) &amp; &quot; - &amp;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;2. Убрано пустышек типа &lt;/x&gt;&lt;x&gt;:&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(0) &amp; &quot; - &lt;/strong&gt;&lt;strong&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(1) &amp; &quot; - &lt;/emphasis&gt;&lt;emphasis&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(2) &amp; &quot; - &lt;/sub&gt;&lt;sub&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(3) &amp; &quot; - &lt;/sup&gt;&lt;sup&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(4) &amp; &quot; - &lt;/code&gt;&lt;code&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(5) &amp; &quot; - &lt;/strikethrough&gt;&lt;strikethrough&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;2. Обработано пробелов внутри стилей &lt;x&gt; &lt;/x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;3. Обработано пробелов внутри стилей &lt;x&gt; &lt;/x&gt;:&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(0) &amp; &quot; - &lt;strong&gt; &lt;/strong&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(1) &amp; &quot; - &lt;emphasis&gt; &lt;/emphasis&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(2) &amp; &quot; - &lt;sub&gt; &lt;/sub&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(3) &amp; &quot; - &lt;sup&gt; &lt;/sup&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(4) &amp; &quot; - &lt;code&gt; &lt;/code&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(5) &amp; &quot; - &lt;strikethrough&gt; &lt;/strikethrough&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;3. Обработано пробелов внутри стилей &lt;/x&gt; &lt;x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;4. Обработано пробелов внутри стилей &lt;/x&gt; &lt;x&gt;:&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(0) &amp; &quot; - &lt;/strong&gt; &lt;strong&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(1) &amp; &quot; - &lt;/emphasis&gt; &lt;emphasis&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(2) &amp; &quot; - &lt;/sub&gt; &lt;sub&gt;&quot; &amp; chr(10)
@@ -222,7 +253,7 @@ Function FB2CorrectorDlgOk
 	bFB2CorrectorExecute = True
 	oFB2CorrectorDlg.endExecute()
 	
-	MsgBox sMsg, 64, sFB2ConvertorName
+	MsgBox sMsg, 64, sFB2ConvertorName &amp; &quot; - Статистика&quot;
 	oProgressBar.end
 
 End Function
