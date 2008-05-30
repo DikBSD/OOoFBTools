@@ -175,6 +175,9 @@ Function FB2CorrectorDlgOk
 		Exit Function
 	End If
 	
+	bFB2CorrectorExecute = True
+	oFB2CorrectorDlg.endExecute()
+	
 	&apos; Сохраняем настройки в файл
 	SaveFB2CorrectorSettings
 	
@@ -197,7 +200,8 @@ Function FB2CorrectorDlgOk
 						&quot;&lt;subtitle &quot;,&quot;&lt;text-author &quot;,&quot;&lt;date &quot;,&quot;&lt;body &quot;,&quot;&lt;style &quot;)
 	&apos; Начинаем корректировать выбранный fb2 файл
 	Dim oProgressBar
-	Dim sFile As String
+	Dim sFile As String, sFileBak As String
+
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oProgressBar.start(&quot;Чтение fb2 файла:&quot;, 2000)
 	sFile = Trim(oFB2CorrectorDlg.GetControl(&quot;tfFB2File&quot;).Text)
@@ -205,8 +209,9 @@ Function FB2CorrectorDlgOk
 	If bFB2MakeBackup = True Then
 		Dim sNow As String
 		sNow = Now
-		FileCopy sFile, sFile &amp; &quot;.bak-&quot; &amp; Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;(&quot; &amp; _
+		sFileBak = sFile &amp; &quot;.bak-&quot; &amp; Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;(&quot; &amp; _
 											Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; &quot;)&quot;
+		FileCopy sFile, sFileBak
 	End If
 	&apos; загружаем файл в память
 	Dim sFB2() As String
@@ -223,7 +228,13 @@ Function FB2CorrectorDlgOk
 
 	&apos; Вывод сообщения
 	Dim sMsg As String
-	sMsg = &quot;Результаты корректировки fb2 файла:&quot; &amp; chr(10)
+	sMsg = &quot;Файл:     &quot; &amp; sFile &amp; chr(10)
+	If bFB2MakeBackup = True Then
+		sMsg = sMsg &amp; &quot;.bak файл: &quot; &amp; sFileBak &amp; chr(10) &amp; chr(10)
+	Else
+		sMsg = sMsg &amp; chr(10)
+	End If
+	sMsg = sMsg &amp; &quot;Результаты корректировки fb2 файла:&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;1. Обработано символов &lt;,&gt; и &amp; :&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(0) &amp; &quot; - &lt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(1) &amp; &quot; - &gt;&quot; &amp; chr(10)
@@ -249,9 +260,6 @@ Function FB2CorrectorDlgOk
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(3) &amp; &quot; - &lt;/sup&gt; &lt;sup&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(4) &amp; &quot; - &lt;/code&gt; &lt;code&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(5) &amp; &quot; - &lt;/strikethrough&gt; &lt;strikethrough&gt;&quot; &amp; chr(10)
-	
-	bFB2CorrectorExecute = True
-	oFB2CorrectorDlg.endExecute()
 	
 	MsgBox sMsg, 64, sFB2ConvertorName &amp; &quot; - Статистика&quot;
 	oProgressBar.end

@@ -176,7 +176,7 @@ Function AddLineInArray(sTextArray() As String, sText As String, oProgressBar)
 End Function
 
 Function FBCorrectText(sStr As String, iResult1 As Integer, iResult2 As Integer, iResult3 As Integer, iResult4 As Integer)
-	Dim iR1(5) As Integer, iR2(5) As Integer, iR3(5) As Integer, iR4(2) As Integer
+	Dim iR1(5) As Integer, iR2(5) As Integer, iR3(5) As Integer
 	Dim i As Integer
 	If bFB2Superfluous = True Then
 		RemoveSuperfluous(sStr, iR1)
@@ -192,74 +192,8 @@ Function FBCorrectText(sStr As String, iResult1 As Integer, iResult2 As Integer,
 		Next i
 	End If
 	If bFB2BadSymbols = True Then
-		&apos; Разбивка строки на лексемы
-		Dim sWords() As String, sWord As String
-		sWords = Split(sStr, &quot;&lt;&quot;)
-		For i=LBound(sWords) To UBound(sWords)
-			sWords(i) = &quot;&lt;&quot; &amp; sWords(i)
-		Next i
-		&apos; парсинг лексемы
-		Dim index As Integer, ind As Integer, sStart As String, sEnd As String
-		For i=LBound(sWords)+1 To UBound(sWords)
-			sWord = sWords(i)
-			IF sWord &lt;&gt; &quot;&lt;&quot; Then
-				ind = IsFullTag(sWord)
-				If ind &gt; -1  Then
-					&apos; 1. проверка, нет ли в середине лексемы слов-гэгов
-					index = InStr( Len(sTags(ind))+1, sWord, &quot;&amp;&quot; )
-					If index &gt; 0 Then
-						sEnd = Mid( sWord, index )
-						sStart = Left( sWord, Len(sWord)-Len(sEnd) )
-						FB2CorrectAmpWord(sEnd, iR4)
-						sWord = sStart &amp; sEnd	
-						sWords(i) = sWord
-					End If
-					index = InStr( Len(sTags(ind))+1, sWord, &quot;&gt;&quot; )
-					If index &gt; 0 Then
-						sEnd = Mid( sWord, index )
-						sStart = Left( sWord, Len(sWord)-Len(sEnd) )
-						FB2CorrectBracketsWord(sEnd, iR4)
-						sWord = sStart &amp; sEnd	
-						sWords(i) = sWord
-					End If
-				Else
-					ind = IsTagWithAttr(sWord)
-					If ind &gt; -1 Then
-						&apos; 2. проверка по &quot;открытым&quot; тэгам - с аттрибутами
-						index = InStr( Len(sTagsAttr(ind))+1, sWord, &quot;&amp;&quot; )
-						If index &gt; 0 Then
-							sEnd = Mid( sWord, index )
-							sStart = Left( sWord, Len(sWord)-Len(sEnd) )
-							FB2CorrectAmpWord(sEnd, iR4)
-							sWord = sStart &amp; sEnd	
-							sWords(i) = sWord
-						End If
-						index = InStr( Len(sTagsAttr(ind))+1, sWord, &quot;&gt;&quot; )
-						If index &gt; 0 Then
-							&apos; ищем закрывающую скобку &gt; для тэга с аттрибутами, и от него до конца - sEnd
-							sEnd = Mid( sWord, index+1 )
-							sStart = Left( sWord, Len(sWord)-Len(sEnd) )
-							FB2CorrectBracketsWord(sEnd, iR4)
-							sWord = sStart &amp; sEnd	
-							sWords(i) = sWord
-						End If
-					Else
-						&apos; 3. вообще нет тегов в лексеме
-						FB2CorrectWord(sWord, iR4)
-						sWords(i) = sWord
-					End If
-				End If
-			Else
-				sWords(i) = &quot;&amp;lt;&quot;
-			End If
-		Next i
-		&apos; собираем лексемы в строку
-		sWords(0) = &quot;&quot;
-		sStr = Join(sWords, &quot;&quot;)
-
-		For i=0 To UBound(iR4)
-			iResult4(i) = iResult4(i) + iR4(i)
-		Next i
+		&apos; обработка &quot;проблемных&quot; символов &gt;, &lt; и &amp;
+		CorrectBadSymbols(sStr, iResult4)
 	End If
 End Function
 
@@ -352,5 +286,75 @@ Function ReadFB2File(sFile As String, sTextArray() As String, oProgressBar) As B
 	End If
 End Function
 
+Function CorrectBadSymbols(sStr As String, iResult4() As Integer)
+	&apos; обработка &quot;проблемных&quot; символов &gt;, &lt; и &amp;
+	&apos; Разбивка строки на лексемы
+	Dim sWords() As String, sWord As String, iR4(2) As Integer
+	sWords = Split(sStr, &quot;&lt;&quot;)
+	For i=LBound(sWords) To UBound(sWords)
+		sWords(i) = &quot;&lt;&quot; &amp; sWords(i)
+	Next i
+	&apos; парсинг лексемы
+	Dim index As Integer, ind As Integer, sStart As String, sEnd As String
+	For i=LBound(sWords)+1 To UBound(sWords)
+		sWord = sWords(i)
+		IF sWord &lt;&gt; &quot;&lt;&quot; Then
+			ind = IsFullTag(sWord)
+			If ind &gt; -1  Then
+				&apos; 1. проверка, нет ли в середине лексемы слов-гэгов
+				index = InStr( Len(sTags(ind))+1, sWord, &quot;&amp;&quot; )
+				If index &gt; 0 Then
+					sEnd = Mid( sWord, index )
+					sStart = Left( sWord, Len(sWord)-Len(sEnd) )
+					FB2CorrectAmpWord(sEnd, iR4)
+					sWord = sStart &amp; sEnd	
+					sWords(i) = sWord
+				End If
+				index = InStr( Len(sTags(ind))+1, sWord, &quot;&gt;&quot; )
+				If index &gt; 0 Then
+					sEnd = Mid( sWord, index )
+					sStart = Left( sWord, Len(sWord)-Len(sEnd) )
+					FB2CorrectBracketsWord(sEnd, iR4)
+					sWord = sStart &amp; sEnd	
+					sWords(i) = sWord
+				End If
+			Else
+				ind = IsTagWithAttr(sWord)
+				If ind &gt; -1 Then
+					&apos; 2. проверка по &quot;открытым&quot; тэгам - с аттрибутами
+					index = InStr( Len(sTagsAttr(ind))+1, sWord, &quot;&amp;&quot; )
+					If index &gt; 0 Then
+						sEnd = Mid( sWord, index )
+						sStart = Left( sWord, Len(sWord)-Len(sEnd) )
+						FB2CorrectAmpWord(sEnd, iR4)
+						sWord = sStart &amp; sEnd	
+						sWords(i) = sWord
+					End If
+					index = InStr( Len(sTagsAttr(ind))+1, sWord, &quot;&gt;&quot; )
+					If index &gt; 0 Then
+						&apos; ищем закрывающую скобку &gt; для тэга с аттрибутами, и от него до конца - sEnd
+						sEnd = Mid( sWord, index+1 )
+						sStart = Left( sWord, Len(sWord)-Len(sEnd) )
+						FB2CorrectBracketsWord(sEnd, iR4)
+						sWord = sStart &amp; sEnd	
+						sWords(i) = sWord
+					End If
+				Else
+					&apos; 3. вообще нет тегов в лексеме
+					FB2CorrectWord(sWord, iR4)
+					sWords(i) = sWord
+				End If
+			End If
+		Else
+			sWords(i) = &quot;&amp;lt;&quot;
+		End If
+	Next i
+	&apos; собираем лексемы в строку
+	sWords(0) = &quot;&quot;
+	sStr = Join(sWords, &quot;&quot;)
 
+	For i=0 To UBound(iR4)
+		iResult4(i) = iResult4(i) + iR4(i)
+	Next i
+End Function
 </script:module>
