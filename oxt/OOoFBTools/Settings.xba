@@ -5,6 +5,8 @@ Option Explicit
 
 Public sSettingsFilename As String
 
+Private oCB As Object &apos; Для работы с ListBox`ами
+
 Function pmxCurDir() As String
 	&apos; Возвращает путь к папке конфигурации пользователя
 	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
@@ -46,6 +48,45 @@ Function SetSettings(sCurrentLine)
 		oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
 	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
 		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
+	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+		oCB = oServiceDlg.getControl(sSetting(0))
+		If oCB.Model.Name = &quot;cmbboxStyle&quot; Then
+			Select Case sSetting(1)
+				Case &quot;x&quot;
+					oCB.SelectItemPos(0, True)
+				Case &quot;[x]&quot;
+					oCB.SelectItemPos(1, True)
+				Case &quot;[ x ]&quot;
+					oCB.SelectItemPos(2, True)
+				Case &quot;{x}&quot;
+					oCB.SelectItemPos(3, True)
+				Case &quot;{ x }&quot;
+					oCB.SelectItemPos(4, True)
+				Case &quot;(x)&quot;
+					oCB.SelectItemPos(5, True)
+				Case &quot;( x )&quot;
+					oCB.SelectItemPos(6, True)
+			End Select
+		Else
+			Select Case sSetting(1)
+				Case &quot;Слева&quot;
+					oCB.SelectItemPos(0, True)
+				Case &quot;По Центру&quot;
+					oCB.SelectItemPos(1, True)
+				Case &quot;Справа&quot;
+					oCB.SelectItemPos(2, True)
+				Case &quot;Сверху&quot;
+					oCB.SelectItemPos(0, True)
+				Case &quot;Снизу&quot;
+					oCB.SelectItemPos(2, True)
+				Case &quot;Таблица&quot;
+					oCB.SelectItemPos(0, True)
+				Case &quot;Текст&quot;
+					oCB.SelectItemPos(1, True)
+				Case &quot;Цитата&quot;
+					oCB.SelectItemPos(2, True)
+			End Select
+		End If
 	End If
 	Exit Function
 	ErrorHandler: &apos; идем дальше
@@ -66,6 +107,8 @@ Function SaveSettings
 			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
 			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItem
 		End If
 	Next i
 	
@@ -76,7 +119,8 @@ Function SetDefaultSettingsInControls
 	&apos; Настройки По умолчанию - в контролы
 	&apos; Сноски
 	oServiceDlg.Model.cboxStyleFootnote.State = 1
-	oServiceDlg.Model.cmbboxStyle.Text = &quot;[x]&quot;
+	oCB = oServiceDlg.getControl(&quot;cmbboxStyle&quot;)
+	oCB.SelectItemPos(1, True)
 	oServiceDlg.Model.cmbboxTitle.Text = &quot;Примечания&quot;
 	oServiceDlg.Model.cboxSpace.State = 0
 	oServiceDlg.Model.cboxNotesElements.State = 1
@@ -96,13 +140,19 @@ Function SetDefaultSettingsInControls
 	&apos; Картинки
 	oServiceDlg.Model.cboxImageTitle.State = 0
 	&apos; Текстовые врезки
-	oServiceDlg.Model.cmbboxTextFrame.Text = &quot;Таблица&quot;
-	oServiceDlg.Model.cmbboxAdjTextFrame.Text = &quot;Слева&quot;
+	oCB = oServiceDlg.getControl(&quot;cmbboxTextFrame&quot;)
+	oCB.SelectItemPos(0, True)
+	oCB = oServiceDlg.getControl(&quot;cmbboxAdjTextFrame&quot;)
+	oCB.SelectItemPos(0, True)
 	&apos; Таблицы
-	oServiceDlg.Model.cmbboxHeaderTRA.Text = &quot;По Центру&quot;
-	oServiceDlg.Model.cmbboxHeaderTHV.Text = &quot;По Центру&quot;
-	oServiceDlg.Model.cmbboxLineTRA.Text = &quot;По Центру&quot;
-	oServiceDlg.Model.cmbboxLineTDV.Text = &quot;По Центру&quot;
+	oCB = oServiceDlg.getControl(&quot;cmbboxHeaderTRA&quot;)
+	oCB.SelectItemPos(1, True)
+	oCB = oServiceDlg.getControl(&quot;cmbboxHeaderTHV&quot;)
+	oCB.SelectItemPos(1, True)
+	oCB = oServiceDlg.getControl(&quot;cmbboxLineTRA&quot;)
+	oCB.SelectItemPos(1, True)
+	oCB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
+	oCB.SelectItemPos(1, True)
 	&apos; Разное
 	oServiceDlg.Model.cboxCorrect.State = 1
 	oServiceDlg.Model.cboxDelEL.State = 0
@@ -115,7 +165,7 @@ Function SetDefaultSettingsInControls
 	oServiceDlg.Model.cboxSuperfluous.State = 1
 	oServiceDlg.Model.cboxStyleSpace.State = 1
 	
-	cmbboxTextFrameChange &apos; для доспупности вида выравнивания Текстовых Врезок
+	lstboxTextFrameChange &apos; для доспупности вида выравнивания Текстовых Врезок
 End Function
 
 Function ReadSettingsInVars As Boolean
@@ -154,6 +204,9 @@ Function SetSettingsInVars(sCurrentLine)
 			bNotesElements = sSetting(1)
 		Case &quot;cmbboxStyle&quot;
 			Select Case sSetting(1)
+				Case &quot;x&quot;
+					sFootnoteLeft = &quot;&quot;
+					sFootnoteRight = &quot;&quot;
 				Case &quot;[x]&quot;
 					sFootnoteLeft = &quot;[&quot;
 					sFootnoteRight = &quot;]&quot;

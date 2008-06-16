@@ -5,7 +5,9 @@ Option Explicit
 
 Function SaveDescription
 	Dim i As Integer
-	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.Codepage.Text) &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
+	Dim oCodeLB As Object
+	oCodeLB = oInfoDlg.getControl(&quot;Codepage&quot;)
+	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; Trim(oCodeLB.SelectedItem) &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;FictionBook xmlns=&quot;&quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot; xmlns:l=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot;&gt;&quot;&amp;chr(10))
 	oTextOutputStream.writeString(&quot;&lt;description&gt;&quot; &amp; chr(10))
 	
@@ -40,11 +42,25 @@ Function SaveDescription
 		oTextOutputStream.writeString(&quot;&lt;keywords&gt;&quot; &amp; Trim(oInfoDlg.Model.KeywordsField.Text) &amp; &quot;&lt;/keywords&gt;&quot; &amp; chr(10))
 	End If
 	
-	oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
-	oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; Trim(oInfoDlg.Model.LangComboBox.Text) &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
+	If Trim(oInfoDlg.Model.tiDateValueField.Text) &lt;&gt; &quot;&quot; Then
+		If Trim(oInfoDlg.Model.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		Else
+			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		If Trim(oInfoDlg.Model.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		End If
+	End If
+
+	Dim oLB As Object
+	oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
+	oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
 	
-	If Trim(oInfoDlg.Model.SrcLangComboBox.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; Trim(oInfoDlg.Model.SrcLangComboBox.Text) &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
+	oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
+	If oLB.SelectedItem &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
 	End If
 	
 	If UBound(sTranslators) &lt;&gt; -1 Then

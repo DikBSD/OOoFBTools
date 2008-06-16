@@ -78,7 +78,9 @@ Sub ExportToFB21
 	oOutputStream = oFileAccess.openFileWrite(ConvertToUrl(oInfoDlg.Model.FilenameTextField.Text))
 	oOutputStream.truncate()
 	oTextOutputStream.setOutputStream(oOutputStream)
-	oTextOutputStream.setEncoding(oInfoDlg.Model.Codepage.Text)
+	Dim oCodeLB As Object
+	oCodeLB = oInfoDlg.getControl(&quot;Codepage&quot;)
+	oTextOutputStream.setEncoding(oCodeLB.SelectedItem)
 	
 	&apos; печатаем данные из &lt;description&gt;
 	SaveDescription

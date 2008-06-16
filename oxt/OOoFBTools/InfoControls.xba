@@ -98,6 +98,8 @@ Function InfoDlgExec As Boolean
 	sNow = Now
 	With oInfoDlg.Model
 		.Title = oDlgTitle
+		.Height = 362
+		.Width = 408
 		.GenreComboBox.StringItemList = sGLN()
 		.NumericFieldMatch.Value = &quot;100&quot;
 		.LangComboBox.StringItemList = sLangList()
@@ -118,6 +120,15 @@ Function InfoDlgExec As Boolean
 		.tiDateTextField.Text = FindTextOfStyle(sStyle_DateText, true)
 		.tiDateValueField.Text = FindTextOfStyle(sStyle_DateValue, true)
 	End With
+	
+	Dim oLB As Object
+	oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
+	oLB.SelectItemPos(35, True)
+	oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
+	oLB.AddItem(&quot;&quot;, 0)
+	oLB = oInfoDlg.getControl(&quot;Codepage&quot;)
+	oLB.addItems(Array(&quot;utf-8&quot;, &quot;windows-1251&quot;), 0)
+	oLB.SelectItemPos(0, True)
 	
 	&apos; центрирование на экране
 	ToScreenCenter(oInfoDlg)
@@ -149,7 +160,6 @@ Function InfoDlgExec As Boolean
 	ReadServiceStyles(7)
 	
 	bAppendBtn = True
-	oInfoDlg.Model.Step = 1
 	oInfoDlg.execute()
 	InfoDlgExec = bExecute
 
@@ -194,7 +204,7 @@ Function InfoDlgCanceled
 End Function
 
 Function ConvertingFile
-	If oInfoDlg.Model.GenreComboBox.Text = &quot;&quot; OR oInfoDlg.Model.BookTitleField.Text = &quot;&quot; OR oInfoDlg.Model.LangComboBox.Text = &quot;&quot; Then
+	If oInfoDlg.Model.GenreComboBox.Text = &quot;&quot; OR oInfoDlg.Model.BookTitleField.Text = &quot;&quot; Then
 		MsgBox &quot;Заполните все выделенные (обязательные) поля&quot;, 64, sConvertorName
 		Exit Function
 	End If

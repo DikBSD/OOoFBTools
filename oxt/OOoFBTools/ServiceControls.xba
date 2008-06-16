@@ -17,7 +17,7 @@ Private sTFList() As String &apos; вид экспорта врезок
 Private bServiceExecute As Boolean
 
 Function ServiceDlgExec As Boolean
-	sFootStyleList() = Array(&quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
+	sFootStyleList() = Array(&quot;x&quot;, &quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
 	sFootTitleList() = Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
 	sHRList() = Array(&quot;Слева&quot;, &quot;По Центру&quot;, &quot;Справа&quot;)
 	sHVList() = Array(&quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
@@ -26,6 +26,8 @@ Function ServiceDlgExec As Boolean
 	oServiceDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.ServiceDlg)
 	With oServiceDlg.Model
 		.Title = &quot;Дополнительные настройки&quot;
+		.Height = 281
+		.Width = 368
 		.cmbboxStyle.StringItemList = sFootStyleList()
 		.cmbboxTitle.StringItemList = sFootTitleList()
 		.cmbboxHeaderTRA.StringItemList = sHRList()
@@ -41,12 +43,10 @@ Function ServiceDlgExec As Boolean
 	&apos; Считываем и устанавливаем настройки
 	ReadSettings
 	
-	oServiceDlg.Model.Step = 0
-	
 	oServiceDlg.execute()
 
 	&apos; центрирование на экране
-	ToScreenCenter(oServiceDlg)
+&apos;	ToScreenCenter(oServiceDlg)
 
 	ServiceDlgExec = bServiceExecute
 
@@ -58,29 +58,6 @@ Function ServiceDlgCanceled
 End Function
 
 Function ServiceDlgOk
-	If Trim(oServiceDlg.Model.cmbboxStyle.Text) = &quot;&quot; Then
-		MsgBox &quot;Выберите стиль сносок&quot;, 64, sConvertorName
-		Exit Function
-	End If
-	If Trim(oServiceDlg.Model.cmbboxTitle.Text) = &quot;&quot; Then
-		MsgBox &quot;Выберите название заголовка секции сносок&quot;, 64, sConvertorName
-		Exit Function
-	End If
-	If Trim(oServiceDlg.Model.cmbboxHeaderTRA.Text) = &quot;&quot; OR _
-		Trim(oServiceDlg.Model.cmbboxHeaderTHV.Text) = &quot;&quot; Then
-		MsgBox &quot;Выберите способ выравнивания Заголовков таблиц&quot;, 64, sConvertorName
-		Exit Function
-	End If
-	If Trim(oServiceDlg.Model.cmbboxLineTRA.Text) = &quot;&quot; OR _
-		Trim(oServiceDlg.Model.cmbboxLineTDV.Text) = &quot;&quot; Then
-		MsgBox &quot;Выберите способ выравнивания Строк таблиц&quot;, 64, sConvertorName
-		Exit Function
-	End If
-	If Trim(oServiceDlg.Model.cmbboxTextFrame.Text) = &quot;&quot;  Then
-		MsgBox &quot;Выберите способ экспортра текста Врезок&quot;, 64, sConvertorName
-		Exit Function
-	End If
-
 	&apos; Сохраняем настройки в файл
 	SaveSettings
 	
@@ -123,8 +100,8 @@ Function ServiceDlgOk
 
 End Function
 
-Function cmbboxTextFrameChange
-	If oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).Text = &quot;Таблица&quot; Then
+Function lstboxTextFrameChange
+	If oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).SelectedItem = &quot;Таблица&quot; Then
 		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = True
 		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = True
 	Else
