@@ -28,7 +28,8 @@ Private bImages As Boolean
 Private sAnchor As String
 
 Private sAnchorsList() As String &apos; виды привязки картинки
-
+Private oCB As Object &apos; Для работы с ListBox`ами
+		
 Sub TextCorrector
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oTextCorrectorDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.TextCorrectorDlg)
@@ -110,6 +111,8 @@ Function SaveCorrectorSettings
 			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
 			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItem
 		End If
 	Next i
 	
@@ -128,7 +131,8 @@ Function SaveCorrectorSettings
 	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
 	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
 	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
-	sAnchor = oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text
+	oCB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
+	sAnchor = oCB.SelectedItem
 	
 End Function
 
@@ -143,9 +147,20 @@ Function SetCorrectorSettings(sCurrentLine)
 		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
 		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
+	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+		oCB = oTextCorrectorDlg.getControl(sCorrectorSettings(0))
+		Select Case sCorrectorSettings(1)
+			Case &quot;К абзацу&quot;
+				oCB.SelectItemPos(0, True)
+			Case &quot;К символу&quot;
+				oCB.SelectItemPos(1, True)
+			Case &quot;Как символ&quot;
+				oCB.SelectItemPos(2, True)
+		End Select
 	End If
 
 	cboxImagesEnabled
+	cboxBreakLineEnabled
 	Exit Function
 	
 	ErrorHandler: &apos; идем дальше
@@ -170,8 +185,11 @@ Function SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
 	&apos; Картинки
 	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
-	oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Text = &quot;К абзацу&quot;
+	oCB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
+	oCB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+	
 	cboxImagesEnabled
+	cboxBreakLineEnabled
 End Function
 
 Function TextCorrectorDlgCanceled
@@ -189,7 +207,29 @@ Function cboxImagesEnabled
 	End If
 End Function
 
+Function cboxBreakLineEnabled
+	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1 Then
+		oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).Enable = True
+	Else
+		oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).Enable = False
+	End If
+End Function
+
 Function TextCorrectorDlgOk
+	&apos; Если есть опции для чистки, то - работаем
+	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 Then
+		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	
 	&apos; Принятие параметров чистки текста
 	SaveCorrectorSettings &apos; сохранение настроек чистки текста
 
