@@ -671,6 +671,7 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	Next iRow
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
 	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
+	sPrevStyle = &quot;Table&quot;
 	AddBodyArray(sTable, &quot;Table&quot;, False)
 End Function
 
@@ -681,6 +682,8 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 	Dim sFormatCellText As String	&apos; отформатированный текст всех абзацев в ячейке в виде одной строки
 	Dim sRowWithLines() As String	&apos; Сформированный fb2 код всей Строки со всеми абзацами
 	Dim Cell, CellCursor
+	Dim sTagTR As String, sTagTDH As String
+	
 	sRow = &quot;&quot;
 	
 	&apos; Ищем ячейку с максимальным числом абзацев
@@ -700,13 +703,20 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 		End If
 		
 		&apos; форматирование строк inline стилями
-		sFormatCellText = FormatCellText(CellCursor, sCellString)
+		&apos;sFormatCellText = FormatCellText(CellCursor, sCellString)
+		sFormatCellText = sCellString
 		
 		&apos; определение тэга для заголовков и (или) строк таблицы
 		If bth = True Then
 			sTag = &quot;th&quot;	&apos; для заголовков таблицы
 		Else
 			sTag = &quot;td&quot; &apos; для строк таблицы
+		End If
+		
+		&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
+		sTagTDH = &quot;&lt;&quot; &amp; sTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor)
+		If sTVA &lt;&gt; &quot;&quot; Then
+			sTagTDH = sTagTDH &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
 		End If
 		
 		&apos; // формируем &quot;виртуальные&quot; строки для многоабзацевых строк таблицы //
@@ -728,13 +738,13 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 		For i = LBound(sCellAllFormatText) To nMaxLines
 			&apos; Выравнивание строк: влево - 0, вправо - 1, по центру - 3, по ширине - 2	
 			If UBound(sCellAllFormatText) = nMaxLines Then		
-				sCellWithLines(i) = &quot;&lt;&quot; &amp; sTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor) &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
+				sCellWithLines(i) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
 			Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
 				For j = 0 To UBound(sCellAllFormatText)
-					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor) &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
+					sCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
 				Next j
 				For j = UBound(sCellAllFormatText)+1 To nMaxLines
-					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor) &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
+					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTag &amp; &quot;/&gt;&quot; &amp; chr(10)
 				Next j
 				Exit For
 			End If
@@ -767,8 +777,17 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 	Next i
 
 	&apos; теперь собираем ячейки в &quot;свои&quot; &lt;tr&gt;
+	IF sTRA = &quot;&quot; Then
+		sTagTR = &quot;&lt;tr&gt;&quot;
+	Else
+		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
+		&apos;	sTagTR = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
+		&apos;Else
+			sTagTR = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
+		&apos;End If
+	End If
 	For i = 0 To UBound(sMergeLines())
-		sRow = sRow &amp; &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) &amp; sMergeLines(i) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+		sRow = sRow &amp; sTagTR &amp; chr(10) &amp; sMergeLines(i) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 	Next i
 	
 	MakeVirtualFormatRow = sRow

@@ -69,16 +69,30 @@ Function SetSettings(sCurrentLine)
 			End Select
 		Else
 			Select Case sSetting(1)
+				Case &quot;&quot;
+					oCB.SelectItemPos(0, True)
 				Case &quot;Слева&quot;
-					oCB.SelectItemPos(0, True)
+					If oCB.Model.Name = &quot;cmbboxAdjTextFrame&quot; Then
+						oCB.SelectItemPos(0, True)
+					Else
+						oCB.SelectItemPos(1, True)
+					End If
 				Case &quot;По Центру&quot;
-					oCB.SelectItemPos(1, True)
+					If oCB.Model.Name = &quot;cmbboxAdjTextFrame&quot; Then
+						oCB.SelectItemPos(1, True)
+					Else
+						oCB.SelectItemPos(2, True)
+					End If
 				Case &quot;Справа&quot;
-					oCB.SelectItemPos(2, True)
+					If oCB.Model.Name = &quot;cmbboxAdjTextFrame&quot; Then
+						oCB.SelectItemPos(2, True)
+					Else
+						oCB.SelectItemPos(3, True)
+					End If
 				Case &quot;Сверху&quot;
-					oCB.SelectItemPos(0, True)
+					oCB.SelectItemPos(1, True)
 				Case &quot;Снизу&quot;
-					oCB.SelectItemPos(2, True)
+					oCB.SelectItemPos(3, True)
 				Case &quot;Таблица&quot;
 					oCB.SelectItemPos(0, True)
 				Case &quot;Текст&quot;
@@ -146,13 +160,13 @@ Function SetDefaultSettingsInControls
 	oCB.SelectItemPos(0, True)
 	&apos; Таблицы
 	oCB = oServiceDlg.getControl(&quot;cmbboxHeaderTRA&quot;)
-	oCB.SelectItemPos(1, True)
+	oCB.SelectItemPos(0, True)
 	oCB = oServiceDlg.getControl(&quot;cmbboxHeaderTHV&quot;)
-	oCB.SelectItemPos(1, True)
+	oCB.SelectItemPos(0, True)
 	oCB = oServiceDlg.getControl(&quot;cmbboxLineTRA&quot;)
-	oCB.SelectItemPos(1, True)
+	oCB.SelectItemPos(0, True)
 	oCB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
-	oCB.SelectItemPos(1, True)
+	oCB.SelectItemPos(0, True)
 	&apos; Разное
 	oServiceDlg.Model.cboxCorrect.State = 1
 	oServiceDlg.Model.cboxDelEL.State = 0
@@ -307,7 +321,7 @@ Function GetLCR(sSetting) As String
 		Case &quot;Справа&quot;
 			GetLCR = &quot;right&quot;
 		Case Else
-			GetLCR = &quot;center&quot;
+			GetLCR = &quot;&quot;
 	End Select
 End Function
 
@@ -320,7 +334,7 @@ Function GetTMB(sSetting) As String
 		Case &quot;Снизу&quot;
 			GetTMB = &quot;bottom&quot;
 		Case Else
-			GetTMB =  &quot;middle&quot;
+			GetTMB =  &quot;&quot;
 	End Select
 End Function
 
@@ -357,10 +371,10 @@ Function SetDefaultSettingsInVars
 	bDocLinks = True
 	
 	&apos; значения по умолчанию для выравнивания элементов таблиц
-	sHeaderTRA	 = &quot;center&quot;
-	sLineTRA	 = &quot;center&quot;
-	sHeaderTVA	 = &quot;middle&quot;
-	sLineTVA	 = &quot;middle&quot;
+	sHeaderTRA	 = &quot;&quot;
+	sLineTRA	 = &quot;&quot;
+	sHeaderTVA	 = &quot;&quot;
+	sLineTVA	 = &quot;&quot;
 
 	sTextFrameToFB2	 = &quot;Таблица&quot;
 	sAdjTextFrame	 = &quot;left&quot;
