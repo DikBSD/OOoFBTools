@@ -265,14 +265,14 @@ Function ReadFB2File(sFile As String, sTextArray() As String, oProgressBar) As B
 			&apos; Чтение строки
 			Line Input #iFileNo, sCurrentLine
 			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				lL = lL+1
 				&apos; Загружаем fb2 файл в память
 				AddLineInArray(sTextArray, sCurrentLine, oProgressBar)
 				If InStr(sCurrentLine, &quot;&lt;/description&gt;&quot;) &gt; 0 Then
-					lBody = lL+1
+					lBody = lL
 				ElseIf InStr(sCurrentLine, &quot;&lt;/body&gt;&quot;) &gt; 0 Then
-					lBodyImage = lL+1
+					lBodyImage = lL
 				End If
+				lL = lL+1
 			End If
 		Loop
 		&apos; Закрытие файла

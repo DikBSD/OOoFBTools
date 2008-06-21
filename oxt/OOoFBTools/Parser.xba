@@ -289,10 +289,18 @@ End Function
 Function InLineParser(oSect As Object) As String
 	&apos; перебор по in-line стилям
 	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		Dim s As String
+		s = Mid(oSect.HyperLinkURL, 1, 1)
+		IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
+			s = oSect.HyperLinkURL
+		Else			&apos; закладка
+			s = Mid(oSect.HyperLinkURL, 2)
+			s = &quot;#_&quot; &amp; s
+		End If
 		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oSect.HyperLinkURL &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/a&gt;&quot;
+			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/a&gt;&quot;
 		Else
-			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oSect.HyperLinkURL &amp; &quot;&quot;&quot;&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/a&gt;&quot;
+			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/a&gt;&quot;
 		End If
 	ElseIf oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
 		If bCorrectPara = True Then
@@ -425,18 +433,26 @@ Function FormatFootnoteText(oSect)
 			While oSecEnumF.hasMoreElements
 				oTextPortionF = oSecEnumF.nextElement
 				If oTextPortionF.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+					Dim s As String
+					s = Mid(oTextPortionF.HyperLinkURL, 1, 1)
+					IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
+						s = oTextPortionF.HyperLinkURL
+					Else			&apos; закладка
+						s = Mid(oTextPortionF.HyperLinkURL, 2)
+						s = &quot;#_&quot; &amp; s
+					End If
 					If bCorrectPara = True Then
 						&apos; Если последний элемент строки сноски - гиперссылка, то в oSecEnumF она отображается дважды (не разобрался пока. почему)
 						&apos; Поэтому ставим защиту от этого
 						If sFNTH &lt;&gt; CorrectPara(oTextPortionF.String) Then
 							sFNTH = CorrectPara(oTextPortionF.String)
-							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
+							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
 						End If
 					Else
 						&apos; Поэтому ставим защиту от этого
 						If sFNTH &lt;&gt; oTextPortionF.String Then
 							sFNTH = oTextPortionF.String
-							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; oTextPortionF.HyperLinkURL &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
+							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
 						End If
 					End If
 				Elseif oTextPortionF.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
@@ -576,8 +592,16 @@ Function FormatCellText(CellCursor As Object, sCellString As String) As String
 	s = Split(sCellString, chr(10))
 	
 	If CellCursor.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		Dim sFN As String
 		For i = 0 To UBound(s)
-			sRes = sRes &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; CellCursor.HyperLinkURL &amp; &quot;&quot;&quot;&gt;&quot; &amp; s(i) &amp; &quot;&lt;/a&gt;&quot; &amp; chr(10)
+			sFN = Mid(CellCursor.HyperLinkURL, 1, 1)
+			IF sFN &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
+				sFN = oSect.HyperLinkURL
+			Else			&apos; закладка
+				sFN = Mid(oSect.HyperLinkURL, 2)
+				sFN = &quot;#_&quot; &amp; sFN
+			End If
+			sRes = sRes &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; sFN &amp; &quot;&quot;&quot;&gt;&quot; &amp; s(i) &amp; &quot;&lt;/a&gt;&quot; &amp; chr(10)
 		Next i
 		&apos;FormatCellText = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; CellCursor.HyperLinkURL &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellString &amp; &quot;&lt;/a&gt;&quot;
 	ElseIf CellCursor.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
@@ -902,7 +926,7 @@ Function AddLinksToArray(lTo As Long, sID As String)
 	Else Redim sLinksTo(l, 1)
 	End If
 	sLinksTo(l,0) = lTo
-	sLinksTo(l,1) = sID
+	sLinksTo(l,1) = &quot;_&quot; &amp; sID
 End Function
 
 Function OOoWriterVersion() As String
