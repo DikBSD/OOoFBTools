@@ -8,28 +8,27 @@ Public sFB2AuthorFilename As String &apos; файл профиля автора 
 Function ReadProfile(sFilename As String, nN As Integer)
 	&apos; nN - идентификатор типа профиля: 0 - для Автора Книги, 1 - для Автора fb2-документа
 	If FileExists(sFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFB2AuthorFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные профиля
 				If nN = 0 Then &apos; профиль Автора Книги
-					SetBookAuthorProfile(sCurrentLine)
+					SetBookAuthorProfile(sLine)
 				ElseIf nN = 1 Then &apos; профиль Автора fb2-документа
-					SetProfile(sCurrentLine)
+					SetProfile(sLine)
 				ElseIf nN = 2 Then &apos; профиль Издательства
-					SetPublisherProfile(sCurrentLine)
+					SetPublisherProfile(sLine)
 				End If
 			End If
 		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
+		oTIS.closeInput()
 	End If
 End Function
 
@@ -37,7 +36,8 @@ End Function
 &apos;/// Профиль Автора fb2-документа ////
 &apos;/////////////////////////////////////
 Function ReadUserProfile
-	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
+	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
+				&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;, 128 + 32 + 1, sConvertorName) = 2 Then
 		Exit Function
 	End If
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
@@ -47,6 +47,7 @@ End Function
 Function SetProfile(sCurrentLine)
 	On Error Goto ErrorHandler
 	Dim sProfile() As String
+	
 	sProfile = Split(sCurrentLine, &quot;=&quot;)
 	Select Case sProfile(0)
 		Case &quot;diFirstField&quot;
@@ -95,18 +96,27 @@ Function SaveProfile
 	End If
 	Dim iFileNo As Integer, sCurrentLine As String
 	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
-	Open sFB2AuthorFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
 	
-	Print #iFileNo, &quot;diFirstField=&quot; &amp; oInfoDlg.Model.diFirstField.Text
-	Print #iFileNo, &quot;diMiddleField=&quot; &amp; oInfoDlg.Model.diMiddleField.Text
-	Print #iFileNo, &quot;diLastField=&quot; &amp; oInfoDlg.Model.diLastField.Text
-	Print #iFileNo, &quot;diNicknameField=&quot; &amp; oInfoDlg.Model.diNicknameField.Text
-	Print #iFileNo, &quot;diEmailField=&quot; &amp; oInfoDlg.Model.diEmailField.Text
-	Print #iFileNo, &quot;diHomepageField=&quot; &amp; oInfoDlg.Model.diHomepageField.Text
-	Print #iFileNo, &quot;diOCRField=&quot; &amp; oInfoDlg.Model.diOCRField.Text
-	Print #iFileNo, &quot;HistoryTextField=&quot; &amp; oInfoDlg.Model.HistoryTextField.Text
+	Dim oOS As Object, oFA As Object, oTOS As Object
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	
-	Close #iFileNo &apos; Закрытие файла
+	oOS = oFA.openFileWrite(sFB2AuthorFilename)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.setEncoding(&quot;utf-8&quot;)
+	
+	oTOS.writeString(&quot;diFirstField=&quot; &amp; oInfoDlg.Model.diFirstField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diMiddleField=&quot; &amp; oInfoDlg.Model.diMiddleField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diLastField=&quot; &amp; oInfoDlg.Model.diLastField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diNicknameField=&quot; &amp; oInfoDlg.Model.diNicknameField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diEmailField=&quot; &amp; oInfoDlg.Model.diEmailField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diHomepageField=&quot; &amp; oInfoDlg.Model.diHomepageField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diOCRField=&quot; &amp; oInfoDlg.Model.diOCRField.Text &amp; chr(10))
+	oTOS.writeString(&quot;HistoryTextField=&quot; &amp; oInfoDlg.Model.HistoryTextField.Text &amp; chr(10))
+	oTOS.closeOutput()
+	
 End Function
 
 &apos;//////////////////////////////
