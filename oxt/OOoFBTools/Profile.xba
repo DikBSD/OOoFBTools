@@ -167,6 +167,7 @@ Function SaveBookAuthorProfile
 	If oFileDlg.execute() Then
 		&apos; Читаем данные контролов профиля автора книги и сохраняем в файл профиля для этого автора
 		Dim iFileNo As Integer, sCurrentLine As String
+		Dim oLB As Object
 		sFile = ConvertFromUrl(oFileDlg.Files(0))
 		iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
@@ -181,6 +182,10 @@ Function SaveBookAuthorProfile
 		Print #iFileNo, &quot;tiEmail=&quot; &amp; oInfoDlg.Model.tiEmail.Text
 		Print #iFileNo, &quot;tiHomepage=&quot; &amp; oInfoDlg.Model.tiHomepage.Text
 		Print #iFileNo, &quot;GenreComboBox=&quot; &amp; oInfoDlg.Model.GenreComboBox.Text
+		oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
+		Print #iFileNo, &quot;LangComboBox=&quot; &amp; oLB.SelectedItemPos
+		oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
+		Print #iFileNo, &quot;SrcLangComboBox=&quot; &amp; oLB.SelectedItemPos
 	
 		Close #iFileNo &apos; Закрытие файла
 	End If
@@ -191,7 +196,9 @@ End Function
 Function SetBookAuthorProfile(sCurrentLine)
 	On Error Goto ErrorHandler
 	Dim sProfile() As String
+	Dim oLB As Object
 	sProfile = Split(sCurrentLine, &quot;=&quot;)
+
 	Select Case sProfile(0)
 		Case &quot;tiFirst&quot;
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
@@ -207,6 +214,12 @@ Function SetBookAuthorProfile(sCurrentLine)
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;GenreComboBox&quot;
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;LangComboBox&quot;
+			oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
+			oLB.SelectItemPos(sProfile(1), True)
+		Case &quot;SrcLangComboBox&quot;
+			oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
+			oLB.SelectItemPos(sProfile(1), True)
 	End Select
 	Exit Function
 	
