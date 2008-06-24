@@ -12,7 +12,7 @@ Function ReadProfile(sFilename As String, nN As Integer)
 		Dim oSFA As Object, oFS As Object, oTIS As Object
 
 		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL (sFB2AuthorFilename) )
+		oFS = oSFA.openFileRead ( ConvertToURL (sFilename) )
 		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
 		oTIS.setInputStream (oFS)
 		Do While ( NOT oTIS.isEOF() )
@@ -91,11 +91,10 @@ End Function
 
 Function SaveProfile
 	&apos; записываем установки
-	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot;+chr(10)+&quot;Если вы раньше сохраняли свой профиль, то он будет перезаписан!&quot;,128 + 32 + 1,sConvertorName) = 2 Then
+	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
+				&quot;Если вы раньше сохраняли свой профиль, то он будет перезаписан!&quot;, 128 + 32 + 1, sConvertorName) = 2 Then
 		Exit Function
 	End If
-	Dim iFileNo As Integer, sCurrentLine As String
-	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 	
 	Dim oOS As Object, oFA As Object, oTOS As Object
 
@@ -115,6 +114,7 @@ Function SaveProfile
 	oTOS.writeString(&quot;diHomepageField=&quot; &amp; oInfoDlg.Model.diHomepageField.Text &amp; chr(10))
 	oTOS.writeString(&quot;diOCRField=&quot; &amp; oInfoDlg.Model.diOCRField.Text &amp; chr(10))
 	oTOS.writeString(&quot;HistoryTextField=&quot; &amp; oInfoDlg.Model.HistoryTextField.Text &amp; chr(10))
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
 	oTOS.closeOutput()
 	
 End Function
@@ -142,7 +142,7 @@ Function LoadBookAuthorProfile
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные и задаем значения контролам профиля автора книги
-		ReadProfile(ConvertFromUrl(oFileDlg.Files(0)), 0)
+		ReadProfile(oFileDlg.Files(0), 0)
 	End If
 	oFileDlg.Dispose()
 
@@ -176,28 +176,34 @@ Function SaveBookAuthorProfile
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные контролов профиля автора книги и сохраняем в файл профиля для этого автора
-		Dim iFileNo As Integer, sCurrentLine As String
-		Dim oLB As Object
+		Dim oOS As Object, oFA As Object, oTOS As Object, oLB As Object
+
+		oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
 		sFile = ConvertFromUrl(oFileDlg.Files(0))
-		iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
 			sFile = sFile + &quot;.txt&quot;
 		End If
-		Open sFile For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+		
+		oOS = oFA.openFileWrite(sFile)
+		oOS.truncate()
+		oTOS.setOutputStream(oOS)
+		oTOS.setEncoding(&quot;utf-8&quot;)
 	
-		Print #iFileNo, &quot;tiFirst=&quot; &amp; oInfoDlg.Model.tiFirst.Text
-		Print #iFileNo, &quot;tiMiddle=&quot; &amp; oInfoDlg.Model.tiMiddle.Text
-		Print #iFileNo, &quot;tiLast=&quot; &amp; oInfoDlg.Model.tiLast.Text
-		Print #iFileNo, &quot;tiNickname=&quot; &amp; oInfoDlg.Model.tiNickname.Text
-		Print #iFileNo, &quot;tiEmail=&quot; &amp; oInfoDlg.Model.tiEmail.Text
-		Print #iFileNo, &quot;tiHomepage=&quot; &amp; oInfoDlg.Model.tiHomepage.Text
-		Print #iFileNo, &quot;GenreComboBox=&quot; &amp; oInfoDlg.Model.GenreComboBox.Text
+		oTOS.writeString(&quot;tiFirst=&quot; &amp; oInfoDlg.Model.tiFirst.Text &amp; chr(10))
+		oTOS.writeString(&quot;tiMiddle=&quot; &amp; oInfoDlg.Model.tiMiddle.Text &amp; chr(10))
+		oTOS.writeString(&quot;tiLast=&quot; &amp; oInfoDlg.Model.tiLast.Text &amp; chr(10))
+		oTOS.writeString(&quot;tiNickname=&quot; &amp; oInfoDlg.Model.tiNickname.Text &amp; chr(10))
+		oTOS.writeString(&quot;tiEmail=&quot; &amp; oInfoDlg.Model.tiEmail.Text &amp; chr(10))
+		oTOS.writeString(&quot;tiHomepage=&quot; &amp; oInfoDlg.Model.tiHomepage.Text &amp; chr(10))
+		oTOS.writeString(&quot;GenreComboBox=&quot; &amp; oInfoDlg.Model.GenreComboBox.Text &amp; chr(10))
 		oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
-		Print #iFileNo, &quot;LangComboBox=&quot; &amp; oLB.SelectedItemPos
+		oTOS.writeString(&quot;LangComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
 		oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
-		Print #iFileNo, &quot;SrcLangComboBox=&quot; &amp; oLB.SelectedItemPos
-	
-		Close #iFileNo &apos; Закрытие файла
+		oTOS.writeString(&quot;SrcLangComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
+		oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+		oTOS.closeOutput()
 	End If
 	oFileDlg.Dispose()
 	
@@ -270,7 +276,7 @@ Function LoadPublisherProfile
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные и задаем значения контролам профиля издательства
-		ReadProfile(ConvertFromUrl(oFileDlg.Files(0)), 2)
+		ReadProfile(oFileDlg.Files(0), 2)
 	End If
 	oFileDlg.Dispose()
 
@@ -302,18 +308,25 @@ Function SavePublisherProfile
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные контролов профиля издательства и сохраняем в файл профиля для издательства
-		Dim iFileNo As Integer, sCurrentLine As String
+		Dim oOS As Object, oFA As Object, oTOS As Object
+
+		oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+		
 		sFile = ConvertFromUrl(oFileDlg.Files(0))
-		iFileNo = Freefile &apos; Установление свободного файлового манипулятора
 		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
 			sFile = sFile + &quot;.txt&quot;
 		End If
-		Open sFile For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+
+		oOS = oFA.openFileWrite(sFile)
+		oOS.truncate()
+		oTOS.setOutputStream(oOS)
+		oTOS.setEncoding(&quot;utf-8&quot;)
 	
-		Print #iFileNo, &quot;pubPublisherTextField=&quot; &amp; oInfoDlg.Model.pubPublisherTextField.Text
-		Print #iFileNo, &quot;pubCityTextField=&quot; &amp; oInfoDlg.Model.pubCityTextField.Text
-	
-		Close #iFileNo &apos; Закрытие файла
+		oTOS.writeString(&quot;pubPublisherTextField=&quot; &amp; oInfoDlg.Model.pubPublisherTextField.Text &amp; chr(10))
+		oTOS.writeString(&quot;pubCityTextField=&quot; &amp; oInfoDlg.Model.pubCityTextField.Text &amp; chr(10))
+		oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+		oTOS.closeOutput()
 	End If
 	oFileDlg.Dispose()
 	

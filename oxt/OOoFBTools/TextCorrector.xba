@@ -25,10 +25,9 @@ Private bKav As Boolean
 Private bPoints As Boolean
 Private bC As Boolean
 Private bImages As Boolean
-Private sAnchor As String
+Private nAnchor As String
 
 Private sAnchorsList() As String &apos; виды привязки картинки
-Private oCB As Object &apos; Для работы с ListBox`ами
 		
 Sub TextCorrector
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -74,22 +73,21 @@ End Sub
 Function ReadCorrectorSettings As Boolean
 	&apos; Читаем настройки очистки текста и задаем значения контролам формы
 	If FileExists(sCorrectorSettingsFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sCorrectorSettingsFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные стилей
-				SetCorrectorSettings(sCurrentLine)
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sCorrectorSettingsFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные корректора текста
+				SetCorrectorSettingsInControlls(sLine)
 			End If
 		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
+		oTIS.closeInput()
 		ReadCorrectorSettings = True
 	Else
 		ReadCorrectorSettings = False
@@ -98,25 +96,35 @@ End Function
 
 Function SaveCorrectorSettings
 	&apos; записываем настройки очистки текста
-	Dim iFileNo As Integer, sCurrentLine As String
-	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
-	Open sCorrectorSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	Dim oOS As Object, oFA As Object, oTOS As Object
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sCorrectorSettingsFilename)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.setEncoding(&quot;utf-8&quot;)
 	
 	Dim ctrl As Object, i As Integer
 	ctrl = oTextCorrectorDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItem
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
 		End If
 	Next i
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+	oTOS.closeOutput()
 	
-	Close #iFileNo &apos; Закрытие файла
 	&apos; заполняем переменные
 	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
 	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
@@ -131,32 +139,28 @@ Function SaveCorrectorSettings
 	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
 	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
 	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
-	oCB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
-	sAnchor = oCB.SelectedItem
+	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
+	nAnchor = oLB.SelectedItem
 	
 End Function
 
-Function SetCorrectorSettings(sCurrentLine)
+Function SetCorrectorSettingsInControlls(sCurrentLine)
 	On Error Goto ErrorHandler
+	Dim oLB As Object &apos; Для работы с ListBox`ами
 	Dim sCorrectorSettings() As String
 	sCorrectorSettings = Split(sCurrentLine, &quot;=&quot;)
 	
-	If oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+	If oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
+	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
 		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
 		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
 	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
 		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
 	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-		oCB = oTextCorrectorDlg.getControl(sCorrectorSettings(0))
-		Select Case sCorrectorSettings(1)
-			Case &quot;К абзацу&quot;
-				oCB.SelectItemPos(0, True)
-			Case &quot;К символу&quot;
-				oCB.SelectItemPos(1, True)
-			Case &quot;Как символ&quot;
-				oCB.SelectItemPos(2, True)
-		End Select
+		oLB = oTextCorrectorDlg.getControl(sCorrectorSettings(0))
+		oLB.SelectItemPos(sCorrectorSettings(1), True)
 	End If
 
 	cboxImagesEnabled
@@ -168,6 +172,7 @@ End Function
 
 Function SetCorrectorSettingDefault
 	&apos; Установка настроек по умолчанию в контролы
+	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Работа с пробелами и табуляциями
 	oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 1
 	&apos; Работа с абзацами и разрывами
@@ -185,8 +190,8 @@ Function SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
 	&apos; Картинки
 	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
-	oCB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
-	oCB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
+	oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	
 	cboxImagesEnabled
 	cboxBreakLineEnabled
@@ -247,22 +252,22 @@ Function TextCorrectorDlgOk
 	If bImages = True Then
 		Dim oGraphics As Object 
 		Dim oThisGraphic As Object 
-		Dim nAnchor As Integer
+		Dim iAnchor As Integer
 		Dim i As Integer
-		Select Case sAnchor
+		Select Case nAnchor
 			Case &quot;К абзацу&quot;
-				nAnchor = 0
+				iAnchor = 0
 			Case &quot;К символу&quot;
-				nAnchor = 4
+				iAnchor = 4
 			Case &quot;Как символ&quot;
-				nAnchor = 1
+				iAnchor = 1
 			Case Else
-				nAnchor = 0
+				iAnchor = 0
 		End Select
 		oGraphics = oDoc.getGraphicObjects()
 	    For i = 0 to oGraphics.Count - 1
 	    	oThisGraphic = oGraphics.GetByIndex(i)
-			oThisGraphic.AnchorType  = nAnchor
+			oThisGraphic.AnchorType  = iAnchor
 		Next i
 	End If
 	

@@ -5,40 +5,43 @@ Option Explicit
 
 Public sSettingsFilename As String
 
-Private oCB As Object &apos; Для работы с ListBox`ами
-
 Function pmxCurDir() As String
 	&apos; Возвращает путь к папке конфигурации пользователя
 	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
 	Dim oPathSettings
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
-	pmxCurDir = oPathSettings.UserConfig&apos;Work
+	pmxCurDir = oPathSettings.UserConfig
 End Function
 	
-Function ReadSettings
+Function ReadSettings(bInCtrls As Boolean) As Boolean
 	&apos; Читаем установки и задаем значения контролам
 	If FileExists(sSettingsFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sSettingsFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем настройки
-				SetSettings(sCurrentLine)
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sSettingsFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				If bInCtrls = True Then
+					&apos; Устанавливаем настройки в контроды
+					SetSettingsInControlls(sLine)
+				Else
+					&apos; Устанавливаем настройки в переменные
+					SetSettingsInVars(sLine)
+				End If
 			End If
 		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
+		oTIS.closeInput()
 	End If
 End Function
 
-Function SetSettings(sCurrentLine)
+Function SetSettingsInControlls(sCurrentLine)
 	On Error Goto ErrorHandler
+	Dim oLB As Object &apos; Для работы с ListBox`ами
 	Dim sSetting() As String
 	sSetting = Split(sCurrentLine, &quot;=&quot;)
 	
@@ -49,58 +52,8 @@ Function SetSettings(sCurrentLine)
 	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
 		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
 	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-		oCB = oServiceDlg.getControl(sSetting(0))
-		If oCB.Model.Name = &quot;cmbboxStyle&quot; Then
-			Select Case sSetting(1)
-				Case &quot;x&quot;
-					oCB.SelectItemPos(0, True)
-				Case &quot;[x]&quot;
-					oCB.SelectItemPos(1, True)
-				Case &quot;[ x ]&quot;
-					oCB.SelectItemPos(2, True)
-				Case &quot;{x}&quot;
-					oCB.SelectItemPos(3, True)
-				Case &quot;{ x }&quot;
-					oCB.SelectItemPos(4, True)
-				Case &quot;(x)&quot;
-					oCB.SelectItemPos(5, True)
-				Case &quot;( x )&quot;
-					oCB.SelectItemPos(6, True)
-			End Select
-		Else
-			Select Case sSetting(1)
-				Case &quot;&quot;
-					oCB.SelectItemPos(0, True)
-				Case &quot;Слева&quot;
-					If oCB.Model.Name = &quot;cmbboxAdjTextFrame&quot; Then
-						oCB.SelectItemPos(0, True)
-					Else
-						oCB.SelectItemPos(1, True)
-					End If
-				Case &quot;По Центру&quot;
-					If oCB.Model.Name = &quot;cmbboxAdjTextFrame&quot; Then
-						oCB.SelectItemPos(1, True)
-					Else
-						oCB.SelectItemPos(2, True)
-					End If
-				Case &quot;Справа&quot;
-					If oCB.Model.Name = &quot;cmbboxAdjTextFrame&quot; Then
-						oCB.SelectItemPos(2, True)
-					Else
-						oCB.SelectItemPos(3, True)
-					End If
-				Case &quot;Сверху&quot;
-					oCB.SelectItemPos(1, True)
-				Case &quot;Снизу&quot;
-					oCB.SelectItemPos(3, True)
-				Case &quot;Таблица&quot;
-					oCB.SelectItemPos(0, True)
-				Case &quot;Текст&quot;
-					oCB.SelectItemPos(1, True)
-				Case &quot;Цитата&quot;
-					oCB.SelectItemPos(2, True)
-			End Select
-		End If
+		oLB = oServiceDlg.getControl(sSetting(0))
+		oLB.SelectItemPos(sSetting(1), True)
 	End If
 	Exit Function
 	ErrorHandler: &apos; идем дальше
@@ -108,33 +61,43 @@ End Function
 
 Function SaveSettings
 	&apos; записываем установки
-	Dim iFileNo As Integer, sCurrentLine As String
-	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
-	Open sSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	Dim oOS As Object, oFA As Object, oTOS As Object
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sSettingsFilename)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.setEncoding(&quot;utf-8&quot;)
 	
 	Dim ctrl As Object, i As Integer
 	ctrl = oServiceDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItem
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
 		End If
 	Next i
-	
-	Close #iFileNo &apos; Закрытие файла
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+	oTOS.closeOutput()
 End Function
 
 Function SetDefaultSettingsInControls
 	&apos; Настройки По умолчанию - в контролы
+	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Сноски
 	oServiceDlg.Model.cboxStyleFootnote.State = 1
-	oCB = oServiceDlg.getControl(&quot;cmbboxStyle&quot;)
-	oCB.SelectItemPos(1, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxStyle&quot;)
+	oLB.SelectItemPos(1, True)
 	oServiceDlg.Model.cmbboxTitle.Text = &quot;Примечания&quot;
 	oServiceDlg.Model.cboxSpace.State = 0
 	oServiceDlg.Model.cboxNotesElements.State = 1
@@ -154,19 +117,19 @@ Function SetDefaultSettingsInControls
 	&apos; Картинки
 	oServiceDlg.Model.cboxImageTitle.State = 0
 	&apos; Текстовые врезки
-	oCB = oServiceDlg.getControl(&quot;cmbboxTextFrame&quot;)
-	oCB.SelectItemPos(0, True)
-	oCB = oServiceDlg.getControl(&quot;cmbboxAdjTextFrame&quot;)
-	oCB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxTextFrame&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxAdjTextFrame&quot;)
+	oLB.SelectItemPos(0, True)
 	&apos; Таблицы
-	oCB = oServiceDlg.getControl(&quot;cmbboxHeaderTRA&quot;)
-	oCB.SelectItemPos(0, True)
-	oCB = oServiceDlg.getControl(&quot;cmbboxHeaderTHV&quot;)
-	oCB.SelectItemPos(0, True)
-	oCB = oServiceDlg.getControl(&quot;cmbboxLineTRA&quot;)
-	oCB.SelectItemPos(0, True)
-	oCB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
-	oCB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxHeaderTRA&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxHeaderTHV&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxLineTRA&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
+	oLB.SelectItemPos(0, True)
 	&apos; Разное
 	oServiceDlg.Model.cboxCorrect.State = 1
 	oServiceDlg.Model.cboxDelEL.State = 0
@@ -182,34 +145,13 @@ Function SetDefaultSettingsInControls
 	lstboxTextFrameChange &apos; для доспупности вида выравнивания Текстовых Врезок
 End Function
 
-Function ReadSettingsInVars As Boolean
-	&apos; Читаем настройки в переменные
-	If FileExists(sSettingsFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sSettingsFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные стилей
-				SetSettingsInVars(sCurrentLine)
-			End If
-		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
-		ReadSettingsInVars = True
-	Else
-		ReadSettingsInVars = False
-	End If
-End Function
-
 Function SetSettingsInVars(sCurrentLine)
 	Dim sSetting() As String
 	sSetting = Split(sCurrentLine, &quot;=&quot;)
+&apos;	Dim s As String
+&apos;	s = sSetting(1)
+&apos;	ReplaceFromString(s, chr(10), &quot;&quot;)
+&apos;	sSetting(1) = s
 	Select Case sSetting(0)
 		&apos; Сноски
 		Case &quot;cboxStyleFootnote&quot;
@@ -218,25 +160,25 @@ Function SetSettingsInVars(sCurrentLine)
 			bNotesElements = sSetting(1)
 		Case &quot;cmbboxStyle&quot;
 			Select Case sSetting(1)
-				Case &quot;x&quot;
+				Case &quot;0&quot;
 					sFootnoteLeft = &quot;&quot;
 					sFootnoteRight = &quot;&quot;
-				Case &quot;[x]&quot;
+				Case &quot;1&quot;
 					sFootnoteLeft = &quot;[&quot;
 					sFootnoteRight = &quot;]&quot;
-				Case &quot;[ x ]&quot;
+				Case &quot;2&quot;
 					sFootnoteLeft = &quot;[ &quot;
 					sFootnoteRight = &quot; ]&quot;
-				Case &quot;{x}&quot;
+				Case &quot;3&quot;
 					sFootnoteLeft = &quot;{&quot;
 					sFootnoteRight = &quot;}&quot;
-				Case &quot;{ x }&quot;
+				Case &quot;4&quot;
 					sFootnoteLeft = &quot;{ &quot;
 					sFootnoteRight = &quot; }&quot;
-				Case &quot;(x)&quot;
+				Case &quot;5&quot;
 					sFootnoteLeft = &quot;(&quot;
 					sFootnoteRight = &quot;)&quot;
-				Case &quot;( x )&quot;
+				Case &quot;6&quot;
 					sFootnoteLeft = &quot;( &quot;
 					sFootnoteRight = &quot; )&quot;
 				Case Else
@@ -274,17 +216,17 @@ Function SetSettingsInVars(sCurrentLine)
 		&apos; Текстовые врезки
 		Case &quot;cmbboxTextFrame&quot;
 			Select Case sSetting(1)
-				Case &quot;Таблица&quot;
+				Case &quot;0&quot;
 					sTextFrameToFB2 = &quot;Таблица&quot;
-				Case &quot;Текст&quot;
+				Case &quot;1&quot;
 					sTextFrameToFB2 = &quot;Текст&quot;
-				Case &quot;Цитата&quot;
+				Case &quot;2&quot;
 					sTextFrameToFB2 = &quot;Цитата&quot;
 				Case Else
 					sTextFrameToFB2 = &quot;Таблица&quot;
 			End Select
 		Case &quot;cmbboxAdjTextFrame&quot;
-			sAdjTextFrame = GetLCR(sSetting(1))
+			sAdjTextFrame = GetLCRATF(sSetting(1))
 		&apos; Таблицы
 		Case &quot;cmbboxHeaderTRA&quot;
 			sHeaderTRA 	= GetLCR(sSetting(1))
@@ -312,13 +254,26 @@ Function SetSettingsInVars(sCurrentLine)
 	End Select
 End Function
 
+Function GetLCRATF(sSetting) As String
+	Select Case sSetting
+		Case &quot;0&quot; &apos; &quot;Слева&quot;
+			GetLCRATF = &quot;left&quot;
+		Case &quot;1&quot; &apos; &quot;По Центру&quot;
+			GetLCRATF = &quot;center&quot;
+		Case &quot;2&quot; &apos; &quot;Справа&quot;
+			GetLCRATF = &quot;right&quot;
+		Case Else
+			GetLCRATF = &quot;&quot;
+	End Select
+End Function
+
 Function GetLCR(sSetting) As String
 	Select Case sSetting
-		Case &quot;Слева&quot;
+		Case &quot;1&quot; &apos; &quot;Слева&quot;
 			GetLCR = &quot;left&quot;
-		Case &quot;По Центру&quot;
+		Case &quot;2&quot; &apos; &quot;По Центру&quot;
 			GetLCR = &quot;center&quot;
-		Case &quot;Справа&quot;
+		Case &quot;3&quot; &apos; &quot;Справа&quot;
 			GetLCR = &quot;right&quot;
 		Case Else
 			GetLCR = &quot;&quot;
@@ -327,11 +282,11 @@ End Function
 
 Function GetTMB(sSetting) As String
 	Select Case sSetting
-		Case &quot;Сверху&quot;
+		Case &quot;1&quot; &apos; &quot;Сверху&quot;
 			GetTMB = &quot;top&quot;
-		Case &quot;По Центру&quot;
+		Case &quot;2&quot; &apos; &quot;По Центру&quot;
 			GetTMB = &quot;middle&quot;
-		Case &quot;Снизу&quot;
+		Case &quot;3&quot; &apos; &quot;Снизу&quot;
 			GetTMB = &quot;bottom&quot;
 		Case Else
 			GetTMB =  &quot;&quot;

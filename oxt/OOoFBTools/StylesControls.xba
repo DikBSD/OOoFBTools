@@ -90,13 +90,19 @@ Function SetUserStyles
 	SetGeneralStylesControlsDefault
 	SetServiceStylesControlsDefault
 	&apos; Только теперь считывание стилей из файла
-	ReadStyles
+	ReadStyles(True)
 	
 	With oStylesDlg.Model
 		.Title = &quot;Определение пользовательских стилей&quot;
 		.Height = 244
 		.Width = 350
 	End With
+	
+	If oStylesDlg.GetControl(&quot;optbtnGeneral&quot;).State	= True Then
+		oStylesDlg.Model.Step = 1
+	ElseIf oStylesDlg.GetControl(&quot;optbtnService&quot;).State	= True Then
+		oStylesDlg.Model.Step = 2
+	End If
 	
 	oStylesDlg.execute()
 	
@@ -119,25 +125,29 @@ Function StylesDlgCanceled
 	oStylesDlg.endExecute()
 End Function
 
-Function ReadStyles As Boolean
+Function ReadStyles(bInCtrls As Boolean) As Boolean
 	&apos; Читаем стили и задаем значения контролам формы стилей
 	If FileExists(sStylesFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sStylesFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные стилей
-				SetStyles(sCurrentLine)
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sStylesFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				If bInCtrls = True Then
+					&apos; Устанавливаем данные стилей в контроды
+					SetStylesInControlls(sLine)
+				Else
+					&apos; Устанавливаем данные стилей в переменные
+					SetStylesInVars(sLine)
+				End If
 			End If
 		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
+		oTIS.closeInput()
 		ReadStyles = True
 	Else
 		ReadStyles = False
@@ -146,27 +156,52 @@ End Function
 
 Function SaveStyles
 	&apos; записываем стили
-	Dim iFileNo As Integer, sCurrentLine As String
-	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
-	Open sStylesFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
+	Dim oOS As Object, oFA As Object, oTOS As Object
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sStylesFilename)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.setEncoding(&quot;utf-8&quot;)
 	
 	Dim ctrl As Object, i As Integer
 	ctrl = oStylesDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
-		&apos; сохраняем данные только Edit
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
 		End If
 	Next i
-	
-	Close #iFileNo &apos; Закрытие файла
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+	oTOS.closeOutput()
 End Function
 
-Function SetStyles(sCurrentLine)
+Function SetStylesInControlls(sCurrentLine)
 	On Error Goto ErrorHandler
 	Dim sStyles() As String
 	sStyles = Split(sCurrentLine, &quot;=&quot;)
-	oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
+	If oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+		oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
+	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+		oStylesDlg.GetControl(sStyles(0)).State = sStyles(1)
+	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+		oStylesDlg.GetControl(sStyles(0)).State = sStyles(1)
+	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+		oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
+	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+		oLB = oStylesDlg.getControl(sStyles(0))
+		oLB.SelectItemPos(sStyles(1), True)
+	End If
 	Exit Function
 	ErrorHandler: &apos; идем дальше
 End Function
@@ -252,31 +287,6 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_CustomInfo&quot;).Text = sStyle_CustomInfo
 	oStylesDlg.GetControl(&quot;tf_CustomInfoType&quot;).Text = sStyle_CustomInfoType
 	oStylesDlg.GetControl(&quot;tf_CustomInfoValue&quot;).Text = sStyle_CustomInfoValue
-End Function
-
-Function ReadStylesInVars As Boolean
-	&apos; Читаем стили в переменные
-	If FileExists(sStylesFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sStylesFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные стилей
-				SetStylesInVars(sCurrentLine)
-			End If
-		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
-		ReadStylesInVars = True
-	Else
-		ReadStylesInVars = False
-	End If
 End Function
 
 Function SetStylesInVars(sCurrentLine)
