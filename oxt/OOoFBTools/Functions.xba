@@ -3,48 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Functions" script:language="StarBasic">REM  *****  BASIC  *****
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
-Function pmxCurDir() As String
-	&apos; Возвращает путь к папке конфигурации пользователя
-	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
-	Dim oPathSettings
-	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
-	pmxCurDir = oPathSettings.UserConfig
-End Function
-
-Function ToScreenCenter(oDlg)
-	&apos; центрирование на экране
-	Dim CurPosSize As New com.sun.star.awt.Rectangle
-	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
-	oFrame = ThisComponent.getCurrentController().Frame
-	FramePosSize = oFrame.getComponentWindow.PosSize
-	xWindowPeer = oDlg.getPeer()
-	CurPosSize = oDlg.getPosSize()
-	WindowHeight = FramePosSize.Height
-	WindowWidth = FramePosSize.Width
-	DialogWidth = CurPosSize.Width
-	DialogHeight = CurPosSize.Height
-	iXPos = ((WindowWidth/2) - (DialogWidth/2))
-	iYPos = ((WindowHeight/2) - (DialogHeight/2))
-	oDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
-End Function
-
-Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
-	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
-	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
-	Dim i As Integer, c As Integer
-	c = 0 &apos; счетчик число изменений в строке
-	i = InStr(sSource, sDel)
-	If i=0 Then
-		ReplaceFromString = 0
-		Exit Function
-	End If
-	Do While i &gt; 0
-		Mid(sSource, i, Len(sDel), sReplace)
-		i = InStr(i, sSource, sDel)
-		c = c+1
-	Loop
-	ReplaceFromString = c
-End Function
+&apos; /// Работа с файлами ///
 
 Function SaveSettings(sSettingsFilename As String, oDlg As Object)
 	&apos; записываем установки
@@ -100,5 +59,290 @@ Function SetSettingsInControlls(sCurrentLine As String, oDlg)
 	ErrorHandler: &apos; идем дальше
 End Function
 
+Function pmxCurDir() As String
+	&apos; Возвращает путь к папке конфигурации пользователя
+	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
+	Dim oPathSettings
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	pmxCurDir = oPathSettings.UserConfig
+End Function
+
+&apos; /// Работа с экраном ///
+
+Function ToScreenCenter(oDlg)
+	&apos; центрирование на экране
+	Dim CurPosSize As New com.sun.star.awt.Rectangle
+	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
+	oFrame = ThisComponent.getCurrentController().Frame
+	FramePosSize = oFrame.getComponentWindow.PosSize
+	xWindowPeer = oDlg.getPeer()
+	CurPosSize = oDlg.getPosSize()
+	WindowHeight = FramePosSize.Height
+	WindowWidth = FramePosSize.Width
+	DialogWidth = CurPosSize.Width
+	DialogHeight = CurPosSize.Height
+	iXPos = ((WindowWidth/2) - (DialogWidth/2))
+	iYPos = ((WindowHeight/2) - (DialogHeight/2))
+	oDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
+End Function
+
+&apos; /// Работа с числами ///
+
+Function IsEvenNumber(lNumber As Long) As Boolean
+	&apos; Если число четное - возвращаем True, если нечетное - False
+	Dim b
+	b = lNumber Mod 2
+	If b = 0 Then
+		IsEvenNumber = True
+	Else
+		IsEvenNumber = False
+	End If
+End Function
+
+&apos; /// Работа с массивами ///
+
+Function AddNewItemToArray1(sArray() As String, sValue As String)
+	Dim j As Long
+	j = Ubound(sArray()) + 1
+	ReDim Preserve sArray(j)
+	sArray(j) = sValue
+End Function
+
+Function AddNewItemToArray2(sArray As String, sValue1 As String, sValue2 As String)
+	Dim l As Long
+	l = Ubound(sArray(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sArray(l, 1)
+	Else Redim sArray(l, 1)
+	End If
+	
+	sArray(l,0) = sValue1
+	sArray(l,1) = sValue2
+	
+End Function
+
+Function AddLineInArray(sTextArray() As String, sText As String, oProgressBar)
+	Dim l As Long
+	l = Ubound(sTextArray()) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sTextArray(l)
+	Else Redim sTextArray(l)
+	End If
+	sTextArray(l) = sText
+	oProgressBar.setValue(l)
+End Function
+
+&apos; /// Корректура строки ///
+
+Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
+	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
+	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
+	Dim i As Integer, c As Integer
+	c = 0 &apos; счетчик число изменений в строке
+	i = InStr(sSource, sDel)
+	If i=0 Then
+		ReplaceFromString = 0
+		Exit Function
+	End If
+	Do While i &gt; 0
+		Mid(sSource, i, Len(sDel), sReplace)
+		i = InStr(i, sSource, sDel)
+		c = c+1
+	Loop
+	ReplaceFromString = c
+End Function
+
+Function CorrectPara(sPara As String) As String
+	&apos; корректировка абзаца - отлов символов &lt;,&gt;,&amp;
+	Dim SA() As String
+	Dim i As Integer, iLen As Integer
+	Dim newPara As String, sChar As String
+	iLen = Len(sPara)&apos; длина анализируемой строки
+	For i = 1 To iLen
+		sChar = Mid(sPara, i, 1)
+		If sChar = &quot;&amp;&quot; Then
+			newPara = newPara + &quot;&amp;amp;&quot;
+		ElseIf sChar = &quot;&lt;&quot; Then
+			newPara = newPara + &quot;&amp;lt;&quot;
+		ElseIf sChar = &quot;&gt;&quot; Then
+			newPara = newPara + &quot;&amp;gt;&quot;
+		Else
+			newPara = newPara + sChar
+		End If
+	Next i
+	CorrectPara = newPara
+End Function
+
+Function FB2CorrectWord(sWord As String, iResult As Integer)
+	&apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
+	Dim SA() As String
+	Dim i As Integer, iLen As Integer
+	Dim newWord As String, sChar As String
+	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
+	For i = 1 To iLen
+		sChar = Mid(sWord, i, 1)
+		If sChar = &quot;&amp;&quot; Then
+			newWord = newWord + &quot;&amp;amp;&quot;
+			iResult(2) = iResult(2) + 1
+		ElseIf sChar = &quot;&lt;&quot; Then
+			newWord = newWord + &quot;&amp;lt;&quot;
+			iResult(0) = iResult(0) + 1
+		ElseIf sChar = &quot;&gt;&quot; Then
+			newWord = newWord + &quot;&amp;gt;&quot;
+			iResult(1) = iResult(1) + 1
+		Else
+			newWord = newWord + sChar
+		End If
+	Next i
+	sWord = newWord
+End Function
+
+Function FB2CorrectBracketsWord(sWord As String, iResult As Integer)
+	&apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
+	Dim SA() As String
+	Dim i As Integer, iLen As Integer
+	Dim newWord As String, sChar As String
+	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
+	For i = 1 To iLen
+		sChar = Mid(sWord, i, 1)
+		If sChar = &quot;&lt;&quot; Then
+			newWord = newWord + &quot;&amp;lt;&quot;
+			iResult(0) = iResult(0) + 1
+		ElseIf sChar = &quot;&gt;&quot; Then
+			newWord = newWord + &quot;&amp;gt;&quot;
+			iResult(1) = iResult(1) + 1
+		Else
+			newWord = newWord + sChar
+		End If
+	Next i
+	sWord = newWord
+End Function
+
+Function FB2CorrectAmpWord(sWord As String, iResult As Integer)
+	&apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
+	Dim SA() As String
+	Dim i As Integer, iLen As Integer
+	Dim newWord As String, sChar As String
+	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
+	For i = 1 To iLen
+		sChar = Mid(sWord, i, 1)
+		If sChar = &quot;&amp;&quot; Then
+			newWord = newWord + &quot;&amp;amp;&quot;
+			iResult(2) = iResult(2) + 1
+		Else
+			newWord = newWord + sChar
+		End If
+	Next i
+	sWord = newWord
+End Function
+
+Function RemoveSuperfluous(sSource As String, iResult As Integer)
+	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
+	iResult(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
+	iResult(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
+	iResult(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
+	iResult(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
+	iResult(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
+	iResult(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
+End Function
+
+Function ClearStyleSpace(sSource As String, iResult1 As Integer, iResult2 As Integer)
+	&apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
+	iResult1(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
+	iResult1(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt; &lt;/emphasis&gt;&quot;, &quot; &quot;)
+	iResult1(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt; &lt;/sub&gt;&quot;, &quot; &quot;)
+	iResult1(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt; &lt;/sup&gt;&quot;, &quot; &quot;)
+	iResult1(4) = ReplaceFromString(sSource, &quot;&lt;code&gt; &lt;/code&gt;&quot;, &quot; &quot;)
+	iResult1(5) = ReplaceFromString(sSource, &quot;&lt;strikethrough&gt; &lt;/strikethrough&gt;&quot;, &quot; &quot;)
+	
+	iResult2(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt; &lt;strong&gt;&quot;, &quot; &quot;)
+	iResult2(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt; &lt;emphasis&gt;&quot;, &quot; &quot;)
+	iResult2(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt; &lt;sub&gt;&quot;, &quot; &quot;)
+	iResult2(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt; &lt;sup&gt;&quot;, &quot; &quot;)
+	iResult2(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt; &lt;code&gt;&quot;, &quot; &quot;)
+	iResult2(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt; &lt;strikethrough&gt;&quot;, &quot; &quot;)
+End Function
+
+Function WorkingRoundBracket(sSource As String, iResult As Integer)
+	&apos; Обработка круглых скобок
+	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;(&quot;, &quot;(&lt;strong&gt;&quot;)
+	iResult(0) = iResult(0) &amp; ReplaceFromString(sSource, &quot;)&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;)&quot;)
+	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;(&quot;, &quot;(&lt;emphasis&gt;&quot;)
+	iResult(1) = iResult(1) &amp; ReplaceFromString(sSource, &quot;)&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;)&quot;)
+	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;(&quot;, &quot;(&lt;sub&gt;&quot;)
+	iResult(2) = iResult(2) &amp; ReplaceFromString(sSource, &quot;)&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;)&quot;)
+	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;(&quot;, &quot;(&lt;sup&gt;&quot;)
+	iResult(3) = iResult(3) &amp; ReplaceFromString(sSource, &quot;)&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;)&quot;)
+	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;(&quot;, &quot;(&lt;code&gt;&quot;)
+	iResult(4) = iResult(4) &amp; ReplaceFromString(sSource, &quot;)&lt;/code&gt;&quot;, &quot;&lt;/code&gt;)&quot;)
+	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;(&quot;, &quot;(&lt;sup&gt;&quot;)
+	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;)&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;)&quot;)
+End Function
+
+Function WorkingSquarteBracket(sSource As String, iResult As Integer)
+	&apos; Обработка круглых скобок
+	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;[&quot;, &quot;[&lt;strong&gt;&quot;)
+	iResult(0) = iResult(0) &amp; ReplaceFromString(sSource, &quot;]&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;]&quot;)
+	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;[&quot;, &quot;[&lt;emphasis&gt;&quot;)
+	iResult(1) = iResult(1) &amp; ReplaceFromString(sSource, &quot;]&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;]&quot;)
+	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;[&quot;, &quot;[&lt;sub&gt;&quot;)
+	iResult(2) = iResult(2) &amp; ReplaceFromString(sSource, &quot;]&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;]&quot;)
+	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;[&quot;, &quot;[&lt;sup&gt;&quot;)
+	iResult(3) = iResult(3) &amp; ReplaceFromString(sSource, &quot;]&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;]&quot;)
+	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;[&quot;, &quot;[&lt;code&gt;&quot;)
+	iResult(4) = iResult(4) &amp; ReplaceFromString(sSource, &quot;]&lt;/code&gt;&quot;, &quot;&lt;/code&gt;]&quot;)
+	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;[&quot;, &quot;[&lt;sup&gt;&quot;)
+	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;]&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;]&quot;)
+End Function
+
+Function WorkingFiguredBracket(sSource As String, iResult As Integer)
+	&apos; Обработка круглых скобок
+	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;{&quot;, &quot;{&lt;strong&gt;&quot;)
+	iResult(0) = iResult(0) &amp; ReplaceFromString(sSource, &quot;}&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;}&quot;)
+	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;{&quot;, &quot;{&lt;emphasis&gt;&quot;)
+	iResult(1) = iResult(1) &amp; ReplaceFromString(sSource, &quot;}&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;}&quot;)
+	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;{&quot;, &quot;{&lt;sub&gt;&quot;)
+	iResult(2) = iResult(2) &amp; ReplaceFromString(sSource, &quot;}&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;}&quot;)
+	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
+	iResult(3) = iResult(3) &amp; ReplaceFromString(sSource, &quot;}&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;}&quot;)
+	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;{&quot;, &quot;{&lt;code&gt;&quot;)
+	iResult(4) = iResult(4) &amp; ReplaceFromString(sSource, &quot;}&lt;/code&gt;&quot;, &quot;&lt;/code&gt;}&quot;)
+	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
+	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;}&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;}&quot;)
+End Function
+
+&apos; /// Для таблиц ///
+
+Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
+	&apos;  возвращает максимальное число строк (абзацев) в ячеке для определенной строки таблицы
+	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
+	Dim Cell
+	nMaxLines = 0
+	For iCol = 0 To oTable.Columns.Count-1
+		Cell = oTable.getCellByName(CellNames(iCel))
+		nLines = UBound( Split( Cell.getString(), chr(10) ) )
+		If nMaxLines &lt; nLines Then
+			nMaxLines = nLines
+		End If
+		iCel = iCel+1
+	Next iCol
+	GetMaxLineInRow = nMaxLines
+End Function
+
+Function GetFB2ParagraphAdjust(CellCursor) As String
+	&apos; возвращает выравнивание ячейки талицы по ширине в формате fb2
+	Select Case CellCursor.paraAdjust
+		Case com.sun.star.style.ParagraphAdjust.LEFT
+			GetFB2ParagraphAdjust = &quot;left&quot;
+		Case com.sun.star.style.ParagraphAdjust.CENTER
+			GetFB2ParagraphAdjust = &quot;center&quot;
+		Case com.sun.star.style.ParagraphAdjust.RIGHT
+			GetFB2ParagraphAdjust = &quot;right&quot;
+		Case Else
+			GetFB2ParagraphAdjust =  &quot;left&quot;
+	End Select
+End Function
+
+&apos; /// ///
 
 </script:module>

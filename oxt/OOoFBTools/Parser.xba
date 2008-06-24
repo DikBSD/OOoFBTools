@@ -652,19 +652,6 @@ Function FormatCellText(CellCursor As Object, sCellString As String) As String
 	FormatCellText = sRes
 End Function
 
-Function GetParagraphAdjust(CellCursor) As String
-	Select Case CellCursor.paraAdjust
-		Case com.sun.star.style.ParagraphAdjust.LEFT
-			GetParagraphAdjust = &quot;left&quot;
-		Case com.sun.star.style.ParagraphAdjust.CENTER
-			GetParagraphAdjust = &quot;center&quot;
-		Case com.sun.star.style.ParagraphAdjust.RIGHT
-			GetParagraphAdjust = &quot;right&quot;
-		Case Else
-			GetParagraphAdjust =  &quot;left&quot;
-	End Select
-End Function
-
 Function OOo23TextTableParser(iCurrentTable As Integer)
 	Dim iHeaderRowCount As Integer
 	Dim oTables As Object, oTable As Object
@@ -746,7 +733,7 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 		End If
 		
 		&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
-		sTagTDH = &quot;&lt;&quot; &amp; sTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetParagraphAdjust(CellCursor)
+		sTagTDH = &quot;&lt;&quot; &amp; sTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust(CellCursor)
 		If sTVA &lt;&gt; &quot;&quot; Then
 			sTagTDH = sTagTDH &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
 		End If
@@ -825,22 +812,6 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 	MakeVirtualFormatRow = sRow
 End Function
 
-Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
-	&apos;  возвращает максимальное число строк (абзацев) в ячеки для определенной строки таблицы
-	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
-	Dim Cell
-	nMaxLines = 0
-	For iCol = 0 To oTable.Columns.Count-1
-		Cell = oTable.getCellByName(CellNames(iCel))
-		nLines = UBound( Split( Cell.getString(), chr(10) ) )
-		If nMaxLines &lt; nLines Then
-			nMaxLines = nLines
-		End If
-		iCel = iCel+1
-	Next iCol
-	GetMaxLineInRow = nMaxLines
-End Function
-
 Function TextFrameParser(oContent As Object)
 	&apos; Парсер Текстовой Врезки
 	Dim sText() As String, iC As Integer, sTable As String, sCite As String
@@ -883,27 +854,6 @@ Function TextFrameParser(oContent As Object)
 				AddBodyArray(sText(iC), &quot;Para&quot;, False)
 			Next iC
 	End Select
-End Function
-
-Function CorrectPara(sPara As String) As String
-	&apos; корректировка абзаца - отлов символов &lt;,&gt;,&amp;
-	Dim SA() As String
-	Dim i As Integer, iLen As Integer
-	Dim newPara As String, sChar As String
-	iLen = Len(sPara)&apos; длина анализируемой строки
-	For i = 1 To iLen
-		sChar = Mid(sPara, i, 1)
-		If sChar = &quot;&amp;&quot; Then
-			newPara = newPara + &quot;&amp;amp;&quot;
-		ElseIf sChar = &quot;&lt;&quot; Then
-			newPara = newPara + &quot;&amp;lt;&quot;
-		ElseIf sChar = &quot;&gt;&quot; Then
-			newPara = newPara + &quot;&amp;gt;&quot;
-		Else
-			newPara = newPara + sChar
-		End If
-	Next i
-	CorrectPara = newPara
 End Function
 
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)

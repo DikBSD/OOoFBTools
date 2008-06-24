@@ -96,6 +96,7 @@ End Function
 
 Function SaveCorrectorSettings
 	&apos; записываем настройки очистки текста
+	Dim oLB As Object &apos; Для работы с ListBox`ами
 	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg)
 	
 	&apos; заполняем переменные
@@ -191,7 +192,10 @@ Function TextCorrectorDlgOk
 	End If
 	
 	&apos; Принятие параметров чистки текста
-	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg) &apos; сохранение настроек чистки текста
+	bCorrectorExecute = True
+	oTextCorrectorDlg.endExecute()
+	
+	SaveCorrectorSettings &apos; сохранение настроек чистки текста
 
 	Dim oProgressBar
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
@@ -643,9 +647,6 @@ Function TextCorrectorDlgOk
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(84)
 	End If
-	
-	bCorrectorExecute = True
-	oTextCorrectorDlg.endExecute()
 	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sConvertorName
 	oProgressBar.end
