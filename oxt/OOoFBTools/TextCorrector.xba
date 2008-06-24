@@ -199,7 +199,7 @@ Function TextCorrectorDlgOk
 
 	Dim oProgressBar
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 84)
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
 	oProgressBar.setValue(0)
 	
 	&apos; Очистка текста
@@ -636,16 +636,34 @@ Function TextCorrectorDlgOk
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(83)
-		&apos; Удаляем все множественные неразрывные пробелы
-&apos;		oReplace.SearchString = &quot; {1,}&quot;
-&apos;		oReplace.ReplaceString = &quot; &quot;
-&apos;		oDoc.ReplaceAll(oReplace)
-&apos;		oProgressBar.setValue(84)
-		&apos; Удаляем все множественные пробелы
-		oReplace.SearchString = &quot; {1,}&quot;
+		&apos; Обработка множественных пробелов
+		&apos;oReplace.SearchString = &quot;  {1,2}&quot;
+		oReplace.SearchString = &quot; +&quot;
 		oReplace.ReplaceString = &quot; &quot;
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(84)
+		&apos; Обработка множественных неразрывных пробелов
+		oReplace.SearchString = &quot; +&quot;
+		oReplace.ReplaceString = &quot; &quot;
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(85)
+		&apos; Обработка оставшихся комбинаций пробелов и неразрывных пробелов
+		oReplace.SearchString = &quot;   &quot; &apos; неразрывный, простой, неразрывный
+		oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(86)
+		oReplace.SearchString = &quot;   &quot; &apos; простой, неразрывный, простой
+		oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(87)
+		oReplace.SearchString = &quot;  &quot; &apos; неразрывный, простой
+		oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(88)
+		oReplace.SearchString = &quot;  &quot; &apos; простой, неразрывный
+		oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(89)
 	End If
 	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sConvertorName
