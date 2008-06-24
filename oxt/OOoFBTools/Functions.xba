@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Functions" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
+
+Function pmxCurDir() As String
+	&apos; Возвращает путь к папке конфигурации пользователя
+	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
+	Dim oPathSettings
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	pmxCurDir = oPathSettings.UserConfig
+End Function
+
+Function ToScreenCenter(oDlg)
+	&apos; центрирование на экране
+	Dim CurPosSize As New com.sun.star.awt.Rectangle
+	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
+	oFrame = ThisComponent.getCurrentController().Frame
+	FramePosSize = oFrame.getComponentWindow.PosSize
+	xWindowPeer = oDlg.getPeer()
+	CurPosSize = oDlg.getPosSize()
+	WindowHeight = FramePosSize.Height
+	WindowWidth = FramePosSize.Width
+	DialogWidth = CurPosSize.Width
+	DialogHeight = CurPosSize.Height
+	iXPos = ((WindowWidth/2) - (DialogWidth/2))
+	iYPos = ((WindowHeight/2) - (DialogHeight/2))
+	oDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
+End Function
+
+Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
+	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
+	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
+	Dim i As Integer, c As Integer
+	c = 0 &apos; счетчик число изменений в строке
+	i = InStr(sSource, sDel)
+	If i=0 Then
+		ReplaceFromString = 0
+		Exit Function
+	End If
+	Do While i &gt; 0
+		Mid(sSource, i, Len(sDel), sReplace)
+		i = InStr(i, sSource, sDel)
+		c = c+1
+	Loop
+	ReplaceFromString = c
+End Function
+
+Function SaveSettings(sSettingsFilename As String, oDlg As Object)
+	&apos; записываем установки
+	Dim oOS As Object, oFA As Object, oTOS As Object
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sSettingsFilename)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.setEncoding(&quot;utf-8&quot;)
+	
+	Dim ctrl As Object, i As Integer
+	ctrl = oDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
+		End If
+	Next i
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+	oTOS.closeOutput()
+End Function
+
+Function SetSettingsInControlls(sCurrentLine As String, oDlg)
+	On Error Goto ErrorHandler
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+	Dim sSetting() As String
+	sSetting = Split(sCurrentLine, &quot;=&quot;)
+	
+	If oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+		oDlg.GetControl(sSetting(0)).Text = sSetting(1)
+	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+		oDlg.GetControl(sSetting(0)).State = sSetting(1)
+	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+		oDlg.GetControl(sSetting(0)).Text = sSetting(1)
+	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+		oDlg.GetControl(sSetting(0)).State = sSetting(1)
+	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+		oLB = oDlg.getControl(sSetting(0))
+		oLB.SelectItemPos(sSetting(1), True)
+	End If
+	Exit Function
+	ErrorHandler: &apos; идем дальше
+End Function
+
+
+</script:module>

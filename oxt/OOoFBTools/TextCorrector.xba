@@ -96,34 +96,7 @@ End Function
 
 Function SaveCorrectorSettings
 	&apos; записываем настройки очистки текста
-	Dim oOS As Object, oFA As Object, oTOS As Object
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-
-	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	
-	oOS = oFA.openFileWrite(sCorrectorSettingsFilename)
-	oOS.truncate()
-	oTOS.setOutputStream(oOS)
-	oTOS.setEncoding(&quot;utf-8&quot;)
-	
-	Dim ctrl As Object, i As Integer
-	ctrl = oTextCorrectorDlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
-		End If
-	Next i
-	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
-	oTOS.closeOutput()
+	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg)
 	
 	&apos; заполняем переменные
 	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
@@ -145,29 +118,11 @@ Function SaveCorrectorSettings
 End Function
 
 Function SetCorrectorSettingsInControlls(sCurrentLine)
-	On Error Goto ErrorHandler
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-	Dim sCorrectorSettings() As String
-	sCorrectorSettings = Split(sCurrentLine, &quot;=&quot;)
-	
-	If oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
-	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).State = sCorrectorSettings(1)
-	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-		oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).Text = sCorrectorSettings(1)
-	ElseIf oTextCorrectorDlg.GetControl(sCorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-		oLB = oTextCorrectorDlg.getControl(sCorrectorSettings(0))
-		oLB.SelectItemPos(sCorrectorSettings(1), True)
-	End If
+	SetSettingsInControlls(sCurrentLine, oTextCorrectorDlg)
 
 	cboxImagesEnabled
 	cboxBreakLineEnabled
-	Exit Function
-	
-	ErrorHandler: &apos; идем дальше
+
 End Function
 
 Function SetCorrectorSettingDefault
@@ -236,7 +191,7 @@ Function TextCorrectorDlgOk
 	End If
 	
 	&apos; Принятие параметров чистки текста
-	SaveCorrectorSettings &apos; сохранение настроек чистки текста
+	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg) &apos; сохранение настроек чистки текста
 
 	Dim oProgressBar
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator

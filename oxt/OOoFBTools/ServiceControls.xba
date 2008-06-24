@@ -59,7 +59,7 @@ End Function
 
 Function ServiceDlgOk
 	&apos; Сохраняем настройки в файл
-	SaveSettings
+	SaveSettings(sSettingsFilename, oServiceDlg)
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
@@ -108,23 +108,6 @@ Function lstboxTextFrameChange
 		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = False
 		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = False
 	End If
-End Function
-
-Function ToScreenCenter(oDlg)
-	&apos; центрирование на экране
-	Dim CurPosSize As New com.sun.star.awt.Rectangle
-	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
-	oFrame = ThisComponent.getCurrentController().Frame
-	FramePosSize = oFrame.getComponentWindow.PosSize
-	xWindowPeer = oDlg.getPeer()
-	CurPosSize = oDlg.getPosSize()
-	WindowHeight = FramePosSize.Height
-	WindowWidth = FramePosSize.Width
-	DialogWidth = CurPosSize.Width
-	DialogHeight = CurPosSize.Height
-	iXPos = ((WindowWidth/2) - (DialogWidth/2))
-	iYPos = ((WindowHeight/2) - (DialogHeight/2))
-	oDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
 End Function
 
 </script:module>

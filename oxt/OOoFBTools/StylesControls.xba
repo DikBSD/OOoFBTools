@@ -114,7 +114,7 @@ End Function
 
 Function StylesDlgOk
 	&apos; Принятие стилей
-	SaveStyles &apos; сохраняем стили в файл
+	SaveSettings(sStylesFilename, oStylesDlg) &apos; сохраняем стили в файл
 	
 	bStyleExecute = True
 	oStylesDlg.endExecute()
@@ -140,7 +140,7 @@ Function ReadStyles(bInCtrls As Boolean) As Boolean
 			If sLine &lt;&gt; &quot;&quot; Then
 				If bInCtrls = True Then
 					&apos; Устанавливаем данные стилей в контроды
-					SetStylesInControlls(sLine)
+					SetSettingsInControlls(sLine, oStylesDlg)
 				Else
 					&apos; Устанавливаем данные стилей в переменные
 					SetStylesInVars(sLine)
@@ -152,58 +152,6 @@ Function ReadStyles(bInCtrls As Boolean) As Boolean
 	Else
 		ReadStyles = False
 	End If
-End Function
-
-Function SaveStyles
-	&apos; записываем стили
-	Dim oOS As Object, oFA As Object, oTOS As Object
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-
-	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	
-	oOS = oFA.openFileWrite(sStylesFilename)
-	oOS.truncate()
-	oTOS.setOutputStream(oOS)
-	oTOS.setEncoding(&quot;utf-8&quot;)
-	
-	Dim ctrl As Object, i As Integer
-	ctrl = oStylesDlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
-		End If
-	Next i
-	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
-	oTOS.closeOutput()
-End Function
-
-Function SetStylesInControlls(sCurrentLine)
-	On Error Goto ErrorHandler
-	Dim sStyles() As String
-	sStyles = Split(sCurrentLine, &quot;=&quot;)
-	If oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-		oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-		oStylesDlg.GetControl(sStyles(0)).State = sStyles(1)
-	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-		oStylesDlg.GetControl(sStyles(0)).State = sStyles(1)
-	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-		oStylesDlg.GetControl(sStyles(0)).Text = sStyles(1)
-	ElseIf oStylesDlg.GetControl(sStyles(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-		oLB = oStylesDlg.getControl(sStyles(0))
-		oLB.SelectItemPos(sStyles(1), True)
-	End If
-	Exit Function
-	ErrorHandler: &apos; идем дальше
 End Function
 
 Function SetStylesControlsDefault

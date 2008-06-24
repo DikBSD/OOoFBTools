@@ -5,14 +5,6 @@ Option Explicit
 
 Public sSettingsFilename As String
 
-Function pmxCurDir() As String
-	&apos; Возвращает путь к папке конфигурации пользователя
-	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
-	Dim oPathSettings
-	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
-	pmxCurDir = oPathSettings.UserConfig
-End Function
-	
 Function ReadSettings(bInCtrls As Boolean) As Boolean
 	&apos; Читаем установки и задаем значения контролам
 	If FileExists(sSettingsFilename) Then
@@ -28,7 +20,7 @@ Function ReadSettings(bInCtrls As Boolean) As Boolean
 			If sLine &lt;&gt; &quot;&quot; Then
 				If bInCtrls = True Then
 					&apos; Устанавливаем настройки в контроды
-					SetSettingsInControlls(sLine)
+					SetSettingsInControlls(sLine, oServiceDlg)
 				Else
 					&apos; Устанавливаем настройки в переменные
 					SetSettingsInVars(sLine)
@@ -37,58 +29,6 @@ Function ReadSettings(bInCtrls As Boolean) As Boolean
 		Loop
 		oTIS.closeInput()
 	End If
-End Function
-
-Function SetSettingsInControlls(sCurrentLine)
-	On Error Goto ErrorHandler
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-	Dim sSetting() As String
-	sSetting = Split(sCurrentLine, &quot;=&quot;)
-	
-	If oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-		oServiceDlg.GetControl(sSetting(0)).Text = sSetting(1)
-	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-		oServiceDlg.GetControl(sSetting(0)).State = sSetting(1)
-	ElseIf oServiceDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-		oLB = oServiceDlg.getControl(sSetting(0))
-		oLB.SelectItemPos(sSetting(1), True)
-	End If
-	Exit Function
-	ErrorHandler: &apos; идем дальше
-End Function
-
-Function SaveSettings
-	&apos; записываем установки
-	Dim oOS As Object, oFA As Object, oTOS As Object
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-
-	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	
-	oOS = oFA.openFileWrite(sSettingsFilename)
-	oOS.truncate()
-	oTOS.setOutputStream(oOS)
-	oTOS.setEncoding(&quot;utf-8&quot;)
-	
-	Dim ctrl As Object, i As Integer
-	ctrl = oServiceDlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
-		End If
-	Next i
-	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
-	oTOS.closeOutput()
 End Function
 
 Function SetDefaultSettingsInControls

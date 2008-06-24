@@ -6,24 +6,6 @@
 Private lBody As Long
 Private lBodyImage As Long
 
-Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
-	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
-	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
-	Dim i As Integer, c As Integer
-	c = 0 &apos; счетчик число изменений в строке
-	i = InStr(sSource, sDel)
-	If i=0 Then
-		ReplaceFromString = 0
-		Exit Function
-	End If
-	Do While i &gt; 0
-		Mid(sSource, i, Len(sDel), sReplace)
-		i = InStr(i, sSource, sDel)
-		c = c+1
-	Loop
-	ReplaceFromString = c
-End Function
-
 Function RemoveSuperfluous(sSource As String, iResult As Integer)
 	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
 	iResult(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
