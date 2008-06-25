@@ -334,7 +334,7 @@ Function InLineParser(oSect As Object) As String
 		Else
 			InLineParser = &quot;&lt;sub&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/sub&gt;&quot;
 		End If
-	ElseIf oSect.CharShadowed = True OR oSect.CharContoured = True Then &apos; тень или контур
+	ElseIf oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then &apos; тень или контур или символьный стиль code
 		If bCorrectPara = True Then
 			InLineParser = &quot;&lt;code&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/code&gt;&quot;
 		Else
@@ -487,7 +487,7 @@ Function FormatFootnoteText(oSect)
 					Else
 						sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sub&gt;&quot;
 					End If
-				ElseIf oTextPortionF.CharShadowed = True OR oTextPortionF.CharContoured = True Then &apos; тень или контур
+				ElseIf oTextPortionF.CharShadowed = True OR oTextPortionF.CharContoured = True OR oTextPortionF.CharStyleName = &quot;code&quot; Then &apos; тень или контур или символьный стиль code
 					If bCorrectPara = True Then
 						sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/code&gt;&quot;
 					Else
@@ -632,7 +632,7 @@ Function FormatCellText(CellCursor As Object, sCellString As String) As String
 			sRes = sRes &amp; &quot;&lt;sub&gt;&quot; &amp; s(i) &amp; &quot;&lt;/sub&gt;&quot; &amp; chr(10)
 		Next i
 		&apos;FormatCellText = &quot;&lt;sub&gt;&quot; &amp; sCellString &amp; &quot;&lt;/sub&gt;&quot;
-	ElseIf CellCursor.CharShadowed = True OR CellCursor.CharContoured = True Then &apos; тень или контур
+	ElseIf CellCursor.CharShadowed = True OR CellCursor.CharContoured = True OR CellCursor.CharStyleName = &quot;code&quot; Then &apos; тень или контур или символьный стиль code
 		For i = 0 To UBound(s)
 			sRes = sRes &amp; &quot;&lt;code&gt;&quot; &amp; s(i) &amp; &quot;&lt;/code&gt;&quot; &amp; chr(10)
 		Next i
