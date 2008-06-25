@@ -375,4 +375,29 @@ Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	FindTextOfStyle = sResult
 End Function
 
+&apos; /// Работа с контролами  ///
+
+Function IsFillAllFields As Boolean
+	Dim ctrl As Object, i As Integer, b As Boolean
+	b = False
+	ctrl = oStylesDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			If Trim(ctrl(i).Model.Text) &lt;&gt; &quot;&quot; Then
+				b = True
+			Else
+				b = False
+				Exit For
+			End If
+		End If
+	Next i
+	
+	If b = False Then
+		MsgBox &quot;Заполните, пожалуйста, все поля!&quot;, 64, &quot;OOoFBTools&quot;
+		IsFillAllFields = False
+		Exit Function
+	End If
+	IsFillAllFields = True
+End Function
+
 </script:module>

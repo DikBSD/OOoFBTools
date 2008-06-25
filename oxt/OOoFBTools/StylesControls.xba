@@ -90,7 +90,7 @@ Function SetUserStyles
 	SetGeneralStylesControlsDefault
 	SetServiceStylesControlsDefault
 	&apos; Только теперь считывание стилей из файла
-	ReadStyles(True)
+	ReadStyles(sStylesFilename, True)
 	
 	With oStylesDlg.Model
 		.Title = &quot;Определение пользовательских стилей&quot;
@@ -114,6 +114,9 @@ End Function
 
 Function StylesDlgOk
 	&apos; Принятие стилей
+	If IsFillAllFields = False Then
+		Exit Function
+	End If
 	SaveSettings(sStylesFilename, oStylesDlg) &apos; сохраняем стили в файл
 	
 	bStyleExecute = True
@@ -125,14 +128,14 @@ Function StylesDlgCanceled
 	oStylesDlg.endExecute()
 End Function
 
-Function ReadStyles(bInCtrls As Boolean) As Boolean
+Function ReadStyles(sFile As String,  bInCtrls As Boolean) As Boolean
 	&apos; Читаем стили и задаем значения контролам формы стилей
-	If FileExists(sStylesFilename) Then
+	If FileExists(sFile) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
 
 		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL (sStylesFilename) )
+		oFS = oSFA.openFileRead ( ConvertToURL (sFile) )
 		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
 		oTIS.setInputStream (oFS)
 		Do While ( NOT oTIS.isEOF() )
@@ -461,5 +464,65 @@ Sub ChangeStyles(o)
 		oStylesDlg.Model.Step = 2
 	End If
 End Sub
+
+Function LoadCustomStylesProfile
+	&apos; Загрузка названий стилей из файла профиля стилей
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
+		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
+		.setTitle(&quot;Открыть профиль стилей ...&quot;)
+	End With
+	If oFileDlg.execute() Then
+		&apos; Читаем данные и задаем значения контролам профиля стилей
+		ReadStyles(oFileDlg.Files(0), True)
+	End If
+	oFileDlg.Dispose()
+
+End Function
+
+Function SaveCustomStylesProfile
+	&apos; Сохранение названий стилей в файл профиля
+	If IsFillAllFields = False Then
+		Exit Function
+	End If
+	
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sFile As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
+		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
+		.setTitle(&quot;Сохранить профиль стилей ...&quot;)
+	End With
+	If oFileDlg.execute() Then
+		sFile = ConvertFromUrl(oFileDlg.Files(0))
+		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
+			sFile = sFile + &quot;.txt&quot;
+		End If
+		
+		SaveSettings(sFile, oStylesDlg) &apos; сохраняем стили в файл
+	End If
+	oFileDlg.Dispose()	
+End Function
 
 </script:module>
