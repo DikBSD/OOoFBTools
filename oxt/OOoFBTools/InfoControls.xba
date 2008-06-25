@@ -558,36 +558,6 @@ Function AddCustomInfos
 	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = i+1
 End Function
 
-Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
-	Dim sResult As String
-	Dim oStr As Object, oEnum As Object
-	Dim oDesc As Object, iCount As Integer
-	oDesc = ThisComponent.createSearchDescriptor()
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyle)
-	End With
-	oEnum = ThisComponent.findAll(oDesc)
-	If oEnum.getCount = 0 Then 
-		FindTextOfStyle = &quot;&quot;
-		Exit Function
-	End If
-	For iCount = 0 to oEnum.getCount() - 1
-		oStr = oEnum.getByIndex(iCount)
-		If bMerge Then
-			sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
-		Else
-			sResult = sResult &amp; chr(10) &amp; oStr.getString()
-		End If
-	Next iCount
-	If bMerge Then
-		sResult = Mid(sResult, 1, Len(sResult)-1)
-	Else
-		sResult = Mid(sResult, 2, Len(sResult)-1)
-	End If
-	FindTextOfStyle = sResult
-End Function
-
 Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 	If oCursor.String = &quot;&quot; Then	&apos;
 		Exit Function
