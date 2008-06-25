@@ -5,7 +5,7 @@ Option Explicit
 
 Public oInfoDlg As Object
 
-Const oDlgTitle = &quot;Данные о книге&quot;
+Const sDlgTitle = &quot;Данные о книге&quot;
 
 Public sGenres() As String REM book&apos;s genres
 Public sAuthors() As String REM book&apos;s authors
@@ -23,16 +23,64 @@ Private sGLN() As String, sGLC() As String &apos;списки названий �
 Private bExecute As Boolean
 Private bAppendBtn As Boolean
 
-Function InfoDlgExec As Boolean
-	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
-	oProgressBar.setValue(0)
+Function InitFB21
+	&apos; Инициализация жанрами схемы FictionBook 2.1
+	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
+				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
+				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
+				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
+				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
+				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Проза: Прочее&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
+				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
+				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
+				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
+				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
+				&quot;Политика&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
+				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
+				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
+				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;)
+	oProgressBar.setValue(1) &apos; Статусбар
 	
-	&apos; файл настроек
-	sSettingsFilename = pmxCurDir() &amp; &quot;/OOoFBTools/settings.txt&quot;
-	&apos; файл профиля Автора fb2 документа
-	sFB2AuthorFilename = pmxCurDir() &amp; &quot;/OOoFBTools/profile.txt&quot;
-	
+ 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
+			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
+			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;child_prose&quot;,_
+			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,_
+			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
+			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
+			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
+			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
+			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
+			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
+			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
+			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
+			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
+			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
+			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
+	oProgressBar.setValue(2) &apos; Статусбар
+
+	With oInfoDlg.Model
+		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.1&quot;
+		.GenreComboBox.StringItemList = sGLN()
+	End With
+	oProgressBar.setValue(3) &apos; Статусбар
+End Function
+
+Function InitFB22
+	&apos; Инициализация жанрами схемы FictionBook 2.2
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
 				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
@@ -85,22 +133,45 @@ Function InfoDlgExec As Boolean
 			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
 	oProgressBar.setValue(2) &apos; Статусбар
 
+	With oInfoDlg.Model
+		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.2&quot;
+		.GenreComboBox.StringItemList = sGLN()
+	End With
+	oProgressBar.setValue(3) &apos; Статусбар
+	
+End Function
+
+Function InfoDlgExec As Boolean
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
+	oProgressBar.setValue(0)
+	
+	&apos; файл настроек
+	sSettingsFilename = pmxCurDir() &amp; &quot;/OOoFBTools/settings.txt&quot;
+	&apos; файл профиля Автора fb2 документа
+	sFB2AuthorFilename = pmxCurDir() &amp; &quot;/OOoFBTools/profile.txt&quot;
+	
+	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	oInfoDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.InfoDlg)
+	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(sCurDocFile)
+	
+	If oInfoDlg.Model.obtnFB21.State = 1 Then
+		InitFB21 &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
+	
 	sLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
 						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
 						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
 						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
-	oProgressBar.setValue(3) &apos; Статусбар
+	oProgressBar.setValue(4) &apos; Статусбар
 
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oInfoDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.InfoDlg)
-	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(sCurDocFile)
 	Dim sNow As String
 	sNow = Now
 	With oInfoDlg.Model
-		.Title = oDlgTitle
 		.Height = 362
 		.Width = 408
-		.GenreComboBox.StringItemList = sGLN()
 		.NumericFieldMatch.Value = &quot;&quot;
 		.LangComboBox.StringItemList = sLangList()
 		.SrcLangComboBox.StringItemList = sLangList()
@@ -132,11 +203,11 @@ Function InfoDlgExec As Boolean
 	
 	&apos; центрирование на экране
 	&apos;ToScreenCenter(oInfoDlg)
-	oProgressBar.setValue(4) &apos; Статусбар
+	oProgressBar.setValue(5) &apos; Статусбар
 	
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 	ReadProfile(sFB2AuthorFilename, 1)
-	oProgressBar.setValue(5) &apos; Статусбар
+	oProgressBar.setValue(6) &apos; Статусбар
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
@@ -152,12 +223,12 @@ Function InfoDlgExec As Boolean
 	
 	&apos; Задаем настройки в переменные по умолчанию
 	SetDefaultSettingsInVars
-	oProgressBar.setValue(6) &apos; Статусбар
+	oProgressBar.setValue(7) &apos; Статусбар
 	&apos; только теперь считываем настройки из файла в переменные
 	ReadSettings(False)
-	oProgressBar.setValue(7) &apos; Статусбар
+	oProgressBar.setValue(8) &apos; Статусбар
 	
-	ReadServiceStyles(7)
+	ReadServiceStyles(8)
 	
 	bAppendBtn = True
 	oInfoDlg.execute()
