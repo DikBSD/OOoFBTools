@@ -314,7 +314,7 @@ End Function
 &apos; /// Для таблиц ///
 
 Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
-	&apos;  возвращает максимальное число строк (абзацев) в ячеке для определенной строки таблицы
+	&apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы
 	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
 	Dim Cell
 	nMaxLines = 0
@@ -327,6 +327,25 @@ Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
 		iCel = iCel+1
 	Next iCol
 	GetMaxLineInRow = nMaxLines
+End Function
+
+Function GetMaxLineInRowWithProtect(oTable, CellNames, iCel As Integer) As Integer
+	&apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы,
+	&apos; учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
+	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
+	Dim Cell
+	nMaxLines = 0
+	For iCol = 0 To oTable.Columns.Count-1
+		Cell = oTable.getCellByName(CellNames(iCel))
+		If Cell.IsProtected &lt;&gt; True Then &apos; пропускаем заблокированные ячейки
+			nLines = UBound( Split( Cell.getString(), chr(10) ) )
+			If nMaxLines &lt; nLines Then
+				nMaxLines = nLines
+			End If
+		End If
+		iCel = iCel+1
+	Next iCol
+	GetMaxLineInRowWithProtect = nMaxLines
 End Function
 
 Function GetFB2ParagraphAdjust(CellCursor) As String

@@ -709,14 +709,15 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 	Dim nMaxLines As Integer	&apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
 	Dim nCel As Integer
 	nCel = iCel
-	nMaxLines = GetMaxLineInRow(oTable, CellNames, nCel)
+	&apos; находим max число абзацев в строке, учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
+	nMaxLines = GetMaxLineInRowWithProtect(oTable, CellNames, nCel)
 
 	For iCol = 0 To oTable.Columns.Count-1
 		Cell = oTable.getCellByName(CellNames(iCel))
 		CellCursor = Cell.createTextCursor()
 		sCellString = Cell.getString()
 
-		&apos; обработка проблесных символов
+		&apos; обработка проблемных символов
 		If bCorrectPara = True Then
 			sCellString = CorrectPara(sCellString)
 		End If
@@ -741,7 +742,13 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 		&apos; // формируем &quot;виртуальные&quot; строки для многоабзацевых строк таблицы //
 		Dim sCellAllFormatText() As String	&apos; массив ячеек со всеми их отформатированными inline стилями абзацами
 		Dim sCellWithLines() As String		&apos; Сформированный fb2 код Ячейки со всеми абзацами
-		sCellAllFormatText = Split(sFormatCellText, chr(10))
+		
+		If Cell.IsProtected = True Then &apos; заблокированные ячейки
+			ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
+			sCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
+		Else
+			sCellAllFormatText = Split(sFormatCellText, chr(10))
+		End If
 		
 		&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
 		Dim sCR As String
@@ -760,7 +767,7 @@ Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean,
 				sCellWithLines(i) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
 			Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
 				For j = 0 To UBound(sCellAllFormatText)
-					sCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
+					sCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(j) &amp; &quot;&lt;/&quot; &amp; sTag &amp; &quot;&gt;&quot; &amp; chr(10)
 				Next j
 				For j = UBound(sCellAllFormatText)+1 To nMaxLines
 					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTag &amp; &quot;/&gt;&quot; &amp; chr(10)
@@ -838,6 +845,7 @@ Function TextFrameParser(oContent As Object)
 			Next iC
 			sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
 			AddBodyArray(sTable, &quot;Table&quot;, False)
+			sPrevStyle = sTextFrameToFB2
 		Case &quot;Цитата&quot;
 			For iC=0 To UBound(sText)
 				If Len(sText(iC)) &gt; 1 Then &apos; пустые параграфы
@@ -849,10 +857,12 @@ Function TextFrameParser(oContent As Object)
 			sCite = Mid(sCite, 4, Len(sCite))
 			sCite = Mid(sCite, 1, Len(sCite)-5)
 			AddBodyArray(sCite, &quot;Cite&quot;, False)
+			sPrevStyle = sTextFrameToFB2
 		Case Else
 			For iC=0 To UBound(sText)
 				AddBodyArray(sText(iC), &quot;Para&quot;, False)
 			Next iC
+			sPrevStyle = &quot;Para&quot;
 	End Select
 End Function
 
