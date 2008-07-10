@@ -682,22 +682,28 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 		iHeaderRowCount = oTable.HeaderRowCount &apos; число строк заголовка таблицы
 	End If
 	
-	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
-	&apos; формируем заголовки, если они есть
-	Dim i As Integer
-	If iHeaderRowCount &gt; 0 Then
-		For i = 0 To iHeaderRowCount-1
-			sTable = sTable &amp; MakeVirtualFormatRow(oTable, iCel, True, sHeaderTRA, sHeaderTVA, CellNames)
-		Next i
+	If IsMatrix(oTable) = True Then
+		&apos; обработка только правильных прямоугольных матриц
+		sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
+		&apos; формируем заголовки, если они есть
+		Dim i As Integer
+		If iHeaderRowCount &gt; 0 Then
+			For i = 0 To iHeaderRowCount-1
+				sTable = sTable &amp; MakeVirtualFormatRow(oTable, iCel, True, sHeaderTRA, sHeaderTVA, CellNames)
+			Next i
+		End If
+		&apos; строки таблицы
+		For iRow = iHeaderRowCount To oTable.Rows.Count-1
+			sTable = sTable &amp; MakeVirtualFormatRow(oTable, iCel, False, sLineTRA, sLineTVA, CellNames)
+		Next iRow
+		sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
+		iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
+		sPrevStyle = &quot;Table&quot;
+		AddBodyArray(sTable, &quot;Table&quot;, False)
+&apos;	Else
+		&apos; обработка сложных таблиц
 	End If
-	&apos; строки таблицы
-	For iRow = iHeaderRowCount To oTable.Rows.Count-1
-		sTable = sTable &amp; MakeVirtualFormatRow(oTable, iCel, False, sLineTRA, sLineTVA, CellNames)
-	Next iRow
-	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
-	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
-	sPrevStyle = &quot;Table&quot;
-	AddBodyArray(sTable, &quot;Table&quot;, False)
+	
 End Function
 
 Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean, sTRA As String, sTVA As String, CellNames) As String

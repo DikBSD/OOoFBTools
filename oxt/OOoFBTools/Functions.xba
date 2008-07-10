@@ -313,6 +313,16 @@ End Function
 
 &apos; /// Для таблиц ///
 
+Function IsMatrix(oTable As Object) As Boolean
+	&apos; для простой прямоугольной матрицы возвращает True
+	&apos; для сложной таблицы - False
+	On Error Goto ErrorHandler
+	IsMatrix = IsArray(oTable.DataArray)
+	Exit Function
+	ErrorHandler:
+	IsMatrix = False
+End Function
+
 Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
 	&apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы
 	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
