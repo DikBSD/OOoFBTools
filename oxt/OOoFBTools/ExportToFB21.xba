@@ -10,6 +10,33 @@ Public sBodyParagraphs() As String &apos; массив хранит &quot;обр
 Public sLinksTo() As String	&apos; массив ссылок КУДА и их ID
 Public sConvertorName As String &apos; название конвертора
 
+&apos; для аннотации
+Public bMergeAnnotationSubTitle As Boolean
+&apos; оформление подзаголовков
+Public bMergeSubTitle As Boolean
+&apos; оформление авторов эпиграфов
+Public bMergeEpigraphAuthors As Boolean
+&apos; оформление заголовков стихов
+Public bMergePoemTitle As Boolean
+&apos; оформление авторов стихов
+Public bMergePoemAuthors As Boolean
+&apos; оформление подзаголовков поэм
+Public bMergePoemSubTitle As Boolean
+&apos; оформление авторов цитат
+Public bMergeCiteAuthors As Boolean
+&apos; оформление подзаголовков цитат
+Public bMergeCiteSubTitle As Boolean
+&apos; удаление пустых строк
+Public bDelEL As Boolean
+&apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
+Public bCorrectPara As Boolean
+&apos; обработка ссылок внутри документа
+Public bDocLinks As Boolean
+&apos; сохранение названия картинки, как аттрибута &quot;title&apos;
+Public bSaveImageTitle As Boolean
+&apos; &quot;Служебная область&quot; для &quot;служебных стилей&quot; (по умолчанию - верх документа)
+Public bUp As Boolean
+
 &apos; Чистка fb2 кода
 Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
 Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
@@ -295,6 +322,32 @@ Function SaveElements(sArray As String, sParaStyleName As String, sPara As Strin
 		Case &quot;&quot; &apos; &lt;empty-line/&gt;
 			If bDelEL = False Then
 				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			Else
+				&apos; обработка смежных уровней одного ранга - если между ними только пустая строка, то ее не удаляем - иначе - невалидность fb2-файла.
+				If lCurrentElement &gt; 0 And lCurrentElement &lt; UBound(sArray) Then
+					If sArray(lCurrentElement-1, 1) = sArray(lCurrentElement+1, 1) Then
+						&apos; пустая строка между уровнями одного ранга - оставляем
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					Else
+						&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
+						Dim sLevels(9) As String
+						Dim i As Integer, nPrev As Integer, nNext As Integer
+						sLevels = Array(sStyleLevel1, sStyleLevel2, sStyleLevel3, sStyleLevel4, sStyleLevel5, _
+										sStyleLevel6, sStyleLevel7, sStyleLevel8, sStyleLevel9, sStyleLevel10)
+						For i=LBound(sLevels) To UBound(sLevels)
+							If sArray(lCurrentElement-1, 1) = sLevels(i) Then
+								nPrev = i
+							End If
+							If sArray(lCurrentElement+1, 1) = sLevels(i) Then
+								nNext = i
+							End If
+						Next i
+						If nPrev = nNext+1 Then
+							&apos; пустая строка между уровнями с большего на меньший ранг - оставляем
+							oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+						End If
+					End If
+				End If
 			End If
 			lCurrentElement = lCurrentElement+1
 		Case &quot;Table&quot; 
