@@ -225,8 +225,8 @@ Function FB2CorrectorDlgOk
 	oProgressBar.start(&quot;Коррекция fb2 файла:&quot;, UBound(sFB2))
 
 	&apos; сохраняем откорректированный файл
-	Dim iResult1(5) As Integer, iResult2(5) As Integer, iResult3(5) As Integer, iResult4(2) As Integer &apos; массивы-счетчики
-	SaveCorrectedFB2File(sFile, sFB2, oProgressBar, iResult1, iResult2, iResult3, iResult4)
+	Dim iResult1(5) As Integer, iResult2(5) As Integer, iResult3(5) As Integer, iResult4(5) As Integer, iResult5(2) As Integer &apos; массивы-счетчики
+	SaveCorrectedFB2File(sFile, sFB2, oProgressBar, iResult1, iResult2, iResult3, iResult4, iResult5)
 
 	&apos; Вывод сообщения
 	Dim sMsg As String
@@ -238,9 +238,9 @@ Function FB2CorrectorDlgOk
 	End If
 	sMsg = sMsg &amp; &quot;Результаты корректировки fb2 файла:&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;1. Обработано символов &lt;,&gt; и &amp; :&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(0) &amp; &quot; - &lt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(1) &amp; &quot; - &gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(2) &amp; &quot; - &amp;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult5(0) &amp; &quot; - &lt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult5(1) &amp; &quot; - &gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult5(2) &amp; &quot; - &amp;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;2. Убрано пустышек типа &lt;/x&gt;&lt;x&gt;:&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(0) &amp; &quot; - &lt;/strong&gt;&lt;strong&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(1) &amp; &quot; - &lt;/emphasis&gt;&lt;emphasis&gt;&quot; &amp; chr(10)
@@ -248,20 +248,27 @@ Function FB2CorrectorDlgOk
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(3) &amp; &quot; - &lt;/sup&gt;&lt;sup&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(4) &amp; &quot; - &lt;/code&gt;&lt;code&gt;&quot; &amp; chr(10)
 	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult1(5) &amp; &quot; - &lt;/strikethrough&gt;&lt;strikethrough&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;3. Обработано пробелов внутри стилей &lt;x&gt; &lt;/x&gt;:&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(0) &amp; &quot; - &lt;strong&gt; &lt;/strong&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(1) &amp; &quot; - &lt;emphasis&gt; &lt;/emphasis&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(2) &amp; &quot; - &lt;sub&gt; &lt;/sub&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(3) &amp; &quot; - &lt;sup&gt; &lt;/sup&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(4) &amp; &quot; - &lt;code&gt; &lt;/code&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(5) &amp; &quot; - &lt;strikethrough&gt; &lt;/strikethrough&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;4. Обработано пробелов внутри стилей &lt;/x&gt; &lt;x&gt;:&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(0) &amp; &quot; - &lt;/strong&gt; &lt;strong&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(1) &amp; &quot; - &lt;/emphasis&gt; &lt;emphasis&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(2) &amp; &quot; - &lt;/sub&gt; &lt;sub&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(3) &amp; &quot; - &lt;/sup&gt; &lt;sup&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(4) &amp; &quot; - &lt;/code&gt; &lt;code&gt;&quot; &amp; chr(10)
-	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(5) &amp; &quot; - &lt;/strikethrough&gt; &lt;strikethrough&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;3. Убрано пустышек типа &lt;x&gt;&lt;/x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(0) &amp; &quot; - &lt;strong&gt;&lt;/strong&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(1) &amp; &quot; - &lt;emphasis&gt;&lt;/emphasis&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(2) &amp; &quot; - &lt;sub&gt;&lt;/sub&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(3) &amp; &quot; - &lt;sup&gt;&lt;/sup&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(4) &amp; &quot; - &lt;code&gt;&lt;/code&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult2(5) &amp; &quot; - &lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;4. Обработано пробелов внутри стилей &lt;x&gt; &lt;/x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(0) &amp; &quot; - &lt;strong&gt; &lt;/strong&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(1) &amp; &quot; - &lt;emphasis&gt; &lt;/emphasis&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(2) &amp; &quot; - &lt;sub&gt; &lt;/sub&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(3) &amp; &quot; - &lt;sup&gt; &lt;/sup&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(4) &amp; &quot; - &lt;code&gt; &lt;/code&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult3(5) &amp; &quot; - &lt;strikethrough&gt; &lt;/strikethrough&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;5. Обработано пробелов внутри стилей &lt;/x&gt; &lt;x&gt;:&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(0) &amp; &quot; - &lt;/strong&gt; &lt;strong&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(1) &amp; &quot; - &lt;/emphasis&gt; &lt;emphasis&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(2) &amp; &quot; - &lt;/sub&gt; &lt;sub&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(3) &amp; &quot; - &lt;/sup&gt; &lt;sup&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(4) &amp; &quot; - &lt;/code&gt; &lt;code&gt;&quot; &amp; chr(10)
+	sMsg = sMsg &amp; &quot;    &quot; &amp; iResult4(5) &amp; &quot; - &lt;/strikethrough&gt; &lt;strikethrough&gt;&quot; &amp; chr(10)
 	
 	MsgBox sMsg, 64, sFB2ConvertorName &amp; &quot; - Статистика&quot;
 	oProgressBar.end

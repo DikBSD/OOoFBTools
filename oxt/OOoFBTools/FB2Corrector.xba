@@ -8,25 +8,30 @@ Private lBodyImage As Long
 
 &apos; функции для FB2Corrector - диалога
 
-Function FBCorrectText(sStr As String, iResult1 As Integer, iResult2 As Integer, iResult3 As Integer, iResult4 As Integer)
-	Dim iR1(5) As Integer, iR2(5) As Integer, iR3(5) As Integer
+Function FBCorrectText(sStr As String, iResult1 As Integer, iResult2 As Integer, iResult3 As Integer, iResult4 As Integer, iResult5 As Intege)
+	Dim iR1(5) As Integer, iR2(5) As Integer, iR3(5) As Integer, iR4(5) As Integer
 	Dim i As Integer
 	If bFB2Superfluous = True Then
-		RemoveSuperfluous(sStr, iR1)
+		RemoveSuperfluous2(sStr, iR1, iR2)
 		For i=0 To UBound(iR1)
 			iResult1(i) = iResult1(i) + iR1(i)
 		Next i
-	End If
-	If bFB2StyleSpace = True Then
-		ClearStyleSpace(sStr, iR2, iR3)
 		For i=0 To UBound(iR2)
 			iResult2(i) = iResult2(i) + iR2(i)
+		Next i
+	End If
+	If bFB2StyleSpace = True Then
+		ClearStyleSpace(sStr, iR3, iR4)
+		For i=0 To UBound(iR3)
 			iResult3(i) = iResult3(i) + iR3(i)
+		Next i
+		For i=0 To UBound(iR4)
+			iResult4(i) = iResult4(i) + iR4(i)
 		Next i
 	End If
 	If bFB2BadSymbols = True Then
 		&apos; обработка &quot;проблемных&quot; символов &gt;, &lt; и &amp;
-		CorrectBadSymbols(sStr, iResult4)
+		CorrectBadSymbols(sStr, iResult5)
 	End If
 End Function
 
@@ -56,7 +61,8 @@ Function IsTagWithAttr(sWord As String) As Integer
 	Next i
 End Function
 
-Function SaveCorrectedFB2File(sFile As String, sTextArray() As String, oProgressBar, iResult1() As Integer, iResult2() As Integer, iResult3() As Integer, iResult4() As Integer)
+Function SaveCorrectedFB2File(sFile As String, sTextArray() As String, oProgressBar, _
+		iResult1() As Integer, iResult2() As Integer, iResult3() As Integer, iResult4() As Integer, iResult5() As Integer)
 	&apos; записываем настройки очистки текста
 	Dim iFileNo As Integer, sLine As String, l As Long
 	
@@ -70,7 +76,7 @@ Function SaveCorrectedFB2File(sFile As String, sTextArray() As String, oProgress
 	
 	For l=lBody To (lBodyImage-1)
 		sLine = sTextArray(l)
-		FBCorrectText(sLine, iResult1, iResult2, iResult3, iResult4)
+		FBCorrectText(sLine, iResult1, iResult2, iResult3, iResult4, iResult5)
 		Print #iFileNo, sLine
 		oProgressBar.setValue(l)
 	Next l

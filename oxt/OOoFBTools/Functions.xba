@@ -246,6 +246,23 @@ Function RemoveSuperfluous(sSource As String, iResult As Integer)
 	iResult(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
 End Function
 
+Function RemoveSuperfluous2(sSource As String, iResult1 As Integer, iResult2 As Integer)
+	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt; и &lt;x&gt;&lt;/x&gt;
+	iResult1(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
+	iResult1(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
+	iResult1(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
+	iResult1(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
+	iResult1(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
+	iResult1(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
+	
+	iResult2(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;&lt;/strong&gt;&quot;, &quot;&quot;)
+	iResult2(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot;, &quot;&quot;)
+	iResult2(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;&lt;/sub&gt;&quot;, &quot;&quot;)
+	iResult2(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;&lt;/sup&gt;&quot;, &quot;&quot;)
+	iResult2(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;&lt;/code&gt;&quot;, &quot;&quot;)
+	iResult2(5) = ReplaceFromString(sSource, &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot;, &quot;&quot;)
+End Function
+
 Function ClearStyleSpace(sSource As String, iResult1 As Integer, iResult2 As Integer)
 	&apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
 	iResult1(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
