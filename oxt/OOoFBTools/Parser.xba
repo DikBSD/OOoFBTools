@@ -937,17 +937,31 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 		&apos; При этом делаем проверку на выход за верхнюю границу таблицы – Ubound(CellNames()).
 		Dim oCell As Object
 		Dim aRow() as String
-		Dim c As String, sNumber As String
+		Dim c As String, sNumber As String, sCellString As String
 		oCell = oTable.getCellByName(CellNames(nCell)) &apos; первая ячейка строки
+		sCellString = oCell.getString()
+		
+		&apos; обработка проблемных символов
+		If bCorrectPara = True Then
+			sCellString = CorrectPara(sCellString)
+		End If
+		
 		c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
-		AddNewItemToArray1(aRow, oCell.getString())
+		AddNewItemToArray1(aRow, sCellString)
 		nCell = nCell + 1
 		Do While nCell &lt;= UBound(CellNames())
 			&apos; следующая ячейка строки
 			oCell = oTable.getCellByName(CellNames(nCell))
+			sCellString = oCell.getString()
+			
+			&apos; обработка проблемных символов
+			If bCorrectPara = True Then
+				sCellString = CorrectPara(sCellString)
+			End If
+			
 			c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
 			If c &lt;&gt; &quot;A&quot; Then
-				AddNewItemToArray1(aRow, oCell.getString())
+				AddNewItemToArray1(aRow, sCellString)
 				nCell = nCell + 1
 			Else &apos; нашли новую строку таблицы
 				nRows = nRows + 1
