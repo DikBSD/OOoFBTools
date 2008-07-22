@@ -862,7 +862,7 @@ Function FormatCellText(CellCursor As Object, sCellString As String) As String
 End Function
 
 Function OOo23TextTableParser(iCurrentTable As Integer)
-	Dim iHeaderRowCount As Integer
+	Dim nHeaderRowCount As Integer
 	Dim oTables As Object, oTable As Object
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
 	Dim iCel As Integer &apos; текушая ячейка
@@ -877,17 +877,17 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	If OOoWriterVersion &lt; &quot;2.3&quot; Then
 		&apos; не поддерживается свойство таблиц HeaderRowCount - не сможем отловить число заголовков
 		If oTable.RepeatHeadline = True Then
-			iHeaderRowCount = 1
+			nHeaderRowCount = 1
 		Else 
-			iHeaderRowCount = 0
+			nHeaderRowCount = 0
 		End If
 	Else
-		iHeaderRowCount = oTable.HeaderRowCount &apos; число строк заголовка таблицы
+		nHeaderRowCount = oTable.HeaderRowCount &apos; число строк заголовка таблицы
 	End If
 	
 	If IsMatrix(oTable) = True Then
 		&apos; обработка только правильных прямоугольных матриц
-		sTable = MakeSimpleTable(iHeaderRowCount, oTable, iCel, CellNames)
+		sTable = MakeSimpleTable(nHeaderRowCount, oTable, iCel, CellNames)
 	Else
 		&apos; обработка сложных таблиц
 		If IsComplexRowsCollTable(oTable) = True Then
@@ -896,7 +896,7 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 			&apos;Сложная таблица с разным числом столбцов в строке
 			Dim nCollMax As Integer &apos; max число столбцов в строке по всей таблице
 			nCollMax = GetMaxColInTable(oTable)&apos;oTable.getColumns().getCount()
-			sTable = MakeComplexTable(iHeaderRowCount, oTable, iCel, CellNames, nCollMax)
+			sTable = MakeComplexTable(nHeaderRowCount, oTable, CellNames, nCollMax)
 		End If	
 	End If
 	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
@@ -924,31 +924,33 @@ Function MakeSimpleTable(iHeaderRowCount As Integer, oTable As Object, iCel As I
 	MakeSimpleTable = sTable
 End Function
 
-Function MakeComplexTable(iHeaderRowCount As Integer, oTable As Object, iCel As Integer, CellNames, nCollMax As Integer) As String
+Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellNames, nCollMax As Integer) As String
 	&apos; обработка только сложных таблиц с разным числом столбцов в строке
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
-	Dim iRow As Integer
-	Dim i As Integer
+	Dim nCell As Integer &apos; счетчик ячеек (сквозной)
+	Dim nRows As Integer &apos; счетчик строк
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
-	i = 0
-	Do While i &lt;= UBound(CellNames())
+	nCell = 0
+	nRows = 0
+	Do While nCell &lt;= UBound(CellNames())
 		&apos; В массив aRow() считываем все ячейки до ячейки “A”.
 		&apos; При этом делаем проверку на выход за верхнюю границу таблицы – Ubound(CellNames()).
 		Dim oCell As Object
 		Dim aRow() as String
 		Dim c As String, sNumber As String
-		oCell = oTable.getCellByName(CellNames(i)) &apos; первая ячейка строки
+		oCell = oTable.getCellByName(CellNames(nCell)) &apos; первая ячейка строки
 		c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
 		AddNewItemToArray1(aRow, oCell.getString())
-		i = i + 1
-		Do While i &lt;= UBound(CellNames())
+		nCell = nCell + 1
+		Do While nCell &lt;= UBound(CellNames())
 			&apos; следующая ячейка строки
-			oCell = oTable.getCellByName(CellNames(i))
+			oCell = oTable.getCellByName(CellNames(nCell))
 			c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
 			If c &lt;&gt; &quot;A&quot; Then
 				AddNewItemToArray1(aRow, oCell.getString())
-				i = i + 1
+				nCell = nCell + 1
 			Else &apos; нашли новую строку таблицы
+				nRows = nRows + 1
 				Exit Do
 			End If
 		Loop
@@ -959,7 +961,16 @@ Function MakeComplexTable(iHeaderRowCount As Integer, oTable As Object, iCel As 
 			&apos; формирование строки &lt;tr&gt;
 			sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
 			For j = LBound(aRow()) To UBound(aRow())
-				sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				&apos; обработка заголовков таблицы
+				If nHeaderRowCount &gt; 0 Then
+					If	nRows &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
+						sTable = sTable &amp; &quot;&lt;th&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+					Else
+						sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					End If
+				Else
+					sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				End If
 			Next j
 			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 		Else &apos; число ячеек строки &lt; число столбцов самой “длинной” строки таблицы
@@ -969,13 +980,31 @@ Function MakeComplexTable(iHeaderRowCount As Integer, oTable As Object, iCel As 
 				&apos; формирование строки &lt;tr&gt; с colspan для “длинной” ячеек
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
 				For j = LBound(aRow()) To UBound(aRow())
-					sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					&apos; обработка заголовков таблицы
+					If nHeaderRowCount &gt; 0 Then
+						If	nRows &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
+							sTable = sTable &amp; &quot;&lt;th&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+						Else
+							sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+						End If
+					Else
+						sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					End If
 				Next j
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 			Else &apos; строка из одной строки
 				&apos; формирование строки &lt;tr&gt; с colspan=nCollMax для ячейки
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-				sTable = sTable &amp; &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				&apos; обработка заголовков таблицы
+				If nHeaderRowCount &gt; 0 Then
+					If	nRows &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
+						sTable = sTable &amp; &quot;&lt;th colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+					Else
+						sTable = sTable &amp; &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					End If
+				Else
+					sTable = sTable &amp; &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				End If
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 			End If
 		End If
