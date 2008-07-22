@@ -634,6 +634,7 @@ End Function
 Function OOo23TextTableParser(iCurrentTable As Integer)
 	Dim iHeaderRowCount As Integer
 	Dim oTables As Object, oTable As Object
+	Dim sTable As String &apos; текст таблицы в fb2.1 формате
 	Dim iCel As Integer &apos; текушая ячейка
 	Dim CellNames
 	&apos; все таблицы документа
@@ -656,15 +657,22 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	
 	If IsMatrix(oTable) = True Then
 		&apos; обработка только правильных прямоугольных матриц
-		MakeSimpleTable(iCurrentTable, iHeaderRowCount, oTable, iCel, CellNames)
-&apos;	Else
-		&apos; обработка сложных таблиц	
+		sTable = MakeSimpleTable(iHeaderRowCount, oTable, iCel, CellNames)
+	Else
+		&apos; обработка сложных таблиц
+		If IsComplexCell(oTable) = True Then
+			&apos;Сложная таблица: разное число столбцов и строк В ЯЧЕЙКЕ (очень сложная)
+		Else
+			&apos;Сложная таблица с разным числом столбцов в строке
+			sTable = MakeComplexTable(iHeaderRowCount, oTable, iCel, CellNames)
+		End If	
 	End If
 	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
-	
+	sPrevStyle = &quot;Table&quot;
+	AddBodyArray(sTable, &quot;Table&quot;, False)
 End Function
 
-Function MakeSimpleTable(iCurrentTable As Integer, iHeaderRowCount As Integer, oTable As Object, iCel As Integer, CellNames)
+Function MakeSimpleTable(iHeaderRowCount As Integer, oTable As Object, iCel As Integer, CellNames) As String
 	&apos; обработка только правильных прямоугольных матриц
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
 	Dim iRow As Integer
@@ -681,8 +689,67 @@ Function MakeSimpleTable(iCurrentTable As Integer, iHeaderRowCount As Integer, o
 		sTable = sTable &amp; MakeVirtualFormatRow(oTable, iCel, False, sLineTRA, sLineTVA, CellNames)
 	Next iRow
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
-	sPrevStyle = &quot;Table&quot;
-	AddBodyArray(sTable, &quot;Table&quot;, False)
+	MakeSimpleTable = sTable
+End Function
+
+Function MakeComplexTable(iHeaderRowCount As Integer, oTable As Object, iCel As Integer, CellNames) As String
+	&apos;Сложная таблица с разным числом столбцов в строке
+	Dim i As Integer, nCollMax As Integer
+	Dim sTable As String &apos; текст таблицы в fb2.1 формате
+	nCollMax = GetMaxColInTable(oTable)&apos;oTable.getColumns().getCount()
+	i = 0
+	sTable = sTable &amp; &quot;&lt;table&gt;&quot; &amp; chr(10)
+	Do While i &lt;= UBound(CellNames())
+		&apos; В массив aRow() считываем все ячейки до ячейки “A”.
+		&apos; При этом делаем проверку на выход за верхнюю границу таблицы – Ubound(CellNames()).
+		Dim oCell As Object
+		Dim aRow() as String
+		Dim c As String, sNumber As String
+		oCell = oTable.getCellByName(CellNames(i)) &apos; первая ячейка строки
+		c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
+		AddNewItemToArray1(aRow, oCell.getString())
+		i = i + 1
+		Do While i &lt;= UBound(CellNames())
+			&apos; следующая ячейка строки
+			oCell = oTable.getCellByName(CellNames(i))
+			c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
+			If c &lt;&gt; &quot;A&quot; Then
+				AddNewItemToArray1(aRow, oCell.getString())
+				i = i + 1
+			Else &apos; нашли новую строку таблицы
+				Exit Do
+			End If
+		Loop
+		
+		&apos; определяем тип строки:
+		Dim j As Integer
+		If UBound(aRow()) = nCollMax-1 Then &apos; Это “полная” строка
+			&apos; формирование строки &lt;tr&gt;
+			sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+			For j = LBound(aRow()) To UBound(aRow())
+				sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			Next j
+			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+		Else &apos; число ячеек строки &lt; число столбцов самой “длинной” строки таблицы
+			If UBound(aRow()) &gt; 0 Then &apos; “урезанная” строка.
+				&apos; Теперь – алгоритм определения самой “длинной” ячейки по ее width.
+				&apos; для нее colspan = nCollMax+1 - UBound(aRow())
+				&apos; формирование строки &lt;tr&gt; с colspan для “длинной” ячеек
+				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+				For j = LBound(aRow()) To UBound(aRow())
+					sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				Next j
+				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+			Else &apos; строка из одной строки
+				&apos; формирование строки &lt;tr&gt; с colspan=nCollMax для ячейки
+				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+				sTable = sTable &amp; &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+			End If
+		End If
+	Loop
+	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
+	MakeComplexTable = sTable
 End Function
 
 Function MakeVirtualFormatRow(oTable As Object, iCel As Integer, bth As Boolean, sTRA As String, sTVA As String, CellNames) As String

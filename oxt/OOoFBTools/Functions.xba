@@ -340,6 +340,85 @@ Function IsMatrix(oTable As Object) As Boolean
 	IsMatrix = False
 End Function
 
+Function IsComplexCell(oTable As Object) As Boolean
+	&apos; True - если сложная таблица с разным числом столбцов и строк В ЯЧЕЙКЕ
+	&apos; False - если сложная таблица с разным числом столбцов в строке
+	Dim sNames() As String
+	Dim oCell As Object
+	Dim l As String, n As String
+	sNames() = oTable.getCellNames()
+	For i = LBound(sNames()) To UBound(sNames())
+		oCell = oTable.getCellByName(sNames(i))
+		n = &quot;&quot;
+		GetCellLetterAndNumber(oCell.Cellname, n)
+		If InStr(n, &quot;.&quot;) &gt; 0 Then
+			IsComplexRowsCollTable = True
+			Exit Function
+		End If
+	Next i
+	IsComplexRowsCollTable = False
+End Function
+
+Function GetCellLetterAndNumber(sCell As String, sNumber As String) As String
+	Dim i As Integer
+	Dim s As String, sy As String
+	s = &quot;&quot;
+	sy = &quot;&quot;
+	If InStr(sCell, &quot;.&quot;) = 0 Then
+		For i = 1 To Len(sCell)
+			sy = Mid(sCell, i, 1)
+			If Not IsNumeric(sy) Then
+				s = s &amp; sy
+			Else
+				sNumber = sNumber &amp; sy
+			End If
+		Next i
+		GetCellLetterAndNumber = s
+	Else
+		For i = 1 To Len(sCell)
+			sy = Mid(sCell, i, 1)
+			If Not IsNumeric(sy) Then
+				s = s &amp; sy
+			Else
+				sNumber = sNumber &amp; Mid(sCell, i, Len(sCell))
+				Exit For
+			End If
+		Next i
+		GetCellLetterAndNumber = s
+	End If
+End Function
+
+Function GetMaxColInTable(oTable As Object) As Integer
+	Dim i As Integer, j As Integer, nCollMax As Integer
+	Dim sNames() As String
+	sNames() = oTable.getCellNames()
+	nCollMax = 0
+	i = 0
+	Do While i &lt;= UBound(sNames())
+		Dim oCell As Object
+		Dim c As String, sNumber As String
+		oCell = oTable.getCellByName(sNames(i)) &apos; первая ячейка строки
+		c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
+		j = 1 &apos; счетчик числа ячеек в строке
+		i = i+1
+		Do While i &lt;= UBound(sNames())
+			&apos; следующая ячейка строки
+			oCell = oTable.getCellByName(sNames(i))
+			c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
+			If c &lt;&gt; &quot;A&quot; Then
+				j = j+1
+				i = i+1
+			Else &apos; нашли новую строку таблицы
+				Exit Do
+			End If
+		Loop
+		If nCollMax &lt; j Then
+			nCollMax = j
+		End If
+	Loop
+	GetMaxColInTable = nCollMax
+End Function
+
 Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
 	&apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы
 	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
