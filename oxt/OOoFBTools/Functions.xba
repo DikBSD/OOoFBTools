@@ -340,7 +340,7 @@ Function IsMatrix(oTable As Object) As Boolean
 	IsMatrix = False
 End Function
 
-Function IsComplexCell(oTable As Object) As Boolean
+Function IsComplexRowsCollTable(oTable As Object) As Boolean
 	&apos; True - если сложная таблица с разным числом столбцов и строк В ЯЧЕЙКЕ
 	&apos; False - если сложная таблица с разным числом столбцов в строке
 	Dim sNames() As String
@@ -467,6 +467,26 @@ Function GetFB2ParagraphAdjust(CellCursor) As String
 			GetFB2ParagraphAdjust =  &quot;left&quot;
 	End Select
 End Function
+
+Function GetTHDAttr(bth As Boolean) As String
+	&apos; определение тэга для заголовков и (или) строк таблицы
+	If bth = True Then
+		GetTHDAttr = &quot;th&quot;	&apos; для заголовков таблицы
+	Else
+		GetTHDAttr = &quot;td&quot; &apos; для строк таблицы
+	End If
+End Function
+
+Function MakeValignAttr(CellCursor, sTVA As String, sTHDAttr As String) As String
+	&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
+	Dim sTagTDH As String
+	sTagTDH = &quot;&lt;&quot; &amp; sTHDAttr &amp; &quot; align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust(CellCursor)
+	If sTVA &lt;&gt; &quot;&quot; Then
+		sTagTDH = sTagTDH &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
+	End If
+	MakeValignAttr = sTagTDH
+End Function
+
 
 &apos; /// Поиск ///
 
