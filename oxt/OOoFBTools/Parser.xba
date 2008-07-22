@@ -924,6 +924,124 @@ Function MakeSimpleTable(iHeaderRowCount As Integer, oTable As Object, iCel As I
 	MakeSimpleTable = sTable
 End Function
 
+Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth As Boolean, sTRA As String, sTVA As String, CellNames) As String
+	&apos; форматирование текста каждой ячейки для заданной строки простой таблицы
+	Dim iCol As Integer, i As Integer, j As Integer
+	Dim sRow As String, sTHDAttr As String, sCellString As String
+	Dim sFormatCellText As String	&apos; отформатированный текст всех абзацев в ячейке в виде одной строки
+	Dim sRowWithLines() As String	&apos; Сформированный fb2 код всей Строки со всеми абзацами
+	Dim Cell, CellCursor
+	Dim sTagTR As String, sTagTDH As String
+	
+	sRow = &quot;&quot;
+	
+	&apos; Ищем ячейку с максимальным числом абзацев
+	Dim nMaxLines As Integer	&apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
+	Dim nCel As Integer
+	nCel = iCel
+	&apos; находим max число абзацев в строке, учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
+	nMaxLines = GetMaxLineInRowWithProtect(oTable, CellNames, nCel)
+
+	For iCol = 0 To oTable.Columns.Count-1
+		Cell = oTable.getCellByName(CellNames(iCel))
+		CellCursor = Cell.createTextCursor()
+		sCellString = Cell.getString()
+
+		&apos; обработка проблемных символов
+		If bCorrectPara = True Then
+			sCellString = CorrectPara(sCellString)
+		End If
+		
+		&apos; форматирование строк inline стилями
+		&apos;sFormatCellText = FormatCellText(CellCursor, sCellString)
+		sFormatCellText = sCellString
+		
+		&apos; определение тэга для заголовков и (или) строк таблицы
+		sTHDAttr = GetTHD(bth) &apos; th или td
+		
+		&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
+		sTagTDH = MakeValignAttr(CellCursor, sTVA, sTHDAttr)
+		
+		&apos; // формируем &quot;виртуальные&quot; строки для многоабзацевых строк таблицы //
+		Dim sCellAllFormatText() As String	&apos; массив ячеек со всеми их отформатированными inline стилями абзацами
+		Dim sCellWithLines() As String		&apos; Сформированный fb2 код Ячейки со всеми абзацами
+		
+		If Cell.IsProtected = True Then &apos; заблокированные ячейки
+			ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
+			sCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
+		Else
+			sCellAllFormatText = Split(sFormatCellText, chr(10))
+		End If
+		
+		&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
+		Dim sCR As String
+		For i = 0 To UBound(sCellAllFormatText())
+			sCR = sCellAllFormatText(i)
+			If InStr(sCR, chr(13)) &gt; 0 Then
+				ReplaceFromString(sCR, chr(13), &quot;&quot;)
+				sCellAllFormatText(i) = sCR
+			End If
+		Next i
+			
+		ReDim sCellWithLines(nMaxLines)
+		For i = LBound(sCellAllFormatText) To nMaxLines
+			&apos; Выравнивание строк: влево - 0, вправо - 1, по центру - 3, по ширине - 2	
+			If UBound(sCellAllFormatText) = nMaxLines Then		
+				sCellWithLines(i) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
+			Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
+				For j = 0 To UBound(sCellAllFormatText)
+					sCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(j) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
+				Next j
+				For j = UBound(sCellAllFormatText)+1 To nMaxLines
+					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTHDAttr &amp; &quot;/&gt;&quot; &amp; chr(10)
+				Next j
+				Exit For
+			End If
+		Next i
+		
+		&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
+		i = Ubound(sRowWithLines(), 1) + 1
+		If i &gt; 0 Then
+			ReDim Preserve sRowWithLines(i, nMaxLines)
+		Else Redim sRowWithLines(i, nMaxLines)
+		End If
+
+		For i = 0 To nMaxLines
+			sRowWithLines(iCol, i) = sCellWithLines(i)
+		Next i
+
+		iCel = iCel+1
+	Next iCol
+
+	&apos; объединяем строки одной линии из смежных ячеек
+	Dim sMergeLines(nMaxLines)
+	For i = 0 To UBound(sRowWithLines)
+		If nMaxLines &gt; 0 Then
+			For j = 0 To nMaxLines
+				sMergeLines(j) = sMergeLines(j) &amp; sRowWithLines(i, j)
+			Next j
+		Else
+			sMergeLines(0) = sMergeLines(0) &amp; sRowWithLines(i, 0)
+		End If
+	Next i
+
+	&apos; теперь собираем ячейки в &quot;свои&quot; &lt;tr&gt;
+	IF sTRA = &quot;&quot; Then
+		sTagTR = &quot;&lt;tr&gt;&quot;
+	Else
+		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
+		&apos;	sTagTR = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
+		&apos;Else
+			sTagTR = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
+		&apos;End If
+	End If
+	For i = 0 To UBound(sMergeLines())
+		sRow = sRow &amp; sTagTR &amp; chr(10) &amp; sMergeLines(i) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+	Next i
+	
+	MakeVirtualFormatRowSimpleTable = sRow
+End Function
+
 Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellNames, nCollMax As Integer) As String
 	&apos; обработка только сложных таблиц с разным числом столбцов в строке
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
@@ -1025,124 +1143,6 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 	Loop
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
 	MakeComplexTable = sTable
-End Function
-
-Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth As Boolean, sTRA As String, sTVA As String, CellNames) As String
-	&apos; форматирование текста каждой ячейки для заданной строки простой таблицы
-	Dim iCol As Integer, i As Integer, j As Integer
-	Dim sRow As String, sTHDAttr As String, sCellString As String
-	Dim sFormatCellText As String	&apos; отформатированный текст всех абзацев в ячейке в виде одной строки
-	Dim sRowWithLines() As String	&apos; Сформированный fb2 код всей Строки со всеми абзацами
-	Dim Cell, CellCursor
-	Dim sTagTR As String, sTagTDH As String
-	
-	sRow = &quot;&quot;
-	
-	&apos; Ищем ячейку с максимальным числом абзацев
-	Dim nMaxLines As Integer	&apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
-	Dim nCel As Integer
-	nCel = iCel
-	&apos; находим max число абзацев в строке, учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
-	nMaxLines = GetMaxLineInRowWithProtect(oTable, CellNames, nCel)
-
-	For iCol = 0 To oTable.Columns.Count-1
-		Cell = oTable.getCellByName(CellNames(iCel))
-		CellCursor = Cell.createTextCursor()
-		sCellString = Cell.getString()
-
-		&apos; обработка проблемных символов
-		If bCorrectPara = True Then
-			sCellString = CorrectPara(sCellString)
-		End If
-		
-		&apos; форматирование строк inline стилями
-		&apos;sFormatCellText = FormatCellText(CellCursor, sCellString)
-		sFormatCellText = sCellString
-		
-		&apos; определение тэга для заголовков и (или) строк таблицы
-		sTHDAttr = GetTHDAttr(bth) &apos; th или td
-		
-		&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
-		sTagTDH = MakeValignAttr(CellCursor, sTVA, sTHDAttr)
-		
-		&apos; // формируем &quot;виртуальные&quot; строки для многоабзацевых строк таблицы //
-		Dim sCellAllFormatText() As String	&apos; массив ячеек со всеми их отформатированными inline стилями абзацами
-		Dim sCellWithLines() As String		&apos; Сформированный fb2 код Ячейки со всеми абзацами
-		
-		If Cell.IsProtected = True Then &apos; заблокированные ячейки
-			ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
-			sCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
-		Else
-			sCellAllFormatText = Split(sFormatCellText, chr(10))
-		End If
-		
-		&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
-		Dim sCR As String
-		For i = 0 To UBound(sCellAllFormatText())
-			sCR = sCellAllFormatText(i)
-			If InStr(sCR, chr(13)) &gt; 0 Then
-				ReplaceFromString(sCR, chr(13), &quot;&quot;)
-				sCellAllFormatText(i) = sCR
-			End If
-		Next i
-			
-		ReDim sCellWithLines(nMaxLines)
-		For i = LBound(sCellAllFormatText) To nMaxLines
-			&apos; Выравнивание строк: влево - 0, вправо - 1, по центру - 3, по ширине - 2	
-			If UBound(sCellAllFormatText) = nMaxLines Then		
-				sCellWithLines(i) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
-			Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
-				For j = 0 To UBound(sCellAllFormatText)
-					sCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(j) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
-				Next j
-				For j = UBound(sCellAllFormatText)+1 To nMaxLines
-					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTHDAttr &amp; &quot;/&gt;&quot; &amp; chr(10)
-				Next j
-				Exit For
-			End If
-		Next i
-		
-		&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальными&quot; абзацами ячеек
-		i = Ubound(sRowWithLines(), 1) + 1
-		If i &gt; 0 Then
-			ReDim Preserve sRowWithLines(i, nMaxLines)
-		Else Redim sRowWithLines(i, nMaxLines)
-		End If
-
-		For i = 0 To nMaxLines
-			sRowWithLines(iCol, i) = sCellWithLines(i)
-		Next i
-
-		iCel = iCel+1
-	Next iCol
-
-	&apos; объединяем строки одной линии из смежных ячеек
-	Dim sMergeLines(nMaxLines)
-	For i = 0 To UBound(sRowWithLines)
-		If nMaxLines &gt; 0 Then
-			For j = 0 To nMaxLines
-				sMergeLines(j) = sMergeLines(j) &amp; sRowWithLines(i, j)
-			Next j
-		Else
-			sMergeLines(0) = sMergeLines(0) &amp; sRowWithLines(i, 0)
-		End If
-	Next i
-
-	&apos; теперь собираем ячейки в &quot;свои&quot; &lt;tr&gt;
-	IF sTRA = &quot;&quot; Then
-		sTagTR = &quot;&lt;tr&gt;&quot;
-	Else
-		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
-		&apos;	sTagTR = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
-		&apos;Else
-			sTagTR = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
-		&apos;End If
-	End If
-	For i = 0 To UBound(sMergeLines())
-		sRow = sRow &amp; sTagTR &amp; chr(10) &amp; sMergeLines(i) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
-	Next i
-	
-	MakeVirtualFormatRowSimpleTable = sRow
 End Function
 
 

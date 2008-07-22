@@ -468,23 +468,24 @@ Function GetFB2ParagraphAdjust(CellCursor) As String
 	End Select
 End Function
 
-Function GetTHDAttr(bth As Boolean) As String
+Function GetTHD(bth As Boolean) As String
 	&apos; определение тэга для заголовков и (или) строк таблицы
 	If bth = True Then
-		GetTHDAttr = &quot;th&quot;	&apos; для заголовков таблицы
+		GetTHD = &quot;th&quot;	&apos; для заголовков таблицы
 	Else
-		GetTHDAttr = &quot;td&quot; &apos; для строк таблицы
+		GetTHD = &quot;td&quot; &apos; для строк таблицы
 	End If
 End Function
 
-Function MakeValignAttr(CellCursor, sTVA As String, sTHDAttr As String) As String
+Function MakeValignAttr(CellCursor, sTVA As String, sTHDTag As String) As String
 	&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
-	Dim sTagTDH As String
-	sTagTDH = &quot;&lt;&quot; &amp; sTHDAttr &amp; &quot; align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust(CellCursor)
+	&apos; sTHDTag - тэг th или tr
+	Dim sTagTDHAttr As String
+	sTagTDHAttr = &quot;&lt;&quot; &amp; sTHDTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust(CellCursor)
 	If sTVA &lt;&gt; &quot;&quot; Then
-		sTagTDH = sTagTDH &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
+		sTagTDHAttr = sTagTDHAttr &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
 	End If
-	MakeValignAttr = sTagTDH
+	MakeValignAttr = sTagTDHAttr
 End Function
 
 
