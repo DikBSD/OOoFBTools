@@ -488,6 +488,17 @@ Function MakeValignAttr(CellCursor, sTVA As String, sTHDTag As String) As String
 	MakeValignAttr = sTagTDHAttr
 End Function
 
+Function MakeValignAttrComplex(sTA As String, sTVA As String, sTHDTag As String) As String
+	&apos; для сложных таблиц: обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код
+	&apos; sTHDTag - тэг th или td
+	Dim sTagTDHAttr As String
+	sTagTDHAttr = &quot;&lt;&quot; &amp; sTHDTag &amp; &quot; align=&quot;&quot;&quot; &amp; sTA
+	If sTVA &lt;&gt; &quot;&quot; Then
+		sTagTDHAttr = sTagTDHAttr &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
+	End If
+	MakeValignAttrComplex = sTagTDHAttr
+End Function
+
 
 &apos; /// Поиск ///
 

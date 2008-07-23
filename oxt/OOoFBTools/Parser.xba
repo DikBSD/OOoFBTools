@@ -1047,16 +1047,19 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
 	Dim nCell As Integer &apos; счетчик ячеек (сквозной)
 	Dim nRows As Integer &apos; счетчик строк
+	Dim sFormatCellText As String &apos; отформатированный текст всех абзацев в ячейке в виде одной строки
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
 	nCell = 0
 	nRows = 0
 	Do While nCell &lt;= UBound(CellNames())
 		&apos; В массив aRow() считываем все ячейки до ячейки “A”.
 		&apos; При этом делаем проверку на выход за верхнюю границу таблицы – Ubound(CellNames()).
-		Dim oCell As Object
+		Dim oCell As Object, CellCursor
 		Dim aRow() as String
 		Dim c As String, sNumber As String, sCellString As String
+		Dim sTagTDH As String &apos; для обработки атрибутов valign
 		oCell = oTable.getCellByName(CellNames(nCell)) &apos; первая ячейка строки
+		CellCursor = oCell.createTextCursor()
 		sCellString = oCell.getString()
 		
 		&apos; обработка проблемных символов
@@ -1064,12 +1067,17 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 			sCellString = CorrectPara(sCellString)
 		End If
 		
+		&apos; форматирование строк inline стилями
+		&apos;sFormatCellText = FormatCellText(CellCursor, sCellString)
+		sFormatCellText = sCellString
+		
 		c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
-		AddNewItemToArray1(aRow, sCellString)
+		AddNewItemToArray2(aRow, sFormatCellText, GetFB2ParagraphAdjust(CellCursor))
 		nCell = nCell + 1
 		Do While nCell &lt;= UBound(CellNames())
 			&apos; следующая ячейка строки
 			oCell = oTable.getCellByName(CellNames(nCell))
+			CellCursor = oCell.createTextCursor()
 			sCellString = oCell.getString()
 			
 			&apos; обработка проблемных символов
@@ -1077,9 +1085,13 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 				sCellString = CorrectPara(sCellString)
 			End If
 			
+			&apos; форматирование строк inline стилями
+			&apos;sFormatCellText = FormatCellText(CellCursor, sCellString)
+			sFormatCellText = sCellString
+			
 			c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
 			If c &lt;&gt; &quot;A&quot; Then
-				AddNewItemToArray1(aRow, sCellString)
+				AddNewItemToArray2(aRow, sFormatCellText, GetFB2ParagraphAdjust(CellCursor))
 				nCell = nCell + 1
 			Else &apos; нашли новую строку таблицы
 				nRows = nRows + 1
@@ -1089,19 +1101,23 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 		
 		&apos; определяем тип строки:
 		Dim j As Integer
+		j = 0
 		If UBound(aRow()) = nCollMax-1 Then &apos; Это “полная” строка
 			&apos; формирование строки &lt;tr&gt;
 			sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-			For j = LBound(aRow()) To UBound(aRow())
+			For j = 0 To UBound(aRow())
 				&apos; обработка заголовков таблицы
+				sTagTDH = MakeValignAttrComplex(aRow(j,1)), sLineTVA, &quot;td&quot;)
 				If nHeaderRowCount &gt; 0 Then
 					If	nRows &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
-						sTable = sTable &amp; &quot;&lt;th&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+						&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код для &quot;виртуальных строк&quot;
+						sTagTDH = MakeValignAttrComplex(aRow(j,1), sHeaderTVA, &quot;th&quot;)
+						sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(j,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
 					Else
-						sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+						sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(j,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 					End If
 				Else
-					sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(j,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 				End If
 			Next j
 			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
@@ -1111,16 +1127,18 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 				&apos; для нее colspan = nCollMax+1 - UBound(aRow())
 				&apos; формирование строки &lt;tr&gt; с colspan для “длинной” ячеек
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-				For j = LBound(aRow()) To UBound(aRow())
+				For j = 0 To UBound(aRow())
 					&apos; обработка заголовков таблицы
+					sTagTDH = MakeValignAttrComplex(aRow(j,1), sLineTVA, &quot;td&quot;)
 					If nHeaderRowCount &gt; 0 Then
 						If	nRows &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
-							sTable = sTable &amp; &quot;&lt;th&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+							sTagTDH = MakeValignAttrComplex(aRow(j,1), sHeaderTVA, &quot;th&quot;)
+							sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(j,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
 						Else
-							sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+							sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(j,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 						End If
 					Else
-						sTable = sTable &amp; &quot;&lt;td&gt;&quot; &amp; aRow(j) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+						sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(j,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 					End If
 				Next j
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
@@ -1128,14 +1146,16 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 				&apos; формирование строки &lt;tr&gt; с colspan=nCollMax для ячейки
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
 				&apos; обработка заголовков таблицы
+				sTagTDH = MakeValignAttrComplex(aRow(j,1), sLineTVA, &quot;td&quot;)
 				If nHeaderRowCount &gt; 0 Then
 					If	nRows &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
-						sTable = sTable &amp; &quot;&lt;th colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+						sTagTDH = MakeValignAttrComplex(aRow(j,1), sHeaderTVA, &quot;th&quot;)
+						sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
 					Else
-						sTable = sTable &amp; &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+						sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 					End If
 				Else
-					sTable = sTable &amp; &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					sTable = sTable &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 				End If
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 			End If
