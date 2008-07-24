@@ -403,10 +403,10 @@ End Function
 
 Function GetMaxColInTable(oTable As Object) As Integer
 	&apos; возвращает max число столбцов в сложной таблице (просмотр всех строк)
-	Dim i As Integer, j As Integer, nCollMax As Integer
+	Dim i As Integer, j As Integer, nCollMaxInTable As Integer
 	Dim sNames() As String
 	sNames() = oTable.getCellNames()
-	nCollMax = 0
+	nCollMaxInTable = 0
 	i = 0
 	Do While i &lt;= UBound(sNames())
 		Dim oCell As Object
@@ -426,14 +426,14 @@ Function GetMaxColInTable(oTable As Object) As Integer
 				Exit Do
 			End If
 		Loop
-		If nCollMax &lt; j Then
-			nCollMax = j
+		If nCollMaxInTable &lt; j Then
+			nCollMaxInTable = j
 		End If
 	Loop
-	GetMaxColInTable = nCollMax
+	GetMaxColInTable = nCollMaxInTable
 End Function
 
-Function GetColumnCount(oTable As Object, nCell As Integer, CellNames() ) As Integer
+Function GetColumnCountInRow(oTable As Object, nCell As Integer, CellNames() ) As Integer
 	&apos; число столбцов в строке стожной таблицы
 	Dim oCell As Object, sNumber As String, c As String
 	Dim nColumnCount As Integer, i As Integer, CellCursor
@@ -452,7 +452,7 @@ Function GetColumnCount(oTable As Object, nCell As Integer, CellNames() ) As Int
 			Exit Do
 		End If
 	Loop
-	GetColumnCount = i+1
+	GetColumnCountInRowGetColumnCountInRowGetColumnCountInRow = i+1
 End Function
 
 Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
