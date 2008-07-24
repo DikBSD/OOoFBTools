@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Functions" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
 &apos; /// Работа с файлами ///
@@ -130,6 +131,18 @@ Function AddLineInArray(sTextArray() As String, sText As String, oProgressBar)
 	End If
 	sTextArray(l) = sText
 	oProgressBar.setValue(l)
+End Function
+
+Function DelCR(sTextArray() As String)
+	&apos; убираем перевод строки в тексте из ячеек матрицы
+	Dim sCR As String, i As Integer
+	For i = 0 To UBound(sTextArray())
+		sCR = sTextArray(i)
+		If InStr(sCR, chr(13)) &gt; 0 Then
+			ReplaceFromString(sCR, chr(13), &quot;&quot;)
+			sTextArray(i) = sCR
+		End If
+	Next i
 End Function
 
 &apos; /// Корректура строки ///
@@ -360,6 +373,7 @@ Function IsComplexRowsCollTable(oTable As Object) As Boolean
 End Function
 
 Function GetCellLetterAndNumber(sCell As String, sNumber As String) As String
+	&apos; разбивает название ячейки таблицы на Букву (возвращаемое значение) и ее Номер (sNumber)
 	Dim i As Integer
 	Dim s As String, sy As String
 	s = &quot;&quot;
@@ -373,7 +387,6 @@ Function GetCellLetterAndNumber(sCell As String, sNumber As String) As String
 				sNumber = sNumber &amp; sy
 			End If
 		Next i
-		GetCellLetterAndNumber = s
 	Else
 		For i = 1 To Len(sCell)
 			sy = Mid(sCell, i, 1)
@@ -384,11 +397,12 @@ Function GetCellLetterAndNumber(sCell As String, sNumber As String) As String
 				Exit For
 			End If
 		Next i
-		GetCellLetterAndNumber = s
 	End If
+	GetCellLetterAndNumber = s
 End Function
 
 Function GetMaxColInTable(oTable As Object) As Integer
+	&apos; возвращает max число столбцов в сложной таблице (просмотр всех строк)
 	Dim i As Integer, j As Integer, nCollMax As Integer
 	Dim sNames() As String
 	sNames() = oTable.getCellNames()
@@ -419,6 +433,28 @@ Function GetMaxColInTable(oTable As Object) As Integer
 	GetMaxColInTable = nCollMax
 End Function
 
+Function GetColumnCount(oTable As Object, nCell As Integer, CellNames() ) As Integer
+	&apos; число столбцов в строке стожной таблицы
+	Dim oCell As Object, sNumber As String, c As String
+	Dim nColumnCount As Integer, i As Integer, CellCursor
+	nColumnCount = nCell
+	nColumnCount = nColumnCount + 1
+	i = 0
+	Do While nColumnCount &lt;= UBound(CellNames())
+		&apos; следующая ячейка строки
+		oCell = oTable.getCellByName(CellNames(nColumnCount))
+		CellCursor = oCell.createTextCursor()
+		c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
+		If c &lt;&gt; &quot;A&quot; Then
+			nColumnCount = nColumnCount + 1
+			i = i + 1
+		Else	&apos; нашли новую строку таблицы - ячейка A
+			Exit Do
+		End If
+	Loop
+	GetColumnCount = i+1
+End Function
+
 Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
 	&apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы
 	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
@@ -435,13 +471,13 @@ Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
 	GetMaxLineInRow = nMaxLines
 End Function
 
-Function GetMaxLineInRowWithProtect(oTable, CellNames, iCel As Integer) As Integer
+Function GetMaxLineInRowWithProtect(oTable, CellNames, iCel As Integer, nColumns As Integer) As Integer
 	&apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы,
 	&apos; учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
 	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
 	Dim Cell
 	nMaxLines = 0
-	For iCol = 0 To oTable.Columns.Count-1
+	For iCol = 0 To nColumns-1
 		Cell = oTable.getCellByName(CellNames(iCel))
 		If Cell.IsProtected &lt;&gt; True Then &apos; пропускаем заблокированные ячейки
 			nLines = UBound( Split( Cell.getString(), chr(10) ) )
@@ -467,38 +503,6 @@ Function GetFB2ParagraphAdjust(CellCursor) As String
 			GetFB2ParagraphAdjust =  &quot;left&quot;
 	End Select
 End Function
-
-Function GetTHD(bth As Boolean) As String
-	&apos; определение тэга для заголовков и (или) строк таблицы
-	If bth = True Then
-		GetTHD = &quot;th&quot; &apos; для заголовков таблицы
-	Else
-		GetTHD = &quot;td&quot; &apos; для строк таблицы
-	End If
-End Function
-
-Function MakeValignAttr(CellCursor, sTVA As String, sTHDTag As String) As String
-	&apos; обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код
-	&apos; sTHDTag - тэг th или td
-	Dim sTagTDHAttr As String
-	sTagTDHAttr = &quot;&lt;&quot; &amp; sTHDTag &amp; &quot; align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust(CellCursor)
-	If sTVA &lt;&gt; &quot;&quot; Then
-		sTagTDHAttr = sTagTDHAttr &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
-	End If
-	MakeValignAttr = sTagTDHAttr
-End Function
-
-Function MakeValignAttrComplex(sTA As String, sTVA As String, sTHDTag As String) As String
-	&apos; для сложных таблиц: обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код
-	&apos; sTHDTag - тэг th или td
-	Dim sTagTDHAttr As String
-	sTagTDHAttr = &quot;&lt;&quot; &amp; sTHDTag &amp; &quot; align=&quot;&quot;&quot; &amp; sTA
-	If sTVA &lt;&gt; &quot;&quot; Then
-		sTagTDHAttr = sTagTDHAttr &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
-	End If
-	MakeValignAttrComplex = sTagTDHAttr
-End Function
-
 
 &apos; /// Поиск ///
 
@@ -555,6 +559,15 @@ Function IsFillAllFields As Boolean
 		Exit Function
 	End If
 	IsFillAllFields = True
+End Function
+
+&apos; /// Работа со строками ///
+
+Function GetSubStrCount(sStr As String, sSubStr As String) As Integer
+	&apos; возвращает число подстрок в строке
+	Dim sArray() As String
+	sArray = Split(sStr, sSubStr)
+	GetSubStrCount = UBound(sArray)
 End Function
 
 </script:module>
