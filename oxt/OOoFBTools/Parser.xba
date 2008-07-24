@@ -861,6 +861,19 @@ Function FormatCellText(CellCursor As Object, sCellString As String) As String
 	FormatCellText = sRes
 End Function
 
+Function MakeTRTag(sTRA As String) As String
+	&apos; формирование тэга tr с аттрибутами для простой таблицы
+	IF sTRA = &quot;&quot; Then
+		MakeTRTag = &quot;&lt;tr&gt;&quot;
+	Else
+		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
+		&apos;	MakeTRTag = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
+		&apos;Else
+			MakeTRTag = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
+		&apos;End If
+	End If
+End Function
+
 Function GetTHD(bth As Boolean) As String
 	&apos; определение тэга для заголовков и (или) строк таблицы
 	If bth = True Then
@@ -892,22 +905,9 @@ Function MakeValignAttrComplex(sTA As String, sTVA As String, sTHDTag As String)
 	MakeValignAttrComplex = sTagTDHAttr
 End Function
 
-Function MakeTRTag(sTRA As String) As String
-	
-	IF sTRA = &quot;&quot; Then
-		MakeTRTag = &quot;&lt;tr&gt;&quot;
-	Else
-		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
-		&apos;	MakeTRTag = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
-		&apos;Else
-			MakeTRTag = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
-		&apos;End If
-	End If
-End Function
-
-Function MakeRowForFullRow( aRow As String, nHeaderRowCount As Integer, nRow As String ) As String
-	&apos; формирование строки &lt;tr&gt; для “полной” строк
-	Dim sTRTag As String, sTagTDH As String, sRow As String, i As Integer
+Function MakeCellForFullRow( aRow As String, nHeaderRowCount As Integer, nRow As String ) As String
+	&apos; формирование строки &lt;tr&gt; ячейки для “полной” строк
+	Dim sTRTag As String, sTagTDH As String, sCell As String, i As Integer
 	For i = 0 To UBound(aRow())
 		sTRTag = MakeTRTag(sLineTRA)
 		sTagTDH = MakeValignAttrComplex(aRow(i,1)), sLineTVA, &quot;td&quot;)
@@ -916,23 +916,23 @@ Function MakeRowForFullRow( aRow As String, nHeaderRowCount As Integer, nRow As 
 			If	nRow &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
 				sTRTag = MakeTRTag(sHeaderTRA)
 				sTagTDH = MakeValignAttrComplex(aRow(i,1), sHeaderTVA, &quot;th&quot;)
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+				sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
 			Else
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 			End If
 		Else
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 		End If
 	Next i
-	MakeRowForFullRow = sRow
+	MakeCellForFullRow = sCell
 End Function
 
-Function MakeRowForCutRow( aRow As String, nHeaderRowCount As Integer, nRow As String ) As String
-	&apos; формирование строки &lt;tr&gt; для “урезанной” строки
+Function MakeCellForCutRow( aRow As String, nHeaderRowCount As Integer, nRow As String ) As String
+	&apos; формирование строки &lt;tr&gt; ячейки для “урезанной” строки
 	&apos; Теперь – алгоритм определения самой “длинной” ячейки по ее width.
 	&apos; для нее colspan = nCollMax+1 - UBound(aRow())
-	&apos; формирование строки &lt;tr&gt; с colspan для “длинной” ячеек
-	Dim sTRTag As String, sTagTDH As String, sRow As String, i As Integer
+	&apos; формирование строки &lt;tr&gt; для ячейки с colspan для “длинной” ячейки
+	Dim sTRTag As String, sTagTDH As String, sCell As String, i As Integer
 	For i = 0 To UBound(aRow())
 		sTRTag = MakeTRTag(sLineTRA)
 		sTagTDH = MakeValignAttrComplex(aRow(i,1), sLineTVA, &quot;td&quot;)
@@ -941,20 +941,20 @@ Function MakeRowForCutRow( aRow As String, nHeaderRowCount As Integer, nRow As S
 			If	nRow &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
 				sTRTag = MakeTRTag(sHeaderTRA)
 				sTagTDH = MakeValignAttrComplex(aRow(i,1), sHeaderTVA, &quot;th&quot;)
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+				sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
 			Else
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 			End If
 		Else
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 		End If
 	Next i
-	MakeRowForCutRow = sRow
+	MakeCellForCutRow = sCell
 End Function
 
-Function MakeRowForOneRow( aRow As String, nHeaderRowCount As Integer, nRow As String, nCollMax As Integer ) As String
-	&apos; формирование строки &lt;tr&gt; для строки из 1-й ячейки с colspan=nCollMax для ячейки
-	Dim sTRTag As String, sTagTDH As String, sRow As String
+Function MakeCellForOneRow( aRow As String, nHeaderRowCount As Integer, nRow As String, nCollMax As Integer ) As String
+	&apos; формирование строки &lt;tr&gt; для ячейки строки из 1-й ячейки (colspan=nCollMax)
+	Dim sTRTag As String, sTagTDH As String, sCell As String
 	sTRTag = MakeTRTag(sLineTRA)
 	sTagTDH = MakeValignAttrComplex(aRow(0,1), sLineTVA, &quot;td&quot;)
 	&apos; обработка заголовков таблицы
@@ -962,35 +962,33 @@ Function MakeRowForOneRow( aRow As String, nHeaderRowCount As Integer, nRow As S
 		If	nRow &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
 			sTRTag = MakeTRTag(sHeaderTRA)
 			sTagTDH = MakeValignAttrComplex(aRow(0,1), sHeaderTVA, &quot;th&quot;)
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
+			sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
 		Else
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 		End If
 	Else
-		sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+		sCell = sCell &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMax &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 	End If
-	MakeRowForOneRow = sRow
+	MakeCellForOneRow = sCell
 End Function
 
-Function MakeTRRow( aRow() As String, nHeaderRowCount As Integer, nRow As Integer, nCollMax As Integer ) As String
-	&apos; создание &lt;tr&gt; строки для сложной таблицы
-	Dim sRow As String
-	sRow = sRow &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10
+Function MakeTRCell( aRow() As String, nHeaderRowCount As Integer, nRow As Integer, nCollMax As Integer ) As String
+	&apos; создание &lt;tr&gt; строки для ячейки сложной таблицы
+	Dim sCell As String
 	&apos; определяем тип строки:
 	If UBound(aRow()) = nCollMax-1 Then
-		&apos; формирование строки &lt;tr&gt; для “полной” строк
-		sRow = sRow &amp; MakeRowForFullRow( aRow, nHeaderRowCount, nRow )
+		&apos; формирование строки &lt;tr&gt; для ячейки “полной” строки
+		sCell = sCell &amp; MakeCellForFullRow( aRow, nHeaderRowCount, nRow )
 	Else &apos; число ячеек строки &lt; число столбцов самой “длинной” строки таблицы
 		If UBound(aRow()) &gt; 0 Then &apos; “урезанная” строка.
-			&apos; формирование строки &lt;tr&gt; для “урезанных” строк
-			sRow = sRow &amp; MakeRowForCutRow( aRow, nHeaderRowCount, nRow )
+			&apos; формирование строки &lt;tr&gt; для ячейки “урезанных” строк
+			sCell = sCell &amp; MakeCellForCutRow( aRow, nHeaderRowCount, nRow )
 		Else &apos; строка из одной строки
-			&apos; формирование строки &lt;tr&gt; для строки из 1-й ячейки с colspan=nCollMax для ячейки
-			sRow = sRow &amp; MakeRowForOneRow( aRow, nHeaderRowCount, nRow, nCollMax )
+			&apos; формирование строки &lt;tr&gt; для sCell строки, состоящей из 1-й ячейки (colspan=nCollMax)
+			sCell = sCell &amp; MakeCellForOneRow( aRow, nHeaderRowCount, nRow, nCollMax )
 		End If
 	End If
-	sRow = sRow &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
-	MakeTRRow = sRow
+	MakeTRCell = sCell
 End Function
 
 Function GetFormatedCellText(oCell As Object) As String
@@ -1015,9 +1013,7 @@ Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Stroing
 	oCell = oTable.getCellByName(sCellName) &apos; первая ячейка строки
 	sFormatCellText = GetFormatedCellText(oCell)
 		
-	&apos; формируем &quot;виртуальные&quot; строки для многоабзацевых строк таблицы
 	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
-	&apos;ReDim sCellAllFormatText( GetSubStrCount( sFormatCellText, chr(10) ) ) As String
 	If oCell.IsProtected = True Then &apos; заблокированные ячейки
 		ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
 		sCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
@@ -1133,6 +1129,7 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 		
 		AddNewItemToArray2(aRow, sFormatCellText, GetFB2ParagraphAdjust(oCell.createTextCursor()))
 		nCell = nCell + 1 &apos; к следующей ячейке
+		
 		Do While nCell &lt;= UBound(CellNames()) &apos; следующая ячейка строки
 			&apos; форматированная строка ячейки (с учетом коррекции проблемных символов)
 			oCell = oTable.getCellByName(CellNames(nCell))
@@ -1152,7 +1149,7 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 		Loop
 		
 		&apos; формируем строку &lt;tr&gt;
-		sTable = sTable &amp; MakeTRRow( aRow(), nHeaderRowCount, nRow, nCollMax )
+		sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10) &amp; MakeTRCell( aRow(), nHeaderRowCount, nRow, nCollMax ) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 	Loop
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
 	MakeComplexTable = sTable
