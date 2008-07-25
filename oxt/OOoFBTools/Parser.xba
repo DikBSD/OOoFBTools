@@ -894,17 +894,6 @@ Function MakeValignAttr(CellCursor, sTVA As String, sTHDTag As String) As String
 	MakeValignAttr = sTagTDHAttr
 End Function
 
-Function MakeValignAttrComplex(sTA As String, sTVA As String, sTHDTag As String) As String
-	&apos; для сложных таблиц: обработка атрибутов valign - если они &quot;пустые&quot; - то их не заносим в fb2 код
-	&apos; sTHDTag - тэг th или td
-	Dim sTagTDHAttr As String
-	sTagTDHAttr = &quot;&lt;&quot; &amp; sTHDTag &amp; &quot; align=&quot;&quot;&quot; &amp; sTA
-	If sTVA &lt;&gt; &quot;&quot; Then
-		sTagTDHAttr = sTagTDHAttr &amp; &quot;&quot;&quot; valign=&quot;&quot;&quot; &amp; sTVA
-	End If
-	MakeValignAttrComplex = sTagTDHAttr
-End Function
-
 Function GetFormatedCellText(oCell As Object) As String
 	Dim sCellString As String
 	sCellString = oCell.getString()
@@ -919,10 +908,10 @@ Function GetFormatedCellText(oCell As Object) As String
 	GetFormatedCellText = sCellString
 End Function
 
-Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Stroing
+Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Variant
 	&apos; обработка проблемных символов, форматирование ячеек и разбивка их на абзацы
 	Dim oCell As Object, sFormatCellText As String, i As Integer
-	Dim sCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
+	Dim aCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	&apos; форматированная строка ячейки (с учетом коррекции проблемных символов)
 	oCell = oTable.getCellByName(sCellName) &apos; первая ячейка строки
 	sFormatCellText = GetFormatedCellText(oCell)
@@ -930,21 +919,21 @@ Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Stroing
 	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	If oCell.IsProtected = True Then &apos; заблокированные ячейки
 		ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
-		sCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
+		aCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
 	Else
-		sCellAllFormatText = Split(sFormatCellText, chr(10))
+		aCellAllFormatText = Split(sFormatCellText, chr(10))
 	End If
 	
 	&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
 	Dim sCR As String
-	For i = 0 To UBound(sCellAllFormatText())
-		sCR = sCellAllFormatText(i)
+	For i = 0 To UBound(aCellAllFormatText())
+		sCR = aCellAllFormatText(i)
 		If InStr(sCR, chr(13)) &gt; 0 Then
 			ReplaceFromString(sCR, chr(13), &quot;&quot;)
-			sCellAllFormatText(i) = sCR
+			aCellAllFormatText(i) = sCR
 		End If
 	Next i
-	MakeWorkCellPara = sCellAllFormatText
+	MakeWorkCellPara = aCellAllFormatText
 End Function
 
 Function OOo23TextTableParser(iCurrentTable As Integer)
@@ -1018,30 +1007,36 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 	Dim sFormatCellText As String &apos; отформатированный текст всех абзацев в ячейке в виде одной строки
 	Dim nCollMaxInTable As Integer &apos; max число столбцов в строке по всей таблице
 	nCollMaxInTable = GetMaxColInTable(oTable)&apos;oTable.getColumns().getCount()
-
 	nCell = 0
 	nRow = 0	
+
 	Do While nCell &lt;= UBound(CellNames())
 		&apos; В массив aRow() считываем все ячейки до ячейки “A”. При этом делаем проверку на выход за верхнюю границу таблицы – Ubound(CellNames()).
 		Dim aRow() As String, c As String, sNumber As String
 		Dim nColumnCountInRow As Integer &apos; число столбцов в строке сложной таблицы
-&apos;		
+		
 		&apos; 1. Параметры строк таблицы
 		&apos; число столбцов в строке сложной таблицы
-&apos;		nColumnCountInRow = GetColumnCountInRow(oTable, nCell, CellNames)
+		nColumnCountInRow = GetColumnCountInRow(oTable, nCell, CellNames)
 		&apos; находим max число абзацев в строке, учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
-&apos;		Dim n As Integer, nMaxLines As Integer &apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
-&apos;		n = nCell
-&apos;		nMaxLines = GetMaxLineInRowWithProtect(oTable, CellNames, n, nColumnCountInRow)
+		Dim n As Integer, nMaxLines As Integer &apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
+		n = nCell
+		nMaxLines = GetMaxLineInRowWithProtect(oTable, CellNames, n, nColumnCountInRow)
 	
 		&apos; форматируем inline стилями абзацы ячейки
-		Dim sCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
-		sCellAllFormatText = MakeWorkCellPara( oTable, CellNames(nCell) )
+		Dim aCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
+		aCellAllFormatText = MakeWorkCellPara( oTable, CellNames(nCell) )
 		
 		&apos; заносим в массив строки aRow отформатированный текст ячейки и ее выравнивание
 		oCell = oTable.getCellByName(CellNames(nCell)) &apos; первая ячейка строки
 		sFormatCellText = GetFormatedCellText(oCell) &apos; ВРЕМЯНКА УБРАТЬ после создания вирт. ячеек!!!!!!!
+
 		
+		&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
+		Dim aFB2ParasRow() As String	&apos; Сформированный fb2 код всей Строки со всеми абзацами
+		aFB2ParasRow = MakeFB2ParasRow( aFB2ParasRow, aCellAllFormatText(), nMaxLines,GetFB2ParagraphAdjust(oCell.createTextCursor()) )
+
+			
 		AddNewItemToArray2(aRow, sFormatCellText, GetFB2ParagraphAdjust(oCell.createTextCursor()))
 		nCell = nCell + 1 &apos; к следующей ячейке
 		
@@ -1051,10 +1046,15 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 			sFormatCellText = GetFormatedCellText(oCell)  &apos; ВРЕМЯНКА УБРАТЬ после создания вирт. ячеек!!!!!!!
 			
 			&apos; форматируем inline стилями абзацы ячейки
-			sCellAllFormatText = MakeWorkCellPara( oTable, CellNames(nCell) )
+			aCellAllFormatText = MakeWorkCellPara( oTable, CellNames(nCell) )
 			
 			c = GetCellLetterAndNumber(oCell.Cellname, sNumber)
 			If c &lt;&gt; &quot;A&quot; Then
+	
+				&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
+				aFB2ParasRow = MakeFB2ParasRow( aFB2ParasRow, aCellAllFormatText(), nMaxLines, GetFB2ParagraphAdjust(oCell.createTextCursor()) )
+
+
 				AddNewItemToArray2(aRow, sFormatCellText, GetFB2ParagraphAdjust(oCell.createTextCursor()))
 				nCell = nCell + 1
 			Else &apos; нашли новую строку таблицы
@@ -1062,7 +1062,7 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 				Exit Do
 			End If
 		Loop
-		
+				
 		&apos; формируем строку &lt;tr&gt;
 		AddNewItemToArray1( aRows, &quot;&lt;tr&gt;&quot; &amp; chr(10) &amp; MakeTRRow( aRow(), nHeaderRowCount, nRow, nCollMaxInTable ) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10) )
 	Loop
@@ -1116,38 +1116,38 @@ Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth 
 		sTagTDH = MakeValignAttr(CellCursor, sTVA, sTHDAttr)
 		
 		&apos; // формируем &quot;виртуальные&quot; строки для многоабзацевых строк таблицы //
-		Dim sCellAllFormatText() As String	&apos; массив ячеек со всеми их отформатированными inline стилями абзацами
-		Dim sCellWithLines() As String		&apos; Сформированный fb2 код Ячейки со всеми абзацами
+		Dim aCellAllFormatText() As String	&apos; массив ячеек со всеми их отформатированными inline стилями абзацами
+		Dim aCellWithLines() As String		&apos; Сформированный fb2 код Ячейки со всеми абзацами
 		
 		&apos; разбивка в массив строки на абзацы, с учетом заблокированной ячейки
 		If Cell.IsProtected = True Then &apos; заблокированные ячейки
 			ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
-			sCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
+			aCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
 		Else
-			sCellAllFormatText = Split(sFormatCellText, chr(10))
+			aCellAllFormatText = Split(sFormatCellText, chr(10))
 		End If
 		
 		&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
 		Dim sCR As String
-		For i = 0 To UBound(sCellAllFormatText())
-			sCR = sCellAllFormatText(i)
+		For i = 0 To UBound(aCellAllFormatText())
+			sCR = aCellAllFormatText(i)
 			If InStr(sCR, chr(13)) &gt; 0 Then
 				ReplaceFromString(sCR, chr(13), &quot;&quot;)
-				sCellAllFormatText(i) = sCR
+				aCellAllFormatText(i) = sCR
 			End If
 		Next i
 			
-		ReDim sCellWithLines(nMaxLines)
-		For i = LBound(sCellAllFormatText) To nMaxLines
+		ReDim aCellWithLines(nMaxLines)
+		For i = LBound(aCellAllFormatText) To nMaxLines
 			&apos; Выравнивание строк: влево - 0, вправо - 1, по центру - 3, по ширине - 2	
-			If UBound(sCellAllFormatText) = nMaxLines Then		
-				sCellWithLines(i) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
+			If UBound(aCellAllFormatText) = nMaxLines Then		
+				aCellWithLines(i) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aCellAllFormatText(i) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
 			Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
-				For j = 0 To UBound(sCellAllFormatText)
-					sCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCellAllFormatText(j) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
+				For j = 0 To UBound(aCellAllFormatText)
+					aCellWithLines(j) = sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aCellAllFormatText(j) &amp; &quot;&lt;/&quot; &amp; sTHDAttr &amp; &quot;&gt;&quot; &amp; chr(10)
 				Next j
-				For j = UBound(sCellAllFormatText)+1 To nMaxLines
-					sCellWithLines(j) = &quot;&lt;&quot; &amp; sTHDAttr &amp; &quot;/&gt;&quot; &amp; chr(10)
+				For j = UBound(aCellAllFormatText)+1 To nMaxLines
+					aCellWithLines(j) = &quot;&lt;&quot; &amp; sTHDAttr &amp; &quot;/&gt;&quot; &amp; chr(10)
 				Next j
 				Exit For
 			End If
@@ -1161,7 +1161,7 @@ Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth 
 		End If
 
 		For i = 0 To nMaxLines
-			sRowWithLines(iCol, i) = sCellWithLines(i)
+			sRowWithLines(iCol, i) = aCellWithLines(i)
 		Next i
 
 		iCel = iCel+1
@@ -1194,92 +1194,6 @@ Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth 
 	Next i
 	
 	MakeVirtualFormatRowSimpleTable = sRow
-End Function
-
-Function MakeRowForFullRow( aRow As String, nHeaderRowCount As Integer, nRow As String ) As String
-	&apos; формирование строки &lt;tr&gt; для “полной” строк
-	Dim sTRTag As String, sTagTDH As String, sRow As String, i As Integer
-	For i = 0 To UBound(aRow())
-		sTRTag = MakeTRTag(sLineTRA)
-		sTagTDH = MakeValignAttrComplex(aRow(i,1)), sLineTVA, &quot;td&quot;)
-		&apos; обработка заголовков таблицы
-		If nHeaderRowCount &gt; 0 Then
-			If	nRow &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
-				sTRTag = MakeTRTag(sHeaderTRA)
-				sTagTDH = MakeValignAttrComplex(aRow(i,1), sHeaderTVA, &quot;th&quot;)
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
-			Else
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			End If
-		Else
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		End If
-	Next i
-	MakeRowForFullRow = sRow
-End Function
-
-Function MakeRowForCutRow( aRow As String, nHeaderRowCount As Integer, nRow As String ) As String
-	&apos; формирование строки &lt;tr&gt; для “урезанной” строки
-	&apos; Теперь – алгоритм определения самой “длинной” ячейки по ее width.
-	&apos; для нее colspan = nCollMaxInTable+1 - UBound(aRow())
-	&apos; формирование строки &lt;tr&gt; для ячейки с colspan для “длинной” ячейки
-	Dim sTRTag As String, sTagTDH As String, sRow As String, i As Integer
-	For i = 0 To UBound(aRow())
-		sTRTag = MakeTRTag(sLineTRA)
-		sTagTDH = MakeValignAttrComplex(aRow(i,1), sLineTVA, &quot;td&quot;)
-		&apos; обработка заголовков таблицы
-		If nHeaderRowCount &gt; 0 Then
-			If	nRow &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
-				sTRTag = MakeTRTag(sHeaderTRA)
-				sTagTDH = MakeValignAttrComplex(aRow(i,1), sHeaderTVA, &quot;th&quot;)
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
-			Else
-				sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			End If
-		Else
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(i,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		End If
-	Next i
-	MakeRowForCutRow = sRow
-End Function
-
-Function MakeRowForOneRow( aRow As String, nHeaderRowCount As Integer, nRow As String, nCollMaxInTable As Integer ) As String
-	&apos; формирование строки &lt;tr&gt; для строки из 1-й ячейки (colspan=nCollMaxInTable)
-	Dim sTRTag As String, sTagTDH As String, sRow As String
-	sTRTag = MakeTRTag(sLineTRA)
-	sTagTDH = MakeValignAttrComplex(aRow(0,1), sLineTVA, &quot;td&quot;)
-	&apos; обработка заголовков таблицы
-	If nHeaderRowCount &gt; 0 Then
-		If	nRow &lt;= nHeaderRowCount Then &apos; для заголовков сложной таблицы
-			sTRTag = MakeTRTag(sHeaderTRA)
-			sTagTDH = MakeValignAttrComplex(aRow(0,1), sHeaderTVA, &quot;th&quot;)
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/th&gt;&quot; &amp; chr(10)
-		Else
-			sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		End If
-	Else
-		sRow = sRow &amp; sTagTDH &amp; &quot;&quot;&quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; &amp; aRow(0,0) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-	End If
-	MakeRowForOneRow = sRow
-End Function
-
-Function MakeTRRow( aRow() As String, nHeaderRowCount As Integer, nRow As Integer, nCollMaxInTable As Integer ) As String
-	&apos; создание &lt;tr&gt; строки для сложной таблицы
-	Dim sRow As String
-	&apos; определяем тип строки:
-	If UBound(aRow()) = nCollMaxInTable-1 Then
-		&apos; формирование строки &lt;tr&gt; для “полной” строки
-		sRow = sRow &amp; MakeRowForFullRow( aRow, nHeaderRowCount, nRow )
-	Else &apos; число ячеек строки &lt; число столбцов самой “длинной” строки таблицы
-		If UBound(aRow()) &gt; 0 Then &apos; “урезанная” строка.
-			&apos; формирование строки &lt;tr&gt; для “урезанных” строк
-			sRow = sRow &amp; MakeRowForCutRow( aRow, nHeaderRowCount, nRow )
-		Else &apos; строка из одной строки
-			&apos; формирование строки &lt;tr&gt; для sRow строки, состоящей из 1-й ячейки (colspan=nCollMaxInTable)
-			sRow = sRow &amp; MakeRowForOneRow( aRow, nHeaderRowCount, nRow, nCollMaxInTable )
-		End If
-	End If
-	MakeTRRow = sRow
 End Function
 
 </script:module>
