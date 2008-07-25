@@ -146,6 +146,19 @@ End Function
 
 &apos; /// Корректура строки ///
 
+Function InsertInString( sSource As String, sBefore As String, sInsert As String )
+	&apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert
+	Dim i As Integer, sStr1 As String, sStr2 As String
+	i = InStr(sSource, sBefore)
+	If i=0 Then
+		Exit Function
+	End If
+	&apos; берем часть строки ДО sBefore
+	sStr1 = Mid( sSource, 1, Instr(sSource, sBefore)-1 )
+	sStr2 = Mid( sSource, Instr(sSource, sBefore)+1, Len(sSource) )
+	sSource = sStr1 &amp; sInsert &amp; sStr2
+End Function
+
 Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
 	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
 	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
