@@ -30,7 +30,8 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	
 	If IsMatrix(oTable) = True Then
 		&apos; обработка только правильных прямоугольных матриц
-		sTable = MakeSimpleTable(nHeaderRowCount, oTable, iCel, CellNames)
+		&apos;sTable = MakeSimpleTable(nHeaderRowCount, oTable, iCel, CellNames)
+		sTable = MakeComplexTable(nHeaderRowCount, oTable, CellNames)
 	Else
 		&apos; обработка сложных таблиц
 		If IsComplexRowsCollTable(oTable) = True Then
@@ -418,12 +419,14 @@ Function MakeValignAttrComplex(sTA As String, sTVA As String, sTHDTag As String)
 	MakeValignAttrComplex = sTagTDHAttr
 End Function
 
-Function InsertColspanFor1Row( aFB2ParasRow() As String, nCollMaxInTable As Integer )
+Function InsertColspanFor1Row( aFB2ParasRow() As String, nCollMaxInTable As Integer, nMaxLines As Integer )
 	&apos; вставляем colspan для строки из 1-й ячейки (colspan=nCollMaxInTable)
-	Dim sStr As String
-	sStr = aFB2ParasRow(0,0)
-	InsertInString( sStr, &quot;&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; )
-	aFB2ParasRow(0,0) = sStr
+	Dim sStr As String, i As Integer
+	For i=0 To nMaxLines
+		sStr = aFB2ParasRow(0,i)
+		InsertInString( sStr, &quot;&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; )
+		aFB2ParasRow(0,i) = sStr
+	Next i
 End Function
 
 Function InsertColspanForCutRow( aFB2ParasRow() As String )
@@ -444,7 +447,7 @@ Function MakeTRRow( aFB2ParasRow() As String, nCollMaxInTable As Integer, nMaxLi
 			InsertColspanForCutRow( aFB2ParasRow() )
 		Else &apos; строка из одной строки
 			&apos; вставляем colspan для строки, состоящей из 1-й ячейки (colspan=nCollMaxInTable)
-			InsertColspanFor1Row( aFB2ParasRow(), nCollMaxInTable )
+			InsertColspanFor1Row( aFB2ParasRow(), nCollMaxInTable, nMaxLines )
 		End If
 	End If
 	

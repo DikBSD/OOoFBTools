@@ -358,9 +358,13 @@ End Function
 Function IsMatrix(oTable As Object) As Boolean
 	&apos; для простой прямоугольной матрицы возвращает True
 	&apos; для сложной таблицы - False
+	&apos; РАЗОБРАТЬСЯ!!! - Не на всех сложных таблицах DataArray НЕ КАК ARRAY - глюк OOo
 	On Error Goto ErrorHandler
-	IsMatrix = IsArray(oTable.DataArray)
-	Exit Function
+&apos;	IsMatrix = IsArray(oTable.DataArray)
+	If oTable.Columns.Count&gt;0 OR IsArray(oTable.Data)=True OR IsArray(oTable.DataArray)=True Then
+		IsMatrix = True
+		Exit Function
+	End If
 	ErrorHandler:
 	IsMatrix = False
 End Function
