@@ -341,7 +341,6 @@ Function MakeComplexTable(nHeaderRowCount As Integer, oTable As Object, CellName
 		sTable = sTable &amp; aRows(i)
 	Next i
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
-	
 	MakeComplexTable = sTable
 End Function
 
@@ -353,7 +352,6 @@ Function MakeFB2ParasRow( aFB2ParasRow() As String, aCellAllFormatText() As Vari
 	&apos; 1. формируем fb2 код Ячейки со всеми абзацами
 	Dim aCellWithLines(nMaxLines) As String
 	aCellWithLines = MakeFB2ParasCell( aCellAllFormatText(), nMaxLines )
-	
 	&apos; 2. задаем аттрибуты
 	Dim sTRTag As String, sTagTDH As String, sTagStart As String, sTagEnd As String
 	sTRTag = MakeTRTag(sLineTRA)
@@ -364,14 +362,14 @@ Function MakeFB2ParasRow( aFB2ParasRow() As String, aCellAllFormatText() As Vari
 			sTRTag = MakeTRTag(sHeaderTRA)
 			sTagTDH = MakeValignAttrComplex(sAlling, sHeaderTVA, &quot;th&quot;)
 			sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-			sTagEnd = &quot;&lt;/th&gt;&quot;
+			sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
 		Else
 			sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-			sTagEnd = &quot;&lt;/td&gt;&quot;
+			sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
 		End If
 	Else
 		sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-		sTagEnd = &quot;&lt;/td&gt;&quot;
+		sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
 	End If
 	
 	&apos; 3. формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
@@ -395,17 +393,28 @@ Function MakeFB2ParasCell( aCellAllFormatText() As Variant, nMaxLines As Integer
 	For i = LBound(aCellAllFormatText) To nMaxLines
 		&apos; Выравнивание строк: влево - 0, вправо - 1, по центру - 3, по ширине - 2	
 		If UBound(aCellAllFormatText) = nMaxLines Then		
-			aCellWithLines(i) = aCellAllFormatText(i) &amp; chr(10)
+			aCellWithLines(i) = aCellAllFormatText(i)
 		Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
 			For j = 0 To UBound(aCellAllFormatText)
-				aCellWithLines(j) = aCellAllFormatText(j) &amp; chr(10)
+				aCellWithLines(j) = aCellAllFormatText(j)
 			Next j
 			For j = UBound(aCellAllFormatText)+1 To nMaxLines
-				aCellWithLines(j) = &quot;&quot; &amp; chr(10)
+				aCellWithLines(j) = &quot;&quot;
 			Next j
 			Exit For
 		End If
 	Next i
+	
+	&apos; 2. убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
+	Dim sCR As String
+	For i = 0 To UBound(aCellWithLines())
+		sCR = aCellWithLines(i)
+		If InStr(sCR, chr(13)) &gt; 0 Then
+			ReplaceFromString(sCR, chr(13), &quot;&quot;)
+			aCellWithLines(i) = sCR
+		End If
+	Next i
+	
 	MakeFB2ParasCell = aCellWithLines
 End Function
 
@@ -501,16 +510,7 @@ Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Variant
 	Else
 		aCellAllFormatText = Split(sFormatCellText, chr(10))
 	End If
-	
-	&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
-	Dim sCR As String
-	For i = 0 To UBound(aCellAllFormatText())
-		sCR = aCellAllFormatText(i)
-		If InStr(sCR, chr(13)) &gt; 0 Then
-			ReplaceFromString(sCR, chr(13), &quot;&quot;)
-			aCellAllFormatText(i) = sCR
-		End If
-	Next i
+
 	MakeWorkCellPara = aCellAllFormatText
 End Function
 
