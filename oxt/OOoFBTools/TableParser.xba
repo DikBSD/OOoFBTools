@@ -121,18 +121,18 @@ Function MakeSimpleTable(iHeaderRowCount As Integer, oTable As Object, iCel As I
 	Dim i As Integer
 	If iHeaderRowCount &gt; 0 Then
 		For i = 0 To iHeaderRowCount-1
-			sTable = sTable &amp; MakeVirtualFormatRowSimpleTable(oTable, iCel, True, sHeaderTRA, sHeaderTVA, CellNames)
+			sTable = sTable &amp; MakeVirtualFormatRowSimpleTable(oTable, iCel, True, sHeaderTVA, CellNames)
 		Next i
 	End If
 	&apos; строки таблицы
 	For iRow = iHeaderRowCount To oTable.Rows.Count-1
-		sTable = sTable &amp; MakeVirtualFormatRowSimpleTable(oTable, iCel, False, sLineTRA, sLineTVA, CellNames)
+		sTable = sTable &amp; MakeVirtualFormatRowSimpleTable(oTable, iCel, False, sLineTVA, CellNames)
 	Next iRow
 	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
 	MakeSimpleTable = sTable
 End Function
 
-Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth As Boolean, sTRA As String, sTVA As String, CellNames) As String
+Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth As Boolean, sTVA As String, CellNames) As String
 	&apos; форматирование текста каждой ячейки для заданной строки простой таблицы
 	Dim iCol As Integer, i As Integer, j As Integer
 	Dim sRow As String, sTHDAttr As String, sCellString As String
@@ -144,7 +144,7 @@ Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth 
 	sRow = &quot;&quot;
 	
 	&apos; Ищем ячейку в строке с максимальным числом абзацев
-	Dim nMaxLines As Integer	&apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
+	Dim nMaxLines As Integer &apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
 	Dim nCel As Integer
 	nCel = iCel
 	&apos; находим max число абзацев в строке, учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
@@ -235,17 +235,8 @@ Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth 
 	Next i
 
 	&apos; теперь собираем ячейки в &quot;свои&quot; &lt;tr&gt;
-	IF sTRA = &quot;&quot; Then
-		sTagTR = &quot;&lt;tr&gt;&quot;
-	Else
-		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
-		&apos;	sTagTR = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
-		&apos;Else
-			sTagTR = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
-		&apos;End If
-	End If
 	For i = 0 To UBound(sMergeLines())
-		sRow = sRow &amp; sTagTR &amp; chr(10) &amp; sMergeLines(i) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+		sRow = sRow &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10) &amp; sMergeLines(i) &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 	Next i
 	
 	MakeVirtualFormatRowSimpleTable = sRow
@@ -353,13 +344,11 @@ Function MakeFB2ParasRow( aFB2ParasRow() As String, aCellAllFormatText() As Vari
 	Dim aCellWithLines(nMaxLines) As String
 	aCellWithLines = MakeFB2ParasCell( aCellAllFormatText(), nMaxLines )
 	&apos; 2. задаем аттрибуты
-	Dim sTRTag As String, sTagTDH As String, sTagStart As String, sTagEnd As String
-	sTRTag = MakeTRTag(sLineTRA)
+	Dim sTagTDH As String, sTagStart As String, sTagEnd As String
 	sTagTDH = MakeValignAttrComplex(sAlling), sLineTVA, &quot;td&quot;)
 	&apos; обработка заголовков таблицы
 	If nHeaderRowCount &gt; 0 Then
 		If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-			sTRTag = MakeTRTag(sHeaderTRA)
 			sTagTDH = MakeValignAttrComplex(sAlling, sHeaderTVA, &quot;th&quot;)
 			sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
 			sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
@@ -514,17 +503,5 @@ Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Variant
 	MakeWorkCellPara = aCellAllFormatText
 End Function
 
-Function MakeTRTag(sTRA As String) As String
-	&apos; формирование тэга tr с аттрибутами для простой таблицы
-	IF sTRA = &quot;&quot; Then
-		MakeTRTag = &quot;&lt;tr&gt;&quot;
-	Else
-		&apos;If sRow = &quot;&quot; Then &apos; &quot;пустые виртуальные&quot; строки
-		&apos;	MakeTRTag = &quot;&lt;tr&gt;&quot;	&apos;закомментировал - т.к. не знаю как просмотреть - пустые ли это строки (иначе и на не пустые срабатывает - sRow в цикле внизу уже не пустая)
-		&apos;Else
-			MakeTRTag = &quot;&lt;tr align=&quot;&quot;&quot; &amp; sTRA &amp; &quot;&quot;&quot;&gt;&quot;
-		&apos;End If
-	End If
-End Function
 
 </script:module>
