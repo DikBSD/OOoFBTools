@@ -2,6 +2,7 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Body" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
+Public bELForStartAnnot As Boolean
 
 Function IsAECP(sStyle As String) As Boolean
 	&apos; Если аргумент sStyle - это Эпиграф, Цитата или Поэма - то возвращается True, иначе - False
@@ -57,7 +58,7 @@ Function MakeBody(sArray As String, bBody As Boolean)
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
 	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
-	Dim i As Long, lIndexOf1Section As Long, lParaCount As Long
+	Dim lIndexOf1Section As Long, lParaCount As Long
 	Dim bText As Boolean, bTextSmSection As Boolean
 	lParaCount = UBound(sArray)
 	lIndexOf1Section = IndexOf1Section(sArray)
@@ -91,6 +92,10 @@ Function MakeBody(sArray As String, bBody As Boolean)
 					If bText = False Then
 						oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
 						bText = True
+						&apos; &quot;защита&quot; - если после аннотации идет српзу Уровень, то вставляем между ними пустую строку для валидности
+						If sArray(lCurrentElement,1)=sStyleAnnotation Then
+							bELForStartAnnot = IsNeededELForAnnot( sArray(), lCurrentElement )
+						End If
 					End If
 					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
 					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
@@ -193,6 +198,25 @@ Function SaveNotes
 		oProgressBar.setValue(lCount) &apos; Статусбар
 	Next lCount
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+End Function
+
+Function IsNeededELForAnnot( sArray() As String, lCurrentElement As Long ) As Boolean
+	&apos; &quot;защита&quot; - если после аннотации идет српзу Уровень, то вставляем между ними пустую строку для валидности
+	Dim l As Long, lPointer As Long
+	lPointer = lCurrentElement
+	For l=0 To UBound(sArray())
+		If sArray(lPointer,1)&lt;&gt;sStyleAnnotation Then
+			If sArray(lPointer,1)=&quot;&quot; Then &apos; пустая строка после стартовой аннотации уже есть
+				IsNeededELForAnnot = False
+				Exit Function
+			ElseIf IsLevel(sArray(lPointer,1)) = True Then
+				IsNeededELForAnnot = True
+				Exit Function
+			End If
+		End If
+		lPointer = lPointer+1
+	Next l
+	IsNeededELForAnnot = False
 End Function
 
 

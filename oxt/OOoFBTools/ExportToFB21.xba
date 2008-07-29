@@ -794,7 +794,13 @@ Function MakeAnnotation(sArray As String, bBody As Boolean) As String
 		End If
 	Next l
 	lCurrentElement = l
-	MakeAnnotation = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
+	sAnnot = sAnnot &amp; &quot;&lt;/annotation&gt;&quot;
+	If bELForStartAnnot = True Then
+		&apos; &quot;защита&quot; - если после аннотации идет српзу Уровень, то вставляем между ними пустую строку для валидности
+		sAnnot = sAnnot &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
+		bELForStartAnnot = False &apos; Для всех других аннотаций - не надо!!!
+	End If
+	MakeAnnotation = sAnnot 
 End Function
 
 Function MakeCite(sArray As String, bBody As Boolean) As String
