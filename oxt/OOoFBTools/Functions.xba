@@ -5,6 +5,51 @@ Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
 &apos; /// Работа с файлами ///
+Function SaveArray( aArray() As String, sFile As String )
+	&apos; Запись массива в файл
+	Dim oOS As Object, oFA As Object, oTOS As Object, i As Integer
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sFile)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.setEncoding(&quot;utf-8&quot;)
+	
+	For i=LBound(aArray()) To UBound(aArray())
+		oTOS.writeString(aArray(i) &amp; chr(10))
+	Next i
+	oTOS.closeOutput()
+End Function
+
+Function ReadFileInArray( aArray() As String, sFile As String )
+	&apos; чтение файла в массив
+	If FileExists(sFile) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFile) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; chr(10) Then
+				If sLine &lt;&gt; &quot;&quot; Then
+					Dim l As Long
+					l = Ubound(aArray()) + 1
+					If l &gt; 0 Then
+						ReDim Preserve aArray(l)
+					Else Redim aArray(l)
+					End If
+					aArray(l) = sLine
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+	End If
+End Function
 
 Function SaveSettings(sSettingsFilename As String, oDlg As Object)
 	&apos; записываем установки
@@ -585,5 +630,31 @@ Function GetSubStrCount(sStr As String, sSubStr As String) As Integer
 	sArray = Split(sStr, sSubStr)
 	GetSubStrCount = UBound(sArray)
 End Function
+
+&apos; //////////// сортировка //////////////
+Function swap( aArray() As String, nPos1 As Integer, nPos2 As Integer )
+	&apos; перемена местами двух итемов в массиве
+	Dim sTemp As String
+	sTemp = aArray(nPos1)
+	aArray(nPos1) = aArray(nPos2)
+	aArray(nPos2) = sTemp
+End Function
+
+Function bubble_sort( aArray() As String, nSize As Integer )
+	&apos; пузырьковая сортировка
+	Dim i As Integer, j As Integer
+	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
+	&apos; наибольший автоматически оказывается в правильной позиции. 
+	For i=0 To nSize-1
+		j=nSize-1
+		Do
+			If (aArray(j-1) &gt; aArray(j)) Then
+				swap(aArray, j-1, j)
+			End If
+		j = j-1
+		Loop While (j&gt;i)
+	Next i
+End Function
+
 
 </script:module>

@@ -4,8 +4,10 @@
 Option Explicit
 
 Public oInfoDlg As Object
-
+Public oGEDlg As Object
 Const sDlgTitle = &quot;Данные о книге&quot;
+
+Public sGEFilename As String &apos; файл Избранных Жанров
 
 Public sGenres() As String REM book&apos;s genres
 Public sAuthors() As String REM book&apos;s authors
@@ -23,8 +25,9 @@ Private sGLN() As String, sGLC() As String &apos;списки названий �
 Private bExecute As Boolean
 Private bAppendBtn As Boolean
 
-Function InitFB21
-	&apos; Инициализация жанрами схемы FictionBook 2.1
+Function GenreFB21
+	&apos; жанры схемы fb2.1
+		&apos; Инициализация жанрами схемы FictionBook 2.1
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
 				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
@@ -53,7 +56,6 @@ Function InitFB21
 				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
 				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
 				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;)
-	oProgressBar.setValue(1) &apos; Статусбар
 	
  	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
 			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
@@ -70,17 +72,10 @@ Function InitFB21
 			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
 			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
-	oProgressBar.setValue(2) &apos; Статусбар
-
-	With oInfoDlg.Model
-		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.1&quot;
-		.GenreComboBox.StringItemList = sGLN()
-	End With
-	oProgressBar.setValue(3) &apos; Статусбар
 End Function
 
-Function InitFB22
-	&apos; Инициализация жанрами схемы FictionBook 2.2
+Function GenreFB22
+	&apos; жанры схемы fb2.2
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
 				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
@@ -113,7 +108,6 @@ Function InitFB22
 				&quot;Ценные бумаги, Инвестиции&quot;, &quot;Бухучет, Налогообложение, Аудит&quot;, &quot;Внешнеэкономическая деятельность&quot;,_
 				&quot;Экономика&quot;, &quot;Отраслевые издания&quot;, &quot;Корпоративная культура&quot;, &quot;Личные финансы&quot;, &quot;Недвижимость&quot;, &quot;Популярно о бизнесе&quot;,_
 				&quot;Малый бизнес&quot;, &quot;Делопроизводство&quot;, &quot;Справочники&quot; )
-	oProgressBar.setValue(1) &apos; Статусбар
 	
  	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
 			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
@@ -131,13 +125,27 @@ Function InitFB22
 			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
 			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
-	oProgressBar.setValue(2) &apos; Статусбар
+End Function
+
+Function InitFB21
+	&apos; Инициализация жанрами схемы FictionBook 2.1
+	GenreFB21
+
+	With oInfoDlg.Model
+		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.1&quot;
+		.GenreComboBox.StringItemList = sGLN()
+	End With
+
+End Function
+
+Function InitFB22
+	&apos; Инициализация жанрами схемы FictionBook 2.2
+	GenreFB22
 
 	With oInfoDlg.Model
 		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.2&quot;
 		.GenreComboBox.StringItemList = sGLN()
 	End With
-	oProgressBar.setValue(3) &apos; Статусбар
 	
 End Function
 
@@ -150,6 +158,8 @@ Function InfoDlgExec As Boolean
 	sSettingsFilename = pmxCurDir() &amp; &quot;/OOoFBTools/settings.txt&quot;
 	&apos; файл профиля Автора fb2 документа
 	sFB2AuthorFilename = pmxCurDir() &amp; &quot;/OOoFBTools/profile.txt&quot;
+	&apos; файл Избранных Жанров
+	sGEFilename = pmxCurDir() &amp; &quot;/OOoFBTools/mygenre.txt&quot;
 	
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oInfoDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.InfoDlg)
@@ -160,6 +170,7 @@ Function InfoDlgExec As Boolean
 	Else
 		InitFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
 	End If
+	oProgressBar.setValue(3) &apos; Статусбар
 	
 	sLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
 						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
@@ -231,6 +242,12 @@ Function InfoDlgExec As Boolean
 	ReadServiceStyles(8)
 	
 	bAppendBtn = True
+	
+	&apos; читаем избранные жанры из файла, если он есть
+	Dim aArray() As String
+	ReadFileInArray( aArray(), sGEFilename)
+	oInfoDlg.Model.lbGenreElite.StringItemList = aArray()
+	
 	oInfoDlg.execute()
 	InfoDlgExec = bExecute
 
@@ -840,4 +857,139 @@ Function ShowGenresCount
 	MsgBox sStr, 64, &quot;Список Жанров Книги&quot;
 End Function
 
+
+&apos; //////////////////////////////////////////////////////////////////////
+&apos; //////////////////// Работа с Избранным Жанров ///////////////////////
+&apos; //////////////////////////////////////////////////////////////////////
+
+Function cbtnGenreElite_Click
+	&apos; запуск диалога работы со списком избранных жанров
+	oGEDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.GenreEliteDlg)
+	
+	If oGEDlg.Model.obtnGEFB21.State = 1 Then
+		InitGEFB21 &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitGEFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
+	
+	With oGEDlg.Model
+		.Height = 165
+		.Width = 215
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+	&apos; читаем избранные жанры из файла, если он есть
+	Dim aArray() As String
+	ReadFileInArray( aArray(), sGEFilename)
+	oGEDlg.Model.lbGE.StringItemList = aArray()
+	oGEDlg.execute()
+End Function
+
+Function InitGEFB21
+	&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
+	GenreFB21
+
+	With oGEDlg.Model
+		.Title = &quot;Избранные Жанры - схема fb2.1&quot;
+		.cboxGE.StringItemList = sGLN()
+	End With
+
+End Function
+
+Function InitGEFB22
+	&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
+	GenreFB22
+
+	With oGEDlg.Model
+		.Title = &quot;Избранные Жанры - схема fb2.2&quot;
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+End Function
+
+Function GEAdd
+	&apos; Добавить жанр в список Избранного
+	Dim oLB As Object, sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - Добаление Жанра в Избранное&quot;
+	sGenre = &quot;&quot;
+	For i=0 To UBound(sGLN())
+		If sGLN(i) = Trim(oGEDlg.getControl(&quot;cboxGE&quot;).Text) Then
+			sGenreName = Trim(oGEDlg.getControl(&quot;cboxGE&quot;).Text)
+			sGenre = sGLC(i)
+			Exit For
+		End If
+	Next i
+
+	&apos; ищем выделенный жанр в списке
+	aArray = oGEDlg.Model.lbGE.StringItemList
+	For i=0 To UBound(aArray())
+		If aArray(i) = sGenreName Then
+			MsgBox &quot;Выбраный жанр &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;уже имеется в списке Избранных Жанров.&quot; &amp; chr(10) &amp; _
+					&quot;Пожалуйста, выберите другой жанр книги!&quot;, 64, sTitle
+			Exit Function
+		End If
+	Next i
+	
+	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
+	If sGenre = &quot;?&quot; Then
+		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sTitle
+	ElseIf sGenreName&lt;&gt;&quot;&quot; Then
+		oLB.AddItem(sGenreName, oLB.ItemCount) &apos; в конец списка
+	Else
+		MsgBox &quot;Пожалуйста, выберите Жанр из выпадающего списка&quot;, 64, sTitle
+	End If
+
+End Function
+
+Function GERemove
+	&apos; Удалить жанр из списка Избранного
+	Dim oLB As Object, aArray() As String, i As Integer, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - Удаление Жанра из Избранного&quot;
+	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для удаления&quot;, 64, sTitle
+		Exit Function
+	End If
+	&apos; ищем выделенный жанр в списке
+	aArray = oGEDlg.Model.lbGE.StringItemList
+	For i=0 To UBound(aArray())
+		If aArray(i) = oLB.SelectedItem Then
+			Exit For
+		End If
+	Next i
+	
+	If	MsgBox(&quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle) = 6 Then
+		oLB.RemoveItems(i,1)
+	End If
+End Function
+
+Function GEOK
+	&apos; сохраняем список Избранных Жанров в файл
+	Dim aArray() As String
+	aArray = oGEDlg.Model.lbGE.StringItemList
+	If UBound(aArray()) &gt; -1 Then
+		SaveArray( aArray(), sGEFilename)
+		oInfoDlg.Model.lbGenreElite.StringItemList = aArray()
+	End If
+	oGEDlg.endExecute()
+End Function
+
+Function InsertGEToGenreBox(oEvent)
+	&apos; вставка Избранного Жанра в основной бокс Жанров
+	oInfoDlg.Model.GenreComboBox.Text = oEvent.source.getSelectedItem
+End Function
+
+Function SortGenre
+	&apos; сортировка списка Избранных Жанров
+	Dim aArray() As String
+	If	MsgBox(&quot;Вы действительно хотите отсортировать список Избранных Жанров,&quot; &amp; chr(10), _
+				32 + 4 + 256, sConvertorName &amp; &quot; - Сортировка списка Избранных Жанров&quot;) = 6 Then
+		aArray = oGEDlg.Model.lbGE.StringItemList
+		bubble_sort(aArray(), Ubound(aArray())+1)
+		oGEDlg.Model.lbGE.StringItemList = aArray
+	End If
+End Function
+		
 </script:module>
