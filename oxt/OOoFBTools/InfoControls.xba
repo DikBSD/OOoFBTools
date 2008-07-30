@@ -927,41 +927,48 @@ Function GEAdd
 			MsgBox &quot;Выбраный жанр &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
 					&quot;уже имеется в списке Избранных Жанров.&quot; &amp; chr(10) &amp; _
 					&quot;Пожалуйста, выберите другой жанр книги!&quot;, 64, sTitle
+			oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()		
 			Exit Function
 		End If
 	Next i
 	
-	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
 	If sGenre = &quot;?&quot; Then
 		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sTitle
 	ElseIf sGenreName&lt;&gt;&quot;&quot; Then
-		oLB.AddItem(sGenreName, oLB.ItemCount) &apos; в конец списка
+		oGEDlg.getControl(&quot;lbGE&quot;).AddItem(sGenreName, oGEDlg.getControl(&quot;lbGE&quot;).ItemCount) &apos; в конец списка
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sGenreName, True)
 	Else
 		MsgBox &quot;Пожалуйста, выберите Жанр из выпадающего списка&quot;, 64, sTitle
 	End If
-
+	oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()
+	
 End Function
 
 Function GERemove
 	&apos; Удалить жанр из списка Избранного
-	Dim oLB As Object, aArray() As String, i As Integer, sTitle As String
+	Dim oLB As Object, aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Удаление Жанра из Избранного&quot;
 	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
 	If oLB.SelectedItem = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для удаления&quot;, 64, sTitle
 		Exit Function
 	End If
-	&apos; ищем выделенный жанр в списке
-	aArray = oGEDlg.Model.lbGE.StringItemList
-	For i=0 To UBound(aArray())
-		If aArray(i) = oLB.SelectedItem Then
-			Exit For
-		End If
-	Next i
 	
 	If	MsgBox(&quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
 				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle) = 6 Then
-		oLB.RemoveItems(i,1)
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
 	End If
 End Function
 
@@ -986,10 +993,51 @@ Function SortGenre
 	Dim aArray() As String
 	If	MsgBox(&quot;Вы действительно хотите отсортировать список Избранных Жанров,&quot; &amp; chr(10), _
 				32 + 4 + 256, sConvertorName &amp; &quot; - Сортировка списка Избранных Жанров&quot;) = 6 Then
+		Dim sItem As String
+		sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
 		aArray = oGEDlg.Model.lbGE.StringItemList
 		bubble_sort(aArray(), Ubound(aArray())+1)
 		oGEDlg.Model.lbGE.StringItemList = aArray
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
 	End If
 End Function
-		
+
+Function GenreUp
+	&apos; перемещение выбранного жанра списка Избранных Жанров вверх
+	Dim aArray() As String, oLB As Object, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вверх&quot;
+	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;, 64, sTitle
+		Exit Function
+	End If
+	
+	If oGEDlg.Model.lbGE.SelectedItems(0) &gt; 0 Then
+		Dim sItem As String
+		sItem = oLB.getSelectedItem
+		aArray = oGEDlg.Model.lbGE.StringItemList
+		swap( aArray, oGEDlg.Model.lbGE.SelectedItems(0)-1, oGEDlg.Model.lbGE.SelectedItems(0) )
+		oGEDlg.Model.lbGE.StringItemList = aArray
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
+	End If
+End Function
+
+Function GenreDown
+	&apos; перемещение выбранного жанра списка Избранных Жанров вниз
+	Dim aArray() As String, oLB As Object, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вниз&quot;
+	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;, 64, sTitle
+		Exit Function
+	End If
+	aArray = oGEDlg.Model.lbGE.StringItemList
+	If oGEDlg.Model.lbGE.SelectedItems(0) &lt; UBound(aArray()) Then
+		Dim sItem As String
+		sItem = oLB.getSelectedItem
+		swap( aArray, oGEDlg.Model.lbGE.SelectedItems(0), oGEDlg.Model.lbGE.SelectedItems(0)+1 )
+		oGEDlg.Model.lbGE.StringItemList = aArray
+		oLB.selectItem(sItem, True)
+	End If
+End Function
 </script:module>
