@@ -205,8 +205,6 @@ Function TextCorrectorDlgOk
 
 	Dim oProgressBar
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-&apos;	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
-&apos;	oProgressBar.setValue(0)
 	
 	&apos; Очистка текста
 	oDoc = ThisComponent
@@ -240,10 +238,11 @@ Function TextCorrectorDlgOk
 	If bBreakLinesInPara = True Then
 		oProgressBar.start(&quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount)
 		JoinBreakLinesInPara( oProgressBar )
-	Else
-		oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
-		oProgressBar.setValue(0)
 	End If
+
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
+	oProgressBar.setValue(0)
+
 	If bDelEmptyPar = True Then
 		&apos; Удаляем все множественные пустые абзацы
 		oReplace.SearchString = &quot;^$&quot;
