@@ -13,6 +13,7 @@ Private bCorrectorExecute As Boolean
 Private bDelSpace As Boolean
 
 Private bDelEmptyPar As Boolean
+Private bBreakLinesInPara As Boolean
 Private bBreakLine As Boolean
 Private bDel As Boolean
 Private bPar As Boolean
@@ -40,7 +41,7 @@ Sub TextCorrector
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
-		.Height = 150
+		.Height = 162
 		.Width = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -102,6 +103,7 @@ Function SaveCorrectorSettings
 	&apos; заполняем переменные
 	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
 	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
+	bBreakLinesInPara = oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State
 	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
 	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
@@ -133,6 +135,7 @@ Function SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 1
 	&apos; Работа с абзацами и разрывами
 	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State = 1
@@ -181,13 +184,16 @@ Function cboxBreakLineEnabled
 End Function
 
 Function TextCorrectorDlgOk
+	Dim sCorrectorName
+	sCorrectorName = &quot;Корректирование текста&quot;
 	&apos; Если есть опции для чистки, то - работаем
 	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 Then
-		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sConvertorName
+		oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 Then
+		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sCorrectorName
 		Exit Function
 	End If
 	
@@ -199,8 +205,8 @@ Function TextCorrectorDlgOk
 
 	Dim oProgressBar
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
-	oProgressBar.setValue(0)
+&apos;	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
+&apos;	oProgressBar.setValue(0)
 	
 	&apos; Очистка текста
 	oDoc = ThisComponent
@@ -231,6 +237,13 @@ Function TextCorrectorDlgOk
 	End If
 	
 	&apos; Работа с абзацами и разрывами
+	If bBreakLinesInPara = True Then
+		oProgressBar.start(&quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount)
+		JoinBreakLinesInPara( oProgressBar )
+	Else
+		oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
+		oProgressBar.setValue(0)
+	End If
 	If bDelEmptyPar = True Then
 		&apos; Удаляем все множественные пустые абзацы
 		oReplace.SearchString = &quot;^$&quot;
@@ -666,8 +679,61 @@ Function TextCorrectorDlgOk
 		oProgressBar.setValue(89)
 	End If
 	
-	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sConvertorName
+	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sCorrectorName
 	oProgressBar.end
 End Function
+
+Sub JoinBreakLinesInPara( oProgressBar As Object )
+	&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
+	&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
+	&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant
+	Dim oDoc As Object, l As Long
+	oDoc = ThisComponent
+	vSearch = oDoc.createSearchDescriptor()
+	&apos; поиск с регулярными выражениями
+	vSearch.SearchRegularExpression = True
+	vSearch.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
+	&apos; Находим первый идентификатор
+	vStartFound = oDoc.findFirst(vSearch)
+	l = 0
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителья, начиная с найденного открывающего
+		vEndFound = oDoc.findNext( vStartFound.End, vSearch)
+		If IsNull(vEndFound) Then
+			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
+			Exit Do
+		Else
+			vEndFound.gotoPreviousParagraph(False)
+			&apos;vEndFound.gotoEndOfParagraph(False)
+			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
+			vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+		End If
+	Loop
+End Sub
+
+Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
+	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
+	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
+	oLCurs.goRight(0, False)
+	Dim vDescriptor, vFound
+	vDescriptor = oDoc.createSearchDescriptor()
+	With vDescriptor
+		.SearchString = &quot;$&quot;
+		.SearchCaseSensitive = False
+		.SearchRegularExpression = True
+	End With
+	vFound = oDoc.findNext( oLCurs, vDescriptor )
+	Do While Not IsNull(vFound)
+		l = l + 1
+		oProgressBar.setValue(l)
+		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Do
+		vFound.setString(&quot; &quot;)
+		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
+	Loop
+End Sub
 
 </script:module>
