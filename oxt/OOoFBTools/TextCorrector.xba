@@ -26,6 +26,7 @@ Private bKav As Boolean
 Private bPoints As Boolean
 Private bC As Boolean
 Private bImages As Boolean
+Private bMPer As Boolean
 Private nAnchor As String
 
 Private sAnchorsList() As String &apos; виды привязки картинки
@@ -41,7 +42,7 @@ Sub TextCorrector
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
-		.Height = 162
+		.Height = 172
 		.Width = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -115,6 +116,7 @@ Function SaveCorrectorSettings
 	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
 	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
 	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
+	bMPer = oTextCorrectorDlg.GetControl(&quot;cboxMPer&quot;).State
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
 	nAnchor = oLB.SelectedItem
 	
@@ -147,6 +149,7 @@ Function SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxMPer&quot;).State = 1
 	&apos; Картинки
 	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
@@ -192,7 +195,7 @@ Function TextCorrectorDlgOk
 		oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 Then
+		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxMPer&quot;).State = 0 Then
 		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sCorrectorName
 		Exit Function
 	End If
@@ -240,7 +243,7 @@ Function TextCorrectorDlgOk
 		JoinBreakLinesInPara( oProgressBar )
 	End If
 
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 90)
 	oProgressBar.setValue(0)
 
 	If bDelEmptyPar = True Then
@@ -676,6 +679,13 @@ Function TextCorrectorDlgOk
 		oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(89)
+	End If
+	&apos; Удаление мягких переносов
+	If bMPer = True Then
+		oReplace.SearchString = &quot;\x00AD&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(90)
 	End If
 	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sCorrectorName
