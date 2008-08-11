@@ -92,7 +92,7 @@ Function MakeBody(sArray As String, bBody As Boolean)
 					If bText = False Then
 						oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
 						bText = True
-						&apos; &quot;защита&quot; - если после аннотации идет српзу Уровень, то вставляем между ними пустую строку для валидности
+						&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности
 						If sArray(lCurrentElement,1)=sStyleAnnotation Then
 							bELForStartAnnot = IsNeededELForAnnot( sArray(), lCurrentElement )
 						End If
@@ -201,13 +201,17 @@ Function SaveNotes
 End Function
 
 Function IsNeededELForAnnot( sArray() As String, lCurrentElement As Long ) As Boolean
-	&apos; &quot;защита&quot; - если после аннотации идет српзу Уровень, то вставляем между ними пустую строку для валидности
+	&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности
 	Dim l As Long, lPointer As Long
 	lPointer = lCurrentElement
 	For l=0 To UBound(sArray())
 		If sArray(lPointer,1)&lt;&gt;sStyleAnnotation Then
 			If sArray(lPointer,1)=&quot;&quot; Then &apos; пустая строка после стартовой аннотации уже есть
-				IsNeededELForAnnot = False
+				If bDelEL = True Then &apos; не удаляем пустую строку, даже при включенной опции удаления
+					IsNeededELForAnnot = True				
+				Else
+					IsNeededELForAnnot = False
+				End If
 				Exit Function
 			ElseIf IsLevel(sArray(lPointer,1)) = True Then
 				IsNeededELForAnnot = True
