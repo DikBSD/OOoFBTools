@@ -17,6 +17,8 @@ Private bBreakLinesInPara As Boolean
 Private bBreakLinesInParaStartSpace As Boolean
 Private bBreakLinesInParaEndSymbols As Boolean
 
+Private bDelMP As Boolean &apos; удаление мягкие переносы
+
 Private bBreakLine As Boolean
 Private bDel As Boolean
 Private bPar As Boolean
@@ -44,7 +46,7 @@ Sub TextCorrector
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
-		.Height = 170
+		.Height = 180
 		.Width = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -123,7 +125,7 @@ Sub SaveCorrectorSettings
 	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
 	nAnchor = oLB.SelectedItem
-	
+	bDelMP = oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State
 End Sub
 
 Sub SetCorrectorSettingsInControlls(sCurrentLine)
@@ -161,6 +163,8 @@ Sub SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
 	oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+	&apos; мягкие переносы
+	oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 1
 	
 	cboxImagesEnabled
 	cboxBreakLineEnabled
@@ -206,16 +210,21 @@ End Sub
 
 
 Sub TextCorrectorDlgOk
-	Dim sCorrectorName
+	Dim sCorrectorName As String
 	sCorrectorName = &quot;Корректирование текста&quot;
 	&apos; Если есть опции для чистки, то - работаем
-	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
+	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 Then
+		oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 0 Then
 		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sCorrectorName
 		Exit Sub
 	End If
@@ -268,7 +277,7 @@ Sub TextCorrectorDlgOk
 		End If
 	End If
 
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 90)
 	oProgressBar.setValue(0)
 
 	If bDelEmptyPar = True Then
@@ -704,6 +713,14 @@ Sub TextCorrectorDlgOk
 		oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(89)
+	End If
+	
+	&apos; Удаление мягких переносов
+	If bDelMP = True Then
+		oReplace.SearchString = &quot;\x00AD&quot;
+		oReplace.ReplaceString = &quot;&quot;
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(90)
 	End If
 	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sCorrectorName
