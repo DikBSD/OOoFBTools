@@ -14,6 +14,9 @@ Private bDelSpace As Boolean
 
 Private bDelEmptyPar As Boolean
 Private bBreakLinesInPara As Boolean
+Private bBreakLinesInParaStartSpace As Boolean
+Private bBreakLinesInParaEndSymbols As Boolean
+
 Private bBreakLine As Boolean
 Private bDel As Boolean
 Private bPar As Boolean
@@ -41,7 +44,7 @@ Sub TextCorrector
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
-		.Height = 162
+		.Height = 170
 		.Width = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -95,7 +98,7 @@ Function ReadCorrectorSettings As Boolean
 	End If
 End Function
 
-Function SaveCorrectorSettings
+Sub SaveCorrectorSettings
 	&apos; записываем настройки очистки текста
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg)
@@ -104,6 +107,9 @@ Function SaveCorrectorSettings
 	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
 	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
 	bBreakLinesInPara = oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State
+	bBreakLinesInParaStartSpace = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
+	bBreakLinesInParaEndSymbols = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
+	
 	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
 	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
@@ -118,17 +124,18 @@ Function SaveCorrectorSettings
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
 	nAnchor = oLB.SelectedItem
 	
-End Function
+End Sub
 
-Function SetCorrectorSettingsInControlls(sCurrentLine)
+Sub SetCorrectorSettingsInControlls(sCurrentLine)
 	SetSettingsInControlls(sCurrentLine, oTextCorrectorDlg)
 
 	cboxImagesEnabled
 	cboxBreakLineEnabled
+	cboxBreakLinesInParaEnabled
 
-End Function
+End Sub
 
-Function SetCorrectorSettingDefault
+Sub SetCorrectorSettingDefault
 	&apos; Установка настроек по умолчанию в контролы
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Работа с пробелами и табуляциями
@@ -136,6 +143,9 @@ Function SetCorrectorSettingDefault
 	&apos; Работа с абзацами и разрывами
 	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
+	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State = 0
+	
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State = 1
@@ -154,14 +164,15 @@ Function SetCorrectorSettingDefault
 	
 	cboxImagesEnabled
 	cboxBreakLineEnabled
-End Function
+	cboxBreakLinesInParaEnabled
+End Sub
 
-Function TextCorrectorDlgCanceled
+Sub TextCorrectorDlgCanceled
 	bCorrectorExecute = False
 	oTextCorrectorDlg.endExecute()
-End Function
+End Sub
 
-Function cboxImagesEnabled
+Sub cboxImagesEnabled
 	If oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = True
@@ -169,9 +180,9 @@ Function cboxImagesEnabled
 		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = False
 		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = False
 	End If
-End Function
+End Sub
 
-Function cboxBreakLineEnabled
+Sub cboxBreakLineEnabled
 	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = True
@@ -181,20 +192,32 @@ Function cboxBreakLineEnabled
 		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = False
 		oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).Enable = False
 	End If
-End Function
+End Sub
 
-Function TextCorrectorDlgOk
+Sub cboxBreakLinesInParaEnabled
+	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 1 Then
+		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = True
+	Else
+		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = False
+	End If
+End Sub
+
+
+Sub TextCorrectorDlgOk
 	Dim sCorrectorName
 	sCorrectorName = &quot;Корректирование текста&quot;
 	&apos; Если есть опции для чистки, то - работаем
 	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 Then
 		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sCorrectorName
-		Exit Function
+		Exit Sub
 	End If
 	
 	&apos; Принятие параметров чистки текста
@@ -237,7 +260,12 @@ Function TextCorrectorDlgOk
 	&apos; Работа с абзацами и разрывами
 	If bBreakLinesInPara = True Then
 		oProgressBar.start(&quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount)
-		JoinBreakLinesInPara( oProgressBar )
+		&apos; не переставлять местами условия!!! Результат будет неверен
+		If bBreakLinesInParaStartSpace = True Then
+			JoinBreakLinesInParaStartSpace( oProgressBar )
+		ElseIf bBreakLinesInParaEndSymbols = True Then
+			JoinBreakLinesInParaEndSymbols( oProgressBar )
+		End If
 	End If
 
 	oProgressBar.start(&quot;Корректировка документа:&quot;, 89)
@@ -680,9 +708,9 @@ Function TextCorrectorDlgOk
 	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sCorrectorName
 	oProgressBar.end
-End Function
+End Sub
 
-Sub JoinBreakLinesInPara( oProgressBar As Object )
+Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
 	&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
 	&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
 	&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
@@ -697,7 +725,7 @@ Sub JoinBreakLinesInPara( oProgressBar As Object )
 	vStartFound = oDoc.findFirst(vSearch)
 	l = 0
 	Do While Not IsNull(vStartFound)
-		&apos;Поиск закрывающего разделителья, начиная с найденного открывающего
+		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
 		vEndFound = oDoc.findNext( vStartFound.End, vSearch)
 		If IsNull(vEndFound) Then
 			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
@@ -710,6 +738,44 @@ Sub JoinBreakLinesInPara( oProgressBar As Object )
 			&apos;vEndFound.gotoEndOfParagraph(False)
 			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
 			vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+		End If
+	Loop
+End Sub
+
+Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
+	&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
+	&apos; Идентификатор строки &quot;одного абзаца&quot; - 1 или несколько пробелов в конце строки.
+	&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+	Dim vStartSearch, vEndSearch &apos;Open и Close descriptors
+	Dim vStartFound, vEndFound &apos;Open и Close find objects
+	Dim oDoc As Object, l As Long
+	oDoc = ThisComponent
+	&apos; Создать дескрипторы для документа, в котором возможен поиск.
+	vStartSearch = oDoc.createSearchDescriptor()
+	vEndSearch = oDoc.createSearchDescriptor()
+
+	vStartSearch.SearchRegularExpression = True
+	vEndSearch.SearchRegularExpression = True
+	
+	&apos; Задать текст, который нужно искать, и др.
+	vStartSearch.SearchString = &quot;$&quot;&apos;( если поиск по пробелам в конце абзаца - &quot;[:space:]+$&quot; - этот вариант не всегда встречается и не все разорванные строки &quot;видит&quot;)
+	vEndSearch.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot;
+	&apos; Найти первый открывающий разделитель
+	vStartFound = oDoc.findFirst(vStartSearch)
+	l = 0
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителья, начиная с найденного открывающего
+		vEndFound = oDoc.findNext( vStartFound.End, vEndSearch)
+		If IsNull(vEndFound) Then
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
+			Exit Do
+		Else
+			&apos; Выделить текст внутри разделителей
+			vStartFound.gotoStartOfParagraph(False)
+			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
+			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch)
 		End If
 	Loop
 End Sub
@@ -734,5 +800,6 @@ Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
 	Loop
 End Sub
+
 
 </script:module>
