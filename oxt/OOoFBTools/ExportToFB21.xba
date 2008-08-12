@@ -328,6 +328,9 @@ Function SaveElements(sArray As String, sParaStyleName As String, sPara As Strin
 					If sArray(lCurrentElement-1, 1) = sArray(lCurrentElement+1, 1) Then
 						&apos; пустая строка между уровнями одного ранга - оставляем
 						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					ElseIf lCurrentElement = UBound( sArray() ) Then
+						&apos; Если последний элемент массива - &quot;пустой&quot;, а предпоследний - Уровень, то оставляем &lt;empty-line/&gt;
+						
 					Else
 						&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
 						Dim sLevels(9) As String
