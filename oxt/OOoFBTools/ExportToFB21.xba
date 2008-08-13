@@ -258,7 +258,7 @@ Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
 	End If
 End Function
 
-Function SaveElements(sArray As String, sParaStyleName As String, sPara As String, bBody As Boolean)
+Function SaveElements(sArray() As String, sParaStyleName As String, sPara As String, bBody As Boolean)
 	&apos; перебор по стилям
 	Dim sStr As String, bFB2Clear As Boolean
 	Select Case sParaStyleName
@@ -328,9 +328,6 @@ Function SaveElements(sArray As String, sParaStyleName As String, sPara As Strin
 					If sArray(lCurrentElement-1, 1) = sArray(lCurrentElement+1, 1) Then
 						&apos; пустая строка между уровнями одного ранга - оставляем
 						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
-					ElseIf lCurrentElement = UBound( sArray() ) Then
-						&apos; Если последний элемент массива - &quot;пустой&quot;, а предпоследний - Уровень, то оставляем &lt;empty-line/&gt;
-						
 					Else
 						&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
 						Dim sLevels(9) As String
@@ -350,6 +347,12 @@ Function SaveElements(sArray As String, sParaStyleName As String, sPara As Strin
 							oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
 						End If
 					End If
+				Else
+					If sArray(lCurrentElement, 1) = &quot;&quot; Then
+						&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац -
+						&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поема, Цитата
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
 				End If
 			End If
 			lCurrentElement = lCurrentElement+1
@@ -359,6 +362,20 @@ Function SaveElements(sArray As String, sParaStyleName As String, sPara As Strin
 			lCurrentElement = lCurrentElement+1
 		Case &quot;Image&quot; 
 			oTextOutputStream.writeString(sPara &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case &quot;end-fn&quot; &apos; только для сносок - последний &quot;ненужный&quot; элемент массива
+			If bBody = False Then &apos; еще раз убедимся, что это - сноска
+				If lCurrentElement &lt;= UBound( sArray() ) Then &apos; чтобы &quot;не вылетить&quot; за границу индекса, на всякий случай
+					If IsLevel( sArray( lCurrentElement-1, 1 ) ) = True Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleAnnotation Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleAnnotationSubTitle Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleEpigraph Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleEpigraphAuthor Then
+						&apos; Только для Уровней, Аннотации и Эпиграфа оставляем пустую строку
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				End If
+			End If
 			lCurrentElement = lCurrentElement+1
 		Case Else &apos; что-то другое или просто параграф - записываем как параграф
 			If bDocLinks = True Then
@@ -533,8 +550,12 @@ Function MakeStanza(sArray As String, bBody As Boolean) As String
 		If sArray(l,1) = sStylePoem Then
 			If sArray(l,0) &lt;&gt; &quot;&quot; Then &apos; стих есть
 				&apos; смотрим предыдущий элемент
-				If l &gt;0 Then
+				If l &gt; 0 Then
 					If sArray(l-1,1) &lt;&gt; sStylePoem Then &apos; не стих - открываем stanza
+						sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
+					End If
+				ElseIf l = 0 Then
+					If sArray(0,1) = sStylePoem Then &apos; стих - открываем stanza
 						sStanza = sStanza &amp; &quot;&lt;stanza&gt;&quot; &amp; chr(10)
 					End If
 				End If
@@ -577,6 +598,7 @@ Function MakePoemAuthor(sArray As String, bBody As Boolean) As String
 	&apos; Авторы поэмы
 	Dim sPoem As String, l As Long, sID As String
 	l = lCurrentElement
+	If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 	If sArray(lCurrentElement,1) = sStylePoemAuthor Then
 		If bMergePoemAuthors = True Then &apos; собираем Авторов стиха, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов поэмы с закладками
@@ -639,10 +661,12 @@ Function MakePoemDate(sArray As String) As String
 	sSTR = &quot;&quot;
 	&apos; Дата написания поэмы - согласно схемы допускается только одна дата.
 	&apos; Если есть еще одна строка с датой, то она будет просто текстом (&lt;p&gt;XXX&lt;/p&gt;)
-	If sArray(lCurrentElement,1) = sStylePoemDate Then
-		sSTR = sSTR &amp; &quot;&lt;date&gt;&quot; &amp; sArray(lCurrentElement,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
-		oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-		lCurrentElement = lCurrentElement + 1
+	If lCurrentElement &lt;= UBound( sArray() ) Then
+		If sArray(lCurrentElement,1) = sStylePoemDate Then
+			sSTR = sSTR &amp; &quot;&lt;date&gt;&quot; &amp; sArray(lCurrentElement,0) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10)
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			lCurrentElement = lCurrentElement + 1
+		End If
 	End If
 	MakePoemDate = sSTR
 End Function
@@ -696,6 +720,7 @@ Function MakeEpigraphAuthor(sArray As String, sStyle_EpigraphAuthor As String, b
 	&apos; Авторы эпиграфа
 	Dim sEpig As String, l As Long, sID As String
 	l = lCurrentElement
+	If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 	If sArray(lCurrentElement,1) = sStyle_EpigraphAuthor Then
 		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов эпиграфа с закладками
@@ -859,6 +884,7 @@ Function MakeCiteAuthor(sArray As String, bBody As Boolean) As String
 	&apos; Авторы цитаты
 	Dim sCite As String, l As Long, sID As String
 	l = lCurrentElement
+	If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 	If sArray(lCurrentElement,1) = sStyleCiteAuthor Then
 		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
 			Dim nCount As Integer, nCountTag As Integer &apos; число авторов цитаты с закладками
