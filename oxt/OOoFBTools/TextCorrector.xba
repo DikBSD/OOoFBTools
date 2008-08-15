@@ -18,6 +18,7 @@ Private bBreakLinesInParaStartSpace As Boolean
 Private bBreakLinesInParaEndSymbols As Boolean
 
 Private bDelMP As Boolean &apos; удаление мягкие переносы
+Private bWordDefisPara As Boolean
 
 Private bBreakLine As Boolean
 Private bDel As Boolean
@@ -46,7 +47,7 @@ Sub TextCorrector
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title = &quot;Корректор текста документа&quot;
-		.Height = 180
+		.Height = 188
 		.Width = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -107,6 +108,8 @@ Sub SaveCorrectorSettings
 	
 	&apos; заполняем переменные
 	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
+	bWordDefisPara = oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State
+		
 	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
 	bBreakLinesInPara = oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State
 	bBreakLinesInParaStartSpace = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
@@ -143,6 +146,7 @@ Sub SetCorrectorSettingDefault
 	&apos; Работа с пробелами и табуляциями
 	oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 1
 	&apos; Работа с абзацами и разрывами
+	oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State = 1
@@ -158,7 +162,7 @@ Sub SetCorrectorSettingDefault
 	oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0
 	&apos; Картинки
 	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
@@ -214,6 +218,7 @@ Sub TextCorrectorDlgOk
 	sCorrectorName = &quot;Корректирование текста&quot;
 	&apos; Если есть опции для чистки, то - работаем
 	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And _
+		oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0 And _
 		oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And _
@@ -267,12 +272,21 @@ Sub TextCorrectorDlgOk
 	End If
 	
 	&apos; Работа с абзацами и разрывами
-	If bBreakLinesInPara = True Then
-		oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
-		&apos; !!!!!!!!!не переставлять местами условия!!! Результат будет неверен!!!!!!
+	
+	If bWordDefisPara = True Then
 		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+		oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
 		JoinWordDefisPara( oProgressBar )
+	End If
+	
+	If bBreakLinesInPara = True Then
+		If bWordDefisPara = False Then &apos; если обработка дефисов не проводилась
+			oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
+			&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+			JoinWordDefisPara( oProgressBar )
+		End If
 		oProgressBar.start( &quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount )
+		&apos; !!!!!!!!!не переставлять местами условия!!! Результат будет неверен!!!!!!
 		If bBreakLinesInParaStartSpace = True Then
 			JoinBreakLinesInParaStartSpace( oProgressBar )
 		ElseIf bBreakLinesInParaEndSymbols = True Then
