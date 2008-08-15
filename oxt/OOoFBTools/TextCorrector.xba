@@ -268,8 +268,11 @@ Sub TextCorrectorDlgOk
 	
 	&apos; Работа с абзацами и разрывами
 	If bBreakLinesInPara = True Then
-		oProgressBar.start(&quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount)
-		&apos; не переставлять местами условия!!! Результат будет неверен
+		oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
+		&apos; !!!!!!!!!не переставлять местами условия!!! Результат будет неверен!!!!!!
+		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+		JoinWordDefisPara( oProgressBar )
+		oProgressBar.start( &quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount )
 		If bBreakLinesInParaStartSpace = True Then
 			JoinBreakLinesInParaStartSpace( oProgressBar )
 		ElseIf bBreakLinesInParaEndSymbols = True Then
@@ -727,6 +730,7 @@ Sub TextCorrectorDlgOk
 	oProgressBar.end
 End Sub
 
+&apos; /////////////////////////////////////////////////////////////////////////
 Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
 	&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
 	&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
@@ -748,13 +752,13 @@ Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
 			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
 			vEndFound = oDoc.Text.createTextCursor()
 			vEndFound.GoToEnd(False)
-			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			Exit Do
 		Else
 			vEndFound.gotoPreviousParagraph(False)
 			&apos;vEndFound.gotoEndOfParagraph(False)
-			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
-			vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 		End If
 	Loop
 End Sub
@@ -786,13 +790,13 @@ Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
 		If IsNull(vEndFound) Then
 			vEndFound = oDoc.Text.createTextCursor()
 			vEndFound.GoToEnd(False)
-			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			Exit Do
 		Else
 			&apos; Выделить текст внутри разделителей
 			vStartFound.gotoStartOfParagraph(False)
-			JoinLines(vStartFound, vEndFound, oDoc, oProgressBar, l)
-			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch )
 		End If
 	Loop
 End Sub
@@ -818,5 +822,131 @@ Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
 	Loop
 End Sub
 
+&apos; ////////////////////
+Sub JoinWordDefisPara( oProgressBar As Object )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
+	Dim vL As Variant, vR As Variant &apos; только для чтения слова
+	Dim oDoc As Object, l As Long
+	oDoc = ThisComponent
+	
+	vSearch = oDoc.createSearchDescriptor()
+	&apos; поиск с регулярными выражениями
+	vSearch.SearchRegularExpression = True
+	vSearch.SearchString = &quot;-$&quot;
+	&apos; Находим первый идентификатор
+	vStartFound = oDoc.findFirst(vSearch)
+	vEndFound = oDoc.findFirst(vSearch)
+	vL = oDoc.findFirst(vSearch)
+	vR = oDoc.findFirst(vSearch)
+	l = 0
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
+		If Not IsNull(vStartFound) Then
+			&apos; на начало слова с переносом
+			vStartFound.gotoStartOfWord(False)
+			vL.gotoStartOfWord(False)
+			&apos; на конец слова с переносом
+			If Not IsNull(vEndFound) Then
+				vEndFound.gotoNextParagraph(False)
+				vEndFound.gotoEndOfWord(False)
+				vR.gotoNextParagraph(False)
+				vR.gotoEndOfWord(False)
+				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
+				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, oProgressBar, l )
+				&apos; ищем далее
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
+				vL = oDoc.findNext( vL.End, vSearch)
+				vR = oDoc.findNext( vR.End, vSearch)
+			Else Exit Do
+			End If
+		End If
+	Loop
+End Sub
+
+Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
+	&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
+	&apos; Алгоритм: если это слово с дефисом, то удаляем разрыв; иначе - удаляем и &quot;-&quot;, и разрыв
+	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
+	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
+	vL.gotoRange(vR, True)
+	If IsHyphen( vL.getString() ) = True Then
+		&apos; Слово с дефисом - просто удаляем разрыв
+		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+	Else
+		&apos; Разорванное Абзацем Слово - удаляем и перенос и разрыв
+		RegReplaceSymbol( &quot;-&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+	End If
+End Sub
+
+Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCurs, oDoc, oProgressBar, l )
+	&apos; Поиск заданного символа (sFindSymbol) в заданном диаппазоне (oLCurs, oRCurs) и замена его нужным (sReplSymbol)
+	Dim vDescriptor, vFound
+	vDescriptor = oDoc.createSearchDescriptor()
+	With vDescriptor
+		.SearchString = sFindSymbol
+		.SearchCaseSensitive = False
+		.SearchRegularExpression = True
+	End With
+	vFound = oDoc.findNext( oLCurs, vDescriptor )
+	Do While Not IsNull(vFound)
+		l = l + 1
+		oProgressBar.setValue(l)
+		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Sub
+		vFound.setString(sReplSymbol)
+		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
+	Loop
+End Sub
+
+Function IsHyphen( sWord As String ) As Boolean
+	&apos; возвращает True, если анализируемое слово - слово с дефисом
+	Dim i As Integer
+	Dim aLDefis() As String, aRDefis() As String, aPunctMarks() As String
+	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot;;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;, _
+						&quot;(&quot;,&quot;)&quot;,&quot;[&quot;,&quot;]&quot;,&quot;{&quot;,&quot;}&quot;,&quot;|&quot;,&quot;№&quot;,&quot;`&quot;,&quot;~&quot;,&quot;@&quot;,&quot;#&quot;,&quot;$&quot;,&quot;%&quot;,&quot;^&quot;,&quot;&lt;&quot;,&quot;&gt;&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;»&quot; )
+	aLDefis = Array(&quot;когда&quot;,&quot;откуда&quot;,&quot;зачем&quot;,&quot;почему&quot;,&quot;отчего&quot;,&quot;чего&quot;,&quot;что&quot;,&quot;кто&quot;,&quot;как&quot;,&quot;какой&quot;,&quot;какого&quot;,&quot;какому&quot;, _
+					&quot;каком&quot;,&quot;какая&quot;,&quot;какую&quot;,&quot;какое&quot;,&quot;какие&quot;,&quot;каких&quot;,&quot;каким&quot;,&quot;чей&quot;,&quot;чьего&quot;,&quot;чьему&quot;,&quot;чьей&quot;,&quot;чьи&quot;, _
+					&quot;чьими&quot;,&quot;чье&quot;,&quot;чьё&quot;,&quot;сколько&quot;,&quot;скольких&quot;,&quot;скольким&quot;,&quot;сколькими&quot;,&quot;где&quot;,&quot;кем&quot;,&quot;чем&quot;,&quot;кого&quot;, _
+					&quot;кому&quot;,&quot;ком&quot;,&quot;куда&quot;,&quot;кое&quot;)
+	aRDefis = Array(&quot;то&quot;,&quot;нибудь&quot;,&quot;либо&quot;,&quot;таки&quot;,&quot;кто&quot;,&quot;что&quot;)
+
+	Dim aLR() As String, bFind As Boolean
+	aLR = Split( sWord, chr(10) ) &apos; делим слово надвое
+	bFind = False
+	
+	For i=0 To UBound( aRDefis() )
+		&apos; обработка правой части слова на наличие &quot;слипшегося&quot; знака пунктуации и т.д.
+		Dim sRight As String, j As Integer, c As Integer
+		sRight = aLR(1)
+		For j=0 To UBound( aPunctMarks() )
+			c = InStr( aLR(1), aPunctMarks(j) )
+			If c &gt; 0 Then
+				sRight = Mid( aLR(1), 1, c-1 )
+				Exit For
+			End If
+		Next j
+		&apos; сравнимаем правую часть слова с шаблоном
+		If LCase( sRight ) = LCase( aRDefis(i) ) Then 
+			bFind = True &apos; совпадает
+			Exit For
+		Else
+			bFind = False
+		End If
+	Next i
+	
+	If bFind = True Then
+		&apos; правая часть совпадает, смотрим левую
+		For i=0 To UBound( aLDefis() )
+			If LCase( Mid( aLR(0), 1, Len(aLR(0))-2 ) ) = LCase( aLDefis(i) ) Then 
+				IsHyphen = True &apos; Слово с дефисом
+				Exit Function
+			End If
+		Next i
+	End If
+	
+	IsHyphen = False &apos; Разорванное Абзацем Слово
+End Function
 
 </script:module>
