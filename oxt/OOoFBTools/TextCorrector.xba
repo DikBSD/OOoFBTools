@@ -914,6 +914,8 @@ Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
 End Sub
 
 Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
+	On Error GoTo ErrorHandler
+	
 	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
 	oLCurs.goRight(0, False)
@@ -932,6 +934,7 @@ Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
 		vFound.setString(&quot; &quot;)
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
 	Loop
+ErrorHandler:
 End Sub
 
 &apos; ////////////////////
@@ -958,20 +961,33 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 			&apos; на начало слова с переносом
 			vStartFound.gotoStartOfWord(False)
 			vL.gotoStartOfWord(False)
-			&apos; на конец слова с переносом
-			If Not IsNull(vEndFound) Then
+			If IsEmpty( vStartFound.TextTable ) Then &apos; таблицы не обрабатываем
+				&apos; на конец слова с переносом
+				If Not IsNull(vEndFound) Then
+					vEndFound.gotoNextParagraph(False)
+					vEndFound.gotoEndOfWord(False)
+					vR.gotoNextParagraph(False)
+					vR.gotoEndOfWord(False)
+					&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
+					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, oProgressBar, l )
+					&apos; ищем далее
+					vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+					vEndFound = oDoc.findNext( vEndFound.End, vSearch)
+					vL = oDoc.findNext( vL.End, vSearch)
+					vR = oDoc.findNext( vR.End, vSearch)
+				Else Exit Do
+				End If
+			Else &apos; обходим строки таблицы
+				vStartFound.gotoNextParagraph(False)
+				vL.gotoNextParagraph(False)
 				vEndFound.gotoNextParagraph(False)
 				vEndFound.gotoEndOfWord(False)
 				vR.gotoNextParagraph(False)
 				vR.gotoEndOfWord(False)
-				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, oProgressBar, l )
-				&apos; ищем далее
 				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
 				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
 				vL = oDoc.findNext( vL.End, vSearch)
 				vR = oDoc.findNext( vR.End, vSearch)
-			Else Exit Do
 			End If
 		End If
 	Loop
@@ -980,6 +996,8 @@ End Sub
 Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
 	&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 	&apos; Алгоритм: если это слово с дефисом, то удаляем разрыв; иначе - удаляем и &quot;-&quot;, и разрыв
+	On Error GoTo ErrorHandler
+	
 	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
 	vL.gotoRange(vR, True)
@@ -991,10 +1009,13 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
 		RegReplaceSymbol( &quot;-&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
 		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
 	End If
+ErrorHandler:
 End Sub
 
 Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCurs, oDoc, oProgressBar, l )
 	&apos; Поиск заданного символа (sFindSymbol) в заданном диаппазоне (oLCurs, oRCurs) и замена его нужным (sReplSymbol)
+	On Error GoTo ErrorHandler
+	
 	Dim vDescriptor, vFound
 	vDescriptor = oDoc.createSearchDescriptor()
 	With vDescriptor
@@ -1010,6 +1031,7 @@ Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCu
 		vFound.setString(sReplSymbol)
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
 	Loop
+ErrorHandler:
 End Sub
 
 Function IsHyphen( sWord As String ) As Boolean
