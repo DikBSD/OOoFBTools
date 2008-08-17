@@ -271,6 +271,15 @@ Sub TextCorrectorDlgOk
 		Next i
 	End If
 	
+
+	Dim nCur As Integer
+	nCur = 0
+	
+	&apos; Удаление мягких переносов
+	If bDelMP = True Then
+		DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+	End If
+
 	&apos; Работа с абзацами и разрывами
 	
 	If bWordDefisPara = True Then
@@ -280,13 +289,17 @@ Sub TextCorrectorDlgOk
 	End If
 	
 	If bBreakLinesInPara = True Then
+		&apos; Удаление мягких переносов
+		&apos; !!!!!!!!!не переставлять местами все эти условия!!! Результат будет неверен!!!!!!
+		If bDelMP = False Then
+			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+		End If
 		If bWordDefisPara = False Then &apos; если обработка дефисов не проводилась
 			oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
 			&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
 			JoinWordDefisPara( oProgressBar )
 		End If
 		oProgressBar.start( &quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount )
-		&apos; !!!!!!!!!не переставлять местами условия!!! Результат будет неверен!!!!!!
 		If bBreakLinesInParaStartSpace = True Then
 			JoinBreakLinesInParaStartSpace( oProgressBar )
 		ElseIf bBreakLinesInParaEndSymbols = True Then
@@ -294,8 +307,6 @@ Sub TextCorrectorDlgOk
 		End If
 	End If
 
-	Dim nCur As Integer
-	nCur = 0
 	oProgressBar.start(&quot;Корректировка документа:&quot;, 93)
 	oProgressBar.setValue(nCur) &apos; 0
 	nCur = nCur+1
@@ -829,17 +840,17 @@ Sub TextCorrectorDlgOk
 		nCur = nCur+1
 	End If
 	
-	&apos; Удаление мягких переносов
-	If bDelMP = True Then
-		oReplace.SearchString = &quot;\x00AD&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 93
-		nCur = nCur+1
-	End If
-	
 	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sCorrectorName
 	oProgressBar.end
+End Sub
+
+Sub DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+	&apos; Удаление мягких переносов
+	oReplace.SearchString = &quot;\x00AD&quot;
+	oReplace.ReplaceString = &quot;&quot;
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur) &apos; 93
+	nCur = nCur+1
 End Sub
 
 &apos; /////////////////////////////////////////////////////////////////////////
