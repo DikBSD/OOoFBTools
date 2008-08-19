@@ -283,14 +283,18 @@ Sub TextCorrectorDlgOk
 	&apos; Работа с абзацами и разрывами
 	
 	If bWordDefisPara = True Then
+		&apos; Удаление мягких переносов
+		If bDelMP = False Then
+			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+		End If
 		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
 		oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
 		JoinWordDefisPara( oProgressBar )
 	End If
 	
 	If bBreakLinesInPara = True Then
-		&apos; Удаление мягких переносов
 		&apos; !!!!!!!!!не переставлять местами все эти условия!!! Результат будет неверен!!!!!!
+		&apos; Удаление мягких переносов
 		If bDelMP = False Then
 			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 		End If
@@ -948,9 +952,9 @@ Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
 ErrorHandler:
 End Sub
 
-&apos; ////////////////////
+&apos; /////////////////////////////////////////////////////////////////////////////////////
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
 Sub JoinWordDefisPara( oProgressBar As Object )
-	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
 	Dim oDoc As Object, l As Long
@@ -1004,8 +1008,9 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 	Loop
 End Sub
 
+&apos; ///////////////////////////////////////////////////////////////////////////
+&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
-	&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 	&apos; Алгоритм: если это слово с дефисом, то удаляем разрыв; иначе - удаляем и &quot;-&quot;, и разрыв
 	On Error GoTo ErrorHandler
 	
@@ -1017,14 +1022,15 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
 		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
 	Else
 		&apos; Разорванное Абзацем Слово - удаляем и перенос и разрыв
-		RegReplaceSymbol( &quot;-&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+		RegReplaceSymbol( &quot;[-–]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
 		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
 	End If
-ErrorHandler:
+	ErrorHandler:
 End Sub
 
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; Поиск заданного символа (sFindSymbol) в заданном диаппазоне (oLCurs, oRCurs) и замена его нужным (sReplSymbol)
 Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCurs, oDoc, oProgressBar, l )
-	&apos; Поиск заданного символа (sFindSymbol) в заданном диаппазоне (oLCurs, oRCurs) и замена его нужным (sReplSymbol)
 	On Error GoTo ErrorHandler
 	
 	Dim vDescriptor, vFound
@@ -1042,15 +1048,14 @@ Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCu
 		vFound.setString(sReplSymbol)
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
 	Loop
-ErrorHandler:
+	ErrorHandler:
 End Sub
 
+&apos; /////////////////////////////////////////////////////////////////////////////////////////
+&apos; возвращает True, если анализируемое слово - слово с дефисом
 Function IsHyphen( sWord As String ) As Boolean
-	&apos; возвращает True, если анализируемое слово - слово с дефисом
 	Dim i As Integer
-	Dim aLDefis() As String, aRDefis() As String, aPunctMarks() As String
-	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot;;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;, _
-						&quot;(&quot;,&quot;)&quot;,&quot;[&quot;,&quot;]&quot;,&quot;{&quot;,&quot;}&quot;,&quot;|&quot;,&quot;№&quot;,&quot;`&quot;,&quot;~&quot;,&quot;@&quot;,&quot;#&quot;,&quot;$&quot;,&quot;%&quot;,&quot;^&quot;,&quot;&lt;&quot;,&quot;&gt;&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;»&quot; )
+	Dim aLDefis() As String, aRDefis() As String
 	aLDefis = Array(&quot;когда&quot;,&quot;откуда&quot;,&quot;зачем&quot;,&quot;почему&quot;,&quot;отчего&quot;,&quot;чего&quot;,&quot;что&quot;,&quot;кто&quot;,&quot;как&quot;,&quot;какой&quot;,&quot;какого&quot;,&quot;какому&quot;, _
 					&quot;каком&quot;,&quot;какая&quot;,&quot;какую&quot;,&quot;какое&quot;,&quot;какие&quot;,&quot;каких&quot;,&quot;каким&quot;,&quot;чей&quot;,&quot;чьего&quot;,&quot;чьему&quot;,&quot;чьей&quot;,&quot;чьи&quot;, _
 					&quot;чьими&quot;,&quot;чье&quot;,&quot;чьё&quot;,&quot;сколько&quot;,&quot;скольких&quot;,&quot;скольким&quot;,&quot;сколькими&quot;,&quot;где&quot;,&quot;кем&quot;,&quot;чем&quot;,&quot;кого&quot;, _
@@ -1061,18 +1066,16 @@ Function IsHyphen( sWord As String ) As Boolean
 	aLR = Split( sWord, chr(10) ) &apos; делим слово надвое
 	bFind = False
 	
+	&apos; 1. обработка правой части слова на наличие &quot;слипшегося&quot; знака пунктуации и т.д.
+	Dim sRight As String
+	sRight = DeletePunctMarkInString( aLR(1) )
+
+	&apos; 2. обработка слов &quot;xxx-то&quot;
+	
+	&apos; 3. обработка слов &quot;по-xxx&quot;
+	
+	&apos; 4. сравнимаем правую часть слова с шаблоном 	
 	For i=0 To UBound( aRDefis() )
-		&apos; обработка правой части слова на наличие &quot;слипшегося&quot; знака пунктуации и т.д.
-		Dim sRight As String, j As Integer, c As Integer
-		sRight = aLR(1)
-		For j=0 To UBound( aPunctMarks() )
-			c = InStr( aLR(1), aPunctMarks(j) )
-			If c &gt; 0 Then
-				sRight = Mid( aLR(1), 1, c-1 )
-				Exit For
-			End If
-		Next j
-		&apos; сравнимаем правую часть слова с шаблоном
 		If LCase( sRight ) = LCase( aRDefis(i) ) Then 
 			bFind = True &apos; совпадает
 			Exit For
@@ -1081,8 +1084,8 @@ Function IsHyphen( sWord As String ) As Boolean
 		End If
 	Next i
 	
+	&apos; 5. если правая часть совпадает, смотрим левую
 	If bFind = True Then
-		&apos; правая часть совпадает, смотрим левую
 		For i=0 To UBound( aLDefis() )
 			If LCase( Mid( aLR(0), 1, Len(aLR(0))-2 ) ) = LCase( aLDefis(i) ) Then 
 				IsHyphen = True &apos; Слово с дефисом
@@ -1092,6 +1095,24 @@ Function IsHyphen( sWord As String ) As Boolean
 	End If
 	
 	IsHyphen = False &apos; Разорванное Абзацем Слово
+End Function
+
+&apos; ////////////////////////////////////////////////////////////////////////
+&apos; обработка правой части слова на наличие &quot;слипшегося&quot; знака пунктуации и т.д.
+Function DeletePunctMarkInString( byval sString As String ) As String
+	Dim aPunctMarks() As String
+	Dim i As Integer, c As Integer
+	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot;;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;,&quot;…&quot;, _
+						&quot;(&quot;,&quot;)&quot;,&quot;[&quot;,&quot;]&quot;,&quot;{&quot;,&quot;}&quot;,&quot;|&quot;,&quot;№&quot;,&quot;`&quot;,&quot;~&quot;,&quot;@&quot;,&quot;#&quot;,&quot;$&quot;,&quot;%&quot;,&quot;^&quot;,&quot;&lt;&quot;,&quot;&gt;&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;»&quot; )
+	For i=0 To UBound( aPunctMarks() )
+		c = InStr( sString, aPunctMarks(i) )
+		If c &gt; 0 Then &apos; нашли что-то
+			sString = Mid( sString, 1, c-1 )
+		Else
+			DeletePunctMarkInString = sString
+			Exit Function
+		End If
+	Next i
 End Function
 
 </script:module>
