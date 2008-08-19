@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector_Manually" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ////////////////////////////////////////////////////////////////
+&apos; модуль инструментов:
+&apos; 1. поиск в документе слов с дефисом или минусов
+&apos; 2. поиск в документе слов с разорванным дефисом или минусов
+&apos; ////////////////////////////////////////////////////////////////
+option explicit
+
+Private oDocControl, otxtCurs &apos; текстовый курсор
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; Поиск слов с разорванным дефисом
+Sub LDefisPara
+	FindRegWord( &quot;\&lt;[:alpha:]+[-–]$&quot;, &quot;Поиск слов с разорванным дефисом&quot; )
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; Поиск слов с дефисом
+Sub LDefisR
+	FindRegWord( &quot;\&lt;[:alpha:]+[-–][:alpha:]+&quot;, &quot;Поиск слов с дефисом&quot; )
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; Поиск регулярного выражения в тексте
+Sub FindRegWord( sFind As String, sTitle As String )
+	oDocControl = ThisComponent.getCurrentController()
+	&apos; проверка, является ли объект, где производится поиск - текстом
+	If Not IsSelTextRange( sTitle ) Then Exit Sub
+		
+	&apos; инициализация позиции курсора
+	Dim ovCurs &apos; видимый курсор
+	ovCurs = oDocControl.getViewCursor()
+	otxtCurs = ovCurs.Text.createTextCursor() 
+	otxtCurs.gotoRange(ovCurs.getStart(), False)
+
+	&apos; ищем заданное регулярное выражение
+	FindRegInText( ovCurs, sFind, sTitle )
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; проверка, является ли объект, где производится поиск - текстом
+Function IsSelTextRange( sTitle As String ) As Boolean
+	If oDocControl.getSelection().supportsService(&quot;com.sun.star.text.TextRanges&quot;) Then
+		IsSelTextRange = True
+	Else &apos; защита от поиска в выделенных врезках, ячейках таблицы, картинках...
+		IsSelTextRange = False
+		MsgBox &quot;Невозможно найти слово в выделенном объекте.&quot;, 64, sTitle
+	End If 
+End Function
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; ищем заданный регекс
+Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
+	If Not IsSelTextRange( sTitle ) Then Exit Sub
+	otxtCurs = ovCurs.Text.createTextCursorByRange(ovCurs)
+	&apos; поиск и обработка искомого слова
+	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
+		oDocControl.Select(otxtCurs) &apos; выделяем найденное
+	Else &apos; конец документа
+		If MsgBox( &quot;Достигнут конец документа.&quot; &amp; chr(10) &amp; &quot;Следущее слово не найдено.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Продолжить поиск с начала?&quot;, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
+		oDocControl.Select(otxtCurs) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
+		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
+	End If
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; поиск следующего заданного регекса в документе
+Function FindNextInText( sFind ) As Boolean
+	Dim oDesc, Found
+	oDesc = ThisComponent.createSearchDescriptor()
+	oDesc.SearchRegularExpression = True
+	oDesc.SearchString = sFind
+	
+	otxtCurs.collapseToEnd  
+	Found = ThisComponent.findNext(otxtCurs.getStart(), oDesc)
+	
+	if IsNull(Found) Then &apos; конец документа - ничего не нашли
+		otxtCurs = ThisComponent.Text.createTextCursor() 
+		otxtCurs.gotorange(ThisComponent.Text.getStart(), False)
+		FindNextInText = False &apos; конец документа - ничего не нашли
+		Exit Function
+	End If
+
+	otxtCurs = Found.Text.createTextCursor()
+	otxtCurs.gotorange(Found.getStart(), False)
+	otxtCurs.gotorange(Found.getEnd(), True)
+
+	FindNextInText = True &apos; нашли искомое регулярное выражение
+End Function
+
+</script:module>
