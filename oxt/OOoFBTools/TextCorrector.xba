@@ -12,6 +12,10 @@ Private bCorrectorExecute As Boolean
 
 Private bDelSpace As Boolean
 
+&apos;obtnOnlyDefisPara
+&apos;obtnDefisWordDelOnlyPara
+&apos;obtnDefisWordDeAll
+
 Private bDelEmptyPar As Boolean
 Private bBreakLinesInPara As Boolean
 Private bBreakLinesInParaStartSpace As Boolean
@@ -46,9 +50,9 @@ Sub TextCorrector
 	
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
-		.Title = &quot;Корректор текста документа&quot;
-		.Height = 188
-		.Width = 318
+		.Title  = &quot;Корректор текста документа&quot;
+		.Height = 232
+		.Width  = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
 	
@@ -212,24 +216,23 @@ Sub cboxBreakLinesInParaEnabled
 	End If
 End Sub
 
-
+&apos; //////////////////////////////////////////////////////////////////////////////////
+&apos; запуск корректировки
 Sub TextCorrectorDlgOk
 	Dim sCorrectorName As String
 	sCorrectorName = &quot;Корректирование текста&quot;
 	&apos; Если есть опции для чистки, то - работаем
-	If oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0 And _
-		oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 0 Then
+	Dim ctrl As Object, i As Integer, bSel As Boolean
+	bSel = False
+	ctrl = oTextCorrectorDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			If ctrl(i).Model.State Then
+				bSel = True
+			End If
+		End If
+	Next i
+	If Not bSel Then
 		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sCorrectorName
 		Exit Sub
 	End If
@@ -253,7 +256,6 @@ Sub TextCorrectorDlgOk
 		Dim oGraphics As Object 
 		Dim oThisGraphic As Object 
 		Dim iAnchor As Integer
-		Dim i As Integer
 		Select Case nAnchor
 			Case &quot;К абзацу&quot;
 				iAnchor = 0
