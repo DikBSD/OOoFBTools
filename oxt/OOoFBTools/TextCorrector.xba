@@ -1058,25 +1058,96 @@ Function IsHyphen( sWord As String ) As Boolean
 	Dim aLDefis() As String, aRDefis() As String
 	aLDefis = Array(&quot;когда&quot;,&quot;откуда&quot;,&quot;зачем&quot;,&quot;почему&quot;,&quot;отчего&quot;,&quot;чего&quot;,&quot;что&quot;,&quot;кто&quot;,&quot;как&quot;,&quot;какой&quot;,&quot;какого&quot;,&quot;какому&quot;, _
 					&quot;каком&quot;,&quot;какая&quot;,&quot;какую&quot;,&quot;какое&quot;,&quot;какие&quot;,&quot;каких&quot;,&quot;каким&quot;,&quot;чей&quot;,&quot;чьего&quot;,&quot;чьему&quot;,&quot;чьей&quot;,&quot;чьи&quot;, _
-					&quot;чьими&quot;,&quot;чье&quot;,&quot;чьё&quot;,&quot;сколько&quot;,&quot;скольких&quot;,&quot;скольким&quot;,&quot;сколькими&quot;,&quot;где&quot;,&quot;кем&quot;,&quot;чем&quot;,&quot;кого&quot;, _
-					&quot;кому&quot;,&quot;ком&quot;,&quot;куда&quot;,&quot;кое&quot;)
-	aRDefis = Array(&quot;то&quot;,&quot;нибудь&quot;,&quot;либо&quot;,&quot;таки&quot;,&quot;кто&quot;,&quot;что&quot;)
+					&quot;чьими&quot;,&quot;чье&quot;,&quot;чьё&quot;,&quot;сколько&quot;,&quot;скольких&quot;,&quot;скольким&quot;,&quot;сколькими&quot;,&quot;где&quot;,&quot;кем&quot;,&quot;чем&quot;,,&quot;чем&quot;, _
+					&quot;кого&quot;,&quot;кому&quot;,&quot;ком&quot;,&quot;куда&quot;)
+	aRDefis = Array(&quot;нибудь&quot;,&quot;либо&quot;)
 
 	Dim aLR() As String, bFind As Boolean
 	aLR = Split( sWord, chr(10) ) &apos; делим слово надвое
 	bFind = False
 	
-	&apos; 1. обработка правой части слова на наличие &quot;слипшегося&quot; знака пунктуации и т.д.
-	Dim sRight As String
-	sRight = DeletePunctMarkInString( aLR(1) )
+	&apos; обработка правой части слова на наличие &quot;слипшегося&quot; знака пунктуации и т.д.
+	Dim sLeft As String, sRight As String
+	sLeft = LCase( Mid( aLR(0), 1, Len(aLR(0))-2 ) )
+	sRight = LCase( DeletePunctMarkInString( aLR(1) ) )
 
-	&apos; 2. обработка слов &quot;xxx-то&quot;
+	&apos; II. обработка слов по шаблону только левой или только правой части слова
+	&apos; 1. обработка слов &quot;xxx-то&quot;
+	If sRight = &quot;то&quot; Then
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 2. обработка слов &quot;xxx-ка&quot;
+	If sRight = &quot;ка&quot; Then
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
 	
 	&apos; 3. обработка слов &quot;по-xxx&quot;
+	If sLeft = &quot;по&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
 	
-	&apos; 4. сравнимаем правую часть слова с шаблоном 	
+	&apos; 4. обработка слов &quot;кое-xxx&quot;
+	If sLeft = &quot;кое&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 5. обработка слов &quot;кой-xxx&quot;
+	If sLeft = &quot;кой&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 6. обработка слов &quot;из-xxx&quot;
+	If sLeft = &quot;из&quot; And ( sRight = &quot;за&quot; Or sRight = &quot;под&quot; ) Then 
+			IsHyphen = True &apos; Слово с дефисом
+			Exit Function
+	End If
+	
+	&apos; 7. обработка слов &quot;xxx-таки&quot;
+	If sRight = &quot;таки&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 8. обработка слов &quot;как-никак&quot;
+	If sLeft = &quot;как&quot; And sRight = &quot;никак&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 9. обработка слов &quot;какой-никакой&quot;
+	If sLeft = &quot;какой&quot; And sRight = &quot;никакой&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 10. обработка слов &quot;во-xxx&quot;
+	If sLeft = &quot;во&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 11. обработка слов &quot;в-xxx&quot;
+	If sLeft = &quot;в&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; 12. обработка слов &quot;xxx-ли&quot;
+	If sRight = &quot;ли&quot; Then 
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
+	End If
+	
+	&apos; II. обработка слов и по левой части и по правой (сравнение с шаблонами)
+	&apos; 1. сравнимаем правую часть слова с шаблоном
 	For i=0 To UBound( aRDefis() )
-		If LCase( sRight ) = LCase( aRDefis(i) ) Then 
+		If sRight = LCase( aRDefis(i) ) Then 
 			bFind = True &apos; совпадает
 			Exit For
 		Else
@@ -1084,10 +1155,10 @@ Function IsHyphen( sWord As String ) As Boolean
 		End If
 	Next i
 	
-	&apos; 5. если правая часть совпадает, смотрим левую
+	&apos; II.2. если правая часть совпадает, смотрим левую
 	If bFind = True Then
 		For i=0 To UBound( aLDefis() )
-			If LCase( Mid( aLR(0), 1, Len(aLR(0))-2 ) ) = LCase( aLDefis(i) ) Then 
+			If sLeft = LCase( aLDefis(i) ) Then 
 				IsHyphen = True &apos; Слово с дефисом
 				Exit Function
 			End If
