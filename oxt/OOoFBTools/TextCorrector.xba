@@ -1018,7 +1018,7 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 	vSearch = oDoc.createSearchDescriptor()
 	&apos; поиск с регулярными выражениями
 	vSearch.SearchRegularExpression = True
-	vSearch.SearchString = &quot;-$&quot;
+	vSearch.SearchString = &quot;[-–]$&quot;
 	&apos; Находим первый идентификатор
 	vStartFound = oDoc.findFirst(vSearch)
 	vEndFound = oDoc.findFirst(vSearch)
@@ -1038,6 +1038,10 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 					vEndFound.gotoEndOfWord(False)
 					vR.gotoNextParagraph(False)
 					vR.gotoEndOfWord(False)
+					
+					&apos;vStartFound.gotoRange(vEndFound, True)
+					&apos;vL.gotoRange(vR, True)
+					&apos;msgbox vStartFound.getstring() &amp; &quot; - vStartFound&quot;, 64, vL.getstring() &amp; &quot; - vL&quot;
 					&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, oProgressBar, l )
 					&apos; ищем далее
@@ -1072,14 +1076,26 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
 	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
 	vL.gotoRange(vR, True)
+	
+	&apos; обрабатываем разорванные дефисы
 	If IsHyphen( vL.getString() ) = True Then
 		&apos; Слово с дефисом - просто удаляем разрыв
 		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
 	Else
-		&apos; Разорванное Абзацем Слово - удаляем и перенос и разрыв
-		RegReplaceSymbol( &quot;[-–]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
-		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+		If bDefisWordDelOnlyPara Then
+			&apos; еще и для слов удаляем только символа абзаца без переноса
+			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+		ElseIf bDefisWordDeAll Then
+			&apos; еще и для слов удаляем и перенос, и символ абзаца
+			RegReplaceSymbol( &quot;[-–]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+		End If
 	End If
+	
+	&apos; &quot;подтягиваем&quot; позиции курсора для обработки слов к позиции курсора для сравнения слов (для согласования поиска)
+	oLCurs.gotoRange(vL, False)
+	oRCurs.gotoRange(vR, False)
+	
 	ErrorHandler:
 End Sub
 
@@ -1096,13 +1112,15 @@ Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCu
 		.SearchRegularExpression = True
 	End With
 	vFound = oDoc.findNext( oLCurs, vDescriptor )
-	Do While Not IsNull(vFound)
+&apos;	Do While Not IsNull(vFound)
+	If Not IsNull(vFound) Then
 		l = l + 1
 		oProgressBar.setValue(l)
 		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Sub
 		vFound.setString(sReplSymbol)
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
-	Loop
+&apos;	Loop
+	End If
 	ErrorHandler:
 End Sub
 
