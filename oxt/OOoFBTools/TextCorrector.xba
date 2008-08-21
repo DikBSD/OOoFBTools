@@ -342,9 +342,9 @@ Sub TextCorrectorDlgOk
 		If bDelMP = False Then
 			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 		End If
-		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
-		oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
-		JoinWordDefisPara( oProgressBar )
+		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
+		&apos; в тексте, таблицаъ, сносках и врезках
+		JoinWordDefisParaInAllTexts( oProgressBar )
 	End If
 	
 	If bBreakLinesInPara = True Then
@@ -354,9 +354,9 @@ Sub TextCorrectorDlgOk
 			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 		End If
 		If bWordDefisPara = False Then &apos; если обработка дефисов не проводилась
-			oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
-			&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
-			JoinWordDefisPara( oProgressBar )
+			&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
+			&apos; в тексте, таблицаъ, сносках и врезках
+			JoinWordDefisParaInAllTexts( oProgressBar )
 		End If
 		oProgressBar.start( &quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount )
 		If bBreakLinesInParaStartSpace = True Then
@@ -1007,9 +1007,9 @@ Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
 ErrorHandler:
 End Sub
 
-&apos; /////////////////////////////////////////////////////////////////////////////////////
-&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
-Sub JoinWordDefisPara( oProgressBar As Object )
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
+Sub JoinWordDefisParaInText( oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
 	Dim oDoc As Object, l As Long
@@ -1017,8 +1017,10 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 	
 	vSearch = oDoc.createSearchDescriptor()
 	&apos; поиск с регулярными выражениями
-	vSearch.SearchRegularExpression = True
-	vSearch.SearchString = &quot;[-–]$&quot;
+	With vSearch
+		.SearchRegularExpression = True
+		.SearchString = &quot;[-–]$&quot;
+	End With
 	&apos; Находим первый идентификатор
 	vStartFound = oDoc.findFirst(vSearch)
 	vEndFound = oDoc.findFirst(vSearch)
@@ -1038,12 +1040,8 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 					vEndFound.gotoEndOfWord(False)
 					vR.gotoNextParagraph(False)
 					vR.gotoEndOfWord(False)
-					
-					&apos;vStartFound.gotoRange(vEndFound, True)
-					&apos;vL.gotoRange(vR, True)
-					&apos;msgbox vStartFound.getstring() &amp; &quot; - vStartFound&quot;, 64, vL.getstring() &amp; &quot; - vL&quot;
 					&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, oProgressBar, l )
+					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, True, oProgressBar, l )
 					&apos; ищем далее
 					vStartFound = oDoc.findNext( vStartFound.End, vSearch)
 					vEndFound = oDoc.findNext( vEndFound.End, vSearch)
@@ -1067,28 +1065,156 @@ Sub JoinWordDefisPara( oProgressBar As Object )
 	Loop
 End Sub
 
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице
+Sub JoinWordDefisParaInTables( oProgressBar As Object )
+	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
+	Dim vL As Variant, vR As Variant &apos; только для чтения слова
+	Dim oDoc As Object, oTable As Object, oCell As Object
+	Dim nTablesCount As Integer, i As Integer, l As Long
+	oDoc = ThisComponent
+	nTablesCount = ThisComponent.getTextTables().getCount() 
+	For i=0 To nTablesCount-1
+		oTable = oDoc.getTextTables().getByIndex(i)
+		oCell = oTable.getCellByName(&quot;A1&quot;)
+		&apos; Создать дескриптор поиска
+		vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchString = &quot;[-–]$&quot;
+			.SearchRegularExpression = True
+		End With
+	
+		&apos; Начать поиск с начала текстового объекта в ячейке A1 i-й текстовой таблицы.
+		vStartFound = oDoc.findNext( oCell.getText().getStart(), vSearch)
+		vEndFound = oDoc.findNext( oCell.getText().getStart(), vSearch)
+		vL = oDoc.findNext( oCell.getText().getStart(), vSearch)
+		vR = oDoc.findNext( oCell.getText().getStart(), vSearch)
+		l = 0
+		Do While Not IsNull(vStartFound)
+			&apos; Если найденный текст не входит в текстовую таблицу, то закончить
+			If IsNull(vStartFound.TextTable) Then
+				Exit Do
+			End If
+			&apos; Если найденный текст не входит в ту же текстовую таблицу - закончить.
+			If NOT EqualUnoObjects(oTable, vStartFound.TextTable) Then
+				Exit Do
+			End If
+			&apos; на начало слова с переносом
+			vStartFound.gotoStartOfWord(False)
+			vL.gotoStartOfWord(False)
+			If Not IsNull(vEndFound) Then
+				vEndFound.gotoNextParagraph(False)
+				vEndFound.gotoEndOfWord(False)
+				vR.gotoNextParagraph(False)
+				vR.gotoEndOfWord(False)
+				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
+				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, oProgressBar, l )
+				&apos; ищем далее
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
+				vL = oDoc.findNext( vL.End, vSearch)
+				vR = oDoc.findNext( vR.End, vSearch)
+			Else Exit Do
+			End If
+		Loop
+	Next i
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
+&apos; в тексте, таблицаъ, сносках и врезках
+Sub JoinWordDefisParaInAllTexts( oProgressBar )
+	oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
+	JoinWordDefisParaInText( oProgressBar )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице
+	JoinWordDefisParaInTables( oProgressBar )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+	&apos; в сноская (Footnote и Endnote) и в текстовых врезках
+	JoinWordDefisParaInFENotesAndTextFrames( oProgressBar )
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+&apos; в сноская (Footnote и Endnote) и в текстовых врезках
+Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
+	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
+	Dim vL As Variant, vR As Variant &apos; только для чтения слова
+	Dim oDoc As Object, oFootNotes As Object
+	Dim nFootnoteCount As Integer, i As Integer, l As Long
+	oDoc = ThisComponent
+	nFootnoteCount = ThisComponent.getFootNotes().getCount() 
+	For i=0 To nFootnoteCount-1
+		&apos; Получить i-ю сноску
+		oFootNotes = oDoc.getFootNotes().getByIndex(i)
+		&apos; Создать дескриптор поиска
+		vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchString = &quot;[-–]$&quot;
+			.SearchRegularExpression = True
+		End With
+	
+		&apos; Начать поиск с начала текстового объекта
+		vStartFound = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
+		vEndFound = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
+		vL = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
+		vR = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
+		l = 0
+		Do While Not IsNull(vStartFound)
+			&apos; Если найденный текст не входит в текстовую таблицу, то закончить
+			If IsNull(vStartFound.FootNote) Then
+				Exit Do
+			End If
+			&apos; Если найденный текст не входит в ту же текстовую таблицу - закончить.
+			&apos; закомментировал - чтобы обрабатывалось все - и сноски, и врезки
+&apos;			If NOT EqualUnoObjects(oTable, vStartFound.FootNote) Then
+&apos;				Exit Do
+&apos;			End If
+			&apos; на начало слова с переносом
+			vStartFound.gotoStartOfWord(False)
+			vL.gotoStartOfWord(False)
+			If Not IsNull(vEndFound) Then
+				vEndFound.gotoNextParagraph(False)
+				vEndFound.gotoEndOfWord(False)
+				vR.gotoNextParagraph(False)
+				vR.gotoEndOfWord(False)
+				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
+				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, oProgressBar, l )
+				&apos; ищем далее
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
+				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
+				vL = oDoc.findNext( vL.End, vSearch)
+				vR = oDoc.findNext( vR.End, vSearch)
+			Else Exit Do
+			End If
+		Loop
+	Next i
+End Sub
+
 &apos; ///////////////////////////////////////////////////////////////////////////
 &apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, oProgressBar, l )
+Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressBar, l )
 	&apos; Алгоритм: если это слово с дефисом, то удаляем разрыв; иначе - удаляем и &quot;-&quot;, и разрыв
 	On Error GoTo ErrorHandler
 	
 	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
-	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
+	If bText Then &apos; толька для текста (не для сносок, таблиц и врезок)
+		If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
+	End If
 	vL.gotoRange(vR, True)
 	
 	&apos; обрабатываем разорванные дефисы
 	If IsHyphen( vL.getString() ) = True Then
 		&apos; Слово с дефисом - просто удаляем разрыв
-		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 	Else
 		If bDefisWordDelOnlyPara Then
 			&apos; еще и для слов удаляем только символа абзаца без переноса
-			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		ElseIf bDefisWordDeAll Then
 			&apos; еще и для слов удаляем и перенос, и символ абзаца
-			RegReplaceSymbol( &quot;[-–]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
-			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, oProgressBar, l )
+			RegReplaceSymbol( &quot;[-–]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		End If
 	End If
 	
@@ -1101,7 +1227,7 @@ End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; Поиск заданного символа (sFindSymbol) в заданном диаппазоне (oLCurs, oRCurs) и замена его нужным (sReplSymbol)
-Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCurs, oDoc, oProgressBar, l )
+Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCurs, oDoc, bText As Boolean, oProgressBar, l )
 	On Error GoTo ErrorHandler
 	
 	Dim vDescriptor, vFound
@@ -1116,7 +1242,9 @@ Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCu
 	If Not IsNull(vFound) Then
 		l = l + 1
 		oProgressBar.setValue(l)
-		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Sub
+		If bText Then &apos; толька для текста (не для сносок, таблиц и врезок)
+			If oDoc.Text.compareRegionEnds(vFound, oRCurs) &lt;= 0 Then Exit Sub
+		End If
 		vFound.setString(sReplSymbol)
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
 &apos;	Loop
