@@ -12,9 +12,9 @@ Private bCorrectorExecute As Boolean
 
 Private bDelSpace As Boolean
 
-&apos;obtnOnlyDefisPara
-&apos;obtnDefisWordDelOnlyPara
-&apos;obtnDefisWordDeAll
+Private bOnlyDefisPara
+Private bDefisWordDelOnlyPara
+Private bDefisWordDeAll
 
 Private bDelEmptyPar As Boolean
 Private bBreakLinesInPara As Boolean
@@ -111,9 +111,13 @@ Sub SaveCorrectorSettings
 	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg)
 	
 	&apos; заполняем переменные
-	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
 	bWordDefisPara = oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State
+	bOnlyDefisPara = oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).State
+	bDefisWordDelOnlyPara = oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
+	bDefisWordDeAll = oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).State
 		
+	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
+	
 	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
 	bBreakLinesInPara = oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State
 	bBreakLinesInParaStartSpace = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
@@ -123,6 +127,7 @@ Sub SaveCorrectorSettings
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
 	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
 	bSpace = oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
+	
 	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
 	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
 	bDefis = oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
@@ -138,6 +143,7 @@ End Sub
 Sub SetCorrectorSettingsInControlls(sCurrentLine)
 	SetSettingsInControlls(sCurrentLine, oTextCorrectorDlg)
 
+	cboxWordDefisParaEnabled
 	cboxImagesEnabled
 	cboxBreakLineEnabled
 	cboxBreakLinesInParaEnabled
@@ -149,8 +155,14 @@ Sub SetCorrectorSettingDefault
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Работа с пробелами и табуляциями
 	oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 1
-	&apos; Работа с абзацами и разрывами
+
+	&apos; Работа с разорванными дефисами и переносами символом ¶ 
 	oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).State = 0
+	oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State = 1
+	oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0
+
+	&apos; Работа с абзацами и разрывами	
 	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State = 1
@@ -174,6 +186,7 @@ Sub SetCorrectorSettingDefault
 	&apos; мягкие переносы
 	oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 1
 	
+	cboxWordDefisParaEnabled
 	cboxImagesEnabled
 	cboxBreakLineEnabled
 	cboxBreakLinesInParaEnabled
@@ -182,6 +195,46 @@ End Sub
 Sub TextCorrectorDlgCanceled
 	bCorrectorExecute = False
 	oTextCorrectorDlg.endExecute()
+End Sub
+
+Sub CheckAllOptions
+	Dim ctrl As Object, i As Integer
+	ctrl = oTextCorrectorDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			ctrl(i).State = 1	
+		End If
+	Next i
+	cboxWordDefisParaEnabled
+	cboxImagesEnabled
+	cboxBreakLineEnabled
+	cboxBreakLinesInParaEnabled
+End Sub
+
+Sub UnCheckAllOptions
+	Dim ctrl As Object, i As Integer
+	ctrl = oTextCorrectorDlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			ctrl(i).State = 0	
+		End If
+	Next i
+	cboxWordDefisParaEnabled
+	cboxImagesEnabled
+	cboxBreakLineEnabled
+	cboxBreakLinesInParaEnabled
+End Sub
+
+Sub cboxWordDefisParaEnabled
+	If oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 1 Then
+		oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).Enable = True
+	Else
+		oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).Enable = False
+	End If
 End Sub
 
 Sub cboxImagesEnabled
