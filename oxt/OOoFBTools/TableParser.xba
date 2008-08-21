@@ -177,21 +177,14 @@ Function MakeVirtualFormatRowSimpleTable(oTable As Object, iCel As Integer, bth 
 		
 		&apos; разбивка в массив строки на абзацы, с учетом заблокированной ячейки
 		If Cell.IsProtected = True Then &apos; заблокированные ячейки
-			ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
+			sFormatCellText = ReplaceInString( sFormatCellText, chr(10), &quot; &quot;, False )
 			aCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
 		Else
 			aCellAllFormatText = Split(sFormatCellText, chr(10))
 		End If
 		
 		&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
-		Dim sCR As String
-		For i = 0 To UBound(aCellAllFormatText())
-			sCR = aCellAllFormatText(i)
-			If InStr(sCR, chr(13)) &gt; 0 Then
-				ReplaceFromString(sCR, chr(13), &quot;&quot;)
-				aCellAllFormatText(i) = sCR
-			End If
-		Next i
+		DelCR( aCellAllFormatText() )
 			
 		ReDim aCellWithLines(nMaxLines)
 		For i = LBound(aCellAllFormatText) To nMaxLines
@@ -396,14 +389,7 @@ Function MakeFB2ParasCell( aCellAllFormatText() As Variant, nMaxLines As Integer
 	Next i
 	
 	&apos; 2. убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
-	Dim sCR As String
-	For i = 0 To UBound(aCellWithLines())
-		sCR = aCellWithLines(i)
-		If InStr(sCR, chr(13)) &gt; 0 Then
-			ReplaceFromString(sCR, chr(13), &quot;&quot;)
-			aCellWithLines(i) = sCR
-		End If
-	Next i
+	DelCR( aCellWithLines() )
 	
 	MakeFB2ParasCell = aCellWithLines
 End Function
@@ -497,7 +483,7 @@ Function MakeWorkCellPara( oTable As Object, sCellName As String ) As Variant
 		
 	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	If oCell.IsProtected = True Then &apos; заблокированные ячейки
-		ReplaceFromString(sFormatCellText, chr(10), &quot; &quot;)
+		sFormatCellText = ReplaceInString( sFormatCellText, chr(10), &quot; &quot;, False )
 		aCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
 	Else
 		aCellAllFormatText = Split(sFormatCellText, chr(10))

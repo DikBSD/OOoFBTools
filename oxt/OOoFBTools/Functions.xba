@@ -166,7 +166,7 @@ Function AddNewItemToArray2(sArray As String, sValue1 As String, sValue2 As Stri
 	sArray(l,1) = sValue2	
 End Function
 
-Function AddLineInArray(sTextArray() As String, sText As String, oProgressBar)
+Function AddLineInArray( sTextArray() As String, sText As String, oProgressBar )
 	Dim l As Long
 	l = Ubound(sTextArray()) + 1
 	If l &gt; 0 Then
@@ -177,14 +177,13 @@ Function AddLineInArray(sTextArray() As String, sText As String, oProgressBar)
 	oProgressBar.setValue(l)
 End Function
 
-Function DelCR(sTextArray() As String)
+Function DelCR( sTextArray() As String )
 	&apos; убираем перевод строки в тексте из ячеек матрицы
 	Dim sCR As String, i As Integer
 	For i = 0 To UBound(sTextArray())
 		sCR = sTextArray(i)
 		If InStr(sCR, chr(13)) &gt; 0 Then
-			ReplaceFromString(sCR, chr(13), &quot;&quot;)
-			sTextArray(i) = sCR
+			sTextArray(i) = ReplaceInString( sCR, chr(13), &quot;&quot;, False )
 		End If
 	Next i
 End Function
@@ -204,7 +203,7 @@ Function InsertInString( sSource As String, sBefore As String, sInsert As String
 	sSource = sStr1 &amp; sInsert &amp; sStr2
 End Function
 
-Function ReplaceFromString(sSource As String, sDel As String, sReplace As String) As Integer
+Function ReplaceFromString( sSource As String, sDel As String, sReplace As String ) As Integer
 	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
 	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
 	If sSource = &quot;&quot; Then
@@ -225,6 +224,72 @@ Function ReplaceFromString(sSource As String, sDel As String, sReplace As String
 		c = c+1
 	Loop
 	ReplaceFromString = c
+End Function
+
+Function ReplaceInStringWithRepCount( sSource As String, sSearch As String, sReplace As String, _
+										bCase As Boolean, lCount As Long ) As String
+	&apos; Строка sSource изменяется - в ней все части sSearch заменяются на sReplace
+	&apos; Если sReplace - &quot;&quot;, то все sSearch удаляются, иначе - замена на sReplace
+	&apos; bCase - True - учитываем регистр, False - без учета регистра
+	&apos; lCount - счетчик числа замен - передается извне
+	Dim sResult As String
+	Dim lStartPos As Long, lCurrentPos As Long, c As Long &apos; счетчик числа замен
+	c = 0
+	If sSearch = &quot;&quot; Then
+		sResult = sSource
+		lCount = 0
+	Else
+		sResult = &quot;&quot;
+		lStartPos = 1
+		lCurrentPos = 1
+		Do While lCurrentPos &lt;&gt; 0
+			If bCase Then
+				lCurrentPos = InStr( lStartPos, sSource, sSearch, 0 ) &apos; Учитывать регистр
+			Else
+				lCurrentPos = InStr( lStartPos, sSource, sSearch )
+			End If
+			If lCurrentPos &lt;&gt; 0 Then
+				sResult = sResult + Mid(sSource, lStartPos, lCurrentPos - lStartPos)
+				sResult = sResult + sReplace
+				lStartPos = lCurrentPos + Len(sSearch)
+				c = c+1
+			Else
+				sResult = sResult + Mid(sSource, lStartPos, Len(sSource))
+			End If
+		Loop
+	End If
+	lCount = c
+	ReplaceInStringWithRepCount = sResult
+End Function
+
+Function ReplaceInString( sSource As String, sSearch As String, sReplace As String, bCase As Boolean ) As String
+	&apos; Строка sSource изменяется - в ней все части sSearch заменяются на sReplace
+	&apos; Если sReplace - &quot;&quot;, то все sSearch удаляются, иначе - замена на sReplace
+	&apos; bCase - True - учитываем регистр, False - без учета регистра
+	Dim sResult As String
+	Dim lStartPos As Long, lCurrentPos As Long
+	If sSearch = &quot;&quot; Then
+		sResult = sSource
+	Else
+		sResult = &quot;&quot;
+		lStartPos = 1
+		lCurrentPos = 1
+		Do While lCurrentPos &lt;&gt; 0
+			If bCase Then
+				lCurrentPos = InStr( lStartPos, sSource, sSearch, 0 ) &apos; Учитывать регистр
+			Else
+				lCurrentPos = InStr( lStartPos, sSource, sSearch )
+			End If
+			If lCurrentPos &lt;&gt; 0 Then
+				sResult = sResult + Mid(sSource, lStartPos, lCurrentPos - lStartPos)
+				sResult = sResult + sReplace
+				lStartPos = lCurrentPos + Len(sSearch)
+			Else
+				sResult = sResult + Mid(sSource, lStartPos, Len(sSource))
+			End If
+		Loop
+	End If
+	ReplaceInString = sResult
 End Function
 
 Function CorrectPara(sPara As String) As String
