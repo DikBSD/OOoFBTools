@@ -35,6 +35,8 @@ Function SaveDescription
 		For i = 0 To UBound(sAuthors)
 			SaveAuthor(sAuthors(i, 0), sAuthors(i, 1), sAuthors(i, 2), sAuthors(i, 3), sAuthors(i, 4), sAuthors(i, 5))
 		Next i
+	Else
+		SaveEmptyAuthor
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; Trim(oInfoDlg.Model.BookTitleField.Text) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
@@ -89,6 +91,8 @@ Function SaveDescription
 		For i = 0 To UBound(sDocAuthors)
 			SaveAuthor(sDocAuthors(i, 0), sDocAuthors(i, 1), sDocAuthors(i, 2), sDocAuthors(i, 3), sDocAuthors(i, 4), sDocAuthors(i, 5))
 		Next i
+	Else
+		SaveEmptyAuthor
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; Trim(oInfoDlg.Model.ProgrammUsedField.Text) &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
@@ -154,11 +158,11 @@ Function SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As 
 	oTextOutputStream.writeString(&quot;&lt;/translator&gt;&quot;&amp; chr(10))
 End Function
 
-Function SavePublisher
+Sub SavePublisher
 	If Trim(oInfoDlg.Model.pubBookNameTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.pubYearTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.pubISBNTextField.Text) = &quot;&quot; AND UBound(sPubSequences) = -1 Then
-		Exit Function
+		Exit Sub
 	End If
 	oTextOutputStream.writeString(&quot;&lt;publish-info&gt;&quot; &amp; chr(10))
 	If Trim(oInfoDlg.Model.pubBookNameTextField.Text) &lt;&gt; &quot;&quot; Then
@@ -183,15 +187,22 @@ Function SavePublisher
 		Next i
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/publish-info&gt;&quot; &amp; chr(10))
-End Function
+End Sub
 
-Function SaveCustomInfo
+Sub SaveCustomInfo
 	If UBound(sCustomInfos) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sCustomInfos)
 			oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; sCustomInfos(i, 0) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCustomInfos(i, 1) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
 		Next i
 	End If
-End Function
+End Sub
 
+Sub SaveEmptyAuthor
+	&apos; если автора нет, то записываем только пустые обязательные тэги для валидности книги
+	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;first-name/&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;last-name/&gt;&quot;&amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;/author&gt;&quot;&amp; chr(10))
+End Sub
 </script:module>
