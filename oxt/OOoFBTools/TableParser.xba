@@ -31,6 +31,7 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	If IsMatrix(oTable) = True Then
 		&apos; обработка только правильных прямоугольных матриц
 		&apos;sTable = MakeSimpleTable(nHeaderRowCount, oTable, iCel, CellNames)
+		FormatCellPara( oTable.getCellByName(CellNames(0)) )
 		sTable = MakeComplexTable(nHeaderRowCount, oTable, CellNames)
 	Else
 		&apos; обработка сложных таблиц
@@ -45,6 +46,83 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	sPrevStyle = &quot;Table&quot;
 	AddBodyArray(sTable, &quot;Table&quot;, False)
 End Function
+
+Function SaveText(sFile As String, sText As String)
+	Dim oOS As Object, oFA As Object, oTOS As Object
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sFile)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.writeString(sText &amp; chr(10))
+	oTOS.closeOutput()
+End Function
+
+Function FormatCellPara( oCell As Object )
+	&apos; форматирование стилями каждого абзаца ячейки oCell
+	Dim oCellParEnum, oCellPar, oWordEnum, oWord &apos;oCellCursor
+	Dim sRes As String
+&apos;	oCellCursor = oCell.createTextCursor()
+	oCellParEnum = oCell.createEnumeration()
+	Do While oCellParEnum.hasMoreElements()
+		oCellPar = oCellParEnum.nextElement()
+		Dim ss : ss = &quot;oCellPar: &quot; &amp; CHR$(10) &amp; _
+		&quot;methods:&quot; &amp; CHR$(10)&amp; oCellPar.dbg_methods &amp; CHR$(10) &amp; _
+		&quot;supportedInterfaces:&quot; &amp; CHR$(10) &amp; oCellPar.dbg_supportedInterfaces &amp; CHR$(10) &amp; &quot;properties:&quot; &amp; CHR$(10) &amp; oCellPar.dbg_properties  &amp; CHR$(10)  &amp; CHR$(10)
+		SaveText(&quot;c:\debug\oCellPar.txt&quot;, ss)
+		
+		oWordEnum = oCellPar.createEnumeration()
+		sRes = &quot;&quot;
+		Do While oWordEnum.hasMoreElements()
+			oWord = oWordEnum.nextElement()
+			sRes = sRes &amp; FormatCellParaWords( oWord )
+			
+			ss = &quot;oCellParWord: &quot; &amp; CHR$(10) &amp; _
+		&quot;methods:&quot; &amp; CHR$(10)&amp; oWord.dbg_methods &amp; CHR$(10) &amp; _
+		&quot;supportedInterfaces:&quot; &amp; CHR$(10) &amp; oWord.dbg_supportedInterfaces &amp; CHR$(10) &amp; &quot;properties:&quot; &amp; CHR$(10) &amp; oWord.dbg_properties  &amp; CHR$(10)  &amp; CHR$(10)
+		SaveText(&quot;c:\debug\oCellParWord.txt&quot;, ss)
+		Loop
+		
+		MsgBox sRes, 64, &quot;Text=&quot; &amp; oCellPar.getString()
+	Loop
+End Function
+
+
+Function FormatCellParaWords( oWord ) As String
+	Dim sRes As String
+	If oWord.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+		sRes = &quot;&lt;strong&gt;&quot; &amp; oWord.getString() &amp; &quot;&lt;/strong&gt;&quot;
+	ElseIf oWord.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+		sRes = &quot;&lt;emphasis&gt;&quot; &amp; oWord.getString() &amp; &quot;&lt;/emphasis&gt;&quot;
+	ElseIf oWord.CharEscapement &gt; 0 Then
+		sRes = &quot;&lt;sup&gt;&quot; &amp; oWord.getString() &amp; &quot;&lt;/sup&gt;&quot;
+	ElseIf oWord.CharEscapement &lt; 0 Then
+		sRes = &quot;&lt;sub&gt;&quot; &amp; oWord.getString() &amp; &quot;&lt;/sub&gt;&quot;
+	ElseIf oWord.CharShadowed = True OR oWord.CharContoured = True OR oWord.CharStyleName = &quot;code&quot; Then &apos; тень или контур или символьный стиль code
+		sRes = &quot;&lt;code&gt;&quot; &amp; oWord.getString() &amp; &quot;&lt;/code&gt;&quot;
+	ElseIf oWord.CharStrikeout &gt; 0 Then
+		sRes = &quot;&lt;strikethrough&gt;&quot; &amp; oWord.getString() &amp; &quot;&lt;/strikethrough&gt;&quot;
+	Else
+		sRes = oWord.getString()
+	End If
+	FormatCellParaWords = sRes
+End Function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Function FormatCellText(CellCursor As Object, sCellString As String) As String
