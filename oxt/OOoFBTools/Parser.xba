@@ -159,9 +159,16 @@ Sub DocumentParser
 				&apos; заголовки стиля Heading игнорируются
 				Dim sMarker As String
 				sMarker = Mid(oPar.getString(), 1, Len(oPar.getString())-Len(sAllSectString))
-				sPara = sMarker &amp; &quot; &quot; &amp; sPara
 				If sMarker = &quot;&quot; Then &apos; для маркеров • и других
 					sPara = &quot;• &quot; &amp; sPara 
+				Else
+					&apos; Временная &quot;заглушка&quot;, пока не раскопаю тонкости работы с нумерованными и маркированными списками
+					Dim sTemp As String
+					sTemp = Mid(sPara, 1, Len(sMarker))
+					&apos;msgbox &quot;sTemp= &quot; &amp; sTemp, 64, &quot;sMarker= &quot; &amp; sMarker
+					If sTemp &lt;&gt; sPara Then &apos; чтобы 2 первых символа Слова игнорировались (Пример: Гр Громко...)
+						sPara = sMarker &amp; &quot; &quot; &amp; sPara
+					End If
 				End If
 				sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
 			End If
