@@ -113,6 +113,20 @@ Function getUserPath() As String
 	getUserPath = oPathSettings.UserConfig
 End Function
 
+Function SaveText(sFile As String, sText As String)
+	&apos; Сохранение текстовой строки в файл
+	Dim oOS As Object, oFA As Object, oTOS As Object
+
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(sFile)
+	oOS.truncate()
+	oTOS.setOutputStream(oOS)
+	oTOS.writeString(sText &amp; chr(10))
+	oTOS.closeOutput()
+End Function
+
 &apos; /// Работа с экраном ///
 
 Function ToScreenCenter(oDlg)
