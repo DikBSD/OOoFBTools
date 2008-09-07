@@ -326,7 +326,63 @@ Function InLineParser(oSect As Object) As String
 		InLineParser = &quot;&quot;
 	End If
 End Function
-			
+
+&apos; перебор по всем in-line стилям
+Function InLineAllParser(oSect As Object) As String
+	&apos; обработка &quot;проблемных&quot; символов
+	If bCorrectPara = True Then
+		InLineAllParser = CorrectPara(oSect.getString())
+	Else
+		InLineAllParser = oSect.getString()
+	End If
+	
+	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		Dim s As String
+		s = Mid(oSect.HyperLinkURL, 1, 1)
+		IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
+			s = oSect.HyperLinkURL
+		Else			&apos; закладка
+			s = Mid(oSect.HyperLinkURL, 2)
+			s = &quot;#_&quot; &amp; s
+		End If
+		InLineAllParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/a&gt;&quot;
+	End If
+	If oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+		InLineAllParser = &quot;&lt;strong&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strong&gt;&quot;
+	End If
+	If oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+		InLineAllParser = &quot;&lt;emphasis&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/emphasis&gt;&quot;
+	End If
+	If oSect.CharEscapement &gt; 0 Then
+		InLineAllParser = &quot;&lt;sup&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sup&gt;&quot;
+	End If
+	If oSect.CharEscapement &lt; 0 Then
+		InLineAllParser = &quot;&lt;sub&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sub&gt;&quot;
+	End If
+	If oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then
+		&apos; тень или контур или символьный стиль code
+		InLineAllParser = &quot;&lt;code&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/code&gt;&quot;
+	End If
+	If oSect.CharStrikeout &gt; 0 Then
+		InLineAllParser = &quot;&lt;strikethrough&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strikethrough&gt;&quot;
+	End If
+	&apos; только теперь, после всех проверок
+	If InLineAllParser = &quot;&quot; Then
+		&apos; просто обычный текст
+		InLineAllParser = oSect.getString()
+	End If
+	
+	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
+	If InLineAllParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
+		InLineAllParser = &quot;&quot;
+	End If
+End Function
+
 &apos; парсер сносок
 Function FootEndNoteParser(oSect As Object) As String
 	Dim sNote As String, sNoteText As String
@@ -499,49 +555,6 @@ Function GraphicCustomShapeSymbolParser(oContent As Object)
 	sPrevStyle = &quot;Image&quot;
 End Function
 
-Function TextFrameParser(oContent As Object)
-	&apos; Парсер Текстовой Врезки
-	Dim sText() As String, iC As Integer, sTable As String, sCite As String
-	sText = Split(oContent.getString(),chr(10))
-	Select Case sTextFrameToFB2
-		Case &quot;Таблица&quot;
-			sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
-			For iC=0 To UBound(sText)
-				If Len(sText(iC)) &gt; 1 Then &apos; пропускаем пустые параграфы
-					sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-					sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; sAdjTextFrame &amp; &quot;&quot;&quot;&quot;
-					If sLineTVA = &quot;&quot; Then
-						sTable = sTable &amp; &quot;&gt;&quot;
-					Else
-						sTable = sTable &amp; &quot; valign=&quot;&quot;&quot; &amp; sLineTVA &amp; &quot;&quot;&quot;&gt;&quot;
-					End If
-					sTable = sTable &amp; sText(iC) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-					sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
-				End If
-			Next iC
-			sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
-			AddBodyArray(sTable, &quot;Table&quot;, False)
-			sPrevStyle = sTextFrameToFB2
-		Case &quot;Цитата&quot;
-			For iC=0 To UBound(sText)
-				If Len(sText(iC)) &gt; 1 Then &apos; пустые параграфы
-					sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sText(iC) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-				Else
-					sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
-				End If
-			Next iC
-			sCite = Mid(sCite, 4, Len(sCite))
-			sCite = Mid(sCite, 1, Len(sCite)-5)
-			AddBodyArray(sCite, &quot;Cite&quot;, False)
-			sPrevStyle = sTextFrameToFB2
-		Case Else
-			For iC=0 To UBound(sText)
-				AddBodyArray(sText(iC), &quot;Para&quot;, False)
-			Next iC
-			sPrevStyle = &quot;Para&quot;
-	End Select
-End Function
-
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	Dim l As Long
 	l = Ubound(sBodyParagraphs(), 1) + 1
@@ -581,16 +594,6 @@ Function AddLinksToArray(lTo As Long, sID As String)
 	End If
 	sLinksTo(l,0) = lTo
 	sLinksTo(l,1) = &quot;_&quot; &amp; sID
-End Function
-
-Function OOoWriterVersion() As String
-	Dim oSet, oConfigProvider
-	Dim oParm(0) As New com.sun.star.beans.PropertyValue
-	oConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot;)
-	oParm(0).Name = &quot;nodepath&quot;
-	oParm(0).Value = &quot;/org.openoffice.Setup/Product&quot;
-	oSet = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;,oParm())
-	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
 End Function
 
 Function AddBookAnnotation(sPara As String)
@@ -720,63 +723,6 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 	End If
 	sPrevStyle = sParaStyleName
 	FootnoteStyleParser = sParaType
-End Function
-
-
-&apos; перебор по всем in-line стилям
-Function InLineAllParser(oSect As Object) As String
-	&apos; обработка &quot;проблемных&quot; символов
-	If bCorrectPara = True Then
-		InLineAllParser = CorrectPara(oSect.getString())
-	Else
-		InLineAllParser = oSect.getString()
-	End If
-	
-	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
-		Dim s As String
-		s = Mid(oSect.HyperLinkURL, 1, 1)
-		IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
-			s = oSect.HyperLinkURL
-		Else			&apos; закладка
-			s = Mid(oSect.HyperLinkURL, 2)
-			s = &quot;#_&quot; &amp; s
-		End If
-		InLineAllParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/a&gt;&quot;
-	End If
-	If oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
-		InLineAllParser = &quot;&lt;strong&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strong&gt;&quot;
-	End If
-	If oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
-		InLineAllParser = &quot;&lt;emphasis&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/emphasis&gt;&quot;
-	End If
-	If oSect.CharEscapement &gt; 0 Then
-		InLineAllParser = &quot;&lt;sup&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sup&gt;&quot;
-	End If
-	If oSect.CharEscapement &lt; 0 Then
-		InLineAllParser = &quot;&lt;sub&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sub&gt;&quot;
-	End If
-	If oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then
-		&apos; тень или контур или символьный стиль code
-		InLineAllParser = &quot;&lt;code&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/code&gt;&quot;
-	End If
-	If oSect.CharStrikeout &gt; 0 Then
-		InLineAllParser = &quot;&lt;strikethrough&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strikethrough&gt;&quot;
-	End If
-	&apos; только теперь, после всех проверок
-	If InLineAllParser = &quot;&quot; Then
-		&apos; просто обычный текст
-		InLineAllParser = oSect.getString()
-	End If
-	
-	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
-	If InLineAllParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
-		InLineAllParser = &quot;&quot;
-	End If
 End Function
 
 </script:module>

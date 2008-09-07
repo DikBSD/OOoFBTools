@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="InCutParser" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+&apos; //////////////// Парсер текстовых врезок /////////////////
+
+Sub TextFrameParser( oContent As Object )
+	&apos; Парсер Текстовой Врезки
+	Select Case sTextFrameToFB2
+		Case &quot;Таблица&quot;
+			TextFrameTableParser( oContent )
+			sPrevStyle = sTextFrameToFB2
+		Case &quot;Цитата&quot;
+			TextFrameCiteParser( oContent )
+			sPrevStyle = sTextFrameToFB2
+		Case Else
+			TextFrameTextParser( oContent )
+			sPrevStyle = &quot;Para&quot;
+	End Select
+End Sub
+
+&apos; парсер текстовой врезки как таблицы
+Sub TextFrameTableParser( oContent As Object )
+	Dim i As Integer, sText() As String, sTable As String
+	sText = Split( oContent.getString(), chr(13) &amp; chr(10) )
+	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
+	For i=0 To UBound(sText)
+		If bDelEL = True Then &apos; удаление пустых параграфов
+			If Len(sText(i)) &gt; 1 Then &apos; пропускаем пустые параграфы
+				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; sAdjTextFrame &amp; &quot;&quot;&quot;&quot;
+				If sLineTVA = &quot;&quot; Then
+					sTable = sTable &amp; &quot;&gt;&quot;
+				Else
+					sTable = sTable &amp; &quot; valign=&quot;&quot;&quot; &amp; sLineTVA &amp; &quot;&quot;&quot;&gt;&quot;
+				End If
+				sTable = sTable &amp; sText(i) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+			End If
+		Else
+			sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+			If sText(i) &lt;&gt; &quot;&quot; Then
+				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; sAdjTextFrame &amp; &quot;&quot;&quot;&quot;
+				If sLineTVA = &quot;&quot; Then
+					sTable = sTable &amp; &quot;&gt;&quot;
+				Else
+					sTable = sTable &amp; &quot; valign=&quot;&quot;&quot; &amp; sLineTVA &amp; &quot;&quot;&quot;&gt;&quot;
+				End If
+				sTable = sTable &amp; sText(i) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			Else
+				sTable = sTable &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
+			End If
+			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+		End If
+	Next i
+	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
+	AddBodyArray(sTable, &quot;Table&quot;, False)
+End Sub
+
+&apos; парсер текстовой врезки как цитаты
+Sub TextFrameCiteParser( oContent As Object )
+	Dim i As Integer, sCite As String, sText() As String
+	sText = Split( oContent.getString(), chr(13) &amp; chr(10) )
+	For i=0 To UBound(sText())
+		If Len(sText(i)) &gt; 1 Then &apos; пустые параграфы
+			sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sText(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+		Else
+			sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
+		End If
+	Next i
+	sCite = Mid(sCite, 4, Len(sCite))
+	sCite = Mid(sCite, 1, Len(sCite)-5)
+	AddBodyArray(sCite, &quot;Cite&quot;, False)
+End Sub
+
+&apos; парсер текстовой врезки как текста
+Sub TextFrameTextParser( oContent As Object )
+	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String
+	oParEnum = oContent.createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		oWordEnum = oPar.createEnumeration()
+		sFormatPara = &quot;&quot;
+		Do While oWordEnum.hasMoreElements()
+			oWord = oWordEnum.nextElement()			
+			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
+			If bOnlyOneStyle = True Then
+				sFormatPara = sFormatPara &amp; InLineParser( oWord )
+			Else
+				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+			End If
+		Loop
+		AddBodyArray(sFormatPara, &quot;Para&quot;, False)
+	Loop
+End Sub
+
+</script:module>
