@@ -74,7 +74,7 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		&apos; обработка заголовков таблицы
 		If nHeaderRowCount &gt; 0 Then
 			If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-				sTagTDH = MakeValignAttrComplex(GetFB2ParagraphAdjust( oWord ), sHeaderTVA, &quot;th&quot;)
+				sTagTDH = MakeValignAttrComplex(GetFB2ParagraphAdjust( oCellPar ), sHeaderTVA, &quot;th&quot;)
 				sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
 				sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
 			Else
@@ -86,7 +86,17 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 			sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
 		End If
 		
-		sRes = sRes &amp; sTagStart &amp; sFormatPara &amp; sTagEnd
+		&apos; для пустого абзаца в ячейке
+		If sFormatPara &lt;&gt; &quot;&quot; Then
+			sRes = sRes &amp; sTagStart &amp; sFormatPara &amp; sTagEnd
+		Else
+			If nHeaderRowCount &gt; 0 Then
+				sRes = sRes &amp; &quot;&lt;th/&gt;&quot; &amp; chr(10)
+			Else
+				sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
+			End If
+		End If
+		
 	Loop
 	sRes = Mid( sRes, 1, Len(sRes)-1 )
 	FormatCellPara = sRes
@@ -244,7 +254,7 @@ End Function
 
 Function InsertColspanForCutRow( aFB2ParasRow() As String )
 	&apos; вставляем colspan для “урезанной” строки
-	&apos; Доделать!!! Надо знать width ячейки для расчета cilspan
+	&apos; Доделать!!! Надо знать width ячейки для расчета colspan
 End Function
 
 Function MakeTRRow( aFB2ParasRow() As String, nCollMaxInTable As Integer, nMaxLines As Integer ) As String
@@ -296,7 +306,23 @@ Function MakeWorkCellPara( oTable As Object, sCellName As String, nHeaderRowCoun
 		
 	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	If oCell.IsProtected = True Then &apos; заблокированные ячейки
-		sFormatCellText = ReplaceInString( sFormatCellText, chr(10), &quot; &quot;, False )
+		Dim aTemp() As String
+		aTemp = Split(sFormatCellText, chr(10))
+		If UBound( aTemp() ) &gt;= 1 Then
+			&apos; убираем у 1-й строки конечный тэг, у последней - стартовый, а у всех премежуточных - и стартовый и конечный тэг.
+			aTemp(0) = Mid( aTemp(0), 1, Len( aTemp(0) )-5 )
+			aTemp(UBound(aTemp())) = Mid( aTemp(UBound(aTemp())), _
+										Instr(aTemp(UBound(aTemp())),&quot;&gt;&quot;)+1, _
+										Len(aTemp(UBound(aTemp())))-Instr(aTemp(UBound(aTemp())),&quot;&gt;&quot;) )
+			If UBound( aTemp() ) &gt; 1 Then
+				For i=1 To UBound(aTemp())-1
+					aTemp(i) = Mid( aTemp(i), 1, Len( aTemp(i) )-5 )
+					aTemp(i) = Mid( aTemp(i), Instr(aTemp(i),&quot;&gt;&quot;)+1, Len(aTemp(i))-Instr(aTemp(i),&quot;&gt;&quot;) )
+				Next i
+			End If
+		End If
+		&apos; Соединяем строки через пробел
+		sFormatCellText = Join( aTemp, &quot; &quot; )
 		aCellAllFormatText = Split(sFormatCellText, &quot;&quot;) &apos; объединенные абзацы одной строкой
 	Else
 		aCellAllFormatText = Split(sFormatCellText, chr(10))
