@@ -64,7 +64,12 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		sFormatPara = &quot;&quot;
 		Do While oWordEnum.hasMoreElements()
 			oWord = oWordEnum.nextElement()			
-			sFormatPara = sFormatPara &amp; InLineParser( oWord )
+			If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
+				&apos; парсер сносок
+				sFormatPara = sFormatPara + FootEndNoteParser(oWord)
+			Else
+				sFormatPara = sFormatPara &amp; InLineParser( oWord )
+			End If
 		Loop
 		
 		&apos; задаем аттрибуты
