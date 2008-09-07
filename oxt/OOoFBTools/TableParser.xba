@@ -66,10 +66,13 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 			oWord = oWordEnum.nextElement()			
 			If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
 				&apos; парсер сносок
-				sFormatPara = sFormatPara + FootEndNoteParser(oWord)
+				sFormatPara = sFormatPara + FootEndNoteParser( oWord )
 			Else
-				sFormatPara = sFormatPara &amp; InLineParser( oWord )
-				&apos;sFormatPara = sFormatPara &amp; InLineAllParser(oWord)
+				If bOnlyOneStyle = True Then
+					sFormatPara = sFormatPara &amp; InLineParser( oWord )
+				Else
+					sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+				End If
 			End If
 		Loop
 		

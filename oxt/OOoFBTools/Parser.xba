@@ -96,8 +96,11 @@ Sub DocumentParser
 						sAllSectString = sAllSectString + oSect.getString()
 					End If
 					&apos; парсер текстового абзаца
-					sPara = sPara &amp; InLineParser(oSect)
-					&apos;sPara = sPara &amp; InLineAllParser(oSect)
+					If bOnlyOneStyle = True Then
+						sPara = sPara &amp; InLineParser( oSect )
+					Else
+						sPara = sPara &amp; InLineAllParser( oSect )
+					End if
 				ElseIf oSect.TextPortionType = &quot;Frame&quot; Then
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
@@ -119,7 +122,7 @@ Sub DocumentParser
 								If oContent.FrameStyleName = &quot;Frame&quot; Then
 									&apos; Парсер Текстовой Врезки
 									TextFrameParser(oContent)
-								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+								&apos;ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 									&apos;msgbox oContent.Component.Formula, 64, &quot;символ&quot;
 								End If
 							End If
@@ -134,8 +137,11 @@ Sub DocumentParser
 					sPara = sPara + FootEndNoteParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
 					&apos; текстовые поля
-					sPara = sPara &amp; InLineParser(oSect)
-					&apos;sPara = sPara &amp; InLineAllParser(oSect)
+					If bOnlyOneStyle = True Then
+						sPara = sPara &amp; InLineParser( oSect )
+					Else
+						sPara = sPara &amp; InLineAllParser( oSect )
+					End If
 				ElseIf oSect.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
 					If bDocLinks = True Then
@@ -397,8 +403,11 @@ Function FormatFootnoteText(oSect)
 			oSecEnumF = oTextF.createEnumeration
 			While oSecEnumF.hasMoreElements
 				oTextPortionF = oSecEnumF.nextElement
-				sParagF = sParagF &amp; InLineParser(oTextPortionF)
-				&apos;sParagF = sParagF &amp; InLineAllParser(oTextPortionF)
+				If bOnlyOneStyle = True Then
+					sParagF = sParagF &amp; InLineParser( oTextPortionF )
+				Else
+					sParagF = sParagF &amp; InLineAllParser( oTextPortionF )
+				End If
 			Wend
 			&apos; парсер стилей сносок
 			If bNotesElements = True Then
