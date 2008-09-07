@@ -252,7 +252,12 @@ Function InsertColspanFor1Row( aFB2ParasRow() As String, nCollMaxInTable As Inte
 	Dim sStr As String, i As Integer
 	For i=0 To nMaxLines
 		sStr = aFB2ParasRow(0,i)
-		InsertInString( sStr, &quot;&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; )
+		If Instr( sStr, &quot;&lt;td/&gt;&quot; )&gt;0 Or Instr( sStr, &quot;&lt;th/&gt;&quot; )&gt;0 Then
+			&apos; для &quot;пустых&quot; тэгов
+			InsertInString( sStr, &quot;/&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;/&quot; )
+		Else
+			InsertInString( sStr, &quot;&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&gt;&quot; )
+		End If
 		aFB2ParasRow(0,i) = sStr
 	Next i
 End Function
