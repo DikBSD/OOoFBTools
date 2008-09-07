@@ -14,6 +14,9 @@ Sub TextFrameParser( oContent As Object )
 		Case &quot;Цитата&quot;
 			TextFrameCiteParser( oContent )
 			sPrevStyle = sTextFrameToFB2
+		Case &quot;Структура&quot;
+			TextFrameStructParser( oContent )
+			sPrevStyle = sTextFrameToFB2
 		Case Else
 			TextFrameTextParser( oContent )
 			sPrevStyle = &quot;Para&quot;
@@ -120,6 +123,27 @@ Sub TextFrameTextParser( oContent As Object )
 				AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
 			End If
 		End If
+	Loop
+End Sub
+
+&apos; парсер текстовой врезки как структуры
+Sub TextFrameStructParser( oContent As Object )
+	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String
+	oParEnum = oContent.createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		oWordEnum = oPar.createEnumeration()
+		sFormatPara = &quot;&quot;
+		Do While oWordEnum.hasMoreElements()
+			oWord = oWordEnum.nextElement()			
+			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
+			If bOnlyOneStyle = True Then
+				sFormatPara = sFormatPara &amp; InLineParser( oWord )
+			Else
+				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+			End If
+		Loop
+		StyleParser(oPar.ParaStyleName, sFormatPara)
 	Loop
 End Sub
 

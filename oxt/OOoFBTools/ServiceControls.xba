@@ -7,7 +7,6 @@ Public oServiceDlg As Object
 Public sHeaderTVA As String
 Public sLineTVA As String
 Public sTextFrameToFB2 As String &apos; экспортировать врезки как...
-Public sAdjTextFrame As String  &apos; выравнивание текста врезок, если экспорт как таблицы
 
 Private sFootStyleList() As String &apos; стиль сносок
 Private sFootTitleList() As String &apos; Название секции сносок
@@ -20,7 +19,7 @@ Function ServiceDlgExec As Boolean
 	sFootStyleList() = Array(&quot;x&quot;, &quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
 	sFootTitleList() = Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
 	sHVList() = Array(&quot;&quot;, &quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
-	sTFList() = Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;)
+	sTFList() = Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;, &quot;Структура&quot;)
 						
 	oServiceDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.ServiceDlg)
 	With oServiceDlg.Model
@@ -32,7 +31,6 @@ Function ServiceDlgExec As Boolean
 		.cmbboxHeaderTHV.StringItemList = sHVList()
 		.cmbboxLineTDV.StringItemList = sHVList()
 		.cmbboxTextFrame.StringItemList = sTFList()
-		.cmbboxAdjTextFrame.StringItemList = Array(&quot;Слева&quot;, &quot;По Центру&quot;, &quot;Справа&quot;)
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
@@ -95,16 +93,6 @@ Function ServiceDlgOk
 	bServiceExecute = True
 	oServiceDlg.endExecute()
 
-End Function
-
-Function lstboxTextFrameChange
-	If oServiceDlg.GetControl(&quot;cmbboxTextFrame&quot;).SelectedItem = &quot;Таблица&quot; Then
-		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = True
-	Else
-		oServiceDlg.GetControl(&quot;lblAdjTextFrame&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;cmbboxAdjTextFrame&quot;).Enable = False
-	End If
 End Function
 
 </script:module>
