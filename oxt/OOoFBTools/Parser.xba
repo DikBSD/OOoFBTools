@@ -97,6 +97,7 @@ Sub DocumentParser
 					End If
 					&apos; парсер текстового абзаца
 					sPara = sPara &amp; InLineParser(oSect)
+					&apos;sPara = sPara &amp; InLineAllParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;Frame&quot; Then
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
@@ -134,6 +135,7 @@ Sub DocumentParser
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
 					&apos; текстовые поля
 					sPara = sPara &amp; InLineParser(oSect)
+					&apos;sPara = sPara &amp; InLineAllParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
 					If bDocLinks = True Then
@@ -274,8 +276,15 @@ Function StyleParser(sParaStyleName As String, sPara As String)
 	sPrevStyle = sParaStyleName
 End Function
 
+&apos; перебор по in-line стилям
 Function InLineParser(oSect As Object) As String
-	&apos; перебор по in-line стилям
+	&apos; обработка &quot;проблемных&quot; символов
+	If bCorrectPara = True Then
+		InLineParser = CorrectPara(oSect.getString())
+	Else
+		InLineParser = oSect.getString()
+	End If
+	
 	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
 		Dim s As String
 		s = Mid(oSect.HyperLinkURL, 1, 1)
@@ -285,54 +294,22 @@ Function InLineParser(oSect As Object) As String
 			s = Mid(oSect.HyperLinkURL, 2)
 			s = &quot;#_&quot; &amp; s
 		End If
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/a&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/a&gt;&quot;
-		End If
+		InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/a&gt;&quot;
 	ElseIf oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;strong&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/strong&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;strong&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/strong&gt;&quot;
-		End If
+		InLineParser = &quot;&lt;strong&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/strong&gt;&quot;
 	ElseIf oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/emphasis&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;emphasis&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/emphasis&gt;&quot;
-		End If
+		InLineParser = &quot;&lt;emphasis&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/emphasis&gt;&quot;
 	ElseIf oSect.CharEscapement &gt; 0 Then
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;sup&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/sup&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;sup&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/sup&gt;&quot;
-		End If
+		InLineParser = &quot;&lt;sup&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/sup&gt;&quot;
 	ElseIf oSect.CharEscapement &lt; 0 Then
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;sub&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/sub&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;sub&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/sub&gt;&quot;
-		End If
-	ElseIf oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then &apos; тень или контур или символьный стиль code
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;code&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/code&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;code&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/code&gt;&quot;
-		End If
+		InLineParser = &quot;&lt;sub&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/sub&gt;&quot;
+	ElseIf oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then
+		&apos; тень или контур или символьный стиль code
+		InLineParser = &quot;&lt;code&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/code&gt;&quot;
 	ElseIf oSect.CharStrikeout &gt; 0 Then
-		If bCorrectPara = True Then
-			InLineParser = &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(oSect.getString()) &amp; &quot;&lt;/strikethrough&gt;&quot;
-		Else
-			InLineParser = &quot;&lt;strikethrough&gt;&quot; &amp; oSect.getString() &amp; &quot;&lt;/strikethrough&gt;&quot;
-		End If
-	Else
-		If bCorrectPara = True Then
-			InLineParser = CorrectPara(oSect.getString())
-		Else
-			InLineParser = oSect.getString()
-		End If
+		InLineParser = &quot;&lt;strikethrough&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/strikethrough&gt;&quot;
 	End If
+	
 	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
 	If InLineParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
 		InLineParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
@@ -342,10 +319,10 @@ Function InLineParser(oSect As Object) As String
 		InLineParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
 		InLineParser = &quot;&quot;
 	End If
-End Function			
-
+End Function
+			
+&apos; парсер сносок
 Function FootEndNoteParser(oSect As Object) As String
-	&apos; парсер сносок
 	Dim sNote As String, sNoteText As String
 	Dim oFootnoteCursor As Object
 	Static i As Integer
@@ -420,72 +397,8 @@ Function FormatFootnoteText(oSect)
 			oSecEnumF = oTextF.createEnumeration
 			While oSecEnumF.hasMoreElements
 				oTextPortionF = oSecEnumF.nextElement
-				If oTextPortionF.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
-					Dim s As String
-					s = Mid(oTextPortionF.HyperLinkURL, 1, 1)
-					IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
-						s = oTextPortionF.HyperLinkURL
-					Else			&apos; закладка
-						s = Mid(oTextPortionF.HyperLinkURL, 2)
-						s = &quot;#_&quot; &amp; s
-					End If
-					If bCorrectPara = True Then
-						&apos; Если последний элемент строки сноски - гиперссылка, то в oSecEnumF она отображается дважды (не разобрался пока. почему)
-						&apos; Поэтому ставим защиту от этого
-						If sFNTH &lt;&gt; CorrectPara(oTextPortionF.String) Then
-							sFNTH = CorrectPara(oTextPortionF.String)
-							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
-						End If
-					Else
-						&apos; Поэтому ставим защиту от этого
-						If sFNTH &lt;&gt; oTextPortionF.String Then
-							sFNTH = oTextPortionF.String
-							sParagF = sParagF &amp; &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFNTH &amp; &quot;&lt;/a&gt;&quot;
-						End If
-					End If
-				Elseif oTextPortionF.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;strong&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/strong&gt;&quot;
-					Else
-						sParagF = sParagF &amp; &quot;&lt;strong&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/strong&gt;&quot;
-					End If
-				ElseIf oTextPortionF.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;emphasis&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/emphasis&gt;&quot;
-					Else
-						sParagF = sParagF &amp; &quot;&lt;emphasis&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/emphasis&gt;&quot;
-					End If
-				ElseIf oTextPortionF.CharEscapement &gt; 0 Then
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;sup&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/sup&gt;&quot;
-					Else
-						sParagF = sParagF &amp; &quot;&lt;sup&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sup&gt;&quot;
-					End If
-				ElseIf oTextPortionF.CharEscapement &lt; 0 Then
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/sub&gt;&quot;
-					Else
-						sParagF = sParagF &amp; &quot;&lt;sub&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/sub&gt;&quot;
-					End If
-				ElseIf oTextPortionF.CharShadowed = True OR oTextPortionF.CharContoured = True OR oTextPortionF.CharStyleName = &quot;code&quot; Then &apos; тень или контур или символьный стиль code
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/code&gt;&quot;
-					Else
-						sParagF = sParagF &amp; &quot;&lt;code&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/code&gt;&quot;
-					End If
-				ElseIf oTextPortionF.CharStrikeout &gt; 0 Then
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; &quot;&lt;strikethrough&gt;&quot; &amp; CorrectPara(oTextPortionF.String) &amp; &quot;&lt;/strikethrough&gt;&quot;
-					Else
-						sParagF = sParagF &amp; &quot;&lt;strikethrough&gt;&quot; &amp; oTextPortionF.String &amp; &quot;&lt;/strikethrough&gt;&quot;
-					End If
-				Else
-					If bCorrectPara = True Then
-						sParagF = sParagF &amp; CorrectPara(oTextPortionF.String)
-					Else
-						sParagF = sParagF &amp; oTextPortionF.String
-					End If
-				End If
+				sParagF = sParagF &amp; InLineParser(oTextPortionF)
+				&apos;sParagF = sParagF &amp; InLineAllParser(oTextPortionF)
 			Wend
 			&apos; парсер стилей сносок
 			If bNotesElements = True Then
@@ -798,6 +711,63 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 	End If
 	sPrevStyle = sParaStyleName
 	FootnoteStyleParser = sParaType
+End Function
+
+
+&apos; перебор по всем in-line стилям
+Function InLineAllParser(oSect As Object) As String
+	&apos; обработка &quot;проблемных&quot; символов
+	If bCorrectPara = True Then
+		InLineAllParser = CorrectPara(oSect.getString())
+	Else
+		InLineAllParser = oSect.getString()
+	End If
+	
+	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		Dim s As String
+		s = Mid(oSect.HyperLinkURL, 1, 1)
+		IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
+			s = oSect.HyperLinkURL
+		Else			&apos; закладка
+			s = Mid(oSect.HyperLinkURL, 2)
+			s = &quot;#_&quot; &amp; s
+		End If
+		InLineAllParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/a&gt;&quot;
+	End If
+	If oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+		InLineAllParser = &quot;&lt;strong&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strong&gt;&quot;
+	End If
+	If oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+		InLineAllParser = &quot;&lt;emphasis&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/emphasis&gt;&quot;
+	End If
+	If oSect.CharEscapement &gt; 0 Then
+		InLineAllParser = &quot;&lt;sup&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sup&gt;&quot;
+	End If
+	If oSect.CharEscapement &lt; 0 Then
+		InLineAllParser = &quot;&lt;sub&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sub&gt;&quot;
+	End If
+	If oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then
+		&apos; тень или контур или символьный стиль code
+		InLineAllParser = &quot;&lt;code&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/code&gt;&quot;
+	End If
+	If oSect.CharStrikeout &gt; 0 Then
+		InLineAllParser = &quot;&lt;strikethrough&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strikethrough&gt;&quot;
+	End If
+	&apos; только теперь, после всех проверок
+	If InLineAllParser = &quot;&quot; Then
+		&apos; просто обычный текст
+		InLineAllParser = oSect.getString()
+	End If
+	
+	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
+	If InLineAllParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
+		InLineAllParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
+		InLineAllParser = &quot;&quot;
+	End If
 End Function
 
 </script:module>
