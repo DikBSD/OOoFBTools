@@ -22,39 +22,38 @@ End Sub
 
 &apos; парсер текстовой врезки как таблицы
 Sub TextFrameTableParser( oContent As Object )
-	Dim i As Integer, sText() As String, sTable As String
-	sText = Split( oContent.getString(), chr(13) &amp; chr(10) )
-	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10)
-	For i=0 To UBound(sText)
+	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String, sTable As String
+	oParEnum = oContent.createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		oWordEnum = oPar.createEnumeration()
+		sFormatPara = &quot;&quot;
+		Do While oWordEnum.hasMoreElements()
+			oWord = oWordEnum.nextElement()			
+			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
+			If bOnlyOneStyle = True Then
+				sFormatPara = sFormatPara &amp; InLineParser( oWord )
+			Else
+				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+			End If
+		Loop
 		If bDelEL = True Then &apos; удаление пустых параграфов
-			If Len(sText(i)) &gt; 1 Then &apos; пропускаем пустые параграфы
+			If sFormatPara &lt;&gt; &quot;&quot; Then
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; sAdjTextFrame &amp; &quot;&quot;&quot;&quot;
-				If sLineTVA = &quot;&quot; Then
-					sTable = sTable &amp; &quot;&gt;&quot;
-				Else
-					sTable = sTable &amp; &quot; valign=&quot;&quot;&quot; &amp; sLineTVA &amp; &quot;&quot;&quot;&gt;&quot;
-				End If
-				sTable = sTable &amp; sText(i) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 			End If
 		Else
 			sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-			If sText(i) &lt;&gt; &quot;&quot; Then
-				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; sAdjTextFrame &amp; &quot;&quot;&quot;&quot;
-				If sLineTVA = &quot;&quot; Then
-					sTable = sTable &amp; &quot;&gt;&quot;
-				Else
-					sTable = sTable &amp; &quot; valign=&quot;&quot;&quot; &amp; sLineTVA &amp; &quot;&quot;&quot;&gt;&quot;
-				End If
-				sTable = sTable &amp; sText(i) &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			Else
+			If sFormatPara &lt;&gt; &quot;&quot; Then
+				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			Else &apos; пустая строка
 				sTable = sTable &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
 			End If
 			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 		End If
-	Next i
-	sTable = sTable &amp; &quot;&lt;/table&gt;&quot;
+	Loop
+	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
 	AddBodyArray(sTable, &quot;Table&quot;, False)
 End Sub
 
@@ -78,16 +77,18 @@ Sub TextFrameCiteParser( oContent As Object )
 		Loop		
 		If bDelEL = True Then &apos; удаление пустых параграфов
 			If sFormatPara &lt;&gt; &quot;&quot; Then
-				sCite = sCite &amp; sFormatPara &amp; chr(10)
+				sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			End If
 		Else
 			If sFormatPara &lt;&gt; &quot;&quot; Then
-				sCite = sCite &amp; sFormatPara &amp; chr(10)
+				sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 			Else &apos; пустая строка
 				sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
 			End If
 		End If
 	Loop
+	sCite = Mid(sCite, 4, Len(sCite))
+	sCite = Mid(sCite, 1, Len(sCite)-5)
 	AddBodyArray(sCite, &quot;Cite&quot;, False)
 End Sub
 
