@@ -31,8 +31,10 @@ Sub TextFrameTableParser( oContent As Object )
 		oPar = oParEnum.nextElement()
 		oWordEnum = oPar.createEnumeration()
 		sFormatPara = &quot;&quot;
+		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()			
+			oWord = oWordEnum.nextElement()
+			sString = sString &amp; oWord.getString()
 			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
 			If bOnlyOneStyle = True Then
 				sFormatPara = sFormatPara &amp; InLineParser( oWord )
@@ -40,6 +42,14 @@ Sub TextFrameTableParser( oContent As Object )
 				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
 			End If
 		Loop
+		
+		If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+			Dim s As String, sPos As String
+			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
+			sPos = Mid(sString, 1,1)
+			If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+		End If
+		
 		If bDelEL = True Then &apos; удаление пустых параграфов
 			If sFormatPara &lt;&gt; &quot;&quot; Then
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
@@ -69,15 +79,25 @@ Sub TextFrameCiteParser( oContent As Object )
 		oPar = oParEnum.nextElement()
 		oWordEnum = oPar.createEnumeration()
 		sFormatPara = &quot;&quot;
+		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()			
+			oWord = oWordEnum.nextElement()
+			sString = sString &amp; oWord.getString()
 			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
 			If bOnlyOneStyle = True Then
 				sFormatPara = sFormatPara &amp; InLineParser( oWord )
 			Else
 				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
 			End If
-		Loop		
+		Loop
+		
+		If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+			Dim s As String, sPos As String
+			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
+			sPos = Mid(sString, 1,1)
+			If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+		End If
+		
 		If bDelEL = True Then &apos; удаление пустых параграфов
 			If sFormatPara &lt;&gt; &quot;&quot; Then
 				sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
@@ -103,8 +123,10 @@ Sub TextFrameTextParser( oContent As Object )
 		oPar = oParEnum.nextElement()
 		oWordEnum = oPar.createEnumeration()
 		sFormatPara = &quot;&quot;
+		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 		Do While oWordEnum.hasMoreElements()
 			oWord = oWordEnum.nextElement()			
+			sString = sString &amp; oWord.getString()
 			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
 			If bOnlyOneStyle = True Then
 				sFormatPara = sFormatPara &amp; InLineParser( oWord )
@@ -112,6 +134,14 @@ Sub TextFrameTextParser( oContent As Object )
 				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
 			End If
 		Loop
+		
+		If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+			Dim s As String, sPos As String
+			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
+			sPos = Mid(sString, 1,1)
+			If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+		End If
+		
 		If bDelEL = True Then &apos; удаление пустых параграфов
 			If sFormatPara &lt;&gt; &quot;&quot; Then
 				AddBodyArray(sFormatPara, &quot;Para&quot;, False)
@@ -134,8 +164,10 @@ Sub TextFrameStructParser( oContent As Object )
 		oPar = oParEnum.nextElement()
 		oWordEnum = oPar.createEnumeration()
 		sFormatPara = &quot;&quot;
+		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()			
+			oWord = oWordEnum.nextElement()
+			sString = sString &amp; oWord.getString()
 			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
 			If bOnlyOneStyle = True Then
 				sFormatPara = sFormatPara &amp; InLineParser( oWord )
@@ -143,6 +175,14 @@ Sub TextFrameStructParser( oContent As Object )
 				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
 			End If
 		Loop
+		
+		If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+			Dim s As String, sPos As String
+			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
+			sPos = Mid(sString, 1,1)
+			If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+		End If
+		
 		StyleParser(oPar.ParaStyleName, sFormatPara)
 	Loop
 End Sub

@@ -56,8 +56,10 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		oCellPar = oCellParEnum.nextElement()
 		oWordEnum = oCellPar.createEnumeration()
 		sFormatPara = &quot;&quot;
+		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()			
+			oWord = oWordEnum.nextElement()	
+			sString = sString &amp; oWord.getString()		
 			If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
 				&apos; парсер сносок
 				sFormatPara = sFormatPara + FootEndNoteParser( oWord )
@@ -69,6 +71,13 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 				End If
 			End If
 		Loop
+		
+		If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
+			Dim s As String, sPos As String
+			s = Mid( oCellPar.getString(), 1, Len( oCellPar.getString() )-Len( sString ) )
+			sPos = Mid(sString, 1,1)
+			If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+		End If
 		
 		&apos; задаем аттрибуты
 		Dim sTagTDH As String, sTagStart As String, sTagEnd As String
