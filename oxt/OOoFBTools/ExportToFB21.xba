@@ -523,7 +523,11 @@ Function MakePoem(sArray As String, bBody As Boolean) As String
 	&apos; Дата написания поэмы, если она есть
 	sPoem = sPoem &amp; MakePoemDate(sArray, bBody)
 
-	MakePoem = &quot;&lt;poem&gt;&quot; &amp; sPoem &amp; &quot;&lt;/poem&gt;&quot;
+	If sPoem &lt;&gt; &quot;&quot; Then
+		MakePoem = &quot;&lt;poem&gt;&quot; &amp; sPoem &amp; &quot;&lt;/poem&gt;&quot;
+	Else
+		MakePoem = &quot;&quot;
+	End If
 End Function
 
 Function SwitchSubTitleStanza(sArray As String, bBody As Boolean) As String
@@ -550,8 +554,9 @@ Function SwitchSubTitleStanza(sArray As String, bBody As Boolean) As String
 End Function
 
 Function MakeStanza(sArray As String, bBody As Boolean) As String
-	Dim l As Long, sID As String, sStanza As String
+	Dim l As Long, sID As String, sStanza As String, nC As Integer
 	sStanza =  &quot;&quot;
+	nC = 0 &apos; счетчик строк поэмы
 	For l = lCurrentElement To UBound(sArray)
 		If sArray(l,1) = sStylePoem Then
 			If sArray(l,0) &lt;&gt; &quot;&quot; Then &apos; стих есть
@@ -581,7 +586,9 @@ Function MakeStanza(sArray As String, bBody As Boolean) As String
 					End If
 				End If
 			Else &apos; пустой абзац-стих - закрываем stanza
-				sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+				If nC &gt; 0 Then &apos; защита, если 1-я строка Поэму - &quot;пустая строка&quot; - НЕ ПО СХЕМЕ fb2!!!
+					sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
+				End If
 				&apos; смотрим следующий элемент
 				If l &lt; UBound(sArray) Then
 					If sArray(l+1,1) = sStylePoem Then &apos; стих - открываем stanza
@@ -589,6 +596,7 @@ Function MakeStanza(sArray As String, bBody As Boolean) As String
 					End If
 				End If
 			End If
+			nC = nC + 1
 		Else Exit For
 		End If
 	Next l
