@@ -349,6 +349,9 @@ Function SaveElements(sArray() As String, sParaStyleName As String, sPara As Str
 								oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
 							End If
 						End If
+					ElseIf sArray(lCurrentElement-1,1) = &quot;Table&quot; And sArray(lCurrentElement+1,1) = &quot;Table&quot; Then
+						&apos; не убираем пустую строку между 2-мя таблицами - в читалке сливаются иначе...
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
 					End If
 				Else
 					If sArray(lCurrentElement, 1) = &quot;&quot; Then
