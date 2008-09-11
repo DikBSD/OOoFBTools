@@ -65,29 +65,22 @@ Sub DocumentParser
 				&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
 				&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к параграфу&quot;
 				Else
-				&apos;	MsgBox &quot;?????&quot;, 0, &quot;Привязка к параграфу&quot;
+					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
 						If oContent.FrameStyleName = &quot;Frame&quot; Then
 							&apos; Парсер Текстовой Врезки
 							TextFrameParser(oContent)
-						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+						&apos;ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 							&apos;msgbox oContent.Component.Formula, 64, &quot;параграф&quot;
 						End If
 					End If
 				End If
-
-				
-				&apos;If oPar.getString() = &quot;&quot; Then
-					&apos;MsgBox &quot;Пустая строка - от картинки&quot;, 0, &quot;Привязка - параграф&quot;
-				&apos;End if
-				
 			Loop
 
 			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты,
 			&apos; которые привязаны к символу, или вставлены как символы
 			oSectEnum = oPar.createEnumeration()
 			Dim sAllSectString As String &apos; текст всех секций параграфа (нужен для определения нумерации и маркеров)
-&apos;			Dim sPara As String
 			sPara = &quot;&quot;
 			Do While oSectEnum.hasMoreElements()
 				oSect = oSectEnum.nextElement()
@@ -127,8 +120,8 @@ Sub DocumentParser
 								End If
 							End If
 						End If
-
 					Loop
+					
 				ElseIf oSect.TextPortionType = &quot;Footnote&quot; Then
 					&apos; парсер сносок
 					sPara = sPara + FootEndNoteParser(oSect)
