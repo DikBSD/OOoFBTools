@@ -42,7 +42,8 @@ Sub TextFrameTableParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sFormatPara = sFormatPara &amp; ImagesTextInCutParser( oContent, sFormatPara )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+							iImgCurrent = iImgCurrent+1
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -111,7 +112,8 @@ Sub TextFrameCiteParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sFormatPara = sFormatPara &amp; ImagesTextInCutParser( oContent, sFormatPara )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+							iImgCurrent = iImgCurrent+1
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -173,7 +175,13 @@ Sub TextFrameTextParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sFormatPara = sFormatPara &amp; ImagesTextInCutParser( oContent, sFormatPara )
+							&apos; парсер графики внутри Текстовой Врезки - как отдельный тэг
+							If oContent.AnchorType = 1 Then
+								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+								iImgCurrent = iImgCurrent+1
+							Else
+								sText = sText &amp; ImagesTextInCutParser( oContent ) &amp; chr(10)
+							End If
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -234,7 +242,14 @@ Sub TextFrameStructParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sFormatPara = sFormatPara &amp; ImagesTextInCutParser( oContent, sFormatPara )
+							If oContent.AnchorType = 1 Then &apos; картинка, как символ
+								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+								iImgCurrent = iImgCurrent+1
+							Else
+								&apos; парсер графики внутри Текстовой Врезки - как отдельный тэг
+								AddBodyArray( ImagesTextInCutParser( oContent ), &quot;Image&quot;, False )
+								sPrevStyle = &quot;Image&quot;
+							End If
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -295,15 +310,11 @@ Function OOo23TextTableParserForTextInCut( iCurrentTable As Integer ) As String
 End Function
 
 &apos; парсер графики внутри Текстовой Врезки
-Function ImagesTextInCutParser( oContent As Object, sText As String )
-	If oContent.AnchorType = 1 Then
-		ImagesTextInCutParser = sText &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+Function ImagesTextInCutParser( oContent As Object ) As String
+	If bSaveImageTitle=True Then
+		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
-		If bSaveImageTitle=True Then
-			ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;
-		Else
-			ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
-		End If
+		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
 	End If
 	iImgCurrent = iImgCurrent+1
 End Function
