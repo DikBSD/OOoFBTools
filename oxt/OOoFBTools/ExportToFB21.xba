@@ -325,28 +325,29 @@ Function SaveElements(sArray() As String, sParaStyleName As String, sPara As Str
 			If bDelEL = False Then
 				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
 			Else
-				&apos; обработка смежных уровней одного ранга - если между ними только пустая строка, то ее не удаляем - иначе - невалидность fb2-файла.
 				If lCurrentElement &gt; 0 And lCurrentElement &lt; UBound(sArray) Then
-					If sArray(lCurrentElement-1, 1) = sArray(lCurrentElement+1, 1) Then
-						&apos; пустая строка между уровнями одного ранга - оставляем
-						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
-					Else
-						&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
-						Dim sLevels(9) As String
-						Dim i As Integer, nPrev As Integer, nNext As Integer
-						sLevels = Array(sStyleLevel1, sStyleLevel2, sStyleLevel3, sStyleLevel4, sStyleLevel5, _
-										sStyleLevel6, sStyleLevel7, sStyleLevel8, sStyleLevel9, sStyleLevel10)
-						For i=LBound(sLevels) To UBound(sLevels)
-							If sArray(lCurrentElement-1, 1) = sLevels(i) Then
-								nPrev = i
-							End If
-							If sArray(lCurrentElement+1, 1) = sLevels(i) Then
-								nNext = i
-							End If
-						Next i
-						If nPrev = nNext+1 Then
-							&apos; пустая строка между уровнями с большего на меньший ранг - оставляем
+					If IsLevel( sArray(lCurrentElement-1,1) ) And IsLevel( sArray(lCurrentElement+1,1) ) Then
+						If sArray(lCurrentElement-1,1) = sArray(lCurrentElement+1,1) Then
+							&apos; обработка смежных уровней одного ранга - если между ними только пустая строка, то ее не удаляем - иначе - невалидность fb2-файла.
 							oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+						Else
+							&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
+							Dim sLevels(9) As String
+							Dim i As Integer, nPrev As Integer, nNext As Integer
+							sLevels = Array(sStyleLevel1, sStyleLevel2, sStyleLevel3, sStyleLevel4, sStyleLevel5, _
+											sStyleLevel6, sStyleLevel7, sStyleLevel8, sStyleLevel9, sStyleLevel10)
+							For i=LBound(sLevels) To UBound(sLevels)
+								If sArray(lCurrentElement-1, 1) = sLevels(i) Then
+									nPrev = i
+								End If
+								If sArray(lCurrentElement+1, 1) = sLevels(i) Then
+									nNext = i
+								End If
+							Next i
+							If nPrev = nNext+1 Then
+								&apos; пустая строка между уровнями с большего на меньший ранг - оставляем
+								oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+							End If
 						End If
 					End If
 				Else
@@ -826,7 +827,7 @@ Function MakeAnnotation(sArray As String, bBody As Boolean) As String
 	lCurrentElement = l
 	sAnnot = sAnnot &amp; &quot;&lt;/annotation&gt;&quot; &amp; chr(10)
 	If bELForStartAnnot = True Then
-		&apos; &quot;защита&quot; - если после аннотации идет српзу Уровень, то вставляем между ними пустую строку для валидности
+		&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности
 		sAnnot = sAnnot &amp; &quot;&lt;empty-line/&gt;&quot;
 		bELForStartAnnot = False &apos; Для всех других аннотаций - не надо!!!
 	End If

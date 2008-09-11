@@ -29,41 +29,58 @@ Sub TextFrameTableParser( oContent As Object )
 	oParEnum = oContent.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
-		oWordEnum = oPar.createEnumeration()
-		sFormatPara = &quot;&quot;
-		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()
-			sString = sString &amp; oWord.getString()
-			&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
-			If bOnlyOneStyle = True Then
-				sFormatPara = sFormatPara &amp; InLineParser( oWord )
-			Else
-				sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
+			oWordEnum = oPar.createEnumeration()
+			sFormatPara = &quot;&quot;
+			Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
+			Do While oWordEnum.hasMoreElements()
+				oWord = oWordEnum.nextElement()
+			
+				If oWord.TextPortionType = &quot;Frame&quot; Then
+					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+					Do While oCEnum.hasMoreElements()
+						Dim oContent : oContent = oCEnum.nextElement()
+						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
+							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
+							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
+							MsgBox &quot;Картинка&quot;
+						End If
+					Loop
+				Else
+					sString = sString &amp; oWord.getString()
+					&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
+					If bOnlyOneStyle = True Then
+						sFormatPara = sFormatPara &amp; InLineParser( oWord )
+					Else
+						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+					End If
+				End If
+			Loop
+		
+			If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+				Dim s As String, sPos As String
+				s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
+				sPos = Mid(sString, 1,1)
+				If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
 			End If
-		Loop
 		
-		If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
-			Dim s As String, sPos As String
-			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
-			sPos = Mid(sString, 1,1)
-			If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
-		End If
-		
-		If bDelEL = True Then &apos; удаление пустых параграфов
-			If sFormatPara &lt;&gt; &quot;&quot; Then
+			If bDelEL = True Then &apos; удаление пустых параграфов
+				If sFormatPara &lt;&gt; &quot;&quot; Then
+					sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+					sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+					sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+				End If
+			Else
 				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				If sFormatPara &lt;&gt; &quot;&quot; Then
+					sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				Else &apos; пустая строка
+					sTable = sTable &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
+				End If
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 			End If
-		Else
-			sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
-			If sFormatPara &lt;&gt; &quot;&quot; Then
-				sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			Else &apos; пустая строка
-				sTable = sTable &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
-			End If
-			sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
+			iCurrentTable = iCurrentTable+1
 		End If
 	Loop
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
