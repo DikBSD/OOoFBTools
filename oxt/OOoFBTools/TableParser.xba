@@ -114,9 +114,13 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		&apos; для пустого абзаца в ячейке
 		If sFormatPara &lt;&gt; &quot;&quot; Then
 			sRes = sRes &amp; sTagStart &amp; sFormatPara &amp; sTagEnd
-		Else
+		Else &apos; &quot;пустая строка&quot;
 			If nHeaderRowCount &gt; 0 Then
-				sRes = sRes &amp; &quot;&lt;th/&gt;&quot; &amp; chr(10)
+				If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
+					sRes = sRes &amp; &quot;&lt;th/&gt;&quot; &amp; chr(10)
+				Else
+					sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
+				End If
 			Else
 				sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
 			End If
@@ -325,8 +329,8 @@ Function MakeTRRow( aFB2ParasRow() As String, nCollMaxInTable As Integer, nMaxLi
 	MakeTRRow = sRow
 End Function
 
+&apos; обработка проблемных символов, форматирование ячеек и разбивка их на абзацы
 Function MakeWorkCellPara( oTable As Object, sCellName As String, nHeaderRowCount As Integer, nRow As Integer ) As Variant
-	&apos; обработка проблемных символов, форматирование ячеек и разбивка их на абзацы
 	Dim oCell As Object, sFormatCellText As String, i As Integer
 	Dim aCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	&apos; форматированная строка ячейки (с учетом коррекции проблемных символов)
