@@ -3,10 +3,18 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="InCutParser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-&apos; //////////////// Парсер текстовых врезок /////////////////
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ///////////////////////////////// Парсер текстовых врезок //////////////////////////////////
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////
 
+Type tTableRowsInCut	&apos; для хранения данных по каждой структуре или параграфу Врезки
+	str As String		&apos; текст структуры врезки (параграф, таблица)
+	isTable As Boolean	&apos; если просто текст - то False, если таблица - True
+End Type
+
+&apos; /////////////////////////////////////////////////////////////////
+&apos; Парсер Текстовой Врезки
 Sub TextFrameParser( oContent As Object )
-	&apos; Парсер Текстовой Врезки
 	Select Case sTextFrameToFB2
 		Case &quot;Таблица&quot;
 			TextFrameTableParser( oContent )
@@ -26,6 +34,8 @@ End Sub
 &apos; парсер текстовой врезки как таблицы
 Sub TextFrameTableParser( oContent As Object )
 	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String, sTable As String
+	Dim nMaxCollCount As Integer &apos; max число столбцов в таблице - из всех таблиц во Врезке
+	Dim TableRows() As tTableRowsInCut &apos; массив, хранящий данные по каждой структуре или параграфу Врезки
 	oParEnum = oContent.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
@@ -66,29 +76,48 @@ Sub TextFrameTableParser( oContent As Object )
 		
 			If bDelEL = True Then &apos; удаление пустых параграфов
 				If sFormatPara &lt;&gt; &quot;&quot; Then
-					sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+					sTable = &quot;&lt;tr&gt;&quot; &amp; chr(10)
 					sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 					sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+					AddNewItemTotTableRowsInCutArray( TableRows, sTable, False )
 				End If
 			Else
-				sTable = sTable &amp; &quot;&lt;tr&gt;&quot; &amp; chr(10)
+				sTable = &quot;&lt;tr&gt;&quot; &amp; chr(10)
 				If sFormatPara &lt;&gt; &quot;&quot; Then
 					sTable = sTable &amp; &quot;&lt;td align=&quot;&quot;&quot; &amp; GetFB2ParagraphAdjust( oPar ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; sFormatPara &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 				Else &apos; пустая строка
 					sTable = sTable &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
 				End If
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
+				AddNewItemTotTableRowsInCutArray( TableRows, sTable, False )
 			End If
 		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
 			&apos; парсер таблицы
-			Dim sT As String, sTI As String
+			Dim sT As String, sTI As String, nMaxCol As Integer
+			nMaxCol = GetMaxColInTable( ThisComponent.getTextTables().getByIndex( iCurrentTable ) )
+			If nMaxCol &gt; nMaxCollCount Then nMaxCollCount = nMaxCol
 			sT = OOo23TextTableParserForTextInCut( iCurrentTable )
 			sTI = ReplaceInString( sT, &quot;&lt;table&gt;&quot; &amp; chr(10), &quot;&quot;, False )
 			sTI = ReplaceInString( sTI, chr(10) &amp; &quot;&lt;/table&gt;&quot;, &quot;&quot;, False )
-			sTable = sTable &amp; sTI &amp; chr(10)
+			AddNewItemTotTableRowsInCutArray( TableRows, sTI &amp; chr(10), True )
 		End If
 	Loop
+	
+	Dim i As Integer
+	&apos; вставляем colspan
+	For i=0 To UBound( TableRows() )
+		If Not TableRows(i).isTable Then
+			TableRows(i).str = InsertColspanForInCutRow( TableRows(i).str, nMaxCollCount )
+		End If
+	Next i
+	
+	&apos; формируем строку таблицы
+	sTable = &quot;&quot;
+	For i=0 To UBound( TableRows() )
+		sTable = sTable &amp; TableRows(i).str
+	Next i
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
+	
 	AddBodyArray(sTable, &quot;Table&quot;, False)
 End Sub
 
@@ -317,6 +346,28 @@ Function ImagesTextInCutParser( oContent As Object ) As String
 		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
 	End If
 	iImgCurrent = iImgCurrent+1
+End Function
+
+Function AddNewItemTotTableRowsInCutArray( sArray() As tTableRowsInCut, sStr As String, isTable As Boolean )
+	Dim j As Long
+	j = Ubound(sArray()) + 1
+	ReDim Preserve sArray(j)
+	sArray(j).str = sStr
+	sArray(j).isTable = isTable
+End Function
+
+&apos; вставляем colspan для строки из 1-й ячейки (colspan=nCollMaxInTable)
+Function InsertColspanForInCutRow( sText As String, nCollMaxInTable As Integer ) As String
+	Dim sStr As String, i As Integer
+	sStr = sText
+	If Instr( sStr, &quot;&lt;td/&gt;&quot; )&gt;0 Or Instr( sStr, &quot;&lt;th/&gt;&quot; )&gt;0 Then
+		&apos; для &quot;пустых&quot; тэгов
+		InsertInString( sStr, &quot;/&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;/&quot; )
+	Else
+		sStr = ReplaceInString( sStr, &quot;&lt;th&quot;, &quot;&lt;th colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&quot;, False )
+		sStr = ReplaceInString( sStr, &quot;&lt;td&quot;, &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&quot;, False )
+	End If
+	InsertColspanForInCutRow = sStr
 End Function
 
 </script:module>
