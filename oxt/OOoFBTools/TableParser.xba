@@ -58,16 +58,29 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		sFormatPara = &quot;&quot;
 		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()	
-			sString = sString &amp; oWord.getString()		
-			If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
-				&apos; парсер сносок
-				sFormatPara = sFormatPara + FootEndNoteParser( oWord )
-			Else
-				If bOnlyOneStyle = True Then
-					sFormatPara = sFormatPara &amp; InLineParser( oWord )
+			oWord = oWordEnum.nextElement()
+			If oWord.TextPortionType = &quot;Frame&quot; Then
+				Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+				Do While oCEnum.hasMoreElements()
+					Dim oContent : oContent = oCEnum.nextElement()
+					If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
+						oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
+						oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
+						sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+						iImgCurrent = iImgCurrent+1
+					End If
+				Loop
+			Else &apos; oWord.TextPortionType = &quot;Text&quot;
+				sString = sString &amp; oWord.getString()		
+				If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
+					&apos; парсер сносок
+					sFormatPara = sFormatPara + FootEndNoteParser( oWord )
 				Else
-					sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+					If bOnlyOneStyle = True Then
+						sFormatPara = sFormatPara &amp; InLineParser( oWord )
+					Else
+						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+					End If
 				End If
 			End If
 		Loop

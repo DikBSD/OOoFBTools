@@ -179,8 +179,8 @@ Sub TextFrameCiteParser( oContent As Object )
 			sCite = sCite &amp; OOo23TextTableParserForTextInCut( iCurrentTable ) &amp; chr(10)
 		End If
 	Loop
-	sCite = Mid(sCite, 4, Len(sCite)) &apos; убираем &lt;cite&gt; в начале
-	sCite = Mid(sCite, 1, Len(sCite)-5)&apos; убираем &lt;/cite&gt; в конце
+	&apos; обработка начала и конца строки
+	sCite = MakeStartEndOfText( sCite )
 	AddBodyArray(sCite, &quot;Cite&quot;, False)
 End Sub
 
@@ -247,8 +247,9 @@ Sub TextFrameTextParser( oContent As Object )
 			sText = sText &amp; OOo23TextTableParserForTextInCut( iCurrentTable ) &amp; chr(10)
 		End If
 	Loop
-	sText = Mid(sText, 4, Len(sText))   &apos; убираем &lt;p&gt; в начале
-	sText = Mid(sText, 1, Len(sText)-5) &apos; убираем &lt;/p&gt; в конце
+	
+	&apos; обработка начала и конца строки
+	sText = MakeStartEndOfText( sText )
 	AddBodyArray(sText, &quot;Para&quot;, False)
 End Sub
 
@@ -368,6 +369,25 @@ Function InsertColspanForInCutRow( sText As String, nCollMaxInTable As Integer )
 		sStr = ReplaceInString( sStr, &quot;&lt;td&quot;, &quot;&lt;td colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;&quot;, False )
 	End If
 	InsertColspanForInCutRow = sStr
+End Function
+
+&apos; обработка начала и конца строки
+Function MakeStartEndOfText( sText As String ) As String
+	If Mid( sText, 1, 3 ) = &quot;&lt;p&gt;&quot; Then
+		sText = Mid(sText, 4, Len(sText))   &apos; убираем &lt;p&gt; в начале
+	Else 
+		If Mid( sText, 1, 13 ) = &quot;&lt;empty-line/&gt;&quot; Then &apos; &lt;empty-line/&gt;
+			sText = &quot;&lt;/p&gt;&quot; &amp; Mid(sText, 14, Len(sText)) &apos; вставляем &lt;/p&gt; в начале вместо &lt;empty-line/&gt;
+		End If
+	End If
+	If Mid( sText, Len(sText)-4, 4 ) = &quot;&lt;/p&gt;&quot; Then
+		sText = Mid(sText, 1, Len(sText)-5) &apos; убираем &lt;/p&gt; в конце
+	Else 
+		If Mid( sText, Len(sText)-13, 13 ) = &quot;&lt;empty-line/&gt;&quot; Then &apos; &lt;empty-line/&gt;
+			sText = Mid(sText, 1, Len(sText)-14) &amp; &quot;&lt;p&gt;&quot; &apos; вставляем &lt;p&gt; в конце вместо &lt;empty-line/&gt;
+		End If
+	End If
+	MakeStartEndOfText = sText
 End Function
 
 </script:module>
