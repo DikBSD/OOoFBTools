@@ -4,18 +4,6 @@
 Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
-&apos; /// Работа с системой ///
-Function OOoWriterVersion() As String
-	&apos; Версия OOo
-	Dim oSet, oConfigProvider
-	Dim oParm(0) As New com.sun.star.beans.PropertyValue
-	oConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot;)
-	oParm(0).Name = &quot;nodepath&quot;
-	oParm(0).Value = &quot;/org.openoffice.Setup/Product&quot;
-	oSet = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;,oParm())
-	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
-End Function
-
 &apos; /// Работа с файлами ///
 Function SaveArray( aArray() As String, sFile As String )
 	&apos; Запись массива в файл
@@ -751,6 +739,49 @@ Function bubble_sort( aArray() As String, nSize As Integer )
 		Loop While (j&gt;i)
 	Next i
 End Function
+
+&apos; /// Работа с системой ///
+
+&apos; Версия OOo
+Function OOoWriterVersion() As String
+	Dim oSet, oConfigProvider
+	Dim oParm(0) As New com.sun.star.beans.PropertyValue
+	oConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot;)
+	oParm(0).Name = &quot;nodepath&quot;
+	oParm(0).Value = &quot;/org.openoffice.Setup/Product&quot;
+	oSet = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;,oParm())
+	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
+End Function
+
+&apos; &quot;Путь&quot; к расширению
+Function getRootStorage( sOXTName As String ) As String
+	Dim oPIP As Object
+	oPIP = GetDefaultContext().getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
+	getRootStorage = oPIP.getPackageLocation( sOXTName )
+End Function
+
+&apos; Версия расширения
+Function getMyVersion( sOXTName As String ) As String
+	Dim oPIP As Object
+	Dim aaExtensionList
+	Dim aExtensionList
+	oPIP = GetDefaultContext().getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
+	aaExtensionList = oPIP.getExtensionList
+	For Each aExtensionList In aaExtensionList
+		If aExtensionList(0) = sOXTName Then
+			 getMyVersion = aExtensionList(1)
+			 Exit Function
+		End If
+	Next
+	getMyVersion = &quot;&quot;
+End Function
+
+&apos; Запустить указанный файл
+Sub FileExecute( sFilePath As String )
+	Dim oSSE As Object
+	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	oSSE.execute( sFilePath, &quot;&quot;, 0)
+End Sub
 
 &apos; /// Для отладки ///
 
