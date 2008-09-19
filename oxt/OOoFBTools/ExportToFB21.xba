@@ -132,13 +132,13 @@ Sub ExportToFB21
 
 	&apos; запустить полученный файл на просмотр
 	Dim sEndMessage As String : sEndMessage = &quot;Создание книги в fb2 формате завершено!&quot;
+	Dim sFB2File As String : sFB2File = oInfoDlg.Model.FilenameTextField.Text
 	If bFB2Execute Then
-		Dim sFB2File As String : sFB2File = ConvertToUrl(oInfoDlg.Model.FilenameTextField.Text)
-		FileExecute( sFB2File )
+		FileExecute( ConvertToUrl( sFB2File ) )
 		MsgBox sEndMessage &amp; chr(10) &amp; chr(10) &amp; &quot;Сгенерированный fb2-файл:&quot; &amp; chr(10) &amp; _
 				sFB2File &amp; chr(10) &amp; &quot;запущен на просмотр.&quot;, 64, sConvertorName
 	Else
-		MsgBox sEndMessage, 64, sConvertorName
+		MsgBox sEndMessage &amp; chr(10) &amp; chr(10) &amp; &quot;Файл: &quot; &amp; sFB2File, 64, sConvertorName
 	End If
 
 End Sub
