@@ -4,17 +4,26 @@
 Option Explicit
 
 Sub About
-	MsgBox &quot;OOoFBTools - межплатформенный пакет инструментов для работы с fb2 форматом электронных книг:&quot; &amp; chr(10) &amp; _
-			&quot;1. Вычитка текста (Виртуальные клавиатуры, Ручная и Автоматическая Корректировка Текста)&quot; &amp; chr(10) &amp; _
-			&quot;2. Создание fb2-файла (Конвертор Текста в формат fb2.1)&quot; &amp; chr(10) &amp; _
-			&quot;3. Корректура структуры fb2-файла (FB2 Корректор)&quot; &amp; chr(10) &amp; chr(10) &amp; _
-			&quot;Лицензия: GPL 2.1&quot;  &amp; chr(10) &amp; chr(10) &amp;_
-			&quot;Текущая версия: OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; chr(10) &amp; chr(10) &amp;_
-			&quot;Разработчики:&quot; &amp; chr(10) &amp; _
-			&quot;Основано на кодах Александра Громкова (Thunder) : http://ifolder.ru/3048108&quot; &amp; chr(10) &amp; _
-			&quot;Вадим Кузнецов (DikBSD)	: http://dikbsdsda.mylivepage.ru/file&quot; &amp; chr(10) &amp;  _
-			&quot;Yegor Chemisov (Kravejs)	: http://code.google.com/p/ooofbtools/&quot;, _
-			64, &quot;OOoFBTools, Copyright (c) 2008&quot;
+	Dim oAboutDlg As Object
+	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	oAboutDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.AboutDlg)
+	With oAboutDlg.getModel
+		.Title = &quot;О пакете&quot;
+		.ImageURL = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/images/about-dlg.png&quot;
+		.lblName.Label = &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; )
+		.lblCopyright.Label = &quot;Copyright © 2008&quot;
+		.lblLicense.Label = &quot;Лицензия: GPL 2.1&quot;
+		.lblDiscription.MultiLine = 1
+		.lblDiscription.Label = &quot;Межплатформенный пакет инструментов для работы с fb2 форматом электронных книг:&quot; &amp; chr(10) &amp; _
+								&quot;1. Вычитка текста (Виртуальные клавиатуры, Ручная и Автоматическая Корректировка Текста)&quot; &amp; chr(10) &amp; _
+								&quot;2. Создание fb2-файла (Конвертор Текста в формат fb2.1)&quot; &amp; chr(10) &amp; _
+								&quot;3. Корректура структуры fb2-файла (FB2 Корректор)&quot;
+		.lblAuthors.MultiLine = 1
+		.lblAuthors.Label = &quot;Разработчики:&quot; &amp; chr(10) &amp; _
+							&quot;Основано на кодах Александра Громкова (Thunder) : http://ifolder.ru/3048108&quot; &amp; chr(10) &amp; _
+							&quot;Вадим Кузнецов (DikBSD)	: http://dikbsdsda.mylivepage.ru/file&quot; &amp; chr(10) &amp;  _
+							&quot;Yegor Chemisov (Kravejs)	: http://code.google.com/p/ooofbtools/&quot;
+	End With
+	oAboutDlg.Execute()
 End Sub
-
 </script:module>
