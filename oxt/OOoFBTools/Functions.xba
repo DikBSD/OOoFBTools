@@ -105,14 +105,6 @@ Function SetSettingsInControlls(sCurrentLine As String, oDlg)
 	ErrorHandler: &apos; идем дальше
 End Function
 
-Function getUserPath() As String
-	&apos; Возвращает путь к папке конфигурации пользователя
-	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
-	Dim oPathSettings
-	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
-	getUserPath = oPathSettings.UserConfig
-End Function
-
 Function SaveText(sFile As String, sText As String)
 	&apos; Сохранение текстовой строки в файл
 	Dim oOS As Object, oFA As Object, oTOS As Object
@@ -753,6 +745,34 @@ Function OOoWriterVersion() As String
 	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
 End Function
 
+Function getUserPath() As String
+	&apos; Возвращает путь к папке конфигурации пользователя
+	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
+	Dim oPathSettings
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	getUserPath = oPathSettings.UserConfig
+End Function
+
+Function getTempPath() As String
+	&apos; Возвращает путь к ВРЕМЕННОЙ  папке Ooo
+	Dim oPathSettings
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	getTempPath = oPathSettings.Temp
+End Function
+
+&apos; что за система
+Function IsWindowsOS() As Boolean
+	&apos; Возвращает True для Windows, и False для всех остальных систем
+	Dim oPathSettings, sDir As String
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	sDir = oPathSettings.Work
+	If Mid( sDir, 1, 13 ) &lt;&gt; &quot;file:///home/&quot; Then
+		IsWindowsOS = True
+	Else
+		IsWindowsOS = False
+	End If
+End Function
+
 &apos; &quot;Путь&quot; к расширению
 Function getRootStorage( sOXTName As String ) As String
 	Dim oPIP As Object
@@ -798,8 +818,13 @@ End Sub
 &apos; /// Валидация ///
 
 Sub Validate( sFB2File As String )
+	If Not IsWindowsOS Then
+		MsgBox( &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;, 64, &quot;Валидация fb2-файлов&quot; )
+		Exit Sub
+	End If
+	
 	Dim sFB2VBSFile As String, sFB2VBS As String
-	sFB2VBSFile = Environ (&quot;TEMP&quot;) &amp; &quot;/fb2-valid-win32.vbs&quot;
+	sFB2VBSFile = getTempPath() &amp; &quot;/fb2-valid-win32.vbs&quot;
 	sFB2VBS = &quot;Set WshShell = WScript.CreateObject(&quot;&quot;WScript.Shell&quot;&quot;)&quot; &amp; chr(10) &amp; _
 				&quot;Set doc = WScript.CreateObject(&quot;&quot;MSXML2.DOMDocument.4.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
 				&quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.4.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
