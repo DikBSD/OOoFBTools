@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Validators" script:language="StarBasic">REM  *****  BASIC  *****
+Public oValidateDlg As Object
+
+Sub StartValidate
+	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	oValidateDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.ValidateDlg)
+	With oValidateDlg.getModel
+		.Title = &quot;Валидация fb2-файла&quot;
+		.Height = 66
+		.Width = 196
+	End With
+	oValidateDlg.Execute()
+End Sub
+
+Sub OpenFB2FileForValidate
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sPath As String, sInitPath As String
+	Dim oUcb as object
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+	
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	oUcb = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot;)
+		.setTitle(&quot;Выберите fb2 файл...&quot;)
+		.setDefaultName(sInitPath)
+	End With
+	
+	sInitPath = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text
+	If oUcb.Exists(sInitPath) Then
+		&apos; Открываем папку файла
+		oFileDlg.SetDisplayDirectory( Trim(Left(sInitPath, (Len(sInitPath)-Len(Dir$(sInitPath))))) )
+	Else
+		&apos; Открываем домашнюю папку
+		oFileDlg.SetDisplayDirectory( GetPathSettings(&quot;Work&quot;) )
+	End If
+	
+	If oFileDlg.execute() Then
+		sPath = oFileDlg.Files(0)
+		If oUcb.Exists(sPath) Then
+			oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text = ConvertFromUrl(sPath)
+		End If
+	End If
+	oFileDlg.Dispose()
+End Sub
+
+Sub FB2Validate
+	If Trim(oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text) = &quot;&quot; Then
+		MsgBox &quot;Выберите fb2 файл для валидации&quot;, 64, &quot;Валидация fb2-файла&quot;
+		Exit Sub
+	End If
+	Dim sFile As String : sFile = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text
+	Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text ) &apos;валидация fb2-файла
+End Sub
+
+</script:module>

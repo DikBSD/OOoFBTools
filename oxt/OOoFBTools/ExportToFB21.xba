@@ -39,12 +39,13 @@ Public bUp As Boolean
 &apos; экспорт форматирования стилями слов
 Public bOnlyOneStyle As Boolean
 
-&apos; запустить сгенерированный fb2-файл на просмотр
-Public bFB2Execute As Boolean
-
 &apos; Чистка fb2 кода
 Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
 Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
+&apos; запустить сгенерированный fb2-файл на просмотр
+Public bFB2Execute As Boolean
+&apos; валидация
+Public bValidate As Boolean
 
 Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 
@@ -130,15 +131,23 @@ Sub ExportToFB21
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot;&amp;chr(10))
 	oTextOutputStream.closeOutput()
 
-	&apos; запустить полученный файл на просмотр
+	&apos; запустить полученный файл на просмотр и валидацию, если нужно
+	Dim sValidateMessage As String : sValidateMessage = &quot;Запущена валидация файла.&quot;
 	Dim sEndMessage As String : sEndMessage = &quot;Создание книги в fb2 формате завершено!&quot;
 	Dim sFB2File As String : sFB2File = oInfoDlg.Model.FilenameTextField.Text
+	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
+	
+	If bValidate Then
+		sMess = sMess &amp; sValidateMessage &amp; chr(10) &amp; chr(10)
+		Validate( sFB2File ) &apos;валидация результата
+	End If
+
 	If bFB2Execute Then
 		FileExecute( ConvertToUrl( sFB2File ) )
-		MsgBox sEndMessage &amp; chr(10) &amp; chr(10) &amp; &quot;Сгенерированный fb2-файл:&quot; &amp; chr(10) &amp; _
+		MsgBox sMess &amp; &quot;Сгенерированный fb2-файл:&quot; &amp; chr(10) &amp; _
 				sFB2File &amp; chr(10) &amp; &quot;запущен на просмотр.&quot;, 64, sConvertorName
 	Else
-		MsgBox sEndMessage &amp; chr(10) &amp; chr(10) &amp; &quot;Файл: &quot; &amp; sFB2File, 64, sConvertorName
+		MsgBox sMess &amp; &quot;Файл: &quot; &amp; sFB2File, 64, sConvertorName
 	End If
 
 End Sub
