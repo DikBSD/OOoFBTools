@@ -718,4 +718,15 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 	FootnoteStyleParser = sParaType
 End Function
 
+&apos; Обработка нумерованных и маркированных списков
+Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
+	If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+		Dim s As String, sPos As String
+		s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
+		sPos = Mid(sStringPara, 1,1)
+		If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+	End If
+	MakeNumberingNumberPara = sFormatPara
+End Function
+
 </script:module>
