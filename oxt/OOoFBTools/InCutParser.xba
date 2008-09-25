@@ -387,6 +387,8 @@ Function MakeStartEndOfText( sText As String ) As String
 	Else 
 		If Mid( sText, Len(sText)-13, 13 ) = &quot;&lt;empty-line/&gt;&quot; Then &apos; &lt;empty-line/&gt;
 			sText = Mid(sText, 1, Len(sText)-14) &amp; &quot;&lt;p&gt;&quot; &apos; вставляем &lt;p&gt; в конце вместо &lt;empty-line/&gt;
+		ElseIf bDelEL And Mid( sText, Len(sText)-8, 8 ) = &quot;&lt;/table&gt;&quot; Then 
+			sText = sText &amp; &quot;&lt;p&gt;&quot; &apos; иначе при опции &quot;Удалять пустые абзацы&quot; и Режимах &quot;Текст&quot; и &quot;Цитата&quot; после таблицы, как последнего элемента будет в функции записи fb2 стоять &lt;/p&gt; - невалидность
 		End If
 	End If
 	MakeStartEndOfText = sText
