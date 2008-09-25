@@ -71,7 +71,7 @@ Sub TextFrameTableParser( oContent As Object )
 				Dim s As String, sPos As String
 				s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
 				sPos = Mid(sString, 1,1)
-				If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+				If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
 			End If
 		
 			If bDelEL = True Then &apos; удаление пустых параграфов
@@ -104,12 +104,14 @@ Sub TextFrameTableParser( oContent As Object )
 	Loop
 	
 	Dim i As Integer
-	&apos; вставляем colspan
-	For i=0 To UBound( TableRows() )
-		If Not TableRows(i).isTable Then
-			TableRows(i).str = InsertColspanForInCutRow( TableRows(i).str, nMaxCollCount )
-		End If
-	Next i
+	If nMaxCollCount &gt; 0 Then
+		&apos; вставляем colspan
+		For i=0 To UBound( TableRows() )
+			If Not TableRows(i).isTable Then
+				TableRows(i).str = InsertColspanForInCutRow( TableRows(i).str, nMaxCollCount )
+			End If
+		Next i
+	End If
 	
 	&apos; формируем строку таблицы
 	sTable = &quot;&quot;
@@ -160,7 +162,7 @@ Sub TextFrameCiteParser( oContent As Object )
 				Dim s As String, sPos As String
 				s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
 				sPos = Mid(sString, 1,1)
-				If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+				If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
 			End If
 		
 			If bDelEL = True Then &apos; удаление пустых параграфов
@@ -228,7 +230,7 @@ Sub TextFrameTextParser( oContent As Object )
 				Dim s As String, sPos As String
 				s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
 				sPos = Mid(sString, 1,1)
-				If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+				If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
 			End If
 			
 			If bDelEL = True Then &apos; удаление пустых параграфов
@@ -297,7 +299,7 @@ Sub TextFrameStructParser( oContent As Object )
 				Dim s As String, sPos As String
 				s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sString ) )
 				sPos = Mid(sString, 1,1)
-				If sFormatPara &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+				If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
 			End If
 		
 			StyleParser(oPar.ParaStyleName, sFormatPara)
