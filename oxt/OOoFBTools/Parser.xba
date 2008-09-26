@@ -158,19 +158,7 @@ Sub DocumentParser
 			&apos; Теперь - парсер элементов - по стилям
 			If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then
 				&apos; заголовки стиля Heading игнорируются
-				Dim sMarker As String
-				sMarker = Mid(oPar.getString(), 1, Len(oPar.getString())-Len(sAllSectString))
-				If sMarker = &quot;&quot; Then &apos; для маркеров • и других
-					sPara = &quot;• &quot; &amp; sPara 
-				Else
-					&apos; Временная &quot;заглушка&quot;, пока не раскопаю тонкости работы с нумерованными и маркированными списками
-					Dim sTemp As String
-					sTemp = Mid( sPara, 1, Len( sMarker ) )
-					&apos;msgbox &quot;sTemp= &quot; &amp; sTemp, 64, &quot;sMarker= &quot; &amp; sMarker
-					If sTemp &lt;&gt; sPara Then &apos; чтобы 2 первых символа Слова игнорировались (Пример: Гр Громко...)
-						sPara = sMarker &amp; &quot; &quot; &amp; sPara
-					End If
-				End If
+				sPara = MakeNumberingNumberPara( oPar, sAllSectString, sPara )
 				sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
 			End If
 			StyleParser(oPar.ParaStyleName, sPara)
@@ -720,13 +708,22 @@ End Function
 
 &apos; Обработка нумерованных и маркированных списков
 Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
+	&apos; sFormatPara - текст абзаца без тэгов форматирования
+	&apos; sFormatPara - текст абзаца с тэгами форматирования
 	If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
-		Dim s As String, sPos As String
-		s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
-		sPos = Mid(sStringPara, 1,1)
-		If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+		Dim oRN, oRNI
+		oRN = oPar.NumberingRules
+		oRNI = oRN.getByIndex(0)
+		If UBound( oRNI ) = 9 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
+			Dim s As String, sPos As String
+			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
+			sPos = Mid(sStringPara, 1,1)
+			If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+			MakeNumberingNumberPara = sFormatPara	
+		ElseIf UBound( oRNI ) = 13 Then &apos; маркированные списки - маркер не виден в строке oPar.getString()
+			MakeNumberingNumberPara = oRNI(11).Value &amp; &quot; &quot; &amp; sFormatPara
+		End If
 	End If
-	MakeNumberingNumberPara = sFormatPara
 End Function
 
 </script:module>
