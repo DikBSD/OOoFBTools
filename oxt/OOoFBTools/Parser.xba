@@ -3,6 +3,15 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+Type tImage	&apos; для хранения данных по каждой картинке
+	nNumber As Integer		&apos; номер картинки по порядку в документе
+	sNameAndType As String	&apos; НазваниеКартинки.Тип
+	sMimeType As String		&apos; image/png или другое
+	sType As String			&apos; тип картинки (png, jpg...)
+End Type
+
+Dim Images() As tImage &apos; массив, хранящий данные по каждой картинке
+
 &apos; оформление сносок
 Public sFootnoteLeft As String
 Public sFootnoteRight As String
@@ -464,6 +473,25 @@ Function FormatFootnoteText(oSect)
 	End If
 End Function
 
+Function BuildImageDate( oContent As Object )
+	&apos; &quot;Собираем&quot; название картинки и ее расширение
+	Dim sNameAndType As String, sMimeType As String, sType As String
+	sMimeType = oContent.Graphic.MimeType
+	sType = Mid( sMimeType, InStr( sMimeType, &quot;/&quot; )+1, Len(sMimeType) )
+	sNameAndType = Mid( oContent.GraphicUrl, InStr( oContent.GraphicUrl, &quot;:&quot; )+1, Len(oContent.GraphicUrl) ) &amp; &quot;.&quot; &amp; sType
+	AddNewItemTotImageArray( Images(), iImgCurrent, sNameAndType, sMimeType, sType )
+End Function
+
+Function AddNewItemTotImageArray( sArray() As tImage, nNumber As Integer, sNameAndType As String, sMimeType As String, sType As String )
+	Dim i As Long
+	i = Ubound(sArray()) + 1
+	ReDim Preserve sArray(i)
+	sArray(i).nNumber = nNumber				&apos; номер картинки по порядку в документе
+	sArray(i).sNameAndType = sNameAndType	&apos; НазваниеКартинки.Тип
+	sArray(i).sMimeType = sMimeType			&apos; image/png или другое
+	sArray(i).sType = sType					&apos; тип картинки (png, jpg...)
+End Function
+
 Function TextGraphicObjectParagraphParser(oContent As Object)
 	&apos; парсер графики TextGraphicObject, привязанной к параграфу
 	If bSaveImageTitle=True Then
@@ -473,6 +501,7 @@ Function TextGraphicObjectParagraphParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
+	BuildImageDate( oContent )
 End Function
 
 Function GraphicObjectShapeParagraphParser(oContent As Object)
@@ -484,6 +513,7 @@ Function GraphicObjectShapeParagraphParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
+	BuildImageDate( oContent )
 End Function
 
 &apos; парсер векторной графики
@@ -496,6 +526,7 @@ Function GraphicCustomShapeParagraphParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
+	BuildImageDate( oContent )
 End Function
 
 Function TextGraphicObjectSymbolParser(oContent As Object)
@@ -511,6 +542,7 @@ Function TextGraphicObjectSymbolParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
+	BuildImageDate( oContent )
 End Function
 
 Function GraphicObjectShapeSymbolParser(oContent As Object)
@@ -522,6 +554,7 @@ Function GraphicObjectShapeSymbolParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
+	BuildImageDate( oContent )
 End Function
 
 &apos; парсер векторной графики
@@ -534,6 +567,7 @@ Function GraphicCustomShapeSymbolParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
+	BuildImageDate( oContent )
 End Function
 
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
