@@ -3,14 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Type tImage	&apos; для хранения данных по каждой картинке
-	nNumber As Integer		&apos; номер картинки по порядку в документе
-	sNameAndType As String	&apos; НазваниеКартинки.Тип
-	sMimeType As String		&apos; image/png или другое
-	sType As String			&apos; тип картинки (png, jpg...)
-End Type
-
-Dim Images() As tImage &apos; массив, хранящий данные по каждой картинке
+Dim Images() As String &apos; массив, хранящий кодированные картинки с тегами &lt;binary&gt;
 
 &apos; оформление сносок
 Public sFootnoteLeft As String
@@ -473,93 +466,145 @@ Function FormatFootnoteText(oSect)
 	End If
 End Function
 
-Function BuildImageDate( oContent As Object )
-	&apos; &quot;Собираем&quot; название картинки и ее расширение
-	Dim sNameAndType As String, sMimeType As String, sType As String
-	sMimeType = oContent.Graphic.MimeType
-	sType = Mid( sMimeType, InStr( sMimeType, &quot;/&quot; )+1, Len(sMimeType) )
-	sNameAndType = Mid( oContent.GraphicUrl, InStr( oContent.GraphicUrl, &quot;:&quot; )+1, Len(oContent.GraphicUrl) ) &amp; &quot;.&quot; &amp; sType
-	AddNewItemTotImageArray( Images(), iImgCurrent, sNameAndType, sMimeType, sType )
-End Function
+Function BuildImageDate( oContent As Object ) As String
+	If IsWindowsOS() Then Exit Function
+	
+	&apos; удаляем старые временные скрипты
+	If FileExists( &quot;/tmp/ooofbtools-tmp/image.sh&quot; ) Then
+		Kill( &quot;/tmp/ooofbtools-tmp/image.sh&quot; )
+	End If
+	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
+		Kill( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+	End If
+	
+	&apos; данные картинки и ее расширение
+	Dim sMimeType As String, sType As String, sScript As String, sGraphicUrl As String
+	Dim i As Integer
+	If IsNull( oContent.Graphic ) Then
+		&apos; картинки лежат все конвертируемого файла (html, ...)
+		Dim j As Integer : j = 0
+		sGraphicUrl = oContent.GraphicUrl
+		For i=1 To Len(sGraphicUrl)-1
+			If Mid(sGraphicUrl, i, 1) = &quot;.&quot; Then
+				j=i+1
+			End If
+		Next i
+		sType = Mid(sGraphicUrl, j, Len(sGraphicUrl))
+		sMimeType = &quot;image/&quot; &amp; sType
+		
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; Mid( sGraphicUrl, 8, Len(sGraphicUrl) ) &amp; &quot; &gt;&gt; /tmp/ooofbtools-tmp/mime-image.txt&quot;
+		SaveText( &quot;/tmp/ooofbtools-tmp/image.sh&quot;, sScript, &quot;windows-1251&quot; )
+	Else
+		&apos; картинки лежат внутри конвертируемого файла
+		sMimeType = oContent.Graphic.MimeType
+		sType = Mid( sMimeType, InStr( sMimeType, &quot;/&quot; )+1, Len(sMimeType) )
+	
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; oContent.GraphicUrl &amp; &quot;.&quot; &amp; sType &amp; &quot; &gt;&gt; /tmp/ooofbtools-tmp/mime-image.txt&quot;
+		SaveText( &quot;/tmp/ooofbtools-tmp/image.sh&quot;, sScript, &quot;windows-1251&quot; )
+	End If
 
-Function AddNewItemTotImageArray( sArray() As tImage, nNumber As Integer, sNameAndType As String, sMimeType As String, sType As String )
-	Dim i As Long
-	i = Ubound(sArray()) + 1
-	ReDim Preserve sArray(i)
-	sArray(i).nNumber = nNumber				&apos; номер картинки по порядку в документе
-	sArray(i).sNameAndType = sNameAndType	&apos; НазваниеКартинки.Тип
-	sArray(i).sMimeType = sMimeType			&apos; image/png или другое
-	sArray(i).sType = sType					&apos; тип картинки (png, jpg...)
+	&apos; делаем скрипт исполняемым
+	Dim oSSE As Object
+	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	oSSE.execute( ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), &quot;&quot;, 0 )
+	
+	&apos; конвертируем картинку в base64
+	oSSE.execute( ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), &quot;&quot;, 0 )
+
+	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
+		&apos; считываем код картинки из файла
+		Dim aArray() As String, sCode As String
+		ReadFileInArray( aArray(), &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+		sCode = Join( aArray(), chr(10) )
+		
+		sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; content-type=&quot;&quot;&quot; &amp; sMimeType &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
+		
+		&apos; добавляем очередную картинку в массив
+		i = Ubound(Images()) + 1
+		ReDim Preserve Images(i)
+		Images(i) = sCode
+	End If
+	
+	BuildImageDate = &quot;.&quot; &amp; sType
 End Function
 
 Function TextGraphicObjectParagraphParser(oContent As Object)
 	&apos; парсер графики TextGraphicObject, привязанной к параграфу
+	Dim sType As String
+	sType = BuildImageDate( oContent )
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-	BuildImageDate( oContent )
 End Function
 
 Function GraphicObjectShapeParagraphParser(oContent As Object)
 	&apos; парсер графики формы GraphicObjectShape, привязанной к параграфу
+	Dim sType As String
+	sType = BuildImageDate( oContent )
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-	BuildImageDate( oContent )
 End Function
 
 &apos; парсер векторной графики
 Function GraphicCustomShapeParagraphParser(oContent As Object)
 	&apos; парсер графики CustomShape, привязанной к параграфу
+	Dim sType As String
+	sType = BuildImageDate( oContent )
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-	BuildImageDate( oContent )
 End Function
 
 Function TextGraphicObjectSymbolParser(oContent As Object)
 	&apos; парсер графики TextGraphicObject, привязанной к символу и как символ
+	Dim sType As String
+	sType = BuildImageDate( oContent )
 	If oContent.AnchorType = 1 Then
-		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
 		If bSaveImageTitle=True Then
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		Else
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		End If
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-	BuildImageDate( oContent )
 End Function
 
 Function GraphicObjectShapeSymbolParser(oContent As Object)
 	&apos; парсер графики GraphicObjectShape, привязанной к символу
+	Dim sType As String
+	sType = BuildImageDate( oContent )
 	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-	BuildImageDate( oContent )
 End Function
 
 &apos; парсер векторной графики
 Function GraphicCustomShapeSymbolParser(oContent As Object)
 	&apos; парсер графики CustomShape, привязанной к символу
+	Dim sType As String
+	sType = BuildImageDate( oContent )
 	If bSaveImageTitle=True Then
 		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
@@ -567,7 +612,6 @@ Function GraphicCustomShapeSymbolParser(oContent As Object)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-	BuildImageDate( oContent )
 End Function
 
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)

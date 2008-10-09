@@ -101,7 +101,7 @@ Sub ExportToFB21
 		Exit Sub
 	End If
 	
-	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount+50)
+	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount + 50 + UBound( Images() ))
 	oProgressBar.setValue(0)
 	
 	&apos; запускаем парсинг всего текста
@@ -127,10 +127,14 @@ Sub ExportToFB21
 	If UBound(sFootnoteText()) &lt;&gt; -1 Then
 		SaveNotes
 	End If
-	oProgressBar.end	
-	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot;&amp;chr(10))
+	
+	&apos; печатаем коды картинок? если они есть
+	SaveImages
+	
+	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
 	oTextOutputStream.closeOutput()
-
+	oProgressBar.end
+	
 	&apos; запустить полученный файл на просмотр и валидацию, если нужно
 	Dim sValidateMessage As String : sValidateMessage = &quot;Запущена валидация файла.&quot;
 	Dim sEndMessage As String : sEndMessage = &quot;Создание книги в fb2 формате завершено!&quot;

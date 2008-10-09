@@ -34,6 +34,18 @@ Function IsAECP(sStyle As String) As Boolean
 		End Select
 End Function
 
+&apos; печатаем коды картинок
+Sub SaveImages
+	If( UBound( Images() )&gt;=0 ) Then
+		For i=0 To UBound( Images() )
+			oTextOutputStream.writeString(Images(i) &amp; chr(10))
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			lCurrentElement = lCurrentElement+1
+		Next i
+	End If
+End Sub
+
+
 Function SaveBody
 	Dim lParaCount As Long
 	If  IsLevel(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True OR _
