@@ -293,7 +293,7 @@ End Function
 
 Function ConvertingFile
 	If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.BookTitleField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните все выделенные (обязательные) поля&quot;, 64, sConvertorName
+		MsgBox &quot;Заполните, пожалуйста, все обязательные (выделенные) поля&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	bAppendBtn = False
@@ -596,17 +596,17 @@ Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 			While oSecEnum.hasMoreElements
 				oTextPortion = oSecEnum.nextElement	
 				If oTextPortion.CharStyleName = sStyle_Name Then
-					sArray(i, 0) = sArray(i, 0) + oTextPortion.getString()
+					sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
-					sArray(i, 1) = sArray(i, 1) + oTextPortion.getString()
+					sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_Family Then
-					sArray(i, 2) = sArray(i, 2) + oTextPortion.getString()
+					sArray(i, 2) = sArray(i, 2) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_Nick Then
-					sArray(i, 3) = sArray(i, 3) + oTextPortion.getString()
+					sArray(i, 3) = sArray(i, 3) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_Email Then
-					sArray(i, 4) = sArray(i, 4) + oTextPortion.getString()
+					sArray(i, 4) = sArray(i, 4) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_WebSite Then
-					sArray(i, 5) = sArray(i, 5) +  oTextPortion.getString()
+					sArray(i, 5) = sArray(i, 5) &amp;  oTextPortion.getString()
 				End If
 			Wend
 		Wend
@@ -627,18 +627,18 @@ Function ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumb
 	End If
 	
 	oEnum = oCursor.createEnumeration
-		While oEnum.hasMoreElements
-			oText = oEnum.nextElement
-			oSecEnum = oText.createEnumeration
-			While oSecEnum.hasMoreElements
-				oTextPortion = oSecEnum.nextElement	
-				If oTextPortion.CharStyleName = sStyleSequence Then
-					sArray(i, 0) = sArray(i, 0) + oTextPortion.getString()
-				ElseIf oTextPortion.CharStyleName = sStyleSequenceNumber Then
-					sArray(i, 1) = sArray(i, 1) + oTextPortion.getString()
-				End If
-			Wend
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.CharStyleName = sStyleSequence Then
+				sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyleSequenceNumber Then
+				sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
+			End If
 		Wend
+	Wend
 End Function
 
 Function ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue)
@@ -662,9 +662,9 @@ Function ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInf
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
 			If oTextPortion.CharStyleName = sStyleCustomInfoType Then
-				sArray(i, 0) = sArray(i, 0) + oTextPortion.getString()
+				sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
 			ElseIf oTextPortion.CharStyleName = sStyleCustomInfoValue Then
-				sArray(i, 1) = sArray(i, 1) + oTextPortion.getString()
+				sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
 			End If
 		Wend
 	Wend
