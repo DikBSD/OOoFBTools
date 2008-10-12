@@ -674,6 +674,22 @@ Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	FindTextOfStyle = sResult
 End Function
 
+&apos; есть ли в тексте абзац со стелем sStyle
+Function IsStyleExist( sStyle As String ) As Boolean
+	Dim oDesc As Object, oEnum As Object
+	oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchStyles = true
+		.setSearchString(sStyle)
+	End With
+	oEnum = ThisComponent.findAll(oDesc)
+	If oEnum.getCount = 0 Then 
+		IsStyleExist = False
+	Else
+		IsStyleExist = True
+	End If
+End Function
+
 &apos; /// Работа с контролами  ///
 
 Function IsFillAllFields As Boolean

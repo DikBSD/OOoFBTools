@@ -5,6 +5,7 @@ Option Explicit
 
 Function SaveDescription
 	Dim i As Integer
+	Dim s As String
 	Dim oCodeLB As Object
 	oCodeLB = oInfoDlg.getControl(&quot;Codepage&quot;)
 	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; Trim(oCodeLB.SelectedItem) &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
@@ -64,6 +65,15 @@ Function SaveDescription
 		End If
 	End If
 
+	If UBound( Covers() ) &gt;= 0 Then
+		s = &quot;&lt;coverpage&gt;&quot; &amp; chr(10)
+		For i=0 To UBound( Covers() )
+			s = s &amp; Covers(i).tag &amp; chr(10)
+		Next i
+		s = s &amp; &quot;&lt;/coverpage&gt;&quot; &amp; chr(10)
+		oTextOutputStream.writeString( s )
+	End If
+	
 	Dim oLB As Object
 	oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
 	oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
@@ -80,7 +90,6 @@ Function SaveDescription
 	End If
 	
 	If UBound(sSequences) &lt;&gt; -1 Then
-		Dim s As String
 		For i = 0 To UBound(sSequences)
 			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( sSequences(i, 0) )
 			If Trim(sSequences(i, 1)) &lt;&gt; &quot;&quot; Then

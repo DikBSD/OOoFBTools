@@ -3,6 +3,12 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+Type tCover	&apos; для хранения данных по каждой картинке-обложке
+	tag As String		&apos; текст тэга обложки
+	base64 As String	&apos; base64-код обложки
+End Type
+
+Dim Covers() As tCover &apos; массив, хранящий кодированные картинки-обложки
 Dim Images() As String &apos; массив, хранящий кодированные картинки с тегами &lt;binary&gt;
 
 &apos; оформление сносок
@@ -18,10 +24,12 @@ Public lBATIndex As Long 	&apos; Указатель на индекс ячейк
 
 Public sFootnoteText() As String
 Dim iFootnoteCount As Integer
-Dim iImgCurrent As Integer	&apos; для формирования номера картинки
-Dim iCurrentTable As Integer &apos; номер текушей таблицы
-Dim sPrevStyle As String 	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
-Dim sPara As String 		&apos; отформатированный текст параграфа
+Dim iImgCurrent As Integer		&apos; для формирования номера картинки
+Dim iCurrentTable As Integer	&apos; номер текушей таблицы
+Dim lCurrentPara As Long		&apos; номер текушего абзаца
+Dim iBTPara As Integer			&apos; номер абзаца Названия Книги
+Dim sPrevStyle As String		&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
+Dim sPara As String				&apos; отформатированный текст параграфа
 
 Sub DocumentParser
 	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
@@ -36,10 +44,9 @@ Sub DocumentParser
 	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
 
-	&apos; номер текущей таблицы, если она есть
-	iCurrentTable = 0
-	&apos; номер текущей картинки, если она есть
-	iImgCurrent = 0
+	lCurrentPara = 0	&apos; номер текушего абзаца
+	iCurrentTable = 0	&apos; номер текущей таблицы, если она есть
+	iImgCurrent = 0		&apos; номер текущей картинки, если она есть
 	
 	lBATIndex = -1 &apos; пока нет ни Автора Книги, ни Названия Книги
 			
@@ -164,6 +171,7 @@ Sub DocumentParser
 				sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
 			End If
 			StyleParser(oPar.ParaStyleName, sPara)
+			lCurrentPara = lCurrentPara + 1
 		End If
 	Loop
 End Sub
@@ -574,6 +582,8 @@ Function TextGraphicObjectSymbolParser(oContent As Object)
 	&apos; парсер графики TextGraphicObject, привязанной к символу и как символ
 	Dim sType As String
 	sType = BuildImageDate( oContent )
+	
+	MsgBox &quot;iCurrentPara= &quot; &amp; lCurrentPara &amp; chr(10) &amp; &quot;iBTPara= &quot; &amp; iBTPara
 	If oContent.AnchorType = 1 Then
 		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
@@ -807,5 +817,115 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 		End If
 	End If
 End Function
+
+
+
+
+
+
+
+
+
+
+&apos; поиск и обработка картинок-обложек ДО абзаца со стилем Названия Книги
+Sub FindCover
+	If IsStyleExist( sStyleBookTitle ) Then
+		&apos; найти и закодировать картинки-обложки (до абзаца Названия Книги)
+		MakeCoverParser
+	End If
+End Sub
+
+Sub MakeCoverParser
+	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
+	Dim oPar As Object 		&apos;Перебираемый параграф
+	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
+	Dim oSect As Object 	&apos;Перебиремый текстовый раздел (section)
+	Dim oCEnum As Object 	&apos;Перебирает содержимое, такое как графические объекты
+	Dim oContent As Object 	&apos;Перебираемое содержимое
+	Dim textGraphService As String, graphicService As String, customShapeService As String
+	
+	textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
+
+	oParEnum = ThisComponent.getText().createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or _
+					oContent.supportsService(graphicService) Or _
+					oContent.supportsService(customShapeService) Then
+					&apos; нашли обложку книги, привязанной к параграфу
+					BuildCoverDate( oContent )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Frame&quot; Then
+							&apos; Парсер Текстовой Врезки
+
+						End If
+					End If
+				End If
+			Loop
+
+			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты, которые привязаны к символу, или вставлены как символы
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()
+				If oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
+					Do While oCEnum.hasMoreElements()
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or _
+							oContent.supportsService(graphicService) Or _
+							oContent.supportsService(customShapeService) Then
+							&apos; нашли обложку книги, привязанной к символу
+							BuildCoverDate( oContent )
+						Else
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Frame&quot; Then
+									&apos; Парсер Текстовой Врезки
+
+								End If
+							End If
+						End If
+					Loop
+				End If
+			Loop
+			&apos; Теперь - если стиль абзаца - Название Книги, то выход - дальше обложек быть не может
+			If oPar.ParaStyleName = sStyleBookTitle Then
+				Exit Sub
+			End If
+		End If
+	Loop
+End Sub
+
+&apos; добавляем данные об очередной картинке-обложке в массив
+Sub BuildCoverDate( oContent )
+	&apos; данные картинки и ее расширение
+	Dim sGraphicUrl As String, sType As String
+	Dim i As Integer
+	If IsNull( oContent.Graphic ) Then
+		&apos; картинки лежат все конвертируемого файла (html, ...)
+		Dim j As Integer : j = 0
+		sGraphicUrl = oContent.GraphicUrl
+		For i=1 To Len(sGraphicUrl)-1
+			If Mid(sGraphicUrl, i, 1) = &quot;.&quot; Then
+				j=i+1
+			End If
+		Next i
+		sType = Mid(sGraphicUrl, j, Len(sGraphicUrl))
+		
+		i = Ubound(Covers()) + 1
+		ReDim Preserve Covers(i)
+		Covers(i).tag = &quot;&lt;image l:href=&quot;&quot;#cover_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
+	Else
+		&apos; картинки лежат внутри конвертируемого файла
+
+	End If
+End Sub
 
 </script:module>

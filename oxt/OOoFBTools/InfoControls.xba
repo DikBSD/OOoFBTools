@@ -25,7 +25,7 @@ Private sGLN() As String, sGLC() As String &apos;списки названий �
 Private bExecute As Boolean
 Private bAppendBtn As Boolean
 
-Function GenreFB21
+Sub GenreFB21
 	&apos; жанры схемы fb2.1
 		&apos; Инициализация жанрами схемы FictionBook 2.1
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
@@ -72,9 +72,9 @@ Function GenreFB21
 			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
 			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
-End Function
+End Sub
 
-Function GenreFB22
+Sub GenreFB22
 	&apos; жанры схемы fb2.2
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
@@ -125,9 +125,9 @@ Function GenreFB22
 			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
 			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
-End Function
+End Sub
 
-Function InitFB21
+Sub InitFB21
 	&apos; Инициализация жанрами схемы FictionBook 2.1
 	GenreFB21
 
@@ -136,9 +136,9 @@ Function InitFB21
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 
-End Function
+End Sub
 
-Function InitFB22
+Sub InitFB22
 	&apos; Инициализация жанрами схемы FictionBook 2.2
 	GenreFB22
 
@@ -147,7 +147,7 @@ Function InitFB22
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 	
-End Function
+End Sub
 
 Function InfoDlgExec As Boolean
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
@@ -590,26 +590,26 @@ Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 	End If
 	
 	oEnum = oCursor.createEnumeration
-		While oEnum.hasMoreElements
-			oText = oEnum.nextElement
-			oSecEnum = oText.createEnumeration
-			While oSecEnum.hasMoreElements
-				oTextPortion = oSecEnum.nextElement	
-				If oTextPortion.CharStyleName = sStyle_Name Then
-					sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
-				ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
-					sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
-				ElseIf oTextPortion.CharStyleName = sStyle_Family Then
-					sArray(i, 2) = sArray(i, 2) &amp; oTextPortion.getString()
-				ElseIf oTextPortion.CharStyleName = sStyle_Nick Then
-					sArray(i, 3) = sArray(i, 3) &amp; oTextPortion.getString()
-				ElseIf oTextPortion.CharStyleName = sStyle_Email Then
-					sArray(i, 4) = sArray(i, 4) &amp; oTextPortion.getString()
-				ElseIf oTextPortion.CharStyleName = sStyle_WebSite Then
-					sArray(i, 5) = sArray(i, 5) &amp;  oTextPortion.getString()
-				End If
-			Wend
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.CharStyleName = sStyle_Name Then
+				sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
+				sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_Family Then
+				sArray(i, 2) = sArray(i, 2) &amp; oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_Nick Then
+				sArray(i, 3) = sArray(i, 3) &amp; oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_Email Then
+				sArray(i, 4) = sArray(i, 4) &amp; oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_WebSite Then
+				sArray(i, 5) = sArray(i, 5) &amp;  oTextPortion.getString()
+			End If
 		Wend
+	Wend
 End Function
 
 Function ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumber)
@@ -866,7 +866,7 @@ End Function
 &apos; //////////////////// Работа с Избранным Жанров ///////////////////////
 &apos; //////////////////////////////////////////////////////////////////////
 
-Function cbtnGenreElite_Click
+Sub cbtnGenreElite_Click
 	&apos; запуск диалога работы со списком избранных жанров
 	oGEDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.GenreEliteDlg)
 	
@@ -887,9 +887,9 @@ Function cbtnGenreElite_Click
 	ReadFileInArray( aArray(), sGEFilename)
 	oGEDlg.Model.lbGE.StringItemList = aArray()
 	oGEDlg.execute()
-End Function
+End Sub
 
-Function InitGEFB21
+Sub InitGEFB21
 	&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
 	GenreFB21
 
@@ -898,9 +898,9 @@ Function InitGEFB21
 		.cboxGE.StringItemList = sGLN()
 	End With
 
-End Function
+End Sub
 
-Function InitGEFB22
+Sub InitGEFB22
 	&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
 	GenreFB22
 
@@ -909,11 +909,8 @@ Function InitGEFB22
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
-End Function
+End Sub
 
-&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos; Избранные жанры
-&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub GEAdd
 	&apos; Добавить жанр в список Избранного
 	Dim oLB As Object, sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
