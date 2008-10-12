@@ -26,8 +26,6 @@ Public sFootnoteText() As String
 Dim iFootnoteCount As Integer
 Dim iImgCurrent As Integer		&apos; для формирования номера картинки
 Dim iCurrentTable As Integer	&apos; номер текушей таблицы
-Dim lCurrentPara As Long		&apos; номер текушего абзаца
-Dim iBTPara As Integer			&apos; номер абзаца Названия Книги
 Dim sPrevStyle As String		&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
 Dim sPara As String				&apos; отформатированный текст параграфа
 
@@ -44,7 +42,6 @@ Sub DocumentParser
 	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
 
-	lCurrentPara = 0	&apos; номер текушего абзаца
 	iCurrentTable = 0	&apos; номер текущей таблицы, если она есть
 	iImgCurrent = 0		&apos; номер текущей картинки, если она есть
 	
@@ -62,15 +59,11 @@ Sub DocumentParser
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Then
-					&apos; парсер графики TextGraphicObject, привязанной к параграфу
-					TextGraphicObjectParagraphParser(oContent)
-				ElseIf oContent.supportsService(graphicService) Then
-					&apos; парсер графики GraphicObjectShape, привязанной к параграфу
-					GraphicObjectShapeParagraphParser(oContent)
-				ElseIf oContent.supportsService(customShapeService) Then
-					&apos; парсер графики CustomShape, привязанной к параграфу
-					GraphicCustomShapeParagraphParser(oContent)
+				If oContent.supportsService(textGraphService) Or _
+					oContent.supportsService(graphicService) Or _
+					oContent.supportsService(customShapeService) Then
+						&apos; парсер графики, привязанной к параграфу
+						GraphicParser(oContent)
 				&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
 				&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к параграфу&quot;
 				Else
@@ -110,12 +103,9 @@ Sub DocumentParser
 						If oContent.supportsService(textGraphService) Then
 							&apos; парсер графики TextGraphicObject, привязанной к символу
 							TextGraphicObjectSymbolParser(oContent)
-						ElseIf oContent.supportsService(graphicService) Then
-							&apos; парсер графики GraphicObjectShape, привязанной к символу
-							GraphicObjectShapeSymbolParser(oContent)
-						ElseIf oContent.supportsService(customShapeService) Then
-							&apos; парсер графики CustomShape, привязанной к символу
-							GraphicCustomShapeSymbolParser(oContent)
+						ElseIf oContent.supportsService(graphicService) Or oContent.supportsService(customShapeService) Then
+							&apos; парсер графики, привязанной к символу
+							GraphicParser(oContent)
 						&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
 						&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к символу&quot;
 						Else
@@ -133,10 +123,10 @@ Sub DocumentParser
 					
 				ElseIf oSect.TextPortionType = &quot;Footnote&quot; Then
 					&apos; парсер сносок
-					sPara = sPara + FootEndNoteParser(oSect)
+					sPara = sPara &amp; FootEndNoteParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;Endnote&quot; Then
 					&apos; парсер сносок
-					sPara = sPara + FootEndNoteParser(oSect)
+					sPara = sPara &amp; FootEndNoteParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
 					&apos; текстовые поля
 					If bOnlyOneStyle = True Then
@@ -171,7 +161,6 @@ Sub DocumentParser
 				sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
 			End If
 			StyleParser(oPar.ParaStyleName, sPara)
-			lCurrentPara = lCurrentPara + 1
 		End If
 	Loop
 End Sub
@@ -538,35 +527,8 @@ Function BuildImageDate( oContent As Object ) As String
 	BuildImageDate = &quot;.&quot; &amp; sType
 End Function
 
-Function TextGraphicObjectParagraphParser(oContent As Object)
-	&apos; парсер графики TextGraphicObject, привязанной к параграфу
-	Dim sType As String
-	sType = BuildImageDate( oContent )
-	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	End If
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Function
-
-Function GraphicObjectShapeParagraphParser(oContent As Object)
-	&apos; парсер графики формы GraphicObjectShape, привязанной к параграфу
-	Dim sType As String
-	sType = BuildImageDate( oContent )
-	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	End If
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Function
-
-&apos; парсер векторной графики
-Function GraphicCustomShapeParagraphParser(oContent As Object)
-	&apos; парсер графики CustomShape, привязанной к параграфу
+Function GraphicParser(oContent As Object)
+	&apos; парсер графики, привязанной к параграфу или к символу
 	Dim sType As String
 	sType = BuildImageDate( oContent )
 	If bSaveImageTitle=True Then
@@ -583,7 +545,6 @@ Function TextGraphicObjectSymbolParser(oContent As Object)
 	Dim sType As String
 	sType = BuildImageDate( oContent )
 	
-	MsgBox &quot;iCurrentPara= &quot; &amp; lCurrentPara &amp; chr(10) &amp; &quot;iBTPara= &quot; &amp; iBTPara
 	If oContent.AnchorType = 1 Then
 		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
@@ -592,33 +553,6 @@ Function TextGraphicObjectSymbolParser(oContent As Object)
 		Else
 			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		End If
-	End If
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Function
-
-Function GraphicObjectShapeSymbolParser(oContent As Object)
-	&apos; парсер графики GraphicObjectShape, привязанной к символу
-	Dim sType As String
-	sType = BuildImageDate( oContent )
-	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	End If
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Function
-
-&apos; парсер векторной графики
-Function GraphicCustomShapeSymbolParser(oContent As Object)
-	&apos; парсер графики CustomShape, привязанной к символу
-	Dim sType As String
-	sType = BuildImageDate( oContent )
-	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	End If
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
