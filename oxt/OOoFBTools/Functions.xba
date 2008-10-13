@@ -4,7 +4,34 @@
 Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
+Type tFileData	&apos; для хранения данных файла
+	sFileUrl As String
+	sFile As String
+	sName As String
+	sExt As String
+End Type
+
 &apos; /// Работа с файлами ///
+&apos; возвращает данные файла
+Function GetFileData( sFileUrl As String ) As tFileData
+	Dim sFD As tFileData
+	Dim i As Integer, sExt As String
+	Dim j As Integer : j = 0
+	For i=1 To Len(sFileUrl)-1
+		If Mid(sFileUrl, i, 1) = &quot;.&quot; Then
+			j=i+1
+		End If
+	Next i
+	sExt = Mid(sFileUrl, j, Len(sFileUrl))
+	
+	sFD.sFileUrl = sFileUrl
+	sFD.sFile = Dir(ThisComponent.getURL, 0)
+	sFD.sName = Mid( sFileUrl, 1, Len(sFileUrl) - (Len(sExt)+1) )
+	sFD.sExt = sExt
+	
+	GetFileData = sFD
+End Function
+
 Function SaveArray( aArray() As String, sFile As String )
 	&apos; Запись массива в файл
 	Dim oOS As Object, oFA As Object, oTOS As Object, i As Integer
@@ -858,6 +885,19 @@ Sub Validate( sFB2File As String )
 	Dim oSSE As Object
 	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
 	oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
+End Sub
+
+&apos; //////////////// Экспорт в HTML //////////////////////
+
+&apos; экспорт текущий документ в HTML
+Sub ExportToHTML( sFileToUrl As String )
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim args(1) As New com.sun.star.beans.PropertyValue
+	args(0).Name = &quot;InteractionHandler&quot;
+	args(0).Value = &quot;&quot;
+	args(1).Name = &quot;FilterName&quot;
+	args(1).Value = &quot;HTML (StarWriter)&quot;
+	oDoc.storeToURL( sFileToUrl, args() )
 End Sub
 
 </script:module>

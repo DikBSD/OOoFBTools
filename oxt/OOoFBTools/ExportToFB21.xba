@@ -9,6 +9,7 @@ Public sBookAnnotation() As String &apos; массив хранит &quot;обр
 Public sBodyParagraphs() As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
 Public sLinksTo() As String	&apos; массив ссылок КУДА и их ID
 Public sConvertorName As String &apos; название конвертора
+Public sOOoFBToolsTemp As String &apos; временная папка пакета
 
 &apos; для аннотации
 Public bMergeAnnotationSubTitle As Boolean
@@ -52,6 +53,7 @@ Private lCurrentElement As Long &apos; номер текущего элемен�
 Sub ExportToFB21
 	Dim oDoc As Object
 	sConvertorName = &quot;ExportToFB2.1&quot;
+	sOOoFBToolsTemp = getTempPath() &amp; &quot;/ooofbtools-tmp&quot;
 	
 	&apos; файл пользовательских стилей
 	sStylesFilename = getUserPath() &amp; &quot;/OOoFBTools/styles.txt&quot;
@@ -101,11 +103,23 @@ Sub ExportToFB21
 		Exit Sub
 	End If
 	
+	&apos; если есть картинки, то сначала экспортируем документ в HTML-формат во временную папку для доступа к картинкам
+	If ThisComponent.getGraphicObjects().Count &gt; 0 Then
+		Dim sFD
+		If Dir( sOOoFBToolsTemp, 16 ) &lt;&gt; &quot;&quot; Then &apos; удаляем временную папку
+			RmDir sOOoFBToolsTemp
+		End If
+		&apos;MkDir sOOoFBToolsTemp
+		sFD = GetFileData( Dir(ThisComponent.getURL, 0) )
+		ExportToHTML( sOOoFBToolsTemp &amp; &quot;/&quot; &amp; sFD.sName &amp; &quot;.html&quot;  )
+
+		&apos; ищем картинки-обложки и кодируем их
+		FindCover
+	End If
+
 	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount + 50 + UBound( Images() ))
 	oProgressBar.setValue(0)
 	
-	&apos; ищем картинки-обложки и кодируем их
-	FindCover
 	&apos; запускаем парсинг всего текста
 	DocumentParser
 	

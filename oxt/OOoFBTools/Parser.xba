@@ -458,15 +458,12 @@ Function FormatFootnoteText(oSect)
 	End If
 End Function
 
-Function BuildImageDate( oContent As Object ) As String
+Function BuildImageData( oContent As Object ) As String
 	If IsWindowsOS() Then Exit Function
 	
 	&apos; удаляем старые временные скрипты
-	If FileExists( &quot;/tmp/ooofbtools-tmp/image.sh&quot; ) Then
-		Kill( &quot;/tmp/ooofbtools-tmp/image.sh&quot; )
-	End If
-	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
-		Kill( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+	If Dir( sOOoFBToolsTemp, 16 ) &lt;&gt; &quot;&quot; Then &apos; удаляем временную папку
+		RmDir sOOoFBToolsTemp
 	End If
 	
 	&apos; данные картинки и ее расширение
@@ -485,28 +482,28 @@ Function BuildImageDate( oContent As Object ) As String
 		sMimeType = &quot;image/&quot; &amp; sType
 		
 		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; Mid( sGraphicUrl, 8, Len(sGraphicUrl) ) &amp; &quot; &gt;&gt; /tmp/ooofbtools-tmp/mime-image.txt&quot;
-		SaveText( &quot;/tmp/ooofbtools-tmp/image.sh&quot;, sScript, &quot;utf-8&quot; )
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; Mid( sGraphicUrl, 8, Len(sGraphicUrl) ) &amp; &quot; &gt;&gt; &quot; &amp; sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot;
+		SaveText( sOOoFBToolsTemp &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 	Else
 		&apos; картинки лежат внутри конвертируемого файла
 		sMimeType = oContent.Graphic.MimeType
 		sType = Mid( sMimeType, InStr( sMimeType, &quot;/&quot; )+1, Len(sMimeType) )
 	
 		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; oContent.GraphicUrl &amp; &quot;.&quot; &amp; sType &amp; &quot; &gt;&gt; /tmp/ooofbtools-tmp/mime-image.txt&quot;
-		SaveText( &quot;/tmp/ooofbtools-tmp/image.sh&quot;, sScript, &quot;utf-8&quot; )
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; oContent.GraphicUrl &amp; &quot;.&quot; &amp; sType &amp; &quot; &gt;&gt; &quot; &amp; sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot;
+		SaveText( sOOoFBToolsTemp &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 	End If
 
 	&apos; делаем скрипт исполняемым
 	Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
 	
 	&apos; конвертируем картинку в base64
-	Shell(ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), 1, &quot;&quot;, true)
+	Shell(ConvertFromUrl(  sOOoFBToolsTemp &amp; &quot;/image.sh&quot; ), 1, &quot;&quot;, true)
 
-	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
+	If FileExists( sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot; ) Then
 		&apos; считываем код картинки из файла
 		Dim aArray() As String, sCode As String
-		ReadFileInArray( aArray(), &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+		ReadFileInArray( aArray(), &quot;/tmp/&quot; &amp; sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot; )
 		sCode = Join( aArray(), chr(10) )
 		
 		sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; content-type=&quot;&quot;&quot; &amp; sMimeType &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
@@ -517,13 +514,13 @@ Function BuildImageDate( oContent As Object ) As String
 		Images(i) = sCode
 	End If
 	
-	BuildImageDate = &quot;.&quot; &amp; sType
+	BuildImageData = &quot;.&quot; &amp; sType
 End Function
 
 Function GraphicParser(oContent As Object)
 	&apos; парсер графики, привязанной к параграфу или к символу
 	Dim sType As String
-	sType = BuildImageDate( oContent )
+	sType = BuildImageData( oContent )
 	If bSaveImageTitle=True Then
 		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 	Else
@@ -536,7 +533,7 @@ End Function
 Function TextGraphicObjectSymbolParser(oContent As Object)
 	&apos; парсер графики TextGraphicObject, привязанной к символу и как символ
 	Dim sType As String
-	sType = BuildImageDate( oContent )
+	sType = BuildImageData( oContent )
 	
 	If oContent.AnchorType = 1 Then
 		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
@@ -835,11 +832,8 @@ Sub BuildCoverDate( oContent )
 	If IsWindowsOS() Then Exit Sub
 	
 	&apos; удаляем старые временные скрипты
-	If FileExists( &quot;/tmp/ooofbtools-tmp/image.sh&quot; ) Then
-		Kill( &quot;/tmp/ooofbtools-tmp/image.sh&quot; )
-	End If
-	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
-		Kill( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+	If Dir( sOOoFBToolsTemp, 16 ) &lt;&gt; &quot;&quot; Then &apos; удаляем временную папку
+		RmDir sOOoFBToolsTemp
 	End If
 	
 	&apos; данные картинки и ее расширение
