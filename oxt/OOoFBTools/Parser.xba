@@ -498,13 +498,10 @@ Function BuildImageDate( oContent As Object ) As String
 	End If
 
 	&apos; делаем скрипт исполняемым
-	Dim oSSE As Object
-	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
-	oSSE.execute( ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), &quot;&quot;, 1 )
-&apos;	Wait 20
-
+	Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
+	
 	&apos; конвертируем картинку в base64
-	oSSE.execute( ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), &quot;&quot;, 1 )
+	Shell(ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), 1, &quot;&quot;, true)
 
 	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
 		&apos; считываем код картинки из файла
@@ -869,13 +866,10 @@ Sub BuildCoverDate( oContent )
 	End If
 	
 	&apos; делаем скрипт исполняемым
-	Dim oSSE As Object
-	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
-	oSSE.execute( ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), &quot;&quot;, 1 )
-&apos;	Wait 20
+	Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
 	
 	&apos; конвертируем картинку в base64
-	oSSE.execute( ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), &quot;&quot;, 1 )
+	Shell( ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), 1, &quot;&quot;, true)
 	
 	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
 		&apos; считываем код картинки из файла
