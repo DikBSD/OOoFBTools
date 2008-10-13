@@ -3,12 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Type tCover	&apos; для хранения данных по каждой картинке-обложке
-	tag As String		&apos; текст тэга обложки
-	base64 As String	&apos; base64-код обложки
-End Type
-
-Dim Covers() As tCover &apos; массив, хранящий кодированные картинки-обложки
+Dim Covers() As String &apos; массив, хранящий кодированные картинки-обложки
 Dim Images() As String &apos; массив, хранящий кодированные картинки с тегами &lt;binary&gt;
 
 &apos; оформление сносок
@@ -839,8 +834,18 @@ End Sub
 
 &apos; добавляем данные об очередной картинке-обложке в массив
 Sub BuildCoverDate( oContent )
+	If IsWindowsOS() Then Exit Sub
+	
+	&apos; удаляем старые временные скрипты
+	If FileExists( &quot;/tmp/ooofbtools-tmp/image.sh&quot; ) Then
+		Kill( &quot;/tmp/ooofbtools-tmp/image.sh&quot; )
+	End If
+	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
+		Kill( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+	End If
+	
 	&apos; данные картинки и ее расширение
-	Dim sGraphicUrl As String, sType As String
+	Dim sGraphicUrl As String, sType As String, sMimeType As String, sScript As String
 	Dim i As Integer
 	If IsNull( oContent.Graphic ) Then
 		&apos; картинки лежат все конвертируемого файла (html, ...)
@@ -852,13 +857,35 @@ Sub BuildCoverDate( oContent )
 			End If
 		Next i
 		sType = Mid(sGraphicUrl, j, Len(sGraphicUrl))
+		sMimeType = &quot;image/&quot; &amp; sType
 		
-		i = Ubound(Covers()) + 1
-		ReDim Preserve Covers(i)
-		Covers(i).tag = &quot;&lt;image l:href=&quot;&quot;#cover_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; Mid( sGraphicUrl, 8, Len(sGraphicUrl) ) &amp; &quot; &gt;&gt; /tmp/ooofbtools-tmp/mime-image.txt&quot;
+		SaveText( &quot;/tmp/ooofbtools-tmp/image.sh&quot;, sScript, &quot;utf-8&quot; )
 	Else
 		&apos; картинки лежат внутри конвертируемого файла
 
+	End If
+	
+	&apos; делаем скрипт исполняемым
+	Dim oSSE As Object
+	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	oSSE.execute( ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), &quot;&quot;, 0 )
+	
+	&apos; конвертируем картинку в base64
+	oSSE.execute( ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), &quot;&quot;, 0 )
+	
+	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
+		&apos; считываем код картинки из файла
+		Dim aArray() As String, sCode As String
+		ReadFileInArray( aArray(), &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
+		sCode = Join( aArray(), chr(10) )
+		
+		&apos; добавляем очередную картинку в массив
+		i = Ubound(Covers()) + 1
+		ReDim Preserve Covers(i)
+		sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; content-type=&quot;&quot;&quot; &amp; sMimeType &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
+		Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
 	End If
 End Sub
 
