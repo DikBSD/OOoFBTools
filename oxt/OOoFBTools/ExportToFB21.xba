@@ -102,7 +102,7 @@ Sub ExportToFB21
 	End If
 	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
-	If IsStyleExist( sStyleBookTitle ) And ThisComponent.getGraphicObjects().Count &gt; 0 Then
+	If IsStyleExists( sStyleBookTitle ) And ThisComponent.getGraphicObjects().Count &gt; 0 Then
 	&apos;If ThisComponent.getGraphicObjects().Count &gt; 0 Then
 		MakeCoverParser
 	End If
@@ -159,7 +159,11 @@ Sub ExportToFB21
 	Else
 		MsgBox sMess &amp; &quot;Файл: &quot; &amp; sFB2File, 64, sConvertorName
 	End If
-
+	
+	&apos; удаляем временные файлы
+	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
+		RmDir getOOoFBToolsTempPath()
+	End If
 End Sub
 
 Function SaveCloseSection(nCount As Integer) As Long

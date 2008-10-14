@@ -487,23 +487,22 @@ Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 	End If
 	
 	&apos; экспорт картинки в файл
-	ExportGraphic( oContent )
+	Dim sFileNameURL As String : sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.png&quot;
+	ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL )
 	
 	&apos; кодирование картинки
-	BuildImageData( oContent, bIsTextGraphic, sType )
+	CodeToBase64( sFileNameURL, sType )
 	
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
 End Sub
 
 &apos; экспорт картинки в файл
-Sub ExportGraphic( oContent As Object )
+Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileNameURL As String )
 	Dim oGP As Object, oGraphic As Object
-	Dim sFileNameURL As String
 	Dim args(3) As New com.sun.star.beans.PropertyValue
 	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
-		
-	sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.png&quot;
+
 	If bIsTextGraphic Then
 		oGraphic = oContent.Graphic
 	Else
@@ -524,18 +523,21 @@ Sub ExportGraphic( oContent As Object )
 End Sub
 
 &apos; генерируем base64-код картинок, формул и диаграм
-Sub BuildImageData( oContent As Object, bIsTextGraphic As Boolean, sExt As String, sGraphicUrl As String )
-	&apos; удаляем временную папку
-	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
-		RmDir getOOoFBToolsTempPath()
+Sub CodeToBase64( sGraphicUrl As String, sExt As String )
+	&apos; удаляем временные файлы-скрипты
+	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
+		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
+	End If
+	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
+		Kill getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
 	End If
 	
 	&apos; кодируем картинки
-	If IsWindowsOS() Then
+	If IsWindowsOS() Then &apos; для Windows-системы
 	
 	Else &apos; для Unix-систем
 		&apos; данные картинки и ее расширение
-		Dim sScript As String, sGraphicUrl As String
+		Dim sScript As String
 		Dim i As Integer
 	
 		&apos; генерируем скрипт
@@ -551,7 +553,7 @@ Sub BuildImageData( oContent As Object, bIsTextGraphic As Boolean, sExt As Strin
 		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
 			&apos; считываем код картинки из файла
 			Dim aArray() As String, sCode As String
-			ReadFileInArray( aArray(), &quot;/tmp/&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; )
+			ReadFileInArray( aArray(), getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; )
 			sCode = Join( aArray(), chr(10) )
 		
 			sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
