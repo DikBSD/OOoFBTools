@@ -473,22 +473,33 @@ End Sub
 Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 	&apos; определяем тип (расширение) картинки
 	Dim sType As String
-	sType = &quot;.&quot; &amp; GetGraphicType( oContent, bIsTextGraphic )
+	sType = GetGraphicType( oContent, bIsTextGraphic )
 	
 	&apos; создание тэгов картинок
 	If oContent.AnchorType = 1 Then
-		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
+		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
 		If bSaveImageTitle=True Then
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		Else
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		End If
 	End If
 	
 	&apos; экспорт картинки в файл
-	Dim sFileNameURL As String : sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.png&quot;
-	ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL )
+	Dim sFileNameURL As String, sFD As Object
+	&apos; определяем тип документа
+	sFD = GetFileData( ThisComponent.getURL() )
+	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
+		sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+	Else
+		If IsWindowsOS() Then &apos; для Windows-системы
+			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.png&quot;
+		Else &apos; для Unix-систем
+			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.png&quot;
+		End If
+		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL )
+	End If
 	
 	&apos; кодирование картинки
 	CodeToBase64( sFileNameURL, sType )
@@ -541,14 +552,14 @@ Sub CodeToBase64( sGraphicUrl As String, sExt As String )
 		Dim i As Integer
 	
 		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot;.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 	
 		&apos; делаем скрипт исполняемым
 		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
 	
 		&apos; конвертируем картинку в base64
-		Shell(ConvertFromUrl(  getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ), 1, &quot;&quot;, true)
+		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
 
 		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
 			&apos; считываем код картинки из файла
