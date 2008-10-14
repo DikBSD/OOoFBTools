@@ -54,21 +54,22 @@ Sub DocumentParser
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or _
-					oContent.supportsService(graphicService) Or _
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
 					oContent.supportsService(customShapeService) Then
-						&apos; парсер графики, привязанной к параграфу
-						GraphicParser(oContent)
-				&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
-				&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к параграфу&quot;
+					&apos; парсер графики, привязанной к параграфу
+					TextGraphicObjectParser(oContent)
 				Else
 					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
 						If oContent.FrameStyleName = &quot;Frame&quot; Then
 							&apos; Парсер Текстовой Врезки
 							TextFrameParser(oContent)
-						&apos;ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
-							&apos;msgbox oContent.Component.Formula, 64, &quot;параграф&quot;
+						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+							&apos; парсер формулы, привязка &quot;параграф&quot;
+							OLEParser( oContent )
+						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; парсер диаграм, привязка &quot;параграф&quot;
+							OLEParser( oContent )
 						End If
 					End If
 				End If
@@ -80,10 +81,10 @@ Sub DocumentParser
 			Dim sAllSectString As String &apos; текст всех секций параграфа (нужен для определения нумерации и маркеров)
 			sPara = &quot;&quot;
 			Do While oSectEnum.hasMoreElements()
-				oSect = oSectEnum.nextElement()
+				oSect = oSectEnum.nextElement()				
 				If oSect.TextPortionType = &quot;Text&quot; Then
 					If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then &apos; заголовки стиля Heading игнорируются
-						sAllSectString = sAllSectString + oSect.getString()
+						sAllSectString = sAllSectString &amp; oSect.getString()
 					End If
 					&apos; парсер текстового абзаца
 					If bOnlyOneStyle = True Then
@@ -95,22 +96,22 @@ Sub DocumentParser
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Then
-							&apos; парсер графики TextGraphicObject, привязанной к символу
-							TextGraphicObjectSymbolParser(oContent)
-						ElseIf oContent.supportsService(graphicService) Or oContent.supportsService(customShapeService) Then
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
+							oContent.supportsService(customShapeService) Then
 							&apos; парсер графики, привязанной к символу
-							GraphicParser(oContent)
-						&apos;ElseIf oContent.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
-						&apos;	MsgBox &quot;Line&quot;, 0, &quot;Привязка к символу&quot;
+							TextGraphicObjectParser(oContent)
 						Else
-							&apos;MsgBox &quot;?????&quot;, 0, &quot;Привязка к символу&quot;
+							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Frame&quot; Then
 									&apos; Парсер Текстовой Врезки
 									TextFrameParser(oContent)
-								&apos;ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
-									&apos;msgbox oContent.Component.Formula, 64, &quot;символ&quot;
+								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+									&apos; парсер формулы, привязка &quot;символ&quot;
+									OLEParser( oContent )
+								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; парсер диаграм, привязка &quot;символ&quot;
+									OLEParser( oContent )
 								End If
 							End If
 						End If
@@ -458,83 +459,23 @@ Function FormatFootnoteText(oSect)
 	End If
 End Function
 
-Function BuildImageData( oContent As Object ) As String
-	If IsWindowsOS() Then Exit Function
-	
-	&apos; удаляем старые временные скрипты
-	If Dir( sOOoFBToolsTemp, 16 ) &lt;&gt; &quot;&quot; Then &apos; удаляем временную папку
-		RmDir sOOoFBToolsTemp
-	End If
-	
-	&apos; данные картинки и ее расширение
-	Dim sMimeType As String, sType As String, sScript As String, sGraphicUrl As String
-	Dim i As Integer
-	If IsNull( oContent.Graphic ) Then
-		&apos; картинки лежат все конвертируемого файла (html, ...)
-		Dim j As Integer : j = 0
-		sGraphicUrl = oContent.GraphicUrl
-		For i=1 To Len(sGraphicUrl)-1
-			If Mid(sGraphicUrl, i, 1) = &quot;.&quot; Then
-				j=i+1
-			End If
-		Next i
-		sType = Mid(sGraphicUrl, j, Len(sGraphicUrl))
-		sMimeType = &quot;image/&quot; &amp; sType
-		
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; Mid( sGraphicUrl, 8, Len(sGraphicUrl) ) &amp; &quot; &gt;&gt; &quot; &amp; sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot;
-		SaveText( sOOoFBToolsTemp &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	Else
-		&apos; картинки лежат внутри конвертируемого файла
-		sMimeType = oContent.Graphic.MimeType
-		sType = Mid( sMimeType, InStr( sMimeType, &quot;/&quot; )+1, Len(sMimeType) )
-	
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; oContent.GraphicUrl &amp; &quot;.&quot; &amp; sType &amp; &quot; &gt;&gt; &quot; &amp; sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot;
-		SaveText( sOOoFBToolsTemp &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	End If
+&apos; парсер графики TextGraphicObject
+Sub TextGraphicObjectParser( oContent As Object )
+	MakeGraphic( oContent, True )
+End Sub
 
-	&apos; делаем скрипт исполняемым
-	Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
-	
-	&apos; конвертируем картинку в base64
-	Shell(ConvertFromUrl(  sOOoFBToolsTemp &amp; &quot;/image.sh&quot; ), 1, &quot;&quot;, true)
+&apos; парсер формул и диаграмм
+Sub OLEParser( oContent As Object )
+	MakeGraphic( oContent, False )
+End Sub
 
-	If FileExists( sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot; ) Then
-		&apos; считываем код картинки из файла
-		Dim aArray() As String, sCode As String
-		ReadFileInArray( aArray(), &quot;/tmp/&quot; &amp; sOOoFBToolsTemp &amp; &quot;/mime-image.txt&quot; )
-		sCode = Join( aArray(), chr(10) )
-		
-		sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; content-type=&quot;&quot;&quot; &amp; sMimeType &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
-		
-		&apos; добавляем очередную картинку в массив
-		i = Ubound(Images()) + 1
-		ReDim Preserve Images(i)
-		Images(i) = sCode
-	End If
-	
-	BuildImageData = &quot;.&quot; &amp; sType
-End Function
-
-Function GraphicParser(oContent As Object)
-	&apos; парсер графики, привязанной к параграфу или к символу
+&apos; создание картинки из графических объектов
+Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
+	&apos; определяем тип (расширение) картинки
 	Dim sType As String
-	sType = BuildImageData( oContent )
-	If bSaveImageTitle=True Then
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	Else
-		AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-	End If
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Function
-
-Function TextGraphicObjectSymbolParser(oContent As Object)
-	&apos; парсер графики TextGraphicObject, привязанной к символу и как символ
-	Dim sType As String
-	sType = BuildImageData( oContent )
+	sType = &quot;.&quot; &amp; GetGraphicType( oContent, bIsTextGraphic )
 	
+	&apos; создание тэгов картинок
 	If oContent.AnchorType = 1 Then
 		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
@@ -544,9 +485,84 @@ Function TextGraphicObjectSymbolParser(oContent As Object)
 			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
 		End If
 	End If
+	
+	&apos; экспорт картинки в файл
+	ExportGraphic( oContent )
+	
+	&apos; кодирование картинки
+	BuildImageData( oContent, bIsTextGraphic, sType )
+	
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
-End Function
+End Sub
+
+&apos; экспорт картинки в файл
+Sub ExportGraphic( oContent As Object )
+	Dim oGP As Object, oGraphic As Object
+	Dim sFileNameURL As String
+	Dim args(3) As New com.sun.star.beans.PropertyValue
+	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
+		
+	sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.png&quot;
+	If bIsTextGraphic Then
+		oGraphic = oContent.Graphic
+	Else
+		oGraphic = oContent.ReplacementGraphic
+	End If
+
+	args(0).Name  = &quot;MimeType&quot;
+	args(0).Value = &quot;image/png&quot;
+	args(1).Name  = &quot;URL&quot;
+	args(1).Value = ConvertToURL( sFileNameURL )
+	args(2).Name  = &quot;Compression&quot;
+	args(2).Value = 1
+	args(3).Name  =&quot;Interlaced&quot;
+	args(3).Value = 0
+	
+	&apos; сохраняем картинку
+	oGP.storeGraphic(oGraphic, args)
+End Sub
+
+&apos; генерируем base64-код картинок, формул и диаграм
+Sub BuildImageData( oContent As Object, bIsTextGraphic As Boolean, sExt As String, sGraphicUrl As String )
+	&apos; удаляем временную папку
+	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
+		RmDir getOOoFBToolsTempPath()
+	End If
+	
+	&apos; кодируем картинки
+	If IsWindowsOS() Then
+	
+	Else &apos; для Unix-систем
+		&apos; данные картинки и ее расширение
+		Dim sScript As String, sGraphicUrl As String
+		Dim i As Integer
+	
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot;.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
+		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
+	
+		&apos; делаем скрипт исполняемым
+		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
+	
+		&apos; конвертируем картинку в base64
+		Shell(ConvertFromUrl(  getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ), 1, &quot;&quot;, true)
+
+		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
+			&apos; считываем код картинки из файла
+			Dim aArray() As String, sCode As String
+			ReadFileInArray( aArray(), &quot;/tmp/&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; )
+			sCode = Join( aArray(), chr(10) )
+		
+			sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
+		
+			&apos; добавляем очередную картинку в массив
+			i = Ubound(Images()) + 1
+			ReDim Preserve Images(i)
+			Images(i) = sCode
+		End If
+	End If
+End Sub
 
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	Dim l As Long
@@ -742,23 +758,7 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 	End If
 End Function
 
-
-
-
-
-
-
-
-
-
-&apos; поиск и обработка картинок-обложек ДО абзаца со стилем Названия Книги
-Sub FindCover
-	If IsStyleExist( sStyleBookTitle ) Then
-		&apos; найти и закодировать картинки-обложки (до абзаца Названия Книги)
-		MakeCoverParser
-	End If
-End Sub
-
+&apos; парсер обложе книги
 Sub MakeCoverParser
 	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
 	Dim oPar As Object 		&apos;Перебираемый параграф
@@ -779,17 +779,21 @@ Sub MakeCoverParser
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or _
-					oContent.supportsService(graphicService) Or _
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
 					oContent.supportsService(customShapeService) Then
 					&apos; нашли обложку книги, привязанной к параграфу
-					BuildCoverDate( oContent )
+					MakeCoverTag( oContent, True )
 				Else
 					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
 						If oContent.FrameStyleName = &quot;Frame&quot; Then
 							&apos; Парсер Текстовой Врезки
-
+						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+							&apos; нашли обложку книги - формулу, привязанную к параграфу
+							MakeCoverTag( oContent, False )
+						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; нашли обложку книги - диаграмму, привязанную к параграфу
+							MakeCoverTag( oContent, False )
 						End If
 					End If
 				End If
@@ -803,16 +807,20 @@ Sub MakeCoverParser
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or _
-							oContent.supportsService(graphicService) Or _
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
 							oContent.supportsService(customShapeService) Then
 							&apos; нашли обложку книги, привязанной к символу
-							BuildCoverDate( oContent )
+							MakeCoverTag( oContent, True )
 						Else
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Frame&quot; Then
 									&apos; Парсер Текстовой Врезки
-
+								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+									&apos; нашли обложку книги - формулу, привязанную к символу
+									MakeCoverTag( oContent, False )
+								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; нашли обложку книги - диаграмму, привязанную к символу
+									MakeCoverTag( oContent, False )
 								End If
 							End If
 						End If
@@ -828,55 +836,35 @@ Sub MakeCoverParser
 End Sub
 
 &apos; добавляем данные об очередной картинке-обложке в массив
-Sub BuildCoverDate( oContent )
-	If IsWindowsOS() Then Exit Sub
-	
-	&apos; удаляем старые временные скрипты
-	If Dir( sOOoFBToolsTemp, 16 ) &lt;&gt; &quot;&quot; Then &apos; удаляем временную папку
-		RmDir sOOoFBToolsTemp
-	End If
-	
-	&apos; данные картинки и ее расширение
-	Dim sGraphicUrl As String, sType As String, sMimeType As String, sScript As String
+Sub MakeCoverTag( oContent As Object, bIsTextGraphic As Boolean )
+	&apos; заносим тэги обложек в массив
 	Dim i As Integer
-	If IsNull( oContent.Graphic ) Then
-		&apos; картинки лежат все конвертируемого файла (html, ...)
-		Dim j As Integer : j = 0
-		sGraphicUrl = oContent.GraphicUrl
-		For i=1 To Len(sGraphicUrl)-1
-			If Mid(sGraphicUrl, i, 1) = &quot;.&quot; Then
-				j=i+1
-			End If
-		Next i
-		sType = Mid(sGraphicUrl, j, Len(sGraphicUrl))
-		sMimeType = &quot;image/&quot; &amp; sType
-		
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; Mid( sGraphicUrl, 8, Len(sGraphicUrl) ) &amp; &quot; &gt;&gt; /tmp/ooofbtools-tmp/mime-image.txt&quot;
-		SaveText( &quot;/tmp/ooofbtools-tmp/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	Else
-		&apos; картинки лежат внутри конвертируемого файла
-
-	End If
-	
-	&apos; делаем скрипт исполняемым
-	Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
-	
-	&apos; конвертируем картинку в base64
-	Shell( ConvertFromUrl(&quot;/tmp/ooofbtools-tmp/image.sh&quot;), 1, &quot;&quot;, true)
-	
-	If FileExists( &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; ) Then
-		&apos; считываем код картинки из файла
-		Dim aArray() As String, sCode As String
-		ReadFileInArray( aArray(), &quot;/tmp/ooofbtools-tmp/mime-image.txt&quot; )
-		sCode = Join( aArray(), chr(10) )
-		
-		&apos; добавляем очередную картинку в массив
-		i = Ubound(Covers()) + 1
-		ReDim Preserve Covers(i)
-		sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; content-type=&quot;&quot;&quot; &amp; sMimeType &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
-		Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
-	End If
+	i = Ubound(Covers()) + 1
+	ReDim Preserve Covers(i)
+	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; GetGraphicType( oContent, bIsTextGraphic ) &amp; &quot;&quot;&quot;/&gt;&quot;
 End Sub
+
+Function GetGraphicType( oContent As Object, bIsTextGraphic As Boolean ) As String
+	&apos; данные картинки и ее расширение
+	Dim sExt As String, sUrl As String, sFD As Object, i As Integer
+	
+	&apos; определяем тип документа
+	sFD = GetFileData( ThisComponent.getURL() )
+	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
+		&apos; картинки лежат все конвертируемого файла (html, ...)
+		sUrl = oContent.GraphicUrl
+		sFD = GetFileData( sUrl )
+		sExt = sFD.sExt
+	Else
+		&apos; картинки лежат внутри конвертируемого файла (odt, doc, rtf...)
+		If bIsTextGraphic Then
+			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+		Else &apos; для формул и диаграм
+			sExt = &quot;png&quot;
+		End If
+	End If
+
+	GetGraphicType = sExt
+End Function
 
 </script:module>

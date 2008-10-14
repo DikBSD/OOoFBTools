@@ -804,6 +804,15 @@ Function getTempPath() As String
 	getTempPath = oPathSettings.Temp
 End Function
 
+&apos; возвращает временную папку для OOoFBTools (в зависимости от системы)
+Function getOOoFBToolsTempPath() As String
+	If IsWindowsOS() Then
+		getOOoFBToolsTempPath = ConvertFromUrl( getTempPath() ) &amp; &quot;\ooofbtools-tmp&quot;
+	Else
+		getOOoFBToolsTempPath = getTempPath() &amp; &quot;/ooofbtools-tmp&quot;
+	End If
+End Function
+
 &apos; что за система
 Function IsWindowsOS() As Boolean
 	&apos; Возвращает True для Windows, и False для всех остальных систем
