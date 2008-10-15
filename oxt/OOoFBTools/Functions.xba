@@ -341,7 +341,7 @@ Function CorrectPara(sPara As String) As String
 		ElseIf sChar = &quot;&gt;&quot; Then
 			newPara = newPara + &quot;&amp;gt;&quot;
 		Else
-			newPara = newPara + sChar
+			newPara = newPara  + sChar
 		End If
 	Next i
 	CorrectPara = newPara
@@ -356,16 +356,16 @@ Function FB2CorrectWord(sWord As String, iResult As Integer)
 	For i = 1 To iLen
 		sChar = Mid(sWord, i, 1)
 		If sChar = &quot;&amp;&quot; Then
-			newWord = newWord + &quot;&amp;amp;&quot;
+			newWord = newWord &amp; &quot;&amp;amp;&quot;
 			iResult(2) = iResult(2) + 1
 		ElseIf sChar = &quot;&lt;&quot; Then
-			newWord = newWord + &quot;&amp;lt;&quot;
+			newWord = newWord &amp; &quot;&amp;lt;&quot;
 			iResult(0) = iResult(0) + 1
 		ElseIf sChar = &quot;&gt;&quot; Then
-			newWord = newWord + &quot;&amp;gt;&quot;
+			newWord = newWord &amp; &quot;&amp;gt;&quot;
 			iResult(1) = iResult(1) + 1
 		Else
-			newWord = newWord + sChar
+			newWord = newWord &amp; sChar
 		End If
 	Next i
 	sWord = newWord
@@ -380,13 +380,13 @@ Function FB2CorrectBracketsWord(sWord As String, iResult As Integer)
 	For i = 1 To iLen
 		sChar = Mid(sWord, i, 1)
 		If sChar = &quot;&lt;&quot; Then
-			newWord = newWord + &quot;&amp;lt;&quot;
+			newWord = newWord &amp; &quot;&amp;lt;&quot;
 			iResult(0) = iResult(0) + 1
 		ElseIf sChar = &quot;&gt;&quot; Then
-			newWord = newWord + &quot;&amp;gt;&quot;
+			newWord = newWord &amp; &quot;&amp;gt;&quot;
 			iResult(1) = iResult(1) + 1
 		Else
-			newWord = newWord + sChar
+			newWord = newWord &amp; sChar
 		End If
 	Next i
 	sWord = newWord
@@ -401,16 +401,16 @@ Function FB2CorrectAmpWord(sWord As String, iResult As Integer)
 	For i = 1 To iLen
 		sChar = Mid(sWord, i, 1)
 		If sChar = &quot;&amp;&quot; Then
-			newWord = newWord + &quot;&amp;amp;&quot;
+			newWord = newWord &amp; &quot;&amp;amp;&quot;
 			iResult(2) = iResult(2) + 1
 		Else
-			newWord = newWord + sChar
+			newWord = newWord &amp; sChar
 		End If
 	Next i
 	sWord = newWord
 End Function
 
-Function RemoveSuperfluous(sSource As String, iResult As Integer)
+Sub RemoveSuperfluous( sSource As String, iResult As Integer )
 	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
 	iResult(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
 	iResult(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
@@ -418,7 +418,7 @@ Function RemoveSuperfluous(sSource As String, iResult As Integer)
 	iResult(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
 	iResult(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
 	iResult(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
-End Function
+End Sub
 
 Function RemoveSuperfluous2(sSource As String, iResult1 As Integer, iResult2 As Integer)
 	&apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt; и &lt;x&gt;&lt;/x&gt;

@@ -469,114 +469,6 @@ Sub OLEParser( oContent As Object )
 	MakeGraphic( oContent, False )
 End Sub
 
-&apos; создание картинки из графических объектов
-Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
-	&apos; определяем тип (расширение) картинки
-	Dim sType As String
-	sType = GetGraphicType( oContent, bIsTextGraphic )
-	
-	&apos; создание тэгов картинок
-	If oContent.AnchorType = 1 Then
-		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;
-	Else
-		If bSaveImageTitle=True Then
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-		Else
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sType &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-		End If
-	End If
-	
-	&apos; экспорт картинки в файл
-	Dim sFileNameURL As String, sFD As Object
-	&apos; определяем тип документа
-	sFD = GetFileData( ThisComponent.getURL() )
-	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-		sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
-	Else
-		If IsWindowsOS() Then &apos; для Windows-системы
-			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.png&quot;
-		Else &apos; для Unix-систем
-			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.png&quot;
-		End If
-		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL )
-	End If
-	
-	&apos; кодирование картинки
-	CodeToBase64( sFileNameURL, sType )
-	
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Sub
-
-&apos; экспорт картинки в файл
-Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileNameURL As String )
-	Dim oGP As Object, oGraphic As Object
-	Dim args(3) As New com.sun.star.beans.PropertyValue
-	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
-
-	If bIsTextGraphic Then
-		oGraphic = oContent.Graphic
-	Else
-		oGraphic = oContent.ReplacementGraphic
-	End If
-
-	args(0).Name  = &quot;MimeType&quot;
-	args(0).Value = &quot;image/png&quot;
-	args(1).Name  = &quot;URL&quot;
-	args(1).Value = ConvertToURL( sFileNameURL )
-	args(2).Name  = &quot;Compression&quot;
-	args(2).Value = 1
-	args(3).Name  =&quot;Interlaced&quot;
-	args(3).Value = 0
-	
-	&apos; сохраняем картинку
-	oGP.storeGraphic(oGraphic, args)
-End Sub
-
-&apos; генерируем base64-код картинок, формул и диаграм
-Sub CodeToBase64( sGraphicUrl As String, sExt As String )
-	&apos; удаляем временные файлы-скрипты
-	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
-		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
-	End If
-	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
-		Kill getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
-	End If
-	
-	&apos; кодируем картинки
-	If IsWindowsOS() Then &apos; для Windows-системы
-	
-	Else &apos; для Unix-систем
-		&apos; данные картинки и ее расширение
-		Dim sScript As String
-		Dim i As Integer
-	
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
-		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	
-		&apos; делаем скрипт исполняемым
-		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
-	
-		&apos; конвертируем картинку в base64
-		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
-
-		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
-			&apos; считываем код картинки из файла
-			Dim aArray() As String, sCode As String
-			ReadFileInArray( aArray(), getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; )
-			sCode = Join( aArray(), chr(10) )
-		
-			sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
-		
-			&apos; добавляем очередную картинку в массив
-			i = Ubound(Images()) + 1
-			ReDim Preserve Images(i)
-			Images(i) = sCode
-		End If
-	End If
-End Sub
-
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	Dim l As Long
 	l = Ubound(sBodyParagraphs(), 1) + 1
@@ -771,7 +663,7 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 	End If
 End Function
 
-&apos; парсер обложе книги
+&apos; парсер обложек книги
 Sub MakeCoverParser
 	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
 	Dim oPar As Object 		&apos;Перебираемый параграф
@@ -848,17 +740,8 @@ Sub MakeCoverParser
 	Loop
 End Sub
 
-&apos; добавляем данные об очередной картинке-обложке в массив
-Sub MakeCoverTag( oContent As Object, bIsTextGraphic As Boolean )
-	&apos; заносим тэги обложек в массив
-	Dim i As Integer
-	i = Ubound(Covers()) + 1
-	ReDim Preserve Covers(i)
-	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; GetGraphicType( oContent, bIsTextGraphic ) &amp; &quot;&quot;&quot;/&gt;&quot;
-End Sub
-
-Function GetGraphicType( oContent As Object, bIsTextGraphic As Boolean ) As String
-	&apos; данные картинки и ее расширение
+&apos; данные графики и ее расширение
+Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) As String
 	Dim sExt As String, sUrl As String, sFD As Object, i As Integer
 	
 	&apos; определяем тип документа
@@ -879,5 +762,154 @@ Function GetGraphicType( oContent As Object, bIsTextGraphic As Boolean ) As Stri
 
 	GetGraphicType = sExt
 End Function
+
+&apos; приведение расширения графики к допустимому для fb2-читалок
+Function ValidateFileExt( sExt As String ) As String
+	If LCase(sExt) &lt;&gt; &quot;png&quot; And LCase(sExt) &lt;&gt; &quot;jpeg&quot; And LCase(sExt) &lt;&gt; &quot;jpg&quot; Then
+		If sExt = LCase(&quot;gif&quot;) Then
+			sExt = &quot;png&quot;
+		ElseIf sExt = LCase(&quot;tif&quot;) Or sExt = LCase(&quot;tiff&quot;) Or sExt = LCase(&quot;bmp&quot;) Then
+			sExt = &quot;png&quot; &apos; для &quot;основных&quot; растровых форматов
+		Else
+			sExt = &quot;png&quot;
+		End If
+	End If
+	ValidateFileExt = sExt
+End Function
+
+&apos; добавляем данные об очередной картинке-обложке в массив
+Sub MakeCoverTag( oContent As Object, bIsTextGraphic As Boolean )
+	&apos; заносим тэги обложек в массив
+	Dim sExt As String
+	sExt = GetGraphicType( oContent, bIsTextGraphic )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	Dim i As Integer
+	i = Ubound(Covers()) + 1
+	ReDim Preserve Covers(i)
+	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+End Sub
+
+&apos; создание картинки из графических объектов
+Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
+	&apos; определяем тип (расширение) картинки
+	Dim sExt As String
+	sExt = GetGraphicType( oContent, bIsTextGraphic )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	&apos; создание тэгов картинок
+	If oContent.AnchorType = 1 Then
+		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+	Else
+		If bSaveImageTitle=True Then
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		Else
+			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+		End If
+	End If
+	
+	&apos; экспорт картинки в файл
+	Dim sFileNameURL As String, sFD As Object
+	&apos; определяем тип документа
+	sFD = GetFileData( ThisComponent.getURL() )
+	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
+		sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+	Else
+		If IsWindowsOS() Then &apos; для Windows-системы
+			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
+		Else &apos; для Unix-систем
+			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
+		End If
+		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+	End If
+	
+	&apos; кодирование картинки
+	CodeToBase64( sFileNameURL, sExt )
+	
+	iImgCurrent = iImgCurrent+1
+	sPrevStyle = &quot;Image&quot;
+End Sub
+
+&apos; экспорт картинки в файл
+Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileNameURL As String, ByVal sExt As String )
+	Dim sFileExt As String : sFileExt = sExt
+	Dim oGP As Object, oGraphic As Object
+	Dim args(3) As New com.sun.star.beans.PropertyValue
+	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
+
+	If bIsTextGraphic Then
+		oGraphic = oContent.Graphic
+	Else
+		oGraphic = oContent.ReplacementGraphic
+	End If
+	
+	&apos; для jpg-файлов приводим mime-тип к правильному значению
+	If LCase(sExt) = &quot;jpg&quot; Then
+		sFileExt = &quot;jpeg&quot;
+	End If
+
+	args(0).Name  = &quot;MimeType&quot;
+	args(0).Value = &quot;image/&quot; &amp; sFileExt
+	args(1).Name  = &quot;URL&quot;
+	args(1).Value = ConvertToURL( sFileNameURL )
+	args(2).Name  = &quot;Compression&quot;
+	args(2).Value = 1
+	args(3).Name  =&quot;Interlaced&quot;
+	args(3).Value = 0
+	
+	&apos; сохраняем картинку
+	oGP.storeGraphic(oGraphic, args)
+End Sub
+
+&apos; генерируем base64-код картинок, формул и диаграм
+Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
+	&apos; удаляем временные файлы-скрипты
+	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
+		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
+	End If
+	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
+		Kill getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
+	End If
+	
+	&apos; кодируем картинки
+	If IsWindowsOS() Then &apos; для Windows-системы
+	
+	Else &apos; для Unix-систем
+		&apos; данные картинки и ее расширение
+		Dim sScript As String
+		Dim i As Integer
+	
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
+		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
+	
+		&apos; делаем скрипт исполняемым
+		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
+	
+		&apos; конвертируем картинку в base64
+		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
+
+		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
+			&apos; считываем код картинки из файла
+			Dim aArray() As String, sCode As String
+			ReadFileInArray( aArray(), getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; )
+			sCode = Join( aArray(), chr(10) )
+			
+			If sCode &lt;&gt; &quot;&quot; Then &apos; защита на случай сбоя и &quot;пустого&quot; mime-image.txt файла с mime-кодом
+				&apos; для jpg-файлов приводим mime-тип к правильному значению
+				Dim sFileExt As String : sFileExt = sExt
+				If LCase(sExt) = &quot;jpg&quot; Then
+					sFileExt = &quot;jpeg&quot;
+				End If
+				sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
+		
+				&apos; добавляем очередную картинку в массив
+				i = Ubound(Images()) + 1
+				ReDim Preserve Images(i)
+				Images(i) = sCode
+			End If
+		End If
+	End If
+End Sub
 
 </script:module>
