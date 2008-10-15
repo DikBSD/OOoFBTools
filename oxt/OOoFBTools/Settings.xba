@@ -56,6 +56,15 @@ Function SetDefaultSettingsInControls
 	oServiceDlg.Model.cboxCiteSubtitle.State = 1
 	&apos; Картинки
 	oServiceDlg.Model.cboxImageTitle.State = 0
+	oLB = oServiceDlg.getControl(&quot;lbGifAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbTifBMPAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbAnyAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbOLEAs&quot;)
+	oLB.SelectItemPos(0, True)
+	
 	&apos; Текстовые врезки
 	oLB = oServiceDlg.getControl(&quot;cmbboxTextFrame&quot;)
 	oLB.SelectItemPos(0, True)
@@ -153,6 +162,14 @@ Function SetSettingsInVars(sCurrentLine)
 		&apos; Картинки
 		Case &quot;cboxImageTitle&quot;
 			bSaveImageTitle = sSetting(1)
+		Case &quot;lbGifAs&quot;
+			sGifAs 	= GetFormat(sSetting(1))
+		Case &quot;lbTifBMPAs&quot;
+			sTifBMPAs 	= GetFormat(sSetting(1))
+		Case &quot;lbAnyAs&quot;
+			sAnyAs 	= GetFormat(sSetting(1))
+		Case &quot;lbOLEAs&quot;
+			sOLEAs 	= GetFormat(sSetting(1))
 		&apos; Текстовые врезки
 		Case &quot;cmbboxTextFrame&quot;
 			Select Case sSetting(1)
@@ -238,6 +255,19 @@ Function GetTMB(sSetting) As String
 	End Select
 End Function
 
+Function GetFormat( sSetting As String) As String
+	Select Case sSetting
+		Case &quot;0&quot; 
+			GetFormat = &quot;png&quot;
+		Case &quot;2&quot;
+			GetFormat = &quot;jpg&quot;
+		Case &quot;3&quot;
+			GetFormat = &quot;jpeg&quot;
+		Case Else
+			GetFormat =  &quot;png&quot;
+	End Select
+End Function
+
 Function SetDefaultSettingsInVars
 	&apos; значения по умолчанию для сносок	
 	sFootnoteLeft = &quot;[&quot;
@@ -267,6 +297,12 @@ Function SetDefaultSettingsInVars
 	bCorrectPara = True
 	&apos; значения по умолчанию для сохранения названия картинки, как аттрибута &quot;title&apos;
 	bSaveImageTitle = False
+	&apos; значение по умолчанию для формата преобразования
+	sGifAs = &quot;png&quot;
+	sTifBMPAs = &quot;png&quot;
+	sAnyAs = &quot;png&quot;
+	sOLEAs  = &quot;png&quot;
+	
 	&apos; значение по умолчанию для обработки ссылок внутри документа
 	bDocLinks = True
 	

@@ -12,7 +12,7 @@ Private sFootStyleList() As String &apos; стиль сносок
 Private sFootTitleList() As String &apos; Название секции сносок
 Private sHVList() As String &apos; выравнивание по высоте
 Private sTFList() As String &apos; вид экспорта врезок
-
+Private sGraphList() As String &apos; форматы для преобразования графики
 Private bServiceExecute As Boolean
 
 Function ServiceDlgExec As Boolean
@@ -20,6 +20,7 @@ Function ServiceDlgExec As Boolean
 	sFootTitleList() = Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
 	sHVList() = Array(&quot;&quot;, &quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
 	sTFList() = Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;, &quot;Структура&quot;)
+	sGraphList() = Array(&quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot;)
 						
 	oServiceDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.ServiceDlg)
 	With oServiceDlg.Model
@@ -31,6 +32,10 @@ Function ServiceDlgExec As Boolean
 		.cmbboxHeaderTHV.StringItemList = sHVList()
 		.cmbboxLineTDV.StringItemList = sHVList()
 		.cmbboxTextFrame.StringItemList = sTFList()
+		.lbGifAs.StringItemList = sGraphList()
+		.lbTifBMPAs.StringItemList = sGraphList()
+		.lbAnyAs.StringItemList = sGraphList()
+		.lbOLEAs.StringItemList = sGraphList()
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы

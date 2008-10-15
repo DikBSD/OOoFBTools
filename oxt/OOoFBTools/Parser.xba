@@ -756,7 +756,7 @@ Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) A
 		If bIsTextGraphic Then
 			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
 		Else &apos; для формул и диаграм
-			sExt = &quot;png&quot;
+			sExt = sOLEAs
 		End If
 	End If
 
@@ -767,11 +767,11 @@ End Function
 Function ValidateFileExt( sExt As String ) As String
 	If LCase(sExt) &lt;&gt; &quot;png&quot; And LCase(sExt) &lt;&gt; &quot;jpeg&quot; And LCase(sExt) &lt;&gt; &quot;jpg&quot; Then
 		If sExt = LCase(&quot;gif&quot;) Then
-			sExt = &quot;png&quot;
+			sExt = sGifAs
 		ElseIf sExt = LCase(&quot;tif&quot;) Or sExt = LCase(&quot;tiff&quot;) Or sExt = LCase(&quot;bmp&quot;) Then
-			sExt = &quot;png&quot; &apos; для &quot;основных&quot; растровых форматов
+			sExt = sTifBMPAs &apos; для &quot;основных&quot; растровых форматов
 		Else
-			sExt = &quot;png&quot; &apos; для остальных форматов? включая векторные
+			sExt = sAnyAs &apos; для остальных форматов, включая векторные
 		End If
 	End If
 	ValidateFileExt = sExt
