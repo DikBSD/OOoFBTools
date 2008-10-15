@@ -740,6 +740,19 @@ Sub MakeCoverParser
 	Loop
 End Sub
 
+&apos; добавляем данные об очередной картинке-обложке в массив
+Sub MakeCoverTag( oContent As Object, bIsTextGraphic As Boolean )
+	&apos; заносим тэги обложек в массив
+	Dim sExt As String
+	sExt = GetGraphicType( oContent, bIsTextGraphic )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	Dim i As Integer
+	i = Ubound(Covers()) + 1
+	ReDim Preserve Covers(i)
+	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+End Sub
+
 &apos; данные графики и ее расширение
 Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) As String
 	Dim sExt As String, sUrl As String, sFD As Object, i As Integer
@@ -759,7 +772,6 @@ Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) A
 			sExt = sOLEAs
 		End If
 	End If
-
 	GetGraphicType = sExt
 End Function
 
@@ -776,19 +788,6 @@ Function ValidateFileExt( sExt As String ) As String
 	End If
 	ValidateFileExt = sExt
 End Function
-
-&apos; добавляем данные об очередной картинке-обложке в массив
-Sub MakeCoverTag( oContent As Object, bIsTextGraphic As Boolean )
-	&apos; заносим тэги обложек в массив
-	Dim sExt As String
-	sExt = GetGraphicType( oContent, bIsTextGraphic )
-	&apos; приведение расширения графики к допустимому для fb2-читалок
-	sExt = ValidateFileExt( sExt )
-	Dim i As Integer
-	i = Ubound(Covers()) + 1
-	ReDim Preserve Covers(i)
-	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-End Sub
 
 &apos; создание картинки из графических объектов
 Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
@@ -862,7 +861,7 @@ Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileName
 End Sub
 
 &apos; генерируем base64-код картинок, формул и диаграм
-Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
+Sub _CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 	&apos; удаляем временные файлы-скрипты
 	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
 		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
@@ -908,6 +907,52 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 				ReDim Preserve Images(i)
 				Images(i) = sCode
 			End If
+		End If
+	End If
+End Sub
+
+Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
+	&apos; удаляем временные файлы-скрипты
+	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
+		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
+	End If
+	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
+		Kill getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
+	End If
+	
+	&apos; кодируем картинки
+	If IsWindowsOS() Then &apos; для Windows-системы
+	
+	Else &apos; для Unix-систем
+		&apos; данные картинки и ее расширение
+		Dim sScript As String
+		Dim i As Integer
+	
+		Dim sFD As Object
+		&apos; определяем тип документа
+		sFD = GetFileData( ThisComponent.getURL() )
+		If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
+			MkDir getOOoFBToolsTempPath()
+			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt
+			&apos; генерируем скрипт
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+		Else
+			&apos; генерируем скрипт
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+		End If
+		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
+	
+		&apos; делаем скрипт исполняемым
+		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
+	
+		&apos; конвертируем картинку в base64
+		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
+
+		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot; ) Then
+			&apos; добавляем расширение очередной картинки в массив
+			i = Ubound(Images()) + 1
+			ReDim Preserve Images(i)
+			Images(i) = sExt
 		End If
 	End If
 End Sub

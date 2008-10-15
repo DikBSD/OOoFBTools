@@ -35,10 +35,50 @@ Function IsAECP(sStyle As String) As Boolean
 End Function
 
 &apos; печатаем коды картинок
-Sub SaveImages
+Sub _SaveImages
 	If( UBound( Images() )&gt;=0 ) Then
 		For i=0 To UBound( Images() )
 			oTextOutputStream.writeString(Images(i) &amp; chr(10))
+			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			lCurrentElement = lCurrentElement+1
+		Next i
+	End If
+End Sub
+
+Sub SaveImages
+	If( UBound( Images() )&gt;=0 ) Then
+		For i=0 To UBound( Images() )
+			Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; i &amp; &quot;.txt&quot;
+			If FileExists( sMimeFile ) Then
+				&apos; для jpg-файлов приводим mime-тип к правильному значению
+				Dim sExt As String : sExt = Images(i)
+				Dim sFileExt As String : sFileExt = Images(i)
+				sFileExt = Images(i)
+				If LCase(sExt) = &quot;jpg&quot; Then
+					sFileExt = &quot;jpeg&quot;
+				End If
+
+				&apos; считываем код картинки из файла		
+				Dim sLine As String
+				Dim oSFA As Object, oFS As Object, oTIS As Object
+				oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+				oFS = oSFA.openFileRead ( ConvertToURL ( sMimeFile ) )
+				oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+				oTIS.setInputStream (oFS)
+				&apos; открываем тэг
+				oTextOutputStream.writeString( &quot;&lt;binary id=&quot;&quot;img_&quot; &amp; i &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) )
+				Do While ( NOT oTIS.isEOF() )
+					sLine = oTIS.readLine()
+					If sLine &lt;&gt; chr(10) Then
+						If sLine &lt;&gt; &quot;&quot; Then
+							oTextOutputStream.writeString( sLine &amp; chr(10) )
+						End If
+					End If
+				Loop
+				&apos; закрываем тэг
+				oTextOutputStream.writeString( &quot;&lt;/binary&gt;&quot; &amp; chr(10) )
+			End If
+	
 			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 			lCurrentElement = lCurrentElement+1
 		Next i
