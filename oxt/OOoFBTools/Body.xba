@@ -34,58 +34,6 @@ Function IsAECP(sStyle As String) As Boolean
 		End Select
 End Function
 
-&apos; печатаем коды картинок
-Sub _SaveImages
-	If( UBound( Images() )&gt;=0 ) Then
-		For i=0 To UBound( Images() )
-			oTextOutputStream.writeString(Images(i) &amp; chr(10))
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-			lCurrentElement = lCurrentElement+1
-		Next i
-	End If
-End Sub
-
-Sub SaveImages
-	If( UBound( Images() )&gt;=0 ) Then
-		For i=0 To UBound( Images() )
-			Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; i &amp; &quot;.txt&quot;
-			If FileExists( sMimeFile ) Then
-				&apos; для jpg-файлов приводим mime-тип к правильному значению
-				Dim sExt As String : sExt = Images(i)
-				Dim sFileExt As String : sFileExt = Images(i)
-				sFileExt = Images(i)
-				If LCase(sExt) = &quot;jpg&quot; Then
-					sFileExt = &quot;jpeg&quot;
-				End If
-
-				&apos; считываем код картинки из файла		
-				Dim sLine As String
-				Dim oSFA As Object, oFS As Object, oTIS As Object
-				oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-				oFS = oSFA.openFileRead ( ConvertToURL ( sMimeFile ) )
-				oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
-				oTIS.setInputStream (oFS)
-				&apos; открываем тэг
-				oTextOutputStream.writeString( &quot;&lt;binary id=&quot;&quot;img_&quot; &amp; i &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) )
-				Do While ( NOT oTIS.isEOF() )
-					sLine = oTIS.readLine()
-					If sLine &lt;&gt; chr(10) Then
-						If sLine &lt;&gt; &quot;&quot; Then
-							oTextOutputStream.writeString( sLine &amp; chr(10) )
-						End If
-					End If
-				Loop
-				&apos; закрываем тэг
-				oTextOutputStream.writeString( &quot;&lt;/binary&gt;&quot; &amp; chr(10) )
-			End If
-	
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-			lCurrentElement = lCurrentElement+1
-		Next i
-	End If
-End Sub
-
-
 Function SaveBody
 	Dim lParaCount As Long
 	If  IsLevel(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True OR _
@@ -122,7 +70,7 @@ Function MakeBody(sArray As String, bBody As Boolean)
 		While sArray(lCurrentElement,1)=sStyleEpigraph
 			&apos; Если 1-е элементы - епиграф, то его не берем в &lt;section&gt;, хотя если взять - документ все равно валидный будет
 			SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 &apos;			If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 		Wend
 		&apos; Все остальные элементы обрамляем &lt;section&gt;
@@ -131,7 +79,7 @@ Function MakeBody(sArray As String, bBody As Boolean)
 		End If
 		While lCurrentElement &lt;= UBound(sArray)
 			SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
-			oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+			If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 		Wend
 		If bBody = True Then &apos; только для body книги (не для сносок - лишняя секция)
 			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
@@ -153,16 +101,16 @@ Function MakeBody(sArray As String, bBody As Boolean)
 						End If
 					End If
 					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
-					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+					If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Else &apos; это явно эпиграф
 					If bText = True Then
 						oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
 						bText = False
-						oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+						If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 					Else &apos; епиграф самый первый, как и должен 
 						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
-						oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+						If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 					End If
 				End If
 				If bText = true AND lCurrentElement = lIndexOf1Section Then
@@ -198,7 +146,7 @@ Function MakeBody(sArray As String, bBody As Boolean)
 						End If
 					End If
 					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
-					oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+					If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Wend
 	
 				&apos; закрываем секции, взависимости от смежности уровней
@@ -220,10 +168,6 @@ End Function
 Function SaveNotes
 	Dim lCount As Long, l As Long
 	Dim sNotePars() As String
-	
-	oProgressBar.start(&quot;Экспортирование в FB2: Сохранение сносок&quot;, UBound(sFootnoteText())
-	oProgressBar.setValue(0)
-	
 	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
 	For lCount = 0 To UBound(sFootnoteText())
@@ -264,6 +208,46 @@ Function SaveNotes
 	Next lCount
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 End Function
+
+&apos; печатаем коды картинок
+Sub SaveImages
+	If( UBound( Images() )&gt;=0 ) Then
+		For i=0 To UBound( Images() )
+			Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; i &amp; &quot;.txt&quot;
+			If FileExists( sMimeFile ) Then
+				&apos; для jpg-файлов приводим mime-тип к правильному значению
+				Dim sExt As String : sExt = Images(i)
+				Dim sFileExt As String : sFileExt = Images(i)
+				sFileExt = Images(i)
+				If LCase(sExt) = &quot;jpg&quot; Then
+					sFileExt = &quot;jpeg&quot;
+				End If
+
+				&apos; считываем код картинки из файла		
+				Dim sLine As String
+				Dim oSFA As Object, oFS As Object, oTIS As Object
+				oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+				oFS = oSFA.openFileRead ( ConvertToURL ( sMimeFile ) )
+				oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+				oTIS.setInputStream (oFS)
+				&apos; открываем тэг
+				oTextOutputStream.writeString( &quot;&lt;binary id=&quot;&quot;img_&quot; &amp; i &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) )
+				Do While ( NOT oTIS.isEOF() )
+					sLine = oTIS.readLine()
+					If sLine &lt;&gt; chr(10) Then
+						If sLine &lt;&gt; &quot;&quot; Then
+							oTextOutputStream.writeString( sLine &amp; chr(10) )
+						End If
+					End If
+				Loop
+				&apos; закрываем тэг
+				oTextOutputStream.writeString( &quot;&lt;/binary&gt;&quot; &amp; chr(10) )
+			End If
+	
+			oProgressBar.setValue(i) &apos; Статусбар
+		Next i
+	End If
+End Sub
 
 Function IsNeededELForAnnot( sArray() As String, ByVal lCurrentElement As Long ) As Boolean
 	&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности

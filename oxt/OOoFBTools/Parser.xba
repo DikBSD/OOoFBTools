@@ -762,8 +762,12 @@ Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) A
 	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
 		&apos; картинки лежат все конвертируемого файла (html, ...)
 		sUrl = oContent.GraphicUrl
-		sFD = GetFileData( sUrl )
-		sExt = sFD.sExt
+		If Mid( sUrl, 1, 1 ) &lt;&gt; &quot;/&quot; Then &apos; нет &quot;нормального&quot; пути к файлу
+			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+		Else
+			sFD = GetFileData( sUrl )
+			sExt = sFD.sExt
+		End If
 	Else
 		&apos; картинки лежат внутри конвертируемого файла (odt, doc, rtf...)
 		If bIsTextGraphic Then
@@ -813,6 +817,14 @@ Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 	sFD = GetFileData( ThisComponent.getURL() )
 	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
 		sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+		If Mid( sFileNameURL, 1, 1 ) &lt;&gt; &quot;/&quot; Then &apos; нет &quot;нормального&quot; пути к файлу
+			If IsWindowsOS() Then &apos; для Windows-системы
+				sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
+			Else &apos; для Unix-систем
+				sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
+			End If
+			ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+		End If
 	Else
 		If IsWindowsOS() Then &apos; для Windows-системы
 			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
@@ -861,56 +873,6 @@ Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileName
 End Sub
 
 &apos; генерируем base64-код картинок, формул и диаграм
-Sub _CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
-	&apos; удаляем временные файлы-скрипты
-	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
-		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
-	End If
-	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
-		Kill getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
-	End If
-	
-	&apos; кодируем картинки
-	If IsWindowsOS() Then &apos; для Windows-системы
-	
-	Else &apos; для Unix-систем
-		&apos; данные картинки и ее расширение
-		Dim sScript As String
-		Dim i As Integer
-	
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
-		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	
-		&apos; делаем скрипт исполняемым
-		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
-	
-		&apos; конвертируем картинку в base64
-		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
-
-		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
-			&apos; считываем код картинки из файла
-			Dim aArray() As String, sCode As String
-			ReadFileInArray( aArray(), getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; )
-			sCode = Join( aArray(), chr(10) )
-			
-			If sCode &lt;&gt; &quot;&quot; Then &apos; защита на случай сбоя и &quot;пустого&quot; mime-image.txt файла с mime-кодом
-				&apos; для jpg-файлов приводим mime-тип к правильному значению
-				Dim sFileExt As String : sFileExt = sExt
-				If LCase(sExt) = &quot;jpg&quot; Then
-					sFileExt = &quot;jpeg&quot;
-				End If
-				sCode =&quot;&lt;binary id=&quot;&quot;img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; sCode &amp; &quot;&lt;/binary&gt;&quot;
-		
-				&apos; добавляем очередную картинку в массив
-				i = Ubound(Images()) + 1
-				ReDim Preserve Images(i)
-				Images(i) = sCode
-			End If
-		End If
-	End If
-End Sub
-
 Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 	&apos; удаляем временные файлы-скрипты
 	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
@@ -932,8 +894,10 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		&apos; определяем тип документа
 		sFD = GetFileData( ThisComponent.getURL() )
 		If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-			MkDir getOOoFBToolsTempPath()
-			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt
+			If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+				MkDir getOOoFBToolsTempPath()
+			End If
+			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы (base64 почему-то не воспринимает)
 			&apos; генерируем скрипт
 			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
 		Else

@@ -85,7 +85,12 @@ Sub ExportToFB21
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL
 	Else
-		MsgBox &quot;Сохраните ООо файл&quot;, 64, sConvertorName
+		MsgBox &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл&quot;, 64, sConvertorName
+		Exit Sub
+	End If
+	
+	If oDoc.isModified() Then
+		MsgBox &quot;Документ был изменен.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл&quot;, 64, sConvertorName
 		Exit Sub
 	End If
 	
@@ -111,7 +116,7 @@ Sub ExportToFB21
 		MakeCoverParser
 	End If
 
-	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount + 50 + UBound( Images() ))
+	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount + 50)
 	oProgressBar.setValue(0)
 	
 	&apos; запускаем парсинг всего текста
@@ -131,15 +136,20 @@ Sub ExportToFB21
 	&apos; печатаем данные из &lt;body&gt;
 	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))
 	SaveBody	
-
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
 	If UBound(sFootnoteText()) &lt;&gt; -1 Then
+		oProgressBar.start(&quot;Экспортирование в FB2: Сохранение сносок&quot;, UBound(sFootnoteText())
+		oProgressBar.setValue(0)
 		SaveNotes
 	End If
 	
-	&apos; печатаем коды картинок? если они есть
-	SaveImages
+	&apos; печатаем коды картинок, если они есть
+	If UBound(Images()) &lt;&gt; -1 Then
+		oProgressBar.start(&quot;Экспортирование в FB2: Сохранение картинок&quot;, UBound(Images())
+		oProgressBar.setValue(0)
+		SaveImages
+	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
 	oTextOutputStream.closeOutput()
