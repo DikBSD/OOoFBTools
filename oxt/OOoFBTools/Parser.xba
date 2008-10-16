@@ -761,12 +761,16 @@ Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) A
 	sFD = GetFileData( ThisComponent.getURL() )
 	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
 		&apos; картинки лежат все конвертируемого файла (html, ...)
-		sUrl = oContent.GraphicUrl
-		If Mid( sUrl, 1, 1 ) &lt;&gt; &quot;/&quot; Then &apos; нет &quot;нормального&quot; пути к файлу
-			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
-		Else
-			sFD = GetFileData( sUrl )
-			sExt = sFD.sExt
+		If bIsTextGraphic Then
+			sUrl = ConvertFromURL( oContent.GraphicUrl )
+			If Mid( sUrl, 1, 1 ) &lt;&gt; &quot;/&quot; AND InStr( sUrl, &quot;file:/&quot; ) &lt; 1 Then &apos; нет &quot;нормального&quot; пути к файлу
+				sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+			Else
+				sFD = GetFileData( sUrl )
+				sExt = sFD.sExt
+			End If
+		Else &apos; для формул и диаграм
+			sExt = sOLEAs
 		End If
 	Else
 		&apos; картинки лежат внутри конвертируемого файла (odt, doc, rtf...)
@@ -816,21 +820,18 @@ Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 	&apos; определяем тип документа
 	sFD = GetFileData( ThisComponent.getURL() )
 	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-		sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
-		If Mid( sFileNameURL, 1, 1 ) &lt;&gt; &quot;/&quot; Then &apos; нет &quot;нормального&quot; пути к файлу
-			If IsWindowsOS() Then &apos; для Windows-системы
-				sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
-			Else &apos; для Unix-систем
-				sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
+		If bIsTextGraphic Then
+			sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+			If Mid( sFileNameURL, 1, 1 ) &lt;&gt; &quot;/&quot; AND InStr( sFileNameURL, &quot;file:/&quot; ) &lt; 1 Then &apos; нет &quot;нормального&quot; пути к файлу
+				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+				ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
 			End If
+		Else &apos; для формул и диаграмм
+			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
 		End If
 	Else
-		If IsWindowsOS() Then &apos; для Windows-системы
-			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
-		Else &apos; для Unix-систем
-			sFileNameURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
-		End If
+		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
 	End If
 	
@@ -840,6 +841,15 @@ Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
 End Sub
+
+&apos; возвращает путь к будущему mime-файлу в зависимости от системы
+Function GetOOoFBToolsImageURL( sExt As String ) As String
+	If IsWindowsOS() Then &apos; для Windows-системы
+		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
+	Else &apos; для Unix-систем
+		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
+	End If
+End Function
 
 &apos; экспорт картинки в файл
 Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileNameURL As String, ByVal sExt As String )
@@ -891,24 +901,24 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		Dim sScript As String
 		Dim i As Integer
 	
-		Dim sFD As Object
+&apos;		Dim sFD As Object
 		&apos; определяем тип документа
-		sFD = GetFileData( ThisComponent.getURL() )
-		If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-			If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
-				MkDir getOOoFBToolsTempPath()
-			End If
-			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы (base64 почему-то не воспринимает)
+&apos;		sFD = GetFileData( ThisComponent.getURL() )
+&apos;		If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
+&apos;			If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+&apos;				MkDir getOOoFBToolsTempPath()
+&apos;			End If
+&apos;			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы (base64 почему-то не воспринимает)
 			&apos; генерируем скрипт
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; sMimeFile
-		Else
+&apos;			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; sMimeFile
+&apos;		Else
 			&apos; генерируем скрипт
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; sMimeFile
-		End If
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot; &amp; sMimeFile
+&apos;		End If
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 	
 		&apos; делаем скрипт исполняемым
-		Shell(ConvertFromUrl(getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/unix/mef.sh&quot;), 1, &quot;&quot;, true)
+		Shell(ConvertFromUrl(getHomePath() &amp; &quot;/.mef.sh&quot;), 1, &quot;&quot;, true)
 	
 		&apos; конвертируем картинку в base64
 		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)

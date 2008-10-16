@@ -810,16 +810,24 @@ Function OOoWriterVersion() As String
 	OOoWriterVersion = oSet.getByName(&quot;ooSetupVersion&quot;)
 End Function
 
+&apos; Возвращает путь к папке конфигурации пользователя
 Function getUserPath() As String
-	&apos; Возвращает путь к папке конфигурации пользователя
 	&apos; Для Windows - C:\Documents and Settings\vadim\Application Data\OpenOffice.org2\user\config\
+	&apos; для Linux - /home/vadim/.openoffice.org2/user/config/OOoFBTools/
 	Dim oPathSettings
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
 	getUserPath = oPathSettings.UserConfig
 End Function
 
+&apos; Возвращает путь к домашней папке пользователя
+Function getHomePath() As String
+	Dim oPathSubst
+	oPathSubst = createUnoService(&quot;com.sun.star.util.PathSubstitution&quot;)
+	getHomePath =  oPathSubst.getSubstituteVariableValue(&quot;$(home)&quot;)
+End Function
+
+&apos; Возвращает путь к ВРЕМЕННОЙ  папке Ooo
 Function getTempPath() As String
-	&apos; Возвращает путь к ВРЕМЕННОЙ  папке Ooo
 	Dim oPathSettings
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
 	getTempPath = oPathSettings.Temp
