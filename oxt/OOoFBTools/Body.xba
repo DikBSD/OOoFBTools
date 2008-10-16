@@ -210,8 +210,10 @@ Function SaveNotes
 End Function
 
 &apos; печатаем коды картинок
-Sub SaveImages
+Function SaveImages() As Integer
 	If( UBound( Images() )&gt;=0 ) Then
+		Dim i As Integer, j As Integer
+		j = 0
 		For i=0 To UBound( Images() )
 			Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; i &amp; &quot;.txt&quot;
 			If FileExists( sMimeFile ) Then
@@ -230,24 +232,28 @@ Sub SaveImages
 				oFS = oSFA.openFileRead ( ConvertToURL ( sMimeFile ) )
 				oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
 				oTIS.setInputStream (oFS)
-				&apos; открываем тэг
-				oTextOutputStream.writeString( &quot;&lt;binary id=&quot;&quot;img_&quot; &amp; i &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) )
-				Do While ( NOT oTIS.isEOF() )
-					sLine = oTIS.readLine()
-					If sLine &lt;&gt; chr(10) Then
-						If sLine &lt;&gt; &quot;&quot; Then
-							oTextOutputStream.writeString( sLine &amp; chr(10) )
+				If Not IsFileEmpty( sMimeFile ) Then
+					&apos; открываем тэг
+					oTextOutputStream.writeString( &quot;&lt;binary id=&quot;&quot;img_&quot; &amp; i &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) )
+					Do While ( NOT oTIS.isEOF() )
+						sLine = oTIS.readLine()
+						If sLine &lt;&gt; chr(10) Then
+							If sLine &lt;&gt; &quot;&quot; Then
+								oTextOutputStream.writeString( sLine &amp; chr(10) )
+							End If
 						End If
-					End If
-				Loop
-				&apos; закрываем тэг
-				oTextOutputStream.writeString( &quot;&lt;/binary&gt;&quot; &amp; chr(10) )
+					Loop
+					oTIS.closeInput()
+					&apos; закрываем тэг
+					oTextOutputStream.writeString( &quot;&lt;/binary&gt;&quot; &amp; chr(10) )
+					j = j+1
+				End If
 			End If
-	
 			oProgressBar.setValue(i) &apos; Статусбар
 		Next i
 	End If
-End Sub
+	SaveImages = j
+End Function
 
 Function IsNeededELForAnnot( sArray() As String, ByVal lCurrentElement As Long ) As Boolean
 	&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности

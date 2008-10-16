@@ -191,7 +191,7 @@ Function InfoDlgExec As Boolean
 		.diDateValueField.Text = Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;)_
 								&amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
 		.ProgrammUsedField.Text = &quot;ExportToFB21&quot;
-		.IDField.Text = &quot;OOo-ExportToFB21-&quot; &amp; Year(sNow) &amp; Month(sNow) &amp; Day(sNow) &amp; Hour(sNow) &amp; Minute(sNow) &amp; Second(sNow)
+		.IDField.Text = GetNewBookID()
 		.VersionField.Text = &quot;1.0&quot;
 		.KeywordsField.Text = FindTextOfStyle(sStyle_BookKeywords, true)
 		.pubBookNameTextField.Text = FindTextOfStyle(sStyle_PaperBookName, true)
@@ -286,14 +286,38 @@ Function ReadServiceStyles(lProgress As Long)
 	oProgressBar.end
 End Function
 
-Function InfoDlgCanceled
+Sub InfoDlgCanceled
 	bExecute = False
 	oInfoDlg.endExecute()
+End Sub
+
+Sub NewBookID
+	oInfoDlg.Model.IDField.Text = GetNewBookID()
+End Sub
+
+Function GetNewBookID() As String
+	Dim sNow As String
+	sNow = Now
+	GetNewBookID = &quot;OOoFBTools-&quot; _
+	&amp; Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; _
+	&quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
 End Function
 
 Function ConvertingFile
-	If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.BookTitleField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните, пожалуйста, все обязательные (выделенные) поля&quot;, 64, sConvertorName
+	If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot;Then
+		MsgBox &quot;Выберите, пожалуйста, Жанр Книги&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oInfoDlg.Model.BookTitleField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните, пожалуйста, поля Автора Книги&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oInfoDlg.Model.VersionField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;, 64, sConvertorName
+		Exit Function
+	End If
+	If Trim(oInfoDlg.Model.IDField.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	bAppendBtn = False
@@ -362,7 +386,7 @@ End Function
 Function AppendBookGenre As Boolean
 	IF bAppendBtn = True Then
 		If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot; Then
-			MsgBox &quot;Выберите жанр книги!&quot;, 64, sConvertorName
+			MsgBox &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
 			AppendBookGenre = False
 			Exit Function
 		End If
@@ -378,7 +402,7 @@ Function AppendBookGenre As Boolean
 		End If
 	Next i
 	If sGenre = &quot;&quot; Then
-		MsgBox &quot;Выберите жанр книги непосредственно из списка жанров!&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, выберите жанр книги непосредственно из списка жанров!&quot;, 64, sConvertorName
 		AppendBookGenre = False
 		Exit Function
 	ElseIf sGenre = &quot;?&quot; Then
@@ -407,7 +431,7 @@ End Function
 Function AppendBookAuthor
 	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
 		 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	AddBookAuthor
@@ -440,7 +464,7 @@ End Function
 Function AppendBookTranslator
 	If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	AddBookTranslator
@@ -472,7 +496,7 @@ End Function
 
 Function AppendBookSequence
 	If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	AddBookSequence
@@ -497,7 +521,7 @@ End Function
 Function AppendDocAuthor
 	If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	AddDocAuthor
@@ -529,7 +553,7 @@ End Function
 
 Function AppendPublisherSequence
 	If Trim(oInfoDlg.Model.pubSequenseTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	AddPublisherSequence
@@ -553,7 +577,7 @@ End Function
 
 Function AppendCustomInfos
 	If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните оба поля для Custom Info&quot;, 64, sConvertorName
+		MsgBox &quot;Пожалуйста, заполните оба поля для Custom Info&quot;, 64, sConvertorName
 		Exit Function
 	End If
 	AddCustomInfos

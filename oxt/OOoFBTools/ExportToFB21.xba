@@ -145,19 +145,22 @@ Sub ExportToFB21
 	End If
 	
 	&apos; печатаем коды картинок, если они есть
+	Dim iSI As Integer
 	If UBound(Images()) &lt;&gt; -1 Then
 		oProgressBar.start(&quot;Экспортирование в FB2: Сохранение картинок&quot;, UBound(Images())
 		oProgressBar.setValue(0)
-		SaveImages
+		iSI = SaveImages()
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
 	oTextOutputStream.closeOutput()
 	oProgressBar.end
-	
+		
 	&apos; запустить полученный файл на просмотр и валидацию, если нужно
 	Dim sValidateMessage As String : sValidateMessage = &quot;Запущена валидация файла.&quot;
 	Dim sEndMessage As String : sEndMessage = &quot;Создание книги в fb2 формате завершено!&quot;
+	If iSI &gt; 0 Then sEndMessage = sEndMessage &amp; chr(10) &amp; &quot;Экспортировано Картинок: &quot; &amp; iSI &amp; &quot; из &quot; &amp; UBound(Images())+1 &amp; &quot;.&quot;
+	
 	Dim sFB2File As String : sFB2File = oInfoDlg.Model.FilenameTextField.Text
 	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
 	

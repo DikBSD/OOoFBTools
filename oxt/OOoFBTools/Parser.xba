@@ -887,6 +887,7 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 	
 	Else &apos; для Unix-систем
 		&apos; данные картинки и ее расширение
+		Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
 		Dim sScript As String
 		Dim i As Integer
 	
@@ -899,10 +900,10 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 			End If
 			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы (base64 почему-то не воспринимает)
 			&apos; генерируем скрипт
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; sMimeFile
 		Else
 			&apos; генерируем скрипт
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; sGraphicUrl &amp; &quot; &gt;&gt; &quot; &amp; sMimeFile
 		End If
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 	
@@ -912,7 +913,7 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		&apos; конвертируем картинку в base64
 		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
 
-		If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot; ) Then
+		If FileExists( sMimeFile ) Then
 			&apos; добавляем расширение очередной картинки в массив
 			i = Ubound(Images()) + 1
 			ReDim Preserve Images(i)

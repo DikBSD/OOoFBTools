@@ -12,6 +12,27 @@ Type tFileData	&apos; для хранения данных файла
 End Type
 
 &apos; /// Работа с файлами ///
+
+&apos; Пуст ли файл
+Function IsFileEmpty( sFileInput As String ) As Boolean
+	Dim bFileEmpty As Boolean : bFileEmpty = False
+	If FileExists(sFileInput) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFileInput) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Dim s As String : s = oTIS.readLine()
+		If s = &quot;&quot; Or s = chr(10) Or s = chr(13) Then
+			bFileEmpty = True
+		End If
+		oTIS.closeInput()
+	End If
+	IsFileEmpty = bFileEmpty
+End Function
+
 &apos; возвращает данные файла
 Function GetFileData( sFileUrl As String ) As tFileData
 	Dim sFD As tFileData
