@@ -66,8 +66,10 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 					If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 						oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 						oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-						sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
-						iImgCurrent = iImgCurrent+1
+						Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+						sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+						&apos;iImgCurrent = iImgCurrent+1
+						MakeTableInCutGraphic( oContent, True )
 					End If
 				Loop
 			Else &apos; oWord.TextPortionType = &quot;Text&quot;

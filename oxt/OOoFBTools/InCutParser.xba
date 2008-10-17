@@ -52,8 +52,10 @@ Sub TextFrameTableParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
-							iImgCurrent = iImgCurrent+1
+							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							&apos;iImgCurrent = iImgCurrent+1
+							MakeTableInCutGraphic( oContent, True )
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -140,8 +142,10 @@ Sub TextFrameCiteParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
-							iImgCurrent = iImgCurrent+1
+							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							&apos;iImgCurrent = iImgCurrent+1
+							MakeTableInCutGraphic( oContent, True )
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -201,12 +205,14 @@ Sub TextFrameTextParser( oContent As Object )
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
 							&apos; парсер графики внутри Текстовой Врезки - как отдельный тэг
+							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
 							If oContent.AnchorType = 1 Then
-								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
-								iImgCurrent = iImgCurrent+1
+								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							Else
-								sText = sText &amp; ImagesTextInCutParser( oContent ) &amp; chr(10)
+								sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
 							End If
+							&apos;iImgCurrent = iImgCurrent+1
+							MakeTableInCutGraphic( oContent, True )
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -265,14 +271,16 @@ Sub TextFrameStructParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
+							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
 							If oContent.AnchorType = 1 Then &apos; картинка, как символ
-								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
-								iImgCurrent = iImgCurrent+1
+								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							Else
 								&apos; парсер графики внутри Текстовой Врезки - как отдельный тэг
-								AddBodyArray( ImagesTextInCutParser( oContent ), &quot;Image&quot;, False )
+								AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
 								sPrevStyle = &quot;Image&quot;
 							End If
+							&apos;iImgCurrent = iImgCurrent+1
+							MakeTableInCutGraphic( oContent, True )
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -330,13 +338,12 @@ Function OOo23TextTableParserForTextInCut( iCurrentTable As Integer ) As String
 End Function
 
 &apos; парсер графики внутри Текстовой Врезки
-Function ImagesTextInCutParser( oContent As Object ) As String
+Function ImagesTextInCutParser( oContent As Object, sExt As String ) As String
 	If bSaveImageTitle=True Then
-		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;
+		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;
 	Else
-		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;&quot;&quot;/&gt;&quot;
+		ImagesTextInCutParser = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 	End If
-	iImgCurrent = iImgCurrent+1
 End Function
 
 Function AddNewItemTotTableRowsInCutArray( sArray() As tTableRowsInCut, sStr As String, isTable As Boolean )
@@ -381,5 +388,50 @@ Function MakeStartEndOfText( sText As String ) As String
 	End If
 	MakeStartEndOfText = sText
 End Function
+
+&apos; возвращает валидное расширение файла
+Function GetValidateForFB2FileExt( oContent As Object, bIsTextGraphic as Boolean ) As String
+	&apos; определяем тип (расширение) картинки
+	Dim sExt As String
+	sExt = GetGraphicType( oContent, bIsTextGraphic )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	GetValidateForFB2FileExt = sExt
+End Function
+
+&apos; создание картинки из графических объектов для текстовых врезок и таблиц
+Sub MakeTableInCutGraphic( oContent As Object, bIsTextGraphic As Boolean )
+	&apos; определяем тип (расширение) картинки
+	Dim sExt As String
+	sExt = GetGraphicType( oContent, bIsTextGraphic )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	
+	&apos; экспорт картинки в файл
+	Dim sFileNameURL As String, sFD As Object
+	&apos; определяем тип документа
+	sFD = GetFileData( ThisComponent.getURL() )
+	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
+		If bIsTextGraphic Then
+			sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+			If Mid( sFileNameURL, 1, 1 ) &lt;&gt; &quot;/&quot; AND InStr( sFileNameURL, &quot;file:/&quot; ) &lt; 1 Then &apos; нет &quot;нормального&quot; пути к файлу
+				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+				ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+			End If
+		Else &apos; для формул и диаграмм
+			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+			ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+		End If
+	Else
+		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+	End If
+	
+	&apos; кодирование картинки
+	CodeToBase64( sFileNameURL, sExt )
+	
+	iImgCurrent = iImgCurrent+1
+	sPrevStyle = &quot;Image&quot;
+End Sub
 
 </script:module>
