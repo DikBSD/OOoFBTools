@@ -62,21 +62,31 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 			If oWord.TextPortionType = &quot;Frame&quot; Then
 				Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 				Do While oCEnum.hasMoreElements()
+					Dim sExt As String
 					Dim oContent : oContent = oCEnum.nextElement()
 					If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 						oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 						oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-						Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+						&apos; парсер картинок
+						sExt = GetValidateForFB2FileExt( oContent, True )
 						sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-						&apos;iImgCurrent = iImgCurrent+1
 						MakeTableInCutGraphic( oContent, True )
+					Else
+						If oContent.ShapeType = &quot;FrameShape&quot; Then
+							If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+								&apos; парсер формул и диаграм
+								sExt = GetValidateForFB2FileExt( oContent, False )
+								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+								MakeTableInCutGraphic( oContent, False )
+							End If
+						End If
 					End If
 				Loop
 			Else &apos; oWord.TextPortionType = &quot;Text&quot;
 				sString = sString &amp; oWord.getString()		
 				If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
 					&apos; парсер сносок
-					sFormatPara = sFormatPara + FootEndNoteParser( oWord )
+					sFormatPara = sFormatPara &amp; FootEndNoteParser( oWord )
 				Else
 					If bOnlyOneStyle = True Then
 						sFormatPara = sFormatPara &amp; InLineParser( oWord )

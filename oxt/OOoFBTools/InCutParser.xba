@@ -46,16 +46,26 @@ Sub TextFrameTableParser( oContent As Object )
 			Do While oWordEnum.hasMoreElements()
 				oWord = oWordEnum.nextElement()			
 				If oWord.TextPortionType = &quot;Frame&quot; Then
+					Dim sExt As String
 					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 					Do While oCEnum.hasMoreElements()
 						Dim oContent : oContent = oCEnum.nextElement()
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+							&apos; графика внутри Текстовой Врезки
+							sExt = GetValidateForFB2FileExt( oContent, True )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							&apos;iImgCurrent = iImgCurrent+1
 							MakeTableInCutGraphic( oContent, True )
+						Else
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; формулы и диаграммы
+									sExt = GetValidateForFB2FileExt( oContent, False )
+									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+									MakeTableInCutGraphic( oContent, False )
+								End If
+							End If
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -136,16 +146,25 @@ Sub TextFrameCiteParser( oContent As Object )
 			Do While oWordEnum.hasMoreElements()
 				oWord = oWordEnum.nextElement()
 				If oWord.TextPortionType = &quot;Frame&quot; Then
+					Dim sExt As String
 					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 					Do While oCEnum.hasMoreElements()
 						Dim oContent : oContent = oCEnum.nextElement()
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+							sExt = GetValidateForFB2FileExt( oContent, True )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							&apos;iImgCurrent = iImgCurrent+1
 							MakeTableInCutGraphic( oContent, True )
+						Else
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; формулы и диаграммы
+									sExt = GetValidateForFB2FileExt( oContent, False )
+									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+									MakeTableInCutGraphic( oContent, False )
+								End If
+							End If
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -198,21 +217,34 @@ Sub TextFrameTextParser( oContent As Object )
 			Do While oWordEnum.hasMoreElements()
 				oWord = oWordEnum.nextElement()
 				If oWord.TextPortionType = &quot;Frame&quot; Then
+					Dim sExt As String
 					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 					Do While oCEnum.hasMoreElements()
 						Dim oContent : oContent = oCEnum.nextElement()
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							&apos; парсер графики внутри Текстовой Врезки - как отдельный тэг
-							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+							&apos; графика внутри Текстовой Врезки - как отдельный тэг
+							sExt = GetValidateForFB2FileExt( oContent, True )
 							If oContent.AnchorType = 1 Then
 								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							Else
 								sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
 							End If
-							&apos;iImgCurrent = iImgCurrent+1
 							MakeTableInCutGraphic( oContent, True )
+						Else
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; формулы и диаграммы
+									sExt = GetValidateForFB2FileExt( oContent, False )
+									If oContent.AnchorType = 1 Then
+										sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+									Else
+										sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
+									End If
+									MakeTableInCutGraphic( oContent, False )
+								End If
+							End If
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
@@ -265,22 +297,37 @@ Sub TextFrameStructParser( oContent As Object )
 			Do While oWordEnum.hasMoreElements()
 				oWord = oWordEnum.nextElement()
 				If oWord.TextPortionType = &quot;Frame&quot; Then
+					Dim sExt As String
 					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 					Do While oCEnum.hasMoreElements()
 						Dim oContent : oContent = oCEnum.nextElement()
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							Dim sExt As String : sExt = GetValidateForFB2FileExt( oContent, True )
+							sExt = GetValidateForFB2FileExt( oContent, True )
 							If oContent.AnchorType = 1 Then &apos; картинка, как символ
 								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							Else
-								&apos; парсер графики внутри Текстовой Врезки - как отдельный тэг
+								&apos; графика внутри Текстовой Врезки - как отдельный тэг
 								AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
 								sPrevStyle = &quot;Image&quot;
 							End If
-							&apos;iImgCurrent = iImgCurrent+1
 							MakeTableInCutGraphic( oContent, True )
+						Else
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; парсер формул и диаграм
+									sExt = GetValidateForFB2FileExt( oContent, True )
+									If oContent.AnchorType = 1 Then &apos; картинка, как символ
+										sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+									Else
+										&apos; формулы и диаграмы внутри Текстовой Врезки - как отдельный тэг
+										AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
+										sPrevStyle = &quot;Image&quot;
+									End If
+									MakeTableInCutGraphic( oContent, True )
+								End If
+							End If
 						End If
 					Loop
 				Else &apos; oWord.TextPortionType = &quot;Text&quot;
