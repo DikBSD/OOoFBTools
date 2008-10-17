@@ -885,11 +885,9 @@ End Sub
 &apos; генерируем base64-код картинок, формул и диаграм
 Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 	&apos; удаляем временные файлы-скрипты
-	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot; ) Then
-		Kill getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
-	End If
-	If FileExists( getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot; ) Then
-		Kill getOOoFBToolsTempPath() &amp; &quot;/mime-image.txt&quot;
+	Dim sFileImage As String : sFileImage = getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
+	If FileExists( sFileImage ) Then
+		Kill sFileImage
 	End If
 	
 	&apos; кодируем картинки
@@ -916,12 +914,12 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot; &amp; sMimeFile
 &apos;		End If
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	
+
 		&apos; делаем скрипт исполняемым
-		Shell(ConvertFromUrl(getHomePath() &amp; &quot;/.mef.sh&quot;), 1, &quot;&quot;, true)
+		Shell(&quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true)
 	
 		&apos; конвертируем картинку в base64
-		Shell( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, 1, &quot;&quot;, true)
+		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true)
 
 		If FileExists( sMimeFile ) Then
 			&apos; добавляем расширение очередной картинки в массив
