@@ -648,10 +648,10 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 		oRN = oPar.NumberingRules
 		oRNI = oRN.getByIndex(0)
 		If UBound( oRNI ) = 9 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
-			Dim s As String, sPos As String
-			s = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
+			Dim sNumber As String, sPos As String
+			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
 			sPos = Mid(sStringPara, 1,1)
-			If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then InsertInString( sFormatPara, sPos, s &amp; &quot; &quot; &amp; sPos )
+			If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then sFormatPara = ReplaceInString( sFormatPara, sPos, sNumber &amp; &quot; &quot; &amp; sPos, True )
 			MakeNumberingNumberPara = sFormatPara	
 		ElseIf UBound( oRNI ) = 13 Then &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If oRNI(11).Name &lt;&gt; &quot;BulletChar&quot; Then &apos;маркеры-картинки заменяем на •
