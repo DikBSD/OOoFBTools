@@ -1,0 +1,1 @@
+C:\_test_\base64.exe C:\_test_\img_0.png C:\_test_\111.txt png 1
