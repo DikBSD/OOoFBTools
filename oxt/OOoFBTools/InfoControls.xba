@@ -195,14 +195,10 @@ Function InfoDlgExec As Boolean
 		.KeywordsField.Text = FindTextOfStyle(sStyle_BookKeywords, true)
 	End With
 	
-	Dim oLB As Object
-	oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
-	oLB.SelectItemPos(35, True)
-	oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
-	oLB.AddItem(&quot;&quot;, 0)
-	oLB = oInfoDlg.getControl(&quot;Codepage&quot;)
-	oLB.addItems(Array(&quot;utf-8&quot;, &quot;windows-1251&quot;), 0)
-	oLB.SelectItemPos(0, True)
+	oInfoDlg.getControl(&quot;LangComboBox&quot;).selectItem(&quot;ru&quot;, True)
+	oInfoDlg.getControl(&quot;SrcLangComboBox&quot;).AddItem(&quot;&quot;, 0)
+	oInfoDlg.getControl(&quot;Codepage&quot;).addItems(Array(&quot;utf-8&quot;, &quot;windows-1251&quot;), 0)
+	oInfoDlg.getControl(&quot;Codepage&quot;).SelectItemPos(0, True)
 	
 	&apos; центрирование на экране
 	&apos;ToScreenCenter(oInfoDlg)
@@ -296,9 +292,9 @@ End Sub
 Function GetNewBookID() As String
 	Dim sNow As String
 	sNow = Now
-	GetNewBookID = &quot;OOoFBTools-&quot; _
-	&amp; Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; _
-	&quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
+	GetNewBookID = &quot;OOoFBTools-&quot; &amp; _
+				Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; _
+				&quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
 End Function
 
 Function ConvertingFile
@@ -396,11 +392,7 @@ Function AppendBookGenre As Boolean
 	&apos;ищем в массиве нужный жанр
 	Dim sGenre As String : sGenre = GetGenreInList( oLB.SelectedItem )
 	Dim i As Integer
-	If sGenre = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите жанр книги непосредственно из списка жанров!&quot;, 64, sConvertorName
-		AppendBookGenre = False
-		Exit Function
-	ElseIf sGenre = &quot;?&quot; Then
+	If sGenre = &quot;?&quot; Then
 		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
 		AppendBookGenre = False
 		Exit Function
@@ -1027,13 +1019,12 @@ End Sub
 
 Sub GEAdd
 	&apos; Добавить жанр в список Избранного
-	Dim oLB As Object, sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
+	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Добаление Жанра в Избранное&quot;
 	sGenre = &quot;&quot;
-	oLB = oGEDlg.getControl(&quot;cboxGE&quot;)
 	For i=0 To UBound(sGLN())
-		If sGLN(i) = oLB.SelectedItem Then
-			sGenreName = oLB.SelectedItem
+		If sGLN(i) = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem Then
+			sGenreName = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem
 			sGenre = sGLC(i)
 			Exit For
 		End If
@@ -1109,9 +1100,7 @@ Sub InsertGEToGenreBox(oEvent)
 	If InStr(sCR, chr(10)) &gt; 0 Then
 		sCR = ReplaceInString( sCR, chr(10), &quot;&quot;, False )
 	End If
-	Dim oLB As Object
-	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
-	oLB.selectItem( sCR, True )
+	oInfoDlg.getControl(&quot;GenreComboBox&quot;).selectItem( sCR, True )
 End Sub
 
 Sub SortGenre
@@ -1130,17 +1119,16 @@ End Sub
 
 Sub GenreUp
 	&apos; перемещение выбранного жанра списка Избранных Жанров вверх
-	Dim aArray() As String, oLB As Object, sTitle As String
+	Dim aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вверх&quot;
-	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
-	If oLB.SelectedItem = &quot;&quot; Then
+	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;, 64, sTitle
 		Exit Sub
 	End If
 	
 	If oGEDlg.Model.lbGE.SelectedItems(0) &gt; 0 Then
 		Dim sItem As String
-		sItem = oLB.getSelectedItem
+		sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
 		aArray = oGEDlg.Model.lbGE.StringItemList
 		swap( aArray, oGEDlg.Model.lbGE.SelectedItems(0)-1, oGEDlg.Model.lbGE.SelectedItems(0) )
 		oGEDlg.Model.lbGE.StringItemList = aArray
@@ -1150,20 +1138,19 @@ End Sub
 
 Sub GenreDown
 	&apos; перемещение выбранного жанра списка Избранных Жанров вниз
-	Dim aArray() As String, oLB As Object, sTitle As String
+	Dim aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вниз&quot;
-	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
-	If oLB.SelectedItem = &quot;&quot; Then
+	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;, 64, sTitle
 		Exit Sub
 	End If
 	aArray = oGEDlg.Model.lbGE.StringItemList
 	If oGEDlg.Model.lbGE.SelectedItems(0) &lt; UBound(aArray()) Then
 		Dim sItem As String
-		sItem = oLB.getSelectedItem
+		sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
 		swap( aArray, oGEDlg.Model.lbGE.SelectedItems(0), oGEDlg.Model.lbGE.SelectedItems(0)+1 )
 		oGEDlg.Model.lbGE.StringItemList = aArray
-		oLB.selectItem(sItem, True)
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
 	End If
 End Sub
 
