@@ -636,36 +636,19 @@ Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 	Wend
 End Function
 
+&apos; читаем данные для Серий
 Function ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumber)
-	If oCursor.String = &quot;&quot; Then	&apos;
-		Exit Function
-	End If
-	
-	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
-	Dim i As Integer
-	
-	i = Ubound(sArray(), 1) + 1
-	If i &gt; 0 Then
-		ReDim Preserve sArray(i, 1)
-	Else Redim sArray(i, 1)
-	End If
-	
-	oEnum = oCursor.createEnumeration
-	While oEnum.hasMoreElements
-		oText = oEnum.nextElement
-		oSecEnum = oText.createEnumeration
-		While oSecEnum.hasMoreElements
-			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.CharStyleName = sStyleSequence Then
-				sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyleSequenceNumber Then
-				sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
-			End If
-		Wend
-	Wend
+	ReadSymbolStyle2Info( oCursor, sArray(), sStyleSequence, sStyleSequenceNumber )
 End Function
 
+&apos; читаем данные для Custom Info
 Function ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue)
+	ReadSymbolStyle2Info( oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue )
+End Function
+
+&apos; читать данные 2-х символьных стилей
+Function ReadSymbolStyle2Info( oCursor, sArray(), sSymbolStyle1, sSymbolStyle2 ) As Boolean
+	ReadSymbolStyle2Info = False
 	If oCursor.String = &quot;&quot; Then	&apos;
 		Exit Function
 	End If
@@ -685,13 +668,14 @@ Function ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInf
 		oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.CharStyleName = sStyleCustomInfoType Then
+			If oTextPortion.CharStyleName = sSymbolStyle1 Then
 				sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyleCustomInfoValue Then
+			ElseIf oTextPortion.CharStyleName = sSymbolStyle2 Then
 				sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
 			End If
 		Wend
 	Wend
+	If UBound( sArray() ) &lt;&gt; -1 Then ReadSymbolStyle2Info = True
 End Function
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////
