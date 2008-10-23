@@ -302,7 +302,9 @@ Function GetNewBookID() As String
 End Function
 
 Function ConvertingFile
-	If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot;Then
+	Dim oLB As Object
+	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
 		MsgBox &quot;Выберите, пожалуйста, Жанр Книги&quot;, 64, sConvertorName
 		Exit Function
 	End If
@@ -382,15 +384,17 @@ Function SaveAs
 End Function
 
 Function AppendBookGenre As Boolean
+	Dim oLB As Object
+	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
 	IF bAppendBtn = True Then
-		If Trim(oInfoDlg.Model.GenreComboBox.Text) = &quot;&quot; Then
+		If oLB.SelectedItem = &quot;&quot; Then
 			MsgBox &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
 			AppendBookGenre = False
 			Exit Function
 		End If
 	End If
 	&apos;ищем в массиве нужный жанр
-	Dim sGenre As String : sGenre = GetGenreInList( oInfoDlg.Model.GenreComboBox.Text )
+	Dim sGenre As String : sGenre = GetGenreInList( oLB.SelectedItem )
 	Dim i As Integer
 	If sGenre = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, выберите жанр книги непосредственно из списка жанров!&quot;, 64, sConvertorName
@@ -413,7 +417,7 @@ Function AppendBookGenre As Boolean
 	Else
 		sGenres(i, 1) = oInfoDlg.Model.NumericFieldMatch.Value
 	End If
-	&apos;oInfoDlg.Model.GenreComboBox.Text = &quot;&quot;
+	&apos;oLB.SelectedItem = &quot;&quot;
 	oInfoDlg.Model.NumericFieldMatch.Value = &quot;&quot;
 	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = i+1
 	AppendBookGenre = True
@@ -1104,7 +1108,9 @@ Sub InsertGEToGenreBox(oEvent)
 	If InStr(sCR, chr(10)) &gt; 0 Then
 		sCR = ReplaceInString( sCR, chr(10), &quot;&quot;, False )
 	End If
-	oInfoDlg.Model.GenreComboBox.Text = sCR
+	Dim oLB As Object
+	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
+	oLB.selectItem( sCR, True )
 End Sub
 
 Sub SortGenre

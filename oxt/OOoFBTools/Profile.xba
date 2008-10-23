@@ -197,7 +197,8 @@ Function SaveBookAuthorProfile
 		oTOS.writeString(&quot;tiNickname=&quot; &amp; oInfoDlg.Model.tiNickname.Text &amp; chr(10))
 		oTOS.writeString(&quot;tiEmail=&quot; &amp; oInfoDlg.Model.tiEmail.Text &amp; chr(10))
 		oTOS.writeString(&quot;tiHomepage=&quot; &amp; oInfoDlg.Model.tiHomepage.Text &amp; chr(10))
-		oTOS.writeString(&quot;GenreComboBox=&quot; &amp; oInfoDlg.Model.GenreComboBox.Text &amp; chr(10))
+		oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
+		oTOS.writeString(&quot;GenreComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
 		oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
 		oTOS.writeString(&quot;LangComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
 		oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
@@ -250,7 +251,9 @@ Function ClearBookAuthorFields
 	oInfoDlg.Model.tiNickname.Text = &quot;&quot;
 	oInfoDlg.Model.tiEmail.Text = &quot;&quot;
 	oInfoDlg.Model.tiHomepage.Text = &quot;&quot;
-	oInfoDlg.Model.GenreComboBox.Text = &quot;&quot;
+	Dim oLB As Object
+	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
+	oLB.SelectItemPos(0, True)
 End Function
 
 &apos;////////////////////////////
