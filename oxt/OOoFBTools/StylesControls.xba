@@ -49,6 +49,9 @@ Public sStyle_BookSeries As String
 Public sStyle_BookKeywords As String
 Public sStyle_PaperBookSeries As String
 Public sStyle_BookDate As String
+Public sStyle_PaperBook As String
+Public sStyle_CustomInfo As String
+Public sStyle_Genre As String
 &apos; символьные
 Public sStyle_Name As String
 Public sStyle_Patronymic As String
@@ -60,17 +63,15 @@ Public sStyle_Sequence As String
 Public sStyle_SequenceNumber As String
 Public sStyle_BookDateText As String
 Public sStyle_BookDateValue As String
-
-Public sStyle_PaperBook As String
 Public sStyle_PaperBookName As String
 Public sStyle_PaperBookPublisher As String
 Public sStyle_PaperBookCity As String
 Public sStyle_PaperBookYear As String
 Public sStyle_PaperBookISBN As String
-
-Public sStyle_CustomInfo As String
 Public sStyle_CustomInfoType As String
 Public sStyle_CustomInfoValue As String
+Public sStyle_GenreName As String
+Public sStyle_GenreMatch As String
 
 Function SetUserStyles
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -218,18 +219,19 @@ Function SetServiceStylesControlsDefault
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	&apos; Анотация Книги
 	oStylesDlg.GetControl(&quot;tf_BookAnnotation&quot;).Text = sStyle_BookAnnotation
+	oStylesDlg.GetControl(&quot;tf_BookKeywords&quot;).Text = sStyle_BookKeywords
+
 	oStylesDlg.GetControl(&quot;tf_BookAuthor&quot;).Text = sStyle_BookAuthor
 	oStylesDlg.GetControl(&quot;tf_BookTranslator&quot;).Text = sStyle_BookTranslator
-	oStylesDlg.GetControl(&quot;tf_BookSeries&quot;).Text = sStyle_BookSeries
-	oStylesDlg.GetControl(&quot;tf_BookKeywords&quot;).Text = sStyle_BookKeywords
-	oStylesDlg.GetControl(&quot;tf_PaperBookSeries&quot;).Text = sStyle_PaperBookSeries
-
 	oStylesDlg.GetControl(&quot;tf_Name&quot;).Text = sStyle_Name
 	oStylesDlg.GetControl(&quot;tf_Patronymic&quot;).Text = sStyle_Patronymic
 	oStylesDlg.GetControl(&quot;tf_Family&quot;).Text = sStyle_Family
 	oStylesDlg.GetControl(&quot;tf_Nick&quot;).Text = sStyle_Nick
 	oStylesDlg.GetControl(&quot;tf_Email&quot;).Text = sStyle_Email
 	oStylesDlg.GetControl(&quot;tf_WebSite&quot;).Text = sStyle_WebSite
+	
+	oStylesDlg.GetControl(&quot;tf_BookSeries&quot;).Text = sStyle_BookSeries
+	oStylesDlg.GetControl(&quot;tf_PaperBookSeries&quot;).Text = sStyle_PaperBookSeries
 	oStylesDlg.GetControl(&quot;tf_Sequence&quot;).Text = sStyle_Sequence
 	oStylesDlg.GetControl(&quot;tf_SequenceNumber&quot;).Text = sStyle_SequenceNumber
 
@@ -247,6 +249,10 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_CustomInfo&quot;).Text = sStyle_CustomInfo
 	oStylesDlg.GetControl(&quot;tf_CustomInfoType&quot;).Text = sStyle_CustomInfoType
 	oStylesDlg.GetControl(&quot;tf_CustomInfoValue&quot;).Text = sStyle_CustomInfoValue
+	
+	oStylesDlg.GetControl(&quot;tf_Genre&quot;).Text =sStyle_Genre
+	oStylesDlg.GetControl(&quot;tf_GenreName&quot;).Text =sStyle_GenreName
+	oStylesDlg.GetControl(&quot;tf_GenreMatch&quot;).Text =sStyle_GenreMatch
 End Function
 
 Function SetStylesInVars(sCurrentLine)
@@ -347,17 +353,13 @@ Function SetStylesInVars(sCurrentLine)
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 		Case &quot;tf_BookAnnotation&quot;
 			sStyle_BookAnnotation = sStyles(1)
+		Case &quot;tf_BookKeywords&quot;
+			sStyle_BookKeywords = sStyles(1)
+			
 		Case &quot;tf_BookAuthor&quot;
 			sStyle_BookAuthor = sStyles(1)
 		Case &quot;tf_BookTranslator&quot;
 			sStyle_BookTranslator = sStyles(1)
-		Case &quot;tf_BookSeries&quot;
-			sStyle_BookSeries = sStyles(1)
-		Case &quot;tf_BookKeywords&quot;
-			sStyle_BookKeywords = sStyles(1)
-		Case &quot;tf_PaperBookSeries&quot;
-			sStyle_PaperBookSeries = sStyles(1)
-			
 		Case &quot;tf_Name&quot;
 			sStyle_Name = sStyles(1)
 		Case &quot;tf_Patronymic&quot;
@@ -370,6 +372,11 @@ Function SetStylesInVars(sCurrentLine)
 			sStyle_Email = sStyles(1)
 		Case &quot;tf_WebSite&quot;
 			sStyle_WebSite = sStyles(1)
+
+		Case &quot;tf_BookSeries&quot;
+			sStyle_BookSeries = sStyles(1)
+		Case &quot;tf_PaperBookSeries&quot;
+			sStyle_PaperBookSeries = sStyles(1)			
 		Case &quot;tf_Sequence&quot;
 			sStyle_Sequence	= sStyles(1)
 		Case &quot;tf_SequenceNumber&quot;
@@ -401,6 +408,13 @@ Function SetStylesInVars(sCurrentLine)
 			sStyle_CustomInfoType = sStyles(1)
 		Case &quot;tf_CustonInfoValue&quot;
 			sStyle_CustomInfoValue = sStyles(1)
+			
+		Case &quot;tf_Genre&quot;
+			sStyle_Genre = sStyles(1)
+		Case &quot;tf_GenreName&quot;
+			sStyle_GenreName = sStyles(1)
+		Case &quot;tf_GenreMatch&quot;
+			sStyle_GenreMatch = sStyles(1)
 	End Select
 End Function
 
@@ -441,22 +455,22 @@ Function SetStylesVarsDefault
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	sStyle_BookAnnotation	= &quot;_Book Annotation&quot;
 	sStyle_BookKeywords		= &quot;_Book Keywords&quot;
+		
 	sStyle_BookAuthor	 	= &quot;#Book Author&quot;
 	sStyle_BookTranslator	= &quot;#Book Translator&quot;
-	sStyle_BookSeries	 	= &quot;#Book Series&quot;
-	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
-		
-	sStyle_Name			 = &quot;#Name&quot;
-	sStyle_Patronymic	 = &quot;#Patronymic&quot;
-	sStyle_Family		 = &quot;#Family&quot;
-	sStyle_Nick			 = &quot;#Nick&quot;
-	sStyle_Email		 = &quot;#Email&quot;
-	sStyle_WebSite		 = &quot;#WebSite&quot;
+	sStyle_Name			 	= &quot;#Name&quot;
+	sStyle_Patronymic	 	= &quot;#Patronymic&quot;
+	sStyle_Family		 	= &quot;#Family&quot;
+	sStyle_Nick			 	= &quot;#Nick&quot;
+	sStyle_Email		 	= &quot;#Email&quot;
+	sStyle_WebSite		 	= &quot;#WebSite&quot;
 
 	sStyle_BookDate	 		= &quot;#Book Date&quot;
 	sStyle_BookDateText		= &quot;#Book Date Text&quot;
 	sStyle_BookDateValue	= &quot;#Book Date Value&quot;
 	
+	sStyle_BookSeries	 	= &quot;#Book Series&quot;
+	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
 	sStyle_Sequence		 	= &quot;#Sequence&quot;
 	sStyle_SequenceNumber	= &quot;#Sequence Number&quot;
 	
@@ -470,6 +484,10 @@ Function SetStylesVarsDefault
 	sStyle_CustomInfo		= &quot;#Custom Info&quot;
 	sStyle_CustomInfoType	= &quot;#Custom Info Type&quot;
 	sStyle_CustomInfoValue	= &quot;#Custom Info Value&quot;
+	
+	sStyle_Genre		= &quot;#Genre&quot;
+	sStyle_GenreName	= &quot;#Genre Name&quot;
+	sStyle_GenreMatch	= &quot;#Genre Match&quot;
 
 End Function
 

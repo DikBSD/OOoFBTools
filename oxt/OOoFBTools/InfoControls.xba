@@ -267,9 +267,6 @@ Function ReadServiceStyles(lProgress As Long)
 		Case sStyle_BookSeries
 			ReadSequencesInfo( oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber )
 			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
-		Case sStyle_CustomInfo
-			ReadCustomInfo( oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue )
-			oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = Ubound(sCustomInfos())+1
 		Case sStyle_PaperBookSeries
 			ReadSequencesInfo( oCursor, sPubSequences, sStyle_Sequence, sStyle_SequenceNumber )
 			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
@@ -277,6 +274,10 @@ Function ReadServiceStyles(lProgress As Long)
 			ReadBookDateInfo( oCursor )
 		Case sStyle_PaperBook	
 			ReadPaperBookInfo( oCursor )
+		Case sStyle_Genre	
+			ReadGenreInfo( oCursor )
+		Case sStyle_CustomInfo
+			ReadCustomInfo( oCursor )
 		End Select
 		oProgressBar.setValue(lPara) &apos; Статусбар
 	Loop While oCursor.gotoNextParagraph(False)
@@ -389,15 +390,8 @@ Function AppendBookGenre As Boolean
 		End If
 	End If
 	&apos;ищем в массиве нужный жанр
-	Dim sGenre As String
+	Dim sGenre As String : sGenre = GetGenreInList( oInfoDlg.Model.GenreComboBox.Text )
 	Dim i As Integer
-	sGenre = &quot;&quot;
-	For i=0 To UBound(sGLN())
-		If sGLN(i) = Trim(oInfoDlg.Model.GenreComboBox.Text) Then
-			sGenre = sGLC(i)
-			Exit For
-		End If
-	Next i
 	If sGenre = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, выберите жанр книги непосредственно из списка жанров!&quot;, 64, sConvertorName
 		AppendBookGenre = False
@@ -691,14 +685,68 @@ Sub ReadBookDateInfo( oCursor )
 End Sub
 
 &apos; читаем данные для Серий
-Sub ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumber)
+Sub ReadSequencesInfo( oCursor, sArray(), sStyleSequence, sStyleSequenceNumber )
 	ReadSymbolStyle2Info( oCursor, sArray(), sStyleSequence, sStyleSequenceNumber )
 End Sub
 
 &apos; читаем данные для Custom Info
-Sub ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue)
-	ReadSymbolStyle2Info( oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue )
+Sub ReadCustomInfo( oCursor )
+	If ReadSymbolStyle2Info( oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue ) Then
+		oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = Ubound(sCustomInfos())+1
+	End If
 End Sub
+
+&apos; читаем данные для Жанров
+Sub ReadGenreInfo( oCursor )
+	If oCursor.String = &quot;&quot; Then	&apos;
+		Exit Sub
+	End If
+	
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	Dim i As Integer
+	
+	Dim sGenreName As String, sGenreMatch As String
+	oEnum = oCursor.createEnumeration
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.CharStyleName = sStyle_GenreName Then
+				sGenreName = GetGenreInList(oTextPortion.getString())
+				If sGenreName = &quot;&quot; Or sGenreName = &quot;?&quot; Then Exit Sub
+			ElseIf oTextPortion.CharStyleName = sStyle_GenreMatch Then
+				sGenreMatch = oTextPortion.getString()
+			End If
+		Wend
+	Wend
+	
+	If sGenreName &lt;&gt; &quot;&quot; And sGenreName &lt;&gt; &quot;?&quot; Then
+		i = Ubound(sGenres(), 1) + 1
+		If i &gt; 0 Then
+			ReDim Preserve sGenres(i, 1)
+		Else Redim sGenres(i, 1)
+		End If
+		sGenres(i, 0) = sGenreName
+		sGenres(i, 1) = sGenreMatch
+	End If
+	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = Ubound(sGenres())+1
+End Sub
+
+&apos; Проверка, соответствует ли введеный жанр стандартным
+Function GetGenreInList( sGenreName As String ) As String
+	&apos;ищем в массиве нужный жанр
+	Dim sGenre As String
+	Dim i As Integer
+	sGenre = &quot;&quot;
+	For i=0 To UBound(sGLN())
+		If sGLN(i) = Trim(sGenreName) Then
+			sGenre = sGLC(i)
+			Exit For
+		End If
+	Next i
+	GetGenreInList = sGenre
+End Function
 
 &apos; читать данные 2-х символьных стилей
 Function ReadSymbolStyle2Info( oCursor, sArray(), sSymbolStyle1, sSymbolStyle2 ) As Boolean
