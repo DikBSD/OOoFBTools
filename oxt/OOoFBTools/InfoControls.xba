@@ -188,17 +188,11 @@ Function InfoDlgExec As Boolean
 		.SrcLangComboBox.StringItemList = sLangList()
 		.BookTitleField.Text = FindTextOfStyle(sStyleBookTitle, true)
 		.diDateTextField.Text = Date
-		.diDateValueField.Text = Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;)_
-								&amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
+		.diDateValueField.Text = Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
 		.ProgrammUsedField.Text = &quot;ExportToFB21&quot;
 		.IDField.Text = GetNewBookID()
 		.VersionField.Text = &quot;1.0&quot;
 		.KeywordsField.Text = FindTextOfStyle(sStyle_BookKeywords, true)
-		.pubBookNameTextField.Text = FindTextOfStyle(sStyle_PaperBookName, true)
-		.pubPublisherTextField.Text = FindTextOfStyle(sStyle_PaperBookPublisher, true)
-		.pubCityTextField.Text = FindTextOfStyle(sStyle_PaperBookCity, true)
-		.pubYearTextField.Text = FindTextOfStyle(sStyle_PaperBookYear, true)
-		.pubISBNTextField.Text = FindTextOfStyle(sStyle_PaperBookISBN, true)
 	End With
 	
 	Dim oLB As Object
@@ -280,7 +274,9 @@ Function ReadServiceStyles(lProgress As Long)
 			ReadSequencesInfo( oCursor, sPubSequences, sStyle_Sequence, sStyle_SequenceNumber )
 			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
 		Case sStyle_BookDate
-			ReadBookDateInfo( oCursor, sPubSequences, sStyle_BookDateText, sStyle_BookDateValue )
+			ReadBookDateInfo( oCursor )
+		Case sStyle_PaperBook	
+			ReadPaperBookInfo( oCursor )
 		End Select
 		oProgressBar.setValue(lPara) &apos; Статусбар
 	Loop While oCursor.gotoNextParagraph(False)
@@ -600,9 +596,9 @@ Function AddCustomInfos
 	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = i+1
 End Function
 
-Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
+Sub ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 	If oCursor.String = &quot;&quot; Then	&apos;
-		Exit Function
+		Exit Sub
 	End If
 	
 	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
@@ -635,16 +631,63 @@ Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 			End If
 		Wend
 	Wend
-End Function
+End Sub
+
+&apos; читаем данные для Бумажной Книги
+Sub ReadPaperBookInfo( oCursor )
+	If oCursor.String = &quot;&quot; Then	&apos;
+		Exit Sub
+	End If
+	
+	Dim asPaperBook() As String
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	Dim i As Integer
+	
+	i = Ubound(asPaperBook(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve asPaperBook(i, 4)
+	Else Redim asPaperBook(i, 4)
+	End If
+	
+	oEnum = oCursor.createEnumeration
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.CharStyleName = sStyle_PaperBookName Then
+				asPaperBook(i, 0) = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
+				asPaperBook(i, 1) = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
+				asPaperBook(i, 2) = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
+				asPaperBook(i, 3) = oTextPortion.getString()
+			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
+				asPaperBook(i, 4) = oTextPortion.getString()
+			End If
+		Wend
+	Wend
+	If UBound( asPaperBook() ) &lt;&gt; -1 Then
+		With oInfoDlg.Model
+			.pubBookNameTextField.Text = asPaperBook(0,0)
+			.pubPublisherTextField.Text = asPaperBook(0,1)
+			.pubCityTextField.Text = asPaperBook(0,2)
+			.pubYearTextField.Text = asPaperBook(0,3)
+			.pubISBNTextField.Text = asPaperBook(0,4)
+		End With
+	End If
+End Sub
 
 &apos; читаем данные для Даты Написания Книги
-Sub ReadBookDateInfo( oCursor, sPubSequences, sStyle_BookDateText, sStyle_BookDateValue )
+Sub ReadBookDateInfo( oCursor )
 	Dim asBookDate() As String
-	ReadSymbolStyle2Info( oCursor, asBookDate(), sStyle_BookDateText, sStyle_BookDateValue )
-	With oInfoDlg.Model
-		.tiDateTextField.Text = asBookDate(0,0)
-		.tiDateValueField.Text = asBookDate(0,1)
-	End With
+	If ReadSymbolStyle2Info( oCursor, asBookDate(), sStyle_BookDateText, sStyle_BookDateValue ) Then
+		With oInfoDlg.Model
+			.tiDateTextField.Text = asBookDate(0,0)
+			.tiDateValueField.Text = asBookDate(0,1)
+		End With
+	End If
 End Sub
 
 &apos; читаем данные для Серий
