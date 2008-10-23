@@ -199,8 +199,6 @@ Function InfoDlgExec As Boolean
 		.pubCityTextField.Text = FindTextOfStyle(sStyle_PaperBookCity, true)
 		.pubYearTextField.Text = FindTextOfStyle(sStyle_PaperBookYear, true)
 		.pubISBNTextField.Text = FindTextOfStyle(sStyle_PaperBookISBN, true)
-		.tiDateTextField.Text = FindTextOfStyle(sStyle_DateText, true)
-		.tiDateValueField.Text = FindTextOfStyle(sStyle_DateValue, true)
 	End With
 	
 	Dim oLB As Object
@@ -239,6 +237,7 @@ Function InfoDlgExec As Boolean
 	ReadSettings(False)
 	oProgressBar.setValue(8) &apos; Статусбар
 	
+	&apos; читаем и заносим в контролы данныен служебных стилей для Description
 	ReadServiceStyles(8)
 	
 	bAppendBtn = True
@@ -266,20 +265,22 @@ Function ReadServiceStyles(lProgress As Long)
 		Case sStyleBookTitle
 			If bUp = True Then Exit Do
 		Case sStyle_BookAuthor
-			ReadBookAuthorsOrTranslatorsInfo(oCursor, sAuthors)
+			ReadBookAuthorsOrTranslatorsInfo( oCursor, sAuthors )
 			oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
 		Case sStyle_BookTranslator
-			ReadBookAuthorsOrTranslatorsInfo(oCursor, sTranslators)
+			ReadBookAuthorsOrTranslatorsInfo( oCursor, sTranslators )
 			oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
 		Case sStyle_BookSeries
-			ReadSequencesInfo(oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber)
+			ReadSequencesInfo( oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber )
 			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
 		Case sStyle_CustomInfo
-			ReadCustomInfo(oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue)
+			ReadCustomInfo( oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue )
 			oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = Ubound(sCustomInfos())+1
 		Case sStyle_PaperBookSeries
-			ReadSequencesInfo(oCursor, sPubSequences, sStyle_Sequence, sStyle_SequenceNumber)
+			ReadSequencesInfo( oCursor, sPubSequences, sStyle_Sequence, sStyle_SequenceNumber )
 			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
+		Case sStyle_BookDate
+			ReadBookDateInfo( oCursor, sPubSequences, sStyle_BookDateText, sStyle_BookDateValue )
 		End Select
 		oProgressBar.setValue(lPara) &apos; Статусбар
 	Loop While oCursor.gotoNextParagraph(False)
@@ -636,15 +637,25 @@ Function ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
 	Wend
 End Function
 
+&apos; читаем данные для Даты Написания Книги
+Sub ReadBookDateInfo( oCursor, sPubSequences, sStyle_BookDateText, sStyle_BookDateValue )
+	Dim asBookDate() As String
+	ReadSymbolStyle2Info( oCursor, asBookDate(), sStyle_BookDateText, sStyle_BookDateValue )
+	With oInfoDlg.Model
+		.tiDateTextField.Text = asBookDate(0,0)
+		.tiDateValueField.Text = asBookDate(0,1)
+	End With
+End Sub
+
 &apos; читаем данные для Серий
-Function ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumber)
+Sub ReadSequencesInfo(oCursor, sArray(), sStyleSequence, sStyleSequenceNumber)
 	ReadSymbolStyle2Info( oCursor, sArray(), sStyleSequence, sStyleSequenceNumber )
-End Function
+End Sub
 
 &apos; читаем данные для Custom Info
-Function ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue)
+Sub ReadCustomInfo(oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue)
 	ReadSymbolStyle2Info( oCursor, sArray(), sStyleCustomInfoType, sStyleCustomInfoValue )
-End Function
+End Sub
 
 &apos; читать данные 2-х символьных стилей
 Function ReadSymbolStyle2Info( oCursor, sArray(), sSymbolStyle1, sSymbolStyle2 ) As Boolean

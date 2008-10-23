@@ -41,12 +41,15 @@ Public sStyleLevel9 As String
 Public sStyleLevel10 As String
 
 &apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
+&apos; абзацевые
 Public sStyle_BookAnnotation As String
 Public sStyle_BookAuthor As String
 Public sStyle_BookTranslator As String
 Public sStyle_BookSeries As String
 Public sStyle_BookKeywords As String
 Public sStyle_PaperBookSeries As String
+Public sStyle_BookDate As String
+&apos; символьные
 Public sStyle_Name As String
 Public sStyle_Patronymic As String
 Public sStyle_Family As String
@@ -55,8 +58,8 @@ Public sStyle_Email As String
 Public sStyle_WebSite As String
 Public sStyle_Sequence As String
 Public sStyle_SequenceNumber As String
-Public sStyle_DateText As String
-Public sStyle_DateValue As String
+Public sStyle_BookDateText As String
+Public sStyle_BookDateValue As String
 Public sStyle_PaperBookName As String
 Public sStyle_PaperBookPublisher As String
 Public sStyle_PaperBookCity As String
@@ -226,14 +229,16 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_WebSite&quot;).Text = sStyle_WebSite
 	oStylesDlg.GetControl(&quot;tf_Sequence&quot;).Text = sStyle_Sequence
 	oStylesDlg.GetControl(&quot;tf_SequenceNumber&quot;).Text = sStyle_SequenceNumber
-	oStylesDlg.GetControl(&quot;tf_DateText&quot;).Text = sStyle_DateText
-	oStylesDlg.GetControl(&quot;tf_DateValue&quot;).Text = sStyle_DateValue
 
 	oStylesDlg.GetControl(&quot;tf_PaperBookName&quot;).Text = sStyle_PaperBookName
 	oStylesDlg.GetControl(&quot;tf_PaperBookPublisher&quot;).Text = sStyle_PaperBookPublisher
 	oStylesDlg.GetControl(&quot;tf_PaperBookCity&quot;).Text = sStyle_PaperBookCity
 	oStylesDlg.GetControl(&quot;tf_PaperBookYear&quot;).Text = sStyle_PaperBookYear
 	oStylesDlg.GetControl(&quot;tf_PaperBookISBN&quot;).Text = sStyle_PaperBookISBN
+	
+	oStylesDlg.GetControl(&quot;tf_BookDate&quot;).Text = sStyle_BookDate
+	oStylesDlg.GetControl(&quot;tf_DateText&quot;).Text = sStyle_BookDateText
+	oStylesDlg.GetControl(&quot;tf_DateValue&quot;).Text = sStyle_BookDateValue
 	
 	oStylesDlg.GetControl(&quot;tf_CustomInfo&quot;).Text = sStyle_CustomInfo
 	oStylesDlg.GetControl(&quot;tf_CustomInfoType&quot;).Text = sStyle_CustomInfoType
@@ -365,10 +370,13 @@ Function SetStylesInVars(sCurrentLine)
 			sStyle_Sequence	= sStyles(1)
 		Case &quot;tf_SequenceNumber&quot;
 			sStyle_SequenceNumber = sStyles(1)
+			
+		Case &quot;tf_BookDate&quot;
+			sStyle_BookDate = sStyles(1)
 		Case &quot;tf_DateText&quot;
-			sStyle_DateText = sStyles(1)
+			sStyle_BookDateText = sStyles(1)
 		Case &quot;tf_DateValue&quot;
-			sStyle_DateValue = sStyles(1)
+			sStyle_BookDateValue = sStyles(1)
 				
 		Case &quot;tf_PaperBookName&quot;
 			sStyle_PaperBookName = sStyles(1)
@@ -439,11 +447,12 @@ Function SetStylesVarsDefault
 	sStyle_Email		 = &quot;#Email&quot;
 	sStyle_WebSite		 = &quot;#WebSite&quot;
 
-	sStyle_DateText		 = &quot;_Book Date Text&quot;
-	sStyle_DateValue	 = &quot;_Book Date Value&quot;
+	sStyle_BookDate	 		= &quot;#Book Date&quot;
+	sStyle_BookDateText		= &quot;#Book Date Text&quot;
+	sStyle_BookDateValue	= &quot;#Book Date Value&quot;
 	
-	sStyle_Sequence		 = &quot;#Sequence&quot;
-	sStyle_SequenceNumber= &quot;#Sequence Number&quot;
+	sStyle_Sequence		 	= &quot;#Sequence&quot;
+	sStyle_SequenceNumber	= &quot;#Sequence Number&quot;
 	
 	sStyle_PaperBookName		= &quot;_PaperBook Name&quot;
 	sStyle_PaperBookPublisher	= &quot;_PaperBook Publisher&quot;
