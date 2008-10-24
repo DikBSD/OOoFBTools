@@ -298,9 +298,7 @@ Function GetNewBookID() As String
 End Function
 
 Function ConvertingFile
-	Dim oLB As Object
-	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
-	If oLB.SelectedItem = &quot;&quot; Then
+	If oInfoDlg.getControl(&quot;GenreComboBox&quot;).SelectedItem = &quot;&quot; And UBound( sGenres() ) = -1 Then
 		MsgBox &quot;Выберите, пожалуйста, Жанр Книги&quot;, 64, sConvertorName
 		Exit Function
 	End If
@@ -400,8 +398,8 @@ Function AppendBookGenre As Boolean
 	
 	i = Ubound(sGenres(), 1) + 1
 	If i &gt; 0 Then
-		ReDim Preserve sGenres(i, 2)
-	Else Redim sGenres(i, 2)
+		ReDim Preserve sGenres(i, 1)
+	Else Redim sGenres(i, 1)
 	End If
 	sGenres(i, 0) = sGenre
 	If oInfoDlg.Model.NumericFieldMatch.Value = &quot;&quot; Then
@@ -957,9 +955,9 @@ Function ShowGenresCount
 		Next i
 		sStr = sStr &amp; sLine &amp; chr(10)
 	Else
-		If Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text) &lt;&gt; &quot;&quot; Then
+		If Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).SelectedItem) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text) &lt;&gt; &quot;&quot; Then
 			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
-					Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text)
+					Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).SelectedItem) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text)
 		Else
 			sStr = &quot;Список Жанров пуст!&quot;
 		End If
