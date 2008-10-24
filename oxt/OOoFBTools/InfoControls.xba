@@ -274,6 +274,8 @@ Function ReadServiceStyles(lProgress As Long)
 			ReadGenreInfo( oCursor )
 		Case sStyle_CustomInfo
 			ReadCustomInfo( oCursor )
+		Case sStyle_Lang	
+			ReadLangInfo( oCursor )
 		End Select
 		oProgressBar.setValue(lPara) &apos; Статусбар
 	Loop While oCursor.gotoNextParagraph(False)
@@ -687,6 +689,15 @@ End Sub
 Sub ReadCustomInfo( oCursor )
 	If ReadSymbolStyle2Info( oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue ) Then
 		oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = Ubound(sCustomInfos())+1
+	End If
+End Sub
+
+&apos; читаем данные для Языка Книги
+Sub ReadLangInfo( oCursor )
+	Dim asLang() As String
+	If ReadSymbolStyle2Info( oCursor, asLang, sStyle_LangBook, sStyle_LangOriginal ) Then
+		If asLang(0,0) &lt;&gt; &quot;&quot; Then oInfoDlg.GetControl(&quot;LangComboBox&quot;).selectItem(asLang(0,0), True)
+		If asLang(0,1) &lt;&gt; &quot;&quot; Then oInfoDlg.GetControl(&quot;SrcLangComboBox&quot;).selectItem(asLang(0,1), True)
 	End If
 End Sub
 
