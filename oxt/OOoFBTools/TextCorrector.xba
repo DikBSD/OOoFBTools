@@ -24,6 +24,8 @@ Private bBreakLinesInParaEndSymbols As Boolean
 Private bDelMP As Boolean &apos; удаление мягкие переносы
 Private bWordDefisPara As Boolean
 
+Private bDelPB As Boolean &apos; Удаление разрывов страниц
+
 Private bBreakLine As Boolean
 Private bDel As Boolean
 Private bPar As Boolean
@@ -51,7 +53,7 @@ Sub TextCorrector
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
 	With oTextCorrectorDlg.Model
 		.Title  = &quot;Корректор текста документа&quot;
-		.Height = 232
+		.Height = 242
 		.Width  = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -138,6 +140,8 @@ Sub SaveCorrectorSettings
 	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
 	nAnchor = oLB.SelectedItem
 	bDelMP = oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State
+	bDelPB = oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State
+	
 End Sub
 
 Sub SetCorrectorSettingsInControlls(sCurrentLine)
@@ -185,6 +189,8 @@ Sub SetCorrectorSettingDefault
 	oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	&apos; мягкие переносы
 	oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 1
+	&apos; разрывы страниц
+	oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State = 0
 	
 	cboxWordDefisParaEnabled
 	cboxImagesEnabled
@@ -330,6 +336,11 @@ Sub TextCorrectorDlgOk
 	Dim nCur As Integer
 	nCur = 0
 	
+	&apos; удаление разрывов страниц
+	If bDelPB Then
+		DeleteAllPageBreaks()
+	End If
+	
 	&apos; Удаление мягких переносов
 	If bDelMP = True Then
 		DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
@@ -343,7 +354,7 @@ Sub TextCorrectorDlgOk
 			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 		End If
 		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
-		&apos; в тексте, таблицаъ, сносках и врезках
+		&apos; в тексте, таблицах, сносках и врезках
 		JoinWordDefisParaInAllTexts( oProgressBar )
 	End If
 	
@@ -355,7 +366,7 @@ Sub TextCorrectorDlgOk
 		End If
 		If bWordDefisPara = False Then &apos; если обработка дефисов не проводилась
 			&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
-			&apos; в тексте, таблицаъ, сносках и врезках
+			&apos; в тексте, таблицах, сносках и врезках
 			JoinWordDefisParaInAllTexts( oProgressBar )
 		End If
 		oProgressBar.start( &quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount )
@@ -1419,6 +1430,24 @@ Function QuotationMarks( oDoc, oReplace, oProgressBar, nCur )
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
+End Function
+
+&apos; Удаляем все разрывы страниц
+Function DeleteAllPageBreaks() As Long 
+	Dim lCount As Long : lCount = 0
+	Dim oText As Variant : oText = ThisComponent.Text
+	Dim oCursor as Variant
+	oCursor = oText.CreateTextCursor()
+	oCursor.GoToStart(False)
+	Do
+		If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do
+		If NOT IsEmpty(oCursor.PageDescName) Then oCursor.PageDescName = &quot;&quot;
+		If oCursor.BreakType &lt;&gt; com.sun.star.style.BreakType.NONE Then
+			oCursor.BreakType = com.sun.star.style.BreakType.NONE
+			lCount = lCount + 1
+		End If
+	Loop Until NOT oCursor.gotoNextParagraph(False)
+	DeleteAllPageBreaks = lCount
 End Function
 
 </script:module>
