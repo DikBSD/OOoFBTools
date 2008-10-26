@@ -733,7 +733,11 @@ Sub ReadGenreInfo( oCursor )
 		Else Redim sGenres(i, 1)
 		End If
 		sGenres(i, 0) = sGenreName
-		sGenres(i, 1) = sGenreMatch
+		If sGenreMatch = &quot;&quot; Then
+			sGenres(i, 1) = 0
+		Else
+			sGenres(i, 1) = sGenreMatch
+		End If
 	End If
 	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = Ubound(sGenres())+1
 End Sub
