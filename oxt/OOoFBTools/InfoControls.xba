@@ -149,6 +149,13 @@ Sub InitFB22
 	
 End Sub
 
+Sub MakeLangList( aLangList() )
+	aLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
+						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
+						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
+						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
+End Sub
+
 Function InfoDlgExec As Boolean
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
@@ -172,10 +179,7 @@ Function InfoDlgExec As Boolean
 	End If
 	oProgressBar.setValue(3) &apos; Статусбар
 	
-	sLangList() = Array(&quot;ab&quot;,&quot;az&quot;,&quot;be&quot;,&quot;bg&quot;,&quot;cs&quot;,&quot;cy&quot;,&quot;da&quot;,&quot;de&quot;,&quot;el&quot;,&quot;en&quot;,&quot;eo&quot;,&quot;es&quot;,&quot;et&quot;,&quot;fa&quot;,&quot;fi&quot;,_
-						&quot;fr&quot;,&quot;he&quot;,&quot;hr&quot;,&quot;hu&quot;,&quot;hy&quot;,&quot;it&quot;,&quot;ja&quot;,&quot;kk&quot;,&quot;ko&quot;,&quot;ky&quot;,&quot;la&quot;,&quot;lt&quot;,&quot;lv&quot;,&quot;mk&quot;,&quot;mn&quot;,_
-						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
-						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
+	MakeLangList( sLangList() )
 	oProgressBar.setValue(4) &apos; Статусбар
 
 	Dim sNow As String
@@ -1033,7 +1037,7 @@ End Sub
 Sub GEAdd
 	&apos; Добавить жанр в список Избранного
 	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - Добаление Жанра в Избранное&quot;
+	sTitle = sConvertorName &amp; &quot; - Добавление Жанра в Избранное&quot;
 	sGenre = &quot;&quot;
 	For i=0 To UBound(sGLN())
 		If sGLN(i) = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem Then

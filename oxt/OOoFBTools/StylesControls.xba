@@ -76,7 +76,7 @@ Public sStyle_GenreMatch As String
 Public sStyle_LangBook As String
 Public sStyle_LangOriginal As String
 
-Function SetUserStyles
+Function SetUserStyles() As Boolean
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oStylesDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.StylesDlg)
 	
@@ -122,21 +122,21 @@ Function SetUserStyles
 	SetUserStyles = bStyleExecute
 End Function
 
-Function StylesDlgOk
+Sub StylesDlgOk
 	&apos; Принятие стилей
 	If IsFillAllFields = False Then
-		Exit Function
+		Exit Sub
 	End If
 	SaveSettings(sStylesFilename, oStylesDlg) &apos; сохраняем стили в файл
 	
 	bStyleExecute = True
 	oStylesDlg.endExecute()
-End Function
+End Sub
 
-Function StylesDlgCanceled
+Sub StylesDlgCanceled
 	bStyleExecute = False
 	oStylesDlg.endExecute()
-End Function
+End Sub
 
 Function ReadStyles(sFile As String,  bInCtrls As Boolean) As Boolean
 	&apos; Читаем стили и задаем значения контролам формы стилей
@@ -167,7 +167,7 @@ Function ReadStyles(sFile As String,  bInCtrls As Boolean) As Boolean
 	End If
 End Function
 
-Function SetStylesControlsDefault
+Sub SetStylesControlsDefault
 	&apos; // Установка стилей по умолчанию в контролы //
 	
 	&apos; Установка стилей по умолчанию в переменные
@@ -180,9 +180,9 @@ Function SetStylesControlsDefault
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 		SetServiceStylesControlsDefault
 	End If
-End Function
+End Sub
 
-Function SetGeneralStylesControlsDefault
+Sub SetGeneralStylesControlsDefault
 	&apos; // Установка Основных стилей по умолчанию в контролы //
 	&apos; Данные книги
 	oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text = sStyleBookTitle
@@ -215,9 +215,9 @@ Function SetGeneralStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text = sStyleLevel8
 	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text = sStyleLevel9
 	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text = sStyleLevel10
-End Function
+End Sub
 
-Function SetServiceStylesControlsDefault
+Sub SetServiceStylesControlsDefault
 	&apos; // Установка &quot;Служебных&quot; стилей по умолчанию в контролы //
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	&apos; Анотация Книги
@@ -260,9 +260,9 @@ Function SetServiceStylesControlsDefault
 	oStylesDlg.GetControl(&quot;tf_Lang&quot;).Text = sStyle_Lang
 	oStylesDlg.GetControl(&quot;tf_LangBook&quot;).Text = sStyle_LangBook
 	oStylesDlg.GetControl(&quot;tf_LangOriginal&quot;).Text = sStyle_LangOriginal
-End Function
+End Sub
 
-Function SetStylesInVars(sCurrentLine)
+Sub SetStylesInVars(sCurrentLine)
 	Dim sStyles() As String
 	sStyles = Split(sCurrentLine, &quot;=&quot;)
 	Select Case sStyles(0)
@@ -430,9 +430,9 @@ Function SetStylesInVars(sCurrentLine)
 		Case &quot;tf_LangOriginal&quot;
 			sStyle_LangOriginal = sStyles(1)
 	End Select
-End Function
+End Sub
 
-Function SetStylesVarsDefault
+Sub SetStylesVarsDefault
 	&apos; Установка стилей по умолчанию в переменные
 	&apos; Данные книги
 	sStyleBookTitle	 			= &quot;Book Title&quot;
@@ -507,7 +507,7 @@ Function SetStylesVarsDefault
 	sStyle_LangBook	= &quot;#Lang Book&quot;
 	sStyle_LangOriginal	= &quot;#Lang Original&quot;
 
-End Function
+End Sub
 
 Sub ChangeStyles(o)
 	If o.Source.Model.Name		= &quot;optbtnGeneral&quot; Then
@@ -517,7 +517,7 @@ Sub ChangeStyles(o)
 	End If
 End Sub
 
-Function LoadCustomStylesProfile
+Sub LoadCustomStylesProfile
 	&apos; Загрузка названий стилей из файла профиля стилей
 	Dim oFileDlg As Object
 	Dim sArg() As String
@@ -541,12 +541,12 @@ Function LoadCustomStylesProfile
 	End If
 	oFileDlg.Dispose()
 
-End Function
+End Sub
 
-Function SaveCustomStylesProfile
+Sub SaveCustomStylesProfile
 	&apos; Сохранение названий стилей в файл профиля
 	If IsFillAllFields = False Then
-		Exit Function
+		Exit Sub
 	End If
 	
 	Dim oFileDlg As Object
@@ -575,6 +575,6 @@ Function SaveCustomStylesProfile
 		SaveSettings(sFile, oStylesDlg) &apos; сохраняем стили в файл
 	End If
 	oFileDlg.Dispose()	
-End Function
+End Sub
 
 </script:module>

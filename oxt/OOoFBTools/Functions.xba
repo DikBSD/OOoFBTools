@@ -243,10 +243,34 @@ Function DelCR( sTextArray() As String )
 	Next i
 End Function
 
+&apos; /// Работа со строками ///
+&apos; возвращает число подстрок в строке
+Function GetSubStrCount(sStr As String, sSubStr As String) As Integer
+	Dim sArray() As String
+	sArray = Split(sStr, sSubStr)
+	GetSubStrCount = UBound(sArray)
+End Function
+
+&apos; очистка всех стилей в абзаце
+Sub ClearParaStyle()
+	Dim document   As Object, dispatcher As Object
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array())
+	
+	Dim args2(1) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Template&quot;
+	args2(0).Value = &quot;&quot;
+	args2(1).Name = &quot;Family&quot;
+	args2(1).Value = 2
+
+	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2())
+End Sub
+
 &apos; /// Корректура строки ///
 
+&apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert
 Function InsertInString( sSource As String, sBefore As String, sInsert As String )
-	&apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert
 	Dim i As Integer, sStr1 As String, sStr2 As String
 	i = InStr(sSource, sBefore)
 	If i=0 Then
@@ -761,15 +785,6 @@ Function IsFillAllFields As Boolean
 		Exit Function
 	End If
 	IsFillAllFields = True
-End Function
-
-&apos; /// Работа со строками ///
-
-Function GetSubStrCount(sStr As String, sSubStr As String) As Integer
-	&apos; возвращает число подстрок в строке
-	Dim sArray() As String
-	sArray = Split(sStr, sSubStr)
-	GetSubStrCount = UBound(sArray)
 End Function
 
 &apos; //////////// сортировка //////////////

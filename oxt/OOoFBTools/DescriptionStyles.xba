@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="DescriptionStyles" script:language="StarBasic">REM  *****  BASIC  *****
+
+Private oTCurs &apos; текстовый курсор
+Private oDGDlg As Object
+Private oDLDlg As Object
+
+&apos; создание абзаца заданного абзацевого стиля с текстом и выделенными заданными симольными стилями словами
+Sub InsertDataAndStyle( sParaStyle, sDataPara, sData1Name, sData2Name, sData1NameStyle, sData2NameStyle )
+	&apos; очистка стиля исходного абзаца - на всякий случай
+	ClearParaStyle
+	
+	Dim oText, oVCurs, oCursor
+	oText = ThisComponent.getText()
+	oVCurs = ThisComponent.CurrentController.getViewCursor()
+	oTCurs = oText.createTextCursorByRange(oVCurs.getStart())
+&apos;	oText.insertControlCharacter(oTCurs, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+	If Not SetParagraphStyle( sParaStyle ) Then Exit Sub
+	oText.insertString(oTCurs, sDataPara, FALSE)
+	
+	&apos; ищем данные и помечаем его &quot;его&quot; стилем
+	If Not SetSymbolStyle( oTCurs, sData1Name, sData1NameStyle ) Then Exit Sub
+	If sData2Name &lt;&gt; &quot;&quot; Then
+		If Not SetSymbolStyle( oTCurs, sData2Name, sData2NameStyle ) Then Exit Sub
+	End If
+
+	&apos; вставка нового &quot;пустого&quot; абзаца
+	oTCurs.gotoEndOfParagraph(False)
+	oText.insertControlCharacter(oTCurs, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+	
+	&apos; переход на новый абзац - снимаем выделение
+	oVCurs = ThisComponent.getCurrentController().getViewCursor()
+	oVCurs.gotoEndOfLine(False)
+	oVCurs.goRight(1, False)
+	
+	&apos; очистка стиля абзаца
+	ClearParaStyle
+End Sub
+
+&apos; задание абзацу стиля
+Function SetParagraphStyle( sParaStyle As String ) As Boolean
+	SetParagraphStyle = False
+On Error GoTo Errorhandler
+	Dim oSels As Object, oSel As Object, oText As Object
+	oText = ThisComponent.Text
+	oSels = ThisComponent.getCurrentSelection()
+	oSel = oSels.getByIndex(0)
+	oSel.ParaStyleName = sParaStyle
+	SetParagraphStyle = True
+	Exit Function
+Errorhandler:
+	MsgBox &quot;Стиль абзаца: &quot; &amp; sParaStyle &amp; chr(10) &amp; &quot;отсутствует в списке Пользовательских Стилей Абзаца!&quot;, 64, &quot;Служебные стили (Description)&quot;
+	SetParagraphStyle = False
+End Function
+
+&apos; придание заданным словам символьного стиля
+Function SetSymbolStyle( oCursor, sName, sStyle )
+	SetSymbolStyle = False
+On Error GoTo Errorhandler
+	Dim oDocControl : oDocControl = ThisComponent.getCurrentController()
+	oCursor.gotoStartOfParagraph(False)
+	
+	&apos; инициализация позиции курсора
+	oTCurs = oCursor.Text.createTextCursor() 
+	oTCurs.gotoStartOfParagraph(False)
+	oTCurs.gotoRange(oTCurs.getStart(), False)
+
+	&apos; ищем заданное слово
+	oTCurs = oCursor.Text.createTextCursorByRange(oCursor)
+	&apos; поиск и обработка искомого слова
+	If FindNextWordInText( sName ) Then &apos; еще не дошли до конца документа
+		oDocControl.Select( oTCurs ) &apos; выделяем найденное
+		Dim oSel, oSels
+		oSels = ThisComponent.getCurrentSelection()
+		oSel = oSels.getByIndex(0)
+		oSel.CharStyleName = sStyle
+		SetSymbolStyle = True
+		Exit Function
+	End If
+Errorhandler:
+	MsgBox &quot;Стиль символа: &quot; &amp; sStyle &amp; chr(10) &amp; &quot;отсутствует в списке Пользовательских Стилей Символов!&quot;, 64, &quot;Служебные стили (Description)&quot;
+	SetSymbolStyle = False
+End Function
+
+&apos; поиск следующего заданного слова в абзаце
+Function FindNextWordInText( sFind ) As Boolean
+	Dim oDesc, Found
+	oDesc = ThisComponent.createSearchDescriptor()
+	oDesc.SearchRegularExpression = False
+	oDesc.SearchString = sFind
+	
+	oTCurs.collapseToEnd
+	Found = ThisComponent.findNext(oTCurs.getStart(), oDesc)
+	
+	if IsNull(Found) Then &apos; ничего не нашли
+		FindNextWordInText = False
+		Exit Function
+	End If
+
+	oTCurs = Found.Text.createTextCursor()
+	oTCurs.gotorange(Found.getStart(), False)
+	oTCurs.gotorange(Found.getEnd(), True)
+
+	FindNextWordInText = True &apos; нашли 
+End Function
+
+&apos; ////////////////////////////// контролы /////////////////////////
+
+&apos; //////////////// вставка Языка в Служебную область ///////////////////
+&apos; запуск диалога работы со списком выбранных жанров для книги
+Sub ViewDescGenreDlg
+	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	oDGDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.DescGenreDlg)
+	
+	If oDGDlg.Model.obDGFB21.State = 1 Then
+		InitDEFB21 &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitDEFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
+	
+	With oDGDlg.Model
+		.Height = 130
+		.Width = 265
+		.numMatch.Value = &quot;&quot;
+		.lbGenres.StringItemList = sGLN()
+	End With
+	oDGDlg.execute()
+End Sub
+
+Sub InitDEFB21
+	&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
+	GenreFB21
+
+	With oDGDlg.Model
+		.Title = &quot;Вставка Жанров в Служебную область - схема fb2.1&quot;
+		.lbGenres.StringItemList = sGLN()
+	End With
+
+End Sub
+
+Sub InitDEFB22
+	&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
+	GenreFB22
+
+	With oDGDlg.Model
+		.Title = &quot;Вставка Жанров в Служебную область - схема fb2.2&quot;
+		.lbGenres.StringItemList = sGLN()
+	End With
+	
+End Sub
+
+Sub DGAdd
+	&apos; Добавить жанр в список Избранного
+	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
+	sTitle = &quot;Добавление Жанра в Список&quot;
+	sGenre = &quot;&quot;
+	For i=0 To UBound(sGLN())
+		If sGLN(i) = oDGDlg.getControl(&quot;lbGenres&quot;).SelectedItem Then
+			sGenreName = oDGDlg.getControl(&quot;lbGenres&quot;).SelectedItem
+			sGenre = sGLC(i)
+			Exit For
+		End If
+	Next i
+
+	&apos; ищем выделенный жанр в списке
+	aArray = oDGDlg.Model.lbSelectedGenres.StringItemList
+	For i=0 To UBound(aArray())
+		If aArray(i) = sGenreName Then
+			MsgBox &quot;Выбраный жанр &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;уже имеется в списке Жанров.&quot; &amp; chr(10) &amp; _
+					&quot;Пожалуйста, выберите другой жанр книги!&quot;, 64, sTitle
+			oDGDlg.getControl(&quot;lbGenres&quot;).SetFocus()		
+			Exit Sub
+		End If
+	Next i
+	
+	If sGenre = &quot;?&quot; Then
+		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sTitle
+	ElseIf sGenreName &lt;&gt; &quot;&quot; Then
+		Dim sMatch As String
+		If oDGDlg.Model.numMatch.Value = &quot;&quot; Then
+			sMatch = &quot;&quot;
+		Else
+			sMatch = oDGDlg.Model.numMatch.Value
+		End If
+		oDGDlg.Model.numMatch.Value = &quot;&quot;
+
+		sGenreName = sGenreName &amp; &quot; -&gt; &quot; &amp; sMatch
+		oDGDlg.getControl(&quot;lbSelectedGenres&quot;).AddItem(sGenreName, oDGDlg.getControl(&quot;lbSelectedGenres&quot;).ItemCount) &apos; в конец списка
+		oDGDlg.getControl(&quot;lbSelectedGenres&quot;).selectItem(sGenreName, True)
+	Else
+		MsgBox &quot;Пожалуйста, выберите Жанр из выпадающего списка&quot;, 64, sTitle
+	End If
+	oDGDlg.getControl(&quot;lbGenres&quot;).SetFocus()
+	
+End Sub
+
+Sub DGRemove
+	&apos; Удалить жанр из списка Избранного
+	Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = &quot;Удаление Жанра из Списка Выбранных для Книги&quot;
+	oLB = oDGDlg.getControl(&quot;lbSelectedGenres&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;Пожалуйста, выберите Жанр из Списка для удаления&quot;, 64, sTitle
+		Exit Sub
+	End If
+	
+	If	MsgBox(&quot;Вы действительно хотите удалить выбранный жанр из Списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle) = 6 Then
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+	End If
+End Sub
+
+Sub InsertDescGenre()
+	Dim aArray() As String
+	aArray = oDGDlg.Model.lbSelectedGenres.StringItemList
+	If UBound( aArray() ) = -1 Then Exit Sub
+	&apos; читаем стили из файла и заносим их в переменные
+	ReadStyles(getUserPath() &amp; &quot;/OOoFBTools/styles.txt&quot;, False)
+	
+	Dim i As Integer
+	Dim sGenreName As String, sGenreMath As String, sGanrePara As String, sItem As String
+	For i=0 To UBound( aArray() )
+		&apos; определяем Название Жанра и его Match
+		sItem = aArray(i)
+		sGenreName = Trim( Mid( sItem, 1, InStr( sItem, &quot; -&gt; &quot; ) ) )
+		sGenreMath = Trim( Mid( sItem, InStr( sItem, &quot; -&gt; &quot; )+4, Len( sItem ) ) )
+		sGanrePara = &quot;Genre of Book: &quot; &amp; sGenreName &amp; &quot;, Match: &quot; &amp; sGenreMath
+		InsertDataAndStyle( sStyle_Genre, sGanrePara, sGenreName, sGenreMath, sStyle_GenreName, sStyle_GenreMatch  )
+	Next i
+	oDGDlg.endExecute()
+End Sub
+
+&apos; //////////////// вставка Языка в Служебную область ///////////////////
+&apos; запуск диалога работы с языками книги
+Sub ViewDescLangDlg
+	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	oDLDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.DescLangDlg)
+	
+	MakeLangList( sLangList() )
+	With oDLDlg.Model
+		.Title = &quot;Вставка Языка Книги в Служебную область&quot;
+		.Height = 46
+		.Width = 159
+		.lbLangBook.StringItemList = sLangList()
+		.lbLangOriginal.StringItemList = sLangList()
+	End With
+	oDLDlg.getControl(&quot;lbLangBook&quot;).selectItem(&quot;ru&quot;, True)
+	oDLDlg.getControl(&quot;lbLangOriginal&quot;).AddItem(&quot;&quot;, 0)
+	oDLDlg.execute()
+End Sub
+
+Sub InsertDescLang()
+	&apos; читаем стили из файла и заносим их в переменные
+	ReadStyles(getUserPath() &amp; &quot;/OOoFBTools/styles.txt&quot;, False)
+	
+	Dim sLangBook As String, sLangOriginal As String, sLangPara As String
+	sLangBook = oDLDlg.getControl(&quot;lbLangBook&quot;).SelectedItem
+	sLangOriginal = oDLDlg.getControl(&quot;lbLangOriginal&quot;).SelectedItem
+	sLangPara = &quot;Language of Book: &quot; &amp; sLangBook
+	If sLangOriginal &lt;&gt; &quot;&quot; Then
+		sLangPara = sLangPara &amp; &quot;, Original: &quot; &amp; sLangOriginal
+	End If
+	InsertDataAndStyle( sStyle_Lang, sLangPara, sLangBook, sLangOriginal, sStyle_LangBook, sStyle_LangOriginal  )
+	oDLDlg.endExecute()
+End Sub
+
+</script:module>
