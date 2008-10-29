@@ -9,9 +9,9 @@ Private oDLDlg As Object
 &apos; создание абзаца заданного абзацевого стиля с текстом и выделенными заданными симольными стилями словами
 Sub InsertDataAndStyle( sParaStyle, sDataPara, sData1Name, sData2Name, sData1NameStyle, sData2NameStyle )
 	&apos; очистка стиля исходного абзаца - на всякий случай
-	ClearParaStyle
+	ClearParaStyle()
 	
-	Dim oText, oVCurs, oCursor
+	Dim oText, oVCurs
 	oText = ThisComponent.getText()
 	oVCurs = ThisComponent.CurrentController.getViewCursor()
 	oTCurs = oText.createTextCursorByRange(oVCurs.getStart())
@@ -28,14 +28,14 @@ Sub InsertDataAndStyle( sParaStyle, sDataPara, sData1Name, sData2Name, sData1Nam
 	&apos; вставка нового &quot;пустого&quot; абзаца
 	oTCurs.gotoEndOfParagraph(False)
 	oText.insertControlCharacter(oTCurs, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-	
+
 	&apos; переход на новый абзац - снимаем выделение
 	oVCurs = ThisComponent.getCurrentController().getViewCursor()
 	oVCurs.gotoEndOfLine(False)
-	oVCurs.goRight(1, False)
-	
+	oVCurs.goRight(0, False)
+
 	&apos; очистка стиля абзаца
-	ClearParaStyle
+	ClearParaStyle()
 End Sub
 
 &apos; задание абзацу стиля
