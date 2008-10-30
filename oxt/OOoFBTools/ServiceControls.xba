@@ -43,6 +43,8 @@ Function ServiceDlgExec As Boolean
 	&apos; Считываем и устанавливаем настройки
 	ReadSettings(True)
 	
+	cboxExportGraphicsEnabled
+	
 	oServiceDlg.execute()
 
 	&apos; центрирование на экране
@@ -80,11 +82,13 @@ Function ServiceDlgOk
 
 	&apos; Инициализация поиска &quot;служебных стилей&quot;
 	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
+	ReDim  sGenres() As String
 	ReDim  sAuthors() As String
 	ReDim  sTranslators() As String
 	ReDim  sSequences() As String
 	ReDim  sPubSequences() As String
 	ReDim  sCustomInfos() As String
+	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = Ubound(sGenres())+1
 	oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
 	oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
 	oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
@@ -99,5 +103,27 @@ Function ServiceDlgOk
 	oServiceDlg.endExecute()
 
 End Function
+
+Sub cboxExportGraphicsEnabled
+	If oServiceDlg.GetControl(&quot;cboxExportGraphics&quot;).State = 1 Then
+		oServiceDlg.GetControl(&quot;lblGif&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lbGifAs&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lblTif&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lbTifBMPAs&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lblAny&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lbAnyAs&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lblOLE&quot;).Enable = True
+		oServiceDlg.GetControl(&quot;lbOLEAs&quot;).Enable = True
+	Else
+		oServiceDlg.GetControl(&quot;lblGif&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lbGifAs&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lblTif&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lbTifBMPAs&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lblAny&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lbAnyAs&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lblOLE&quot;).Enable = False
+		oServiceDlg.GetControl(&quot;lbOLEAs&quot;).Enable = False
+	End If
+End Sub
 
 </script:module>

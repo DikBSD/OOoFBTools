@@ -813,6 +813,16 @@ Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 		End If
 	End If
 	
+	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
+	If bExportGraphics Then
+		SaveGraphicToFile( oContent, bIsTextGraphic, sExt )
+	End If
+	
+	iImgCurrent = iImgCurrent+1
+	sPrevStyle = &quot;Image&quot;
+End Sub
+
+Sub	SaveGraphicToFile( oContent As Object, bIsTextGraphic As Boolean, sExt As String)
 	&apos; экспорт картинки в файл
 	Dim sFileNameURL As String, sFD As Object
 	&apos; определяем тип документа
@@ -835,9 +845,6 @@ Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
 	
 	&apos; кодирование картинки
 	CodeToBase64( sFileNameURL, sExt )
-	
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
 End Sub
 
 &apos; возвращает путь к будущему mime-файлу в зависимости от системы

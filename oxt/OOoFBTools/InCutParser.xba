@@ -448,34 +448,17 @@ End Function
 
 &apos; создание картинки из графических объектов для текстовых врезок и таблиц
 Sub MakeTableInCutGraphic( oContent As Object, bIsTextGraphic As Boolean )
+	
 	&apos; определяем тип (расширение) картинки
 	Dim sExt As String
 	sExt = GetGraphicType( oContent, bIsTextGraphic )
 	&apos; приведение расширения графики к допустимому для fb2-читалок
 	sExt = ValidateFileExt( sExt )
 	
-	&apos; экспорт картинки в файл
-	Dim sFileNameURL As String, sFD As Object
-	&apos; определяем тип документа
-	sFD = GetFileData( ThisComponent.getURL() )
-	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-		If bIsTextGraphic Then
-			sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
-			If Mid( sFileNameURL, 1, 1 ) &lt;&gt; &quot;/&quot; AND InStr( sFileNameURL, &quot;file:/&quot; ) &lt; 1 Then &apos; нет &quot;нормального&quot; пути к файлу
-				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-				ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
-			End If
-		Else &apos; для формул и диаграмм
-			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-			ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
-		End If
-	Else
-		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
+	If bExportGraphics Then
+		SaveGraphicToFile( oContent, bIsTextGraphic, sExt )
 	End If
-	
-	&apos; кодирование картинки
-	CodeToBase64( sFileNameURL, sExt )
 	
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
