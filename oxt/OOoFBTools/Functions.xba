@@ -838,10 +838,10 @@ End Function
 Function getHomePath() As String
 	Dim oPathSubst
 	oPathSubst = createUnoService(&quot;com.sun.star.util.PathSubstitution&quot;)
-	getHomePath =  oPathSubst.getSubstituteVariableValue(&quot;$(home)&quot;)
+	getHomePath = oPathSubst.getSubstituteVariableValue(&quot;$(home)&quot;)
 End Function
 
-&apos; Возвращает путь к ВРЕМЕННОЙ  папке Ooo
+&apos; Возвращает путь к ВРЕМЕННОЙ  папке OOo
 Function getTempPath() As String
 	Dim oPathSettings
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
@@ -850,23 +850,24 @@ End Function
 
 &apos; возвращает временную папку для OOoFBTools (в зависимости от системы)
 Function getOOoFBToolsTempPath() As String
-	If IsWindowsOS() Then
+	If GetOS() = 0 Then &apos; Windows
 		getOOoFBToolsTempPath = ConvertFromUrl( getTempPath() ) &amp; &quot;\ooofbtools-tmp&quot;
-	Else
+	Else &apos; Mac OS X, Linux, FreeBSD и т.д.
 		getOOoFBToolsTempPath = &quot;/tmp/ooofbtools-tmp&quot;
 	End If
 End Function
 
-&apos; что за система
-Function IsWindowsOS() As Boolean
-	&apos; Возвращает True для Windows, и False для всех остальных систем
+&apos; что за система: 0 - Windows, 1 - Mac OS X, 2 - Linux, FreeBSD и т.д.
+Function GetOS() As Integer
 	Dim oPathSettings, sDir As String
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
 	sDir = oPathSettings.Work
-	If Mid( sDir, 1, 13 ) &lt;&gt; &quot;file:///home/&quot; Then
-		IsWindowsOS = True
+	If InStr( sDir, &quot;file:///home/&quot; ) &gt; 0 Then
+		GetOS = 2 &apos; Linux, FreeBSD и т.д.
+	ElseIf InStr( sDir, &quot;file:///Users/&quot; ) &gt; 0 Then
+		GetOS = 1 &apos; Mac OS X
 	Else
-		IsWindowsOS = False
+		GetOS = 0 &apos; Windows
 	End If
 End Function
 
@@ -915,7 +916,7 @@ End Sub
 &apos; /// Валидация ///
 
 Sub Validate( sFB2File As String )
-	If Not IsWindowsOS Then
+	If GetOS() &gt; 0 Then
 		MsgBox( &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;, 64, &quot;Валидация fb2-файлов&quot; )
 		Exit Sub
 	End If

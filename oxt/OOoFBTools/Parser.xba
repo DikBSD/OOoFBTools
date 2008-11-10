@@ -849,9 +849,9 @@ End Sub
 
 &apos; возвращает путь к будущему mime-файлу в зависимости от системы
 Function GetOOoFBToolsImageURL( sExt As String ) As String
-	If IsWindowsOS() Then &apos; для Windows-системы
+	If GetOS() = 0 Then &apos; для Windows-системы
 		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
-	Else &apos; для Unix-систем
+	Else &apos; для Mac OS X - системы и Unix-систем
 		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
 	End If
 End Function
@@ -903,7 +903,7 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 	Dim sMimeFile As String
 	Dim sScript As String
 	Dim i As Integer
-	If IsWindowsOS() Then &apos; для Windows-системы
+	If GetOS() = 0 Then &apos; для Windows-системы
 		&apos; данные картинки и ее расширение
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;\base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
 		&apos; генерируем скрипт
