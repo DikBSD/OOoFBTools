@@ -125,6 +125,10 @@ Sub ViewDescGenreDlg
 		.numMatch.Value = &quot;&quot;
 		.lbGenres.StringItemList = sGLN()
 	End With
+	
+	&apos; файл Избранных Жанров
+	sGEFilename = getUserPath() &amp; &quot;/OOoFBTools/mygenre.txt&quot;
+	
 	oDGDlg.execute()
 End Sub
 
@@ -245,6 +249,23 @@ Sub InsertDescGenre()
 	Next i
 	oDGDlg.endExecute()
 End Sub
+
+Sub DescGenreElite_Focus
+	Dim aArray() As String
+	ReadFileInArray( aArray(), sGEFilename )
+	oDGDlg.Model.lbDescGenreElite.StringItemList = aArray
+End Sub
+
+&apos; вставка Избранного Жанра в основной бокс Жанров
+Sub InsertGEToDescGenreBox(oEvent)
+	&apos; убираем chr(10) изназвания жанра - строки листбокса
+	Dim sCR As String : sCR = oEvent.source.getSelectedItem
+	If InStr(sCR, chr(10)) &gt; 0 Then
+		sCR = ReplaceInString( sCR, chr(10), &quot;&quot;, False )
+	End If
+	oDGDlg.getControl(&quot;lbGenres&quot;).selectItem( sCR, True )
+End Sub
+
 
 &apos; //////////////// вставка Языка в Служебную область ///////////////////
 &apos; запуск диалога работы с языками книги

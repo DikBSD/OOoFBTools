@@ -1099,15 +1099,20 @@ Sub GERemove
 	End If
 End Sub
 
+&apos; сохраняем список Избранных Жанров в файл
 Sub GEOK
-	&apos; сохраняем список Избранных Жанров в файл
 	Dim aArray() As String
 	aArray = oGEDlg.Model.lbGE.StringItemList
 	If UBound(aArray()) &gt; -1 Then
 		SaveArray( aArray(), sGEFilename)
-		oInfoDlg.Model.lbGenreElite.StringItemList = aArray()
 	End If
 	oGEDlg.endExecute()
+End Sub
+
+Sub GenreElite_Focus
+	Dim aArray() As String
+	ReadFileInArray( aArray(), sGEFilename )
+	oInfoDlg.Model.lbGenreElite.StringItemList = aArray
 End Sub
 
 &apos; вставка Избранного Жанра в основной бокс Жанров
