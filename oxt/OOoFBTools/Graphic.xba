@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Graphic" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Type tFileData	&apos; для хранения данных файла
+	sFileUrl As String
+	sFile As String
+	sName As String
+	sExt As String
+End Type
+
+&apos; //////////////////////////////////////// Графика //////////////////////////////////////////////////////
+&apos; парсер обложек книги
+Sub MakeCoverParser
+	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
+	Dim oPar As Object 		&apos;Перебираемый параграф
+	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
+	Dim oSect As Object 	&apos;Перебиремый текстовый раздел (section)
+	Dim oCEnum As Object 	&apos;Перебирает содержимое, такое как графические объекты
+	Dim oContent As Object 	&apos;Перебираемое содержимое
+	Dim textGraphService As String, graphicService As String, customShapeService As String
+	
+	textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
+
+	oParEnum = ThisComponent.getText().createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
+					oContent.supportsService(customShapeService) Then
+					&apos; нашли обложку книги, привязанной к параграфу
+					MakeCoverTag( oContent )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Frame&quot; Then
+							&apos; Парсер Текстовой Врезки
+						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+							&apos; нашли обложку книги - формулу, привязанную к параграфу
+							MakeCoverTag( oContent )
+						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; нашли обложку книги - диаграмму, привязанную к параграфу
+							MakeCoverTag( oContent )
+						End If
+					End If
+				End If
+			Loop
+
+			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты, которые привязаны к символу, или вставлены как символы
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()
+				If oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
+					Do While oCEnum.hasMoreElements()
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
+							oContent.supportsService(customShapeService) Then
+							&apos; нашли обложку книги, привязанной к символу
+							MakeCoverTag( oContent )
+						Else
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Frame&quot; Then
+									&apos; Парсер Текстовой Врезки
+								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+									&apos; нашли обложку книги - формулу, привязанную к символу
+									MakeCoverTag( oContent )
+								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; нашли обложку книги - диаграмму, привязанную к символу
+									MakeCoverTag( oContent )
+								End If
+							End If
+						End If
+					Loop
+				End If
+			Loop
+			&apos; Теперь - если стиль абзаца - Название Книги, то выход - дальше обложек быть не может
+			If oPar.ParaStyleName = sStyleBookTitle Then
+				Exit Sub
+			End If
+		End If
+	Loop
+End Sub
+
+&apos; добавляем данные об очередной картинке-обложке в массив
+Sub MakeCoverTag( oContent As Object )
+	&apos; заносим тэги обложек в массив
+	Dim sExt As String
+	sExt = GetGraphicExt( oContent )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	Dim i As Integer
+	i = Ubound(Covers()) + 1
+	ReDim Preserve Covers(i)
+	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+End Sub
+
+&apos; данные графики и ее расширение
+Function GetGraphicExt( ByVal oContent As Object ) As String
+	Dim sExt As String, sFD As tFileData, i As Integer
+	If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Then &apos; Картинки 
+		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
+		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
+			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
+			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+			sExt = sFD.sExt
+		Else
+			&apos; Картинка &quot;встроена&quot; в файл:
+			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+		End if
+	Else &apos; OLE (Диаграммы) или Formula:
+		&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+		sExt = sOLEAs
+	End if
+	GetGraphicExt = sExt
+End Function
+
+&apos; приведение расширения графики к допустимому для fb2-читалок
+Function ValidateFileExt( sExt As String ) As String
+	If LCase(sExt) &lt;&gt; &quot;png&quot; And LCase(sExt) &lt;&gt; &quot;jpeg&quot; And LCase(sExt) &lt;&gt; &quot;jpg&quot; Then
+		If sExt = LCase(&quot;gif&quot;) Then
+			sExt = sGifAs
+		ElseIf sExt = LCase(&quot;tif&quot;) Or sExt = LCase(&quot;tiff&quot;) Or sExt = LCase(&quot;bmp&quot;) Then
+			sExt = sTifBMPAs &apos; для &quot;основных&quot; растровых форматов
+		Else
+			sExt = sAnyAs &apos; для остальных форматов, включая векторные
+		End If
+	End If
+	ValidateFileExt = sExt
+End Function
+
+&apos; создание картинки из графических объектов
+Sub MakeGraphic( oContent As Object, bIsText As Boolean )
+	&apos; определяем тип (расширение) картинки
+	Dim sExt As String
+	sExt = GetGraphicExt( oContent )
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	
+	If bIsText Then &apos; Только для основного текста документа (не для таблиц и Врезок)
+		&apos; создание тэгов картинок
+		If oContent.AnchorType = 1 Then
+			sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+		Else
+			If bSaveImageTitle=True Then
+				AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			Else
+				AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			End If
+		End If
+	End If
+	
+	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
+	If bExportGraphics Then
+		SaveGraphicToFile( oContent, sExt )
+	End If
+	
+	iImgCurrent = iImgCurrent+1
+	sPrevStyle = &quot;Image&quot;
+End Sub
+
+&apos; сохранение картинки в файл png или jpg
+Sub	SaveGraphicToFile( oContent As Object, sExt As String)
+	Dim sFileNameURL As String, sFD As tFileData
+	
+	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+		MkDir getOOoFBToolsTempPath()
+	End If
+
+	If FileExists( GetOOoFBToolsImageURL( sExt ) ) Then
+		Kill GetOOoFBToolsImageURL( sExt )
+	End If
+	
+	If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Then &apos; Картинки 
+		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
+		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
+			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
+			sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+			&apos; Доделать - преобразование файла в png или jpj (как в настройках), и копирование его в рабочую временную папку
+			If FileExists( sFileNameURL ) Then
+				FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
+			End If
+			sFileNameURL = GetOOoFBToolsImageURL( sExt )
+		Else
+			&apos; Картинка &quot;встроена&quot; в файл:
+			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+			ExportGraphicToFile( oContent, sFileNameURL, sExt )
+		End if
+	Else &apos; OLE (Диаграммы) или Formula:
+		&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+		ExportGraphicToFile( oContent, sFileNameURL, sExt )
+	End if
+	
+	&apos; кодирование картинки
+	CodeToBase64( sFileNameURL, sExt )
+End Sub
+
+&apos; возвращает путь к будущему mime-файлу в зависимости от системы
+Function GetOOoFBToolsImageURL( sExt As String ) As String
+	If GetOS() = 0 Then &apos; для Windows-системы
+		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
+	Else &apos; для Mac OS X - системы и Unix-систем
+		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
+	End If
+End Function
+
+&apos; экспорт картинки в файл
+Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt As String )
+	Dim sFileExt As String : sFileExt = sExt
+	Dim oGP As Object, oGraphic As Object
+	Dim args(3) As New com.sun.star.beans.PropertyValue
+	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
+
+	If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Then &apos; Картинки 
+		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
+			&apos; Картинка &quot;встроена&quot; в файл:
+			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+			oGraphic = oContent.Graphic
+		End if
+	Else &apos; OLE (Диаграммы) или Formula:
+		&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+		oGraphic = oContent.ReplacementGraphic
+	End if
+	
+	&apos; для jpg-файлов приводим mime-тип к правильному значению
+	If LCase(sExt) = &quot;jpg&quot; Then
+		sFileExt = &quot;jpeg&quot;
+	End If
+
+	args(0).Name  = &quot;MimeType&quot;
+	args(0).Value = &quot;image/&quot; &amp; sFileExt
+	args(1).Name  = &quot;URL&quot;
+	args(1).Value = ConvertToURL( sFileNameURL )
+	args(2).Name  = &quot;Compression&quot;
+	args(2).Value = 1
+	args(3).Name  =&quot;Interlaced&quot;
+	args(3).Value = 0
+	
+	&apos; сохраняем картинку
+	oGP.storeGraphic(oGraphic, args)
+End Sub
+
+&apos; генерируем base64-код картинок, формул и диаграм
+Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
+	&apos; удаляем временный файл-скрипт
+	Dim sFileImageScript As String : sFileImageScript = getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
+	If FileExists( sFileImageScript ) Then
+		Kill sFileImageScript
+	End If
+	
+	&apos; кодируем картинки
+	Dim sMimeFile As String, sScript As String
+	If GetOS() = 0 Then &apos; для Windows-системы
+		&apos; данные картинки и ее расширение
+		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;\base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+		
+		&apos; генерируем скрипт
+		sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL(getRootStorage( &quot;DikBSD.OOoFBTools&quot; )) &amp; &quot;\win32\base64.exe&quot;&quot; &quot; &amp; _
+				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile
+		Dim sBatFile As String : sBatFile = getOOoFBToolsTempPath() &amp; &quot;\OOoFBTools-base64.bat&quot;
+		SaveText( sBatFile, sScript, &quot;utf-8&quot; )
+		
+		&apos; конвертируем картинку в base64
+		Shell( sBatFile, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
+	Else &apos; для Unix-систем
+		&apos; данные картинки и ее расширение
+		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot; &amp; sMimeFile
+		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
+
+		&apos; делаем скрипт исполняемым
+		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+	
+		&apos; конвертируем картинку в base64
+		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+	End If
+
+	If FileExists( sMimeFile ) Then
+		&apos; добавляем расширение очередной картинки в массив
+		Dim i As Integer : i = Ubound(Images()) + 1
+		ReDim Preserve Images(i)
+		Images(i) = sExt
+	End If
+End Sub
+
+&apos; /////////////////////////////////
+&apos; возвращает данные файла
+Function GetFileData( sFileUrl As String ) As tFileData
+	Dim sFD As tFileData
+	Dim i As Integer, sExt As String
+	Dim j As Integer : j = 0
+	For i=1 To Len(sFileUrl)-1
+		If Mid(sFileUrl, i, 1) = &quot;.&quot; Then
+			j=i+1
+		End If
+	Next i
+	
+	If j&gt;0 Then
+		sExt = Mid(sFileUrl, j, Len(sFileUrl))
+	Else
+		sExt = &quot;?&quot;
+	End If
+	
+	sFD.sFileUrl = sFileUrl
+	sFD.sFile = Dir(ThisComponent.getURL, 0)
+	If sExt &lt;&gt; &quot;?&quot; Then
+		sFD.sName = Mid( sFileUrl, 1, Len(sFileUrl) - (Len(sExt)+1) )
+	Else
+		sFD.sName = sFileUrl
+	End If
+	sFD.sExt = sExt
+	
+	GetFileData = sFD
+End Function
+
+</script:module>

@@ -4,13 +4,6 @@
 Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
-Type tFileData	&apos; для хранения данных файла
-	sFileUrl As String
-	sFile As String
-	sName As String
-	sExt As String
-End Type
-
 &apos; /// Работа с файлами ///
 
 &apos; Пуст ли файл
@@ -31,26 +24,6 @@ Function IsFileEmpty( sFileInput As String ) As Boolean
 		oTIS.closeInput()
 	End If
 	IsFileEmpty = bFileEmpty
-End Function
-
-&apos; возвращает данные файла
-Function GetFileData( sFileUrl As String ) As tFileData
-	Dim sFD As tFileData
-	Dim i As Integer, sExt As String
-	Dim j As Integer : j = 0
-	For i=1 To Len(sFileUrl)-1
-		If Mid(sFileUrl, i, 1) = &quot;.&quot; Then
-			j=i+1
-		End If
-	Next i
-	sExt = Mid(sFileUrl, j, Len(sFileUrl))
-	
-	sFD.sFileUrl = sFileUrl
-	sFD.sFile = Dir(ThisComponent.getURL, 0)
-	sFD.sName = Mid( sFileUrl, 1, Len(sFileUrl) - (Len(sExt)+1) )
-	sFD.sExt = sExt
-	
-	GetFileData = sFD
 End Function
 
 Function SaveArray( aArray() As String, sFile As String )

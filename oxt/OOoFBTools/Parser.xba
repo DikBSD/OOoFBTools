@@ -20,7 +20,6 @@ Public lBATIndex As Long 	&apos; Указатель на индекс ячейк
 Public sFootnoteText() As String
 Dim iFootnoteCount As Integer
 Dim iImgCurrent As Integer		&apos; для формирования номера картинки
-Dim iCurrentTable As Integer	&apos; номер текушей таблицы
 Dim sPrevStyle As String		&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
 Dim sPara As String				&apos; отформатированный текст параграфа
 
@@ -37,7 +36,6 @@ Sub DocumentParser
 	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
 
-	iCurrentTable = 0	&apos; номер текущей таблицы, если она есть
 	iImgCurrent = 0		&apos; номер текущей картинки, если она есть
 	
 	lBATIndex = -1 &apos; пока нет ни Автора Книги, ни Названия Книги
@@ -49,7 +47,7 @@ Sub DocumentParser
 		&apos; сначала ищем таблицы
 		If oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
 			&apos; парсер таблицы
-			OOo23TextTableParser(iCurrentTable)
+			OOo23TextTableParser( oPar )
 		ElseIf oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
@@ -57,7 +55,7 @@ Sub DocumentParser
 				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
 					oContent.supportsService(customShapeService) Then
 					&apos; парсер графики, привязанной к параграфу
-					TextGraphicObjectParser(oContent)
+					MakeGraphic( oContent, True )
 				Else
 					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -66,10 +64,10 @@ Sub DocumentParser
 							TextFrameParser(oContent)
 						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 							&apos; парсер формулы, привязка &quot;параграф&quot;
-							OLEParser( oContent )
+							MakeGraphic( oContent, True )
 						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 							&apos; парсер диаграм, привязка &quot;параграф&quot;
-							OLEParser( oContent )
+							MakeGraphic( oContent, True )
 						End If
 					End If
 				End If
@@ -99,7 +97,7 @@ Sub DocumentParser
 						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
 							oContent.supportsService(customShapeService) Then
 							&apos; парсер графики, привязанной к символу
-							TextGraphicObjectParser(oContent)
+							MakeGraphic( oContent, True )
 						Else
 							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -108,10 +106,10 @@ Sub DocumentParser
 									TextFrameParser(oContent)
 								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 									&apos; парсер формулы, привязка &quot;символ&quot;
-									OLEParser( oContent )
+									MakeGraphic( oContent, True )
 								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; парсер диаграм, привязка &quot;символ&quot;
-									OLEParser( oContent )
+									MakeGraphic( oContent, True )
 								End If
 							End If
 						End If
@@ -457,16 +455,6 @@ Function FormatFootnoteText(oSect)
 	End If
 End Function
 
-&apos; парсер графики TextGraphicObject
-Sub TextGraphicObjectParser( oContent As Object )
-	MakeGraphic( oContent, True )
-End Sub
-
-&apos; парсер формул и диаграмм
-Sub OLEParser( oContent As Object )
-	MakeGraphic( oContent, False )
-End Sub
-
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
 	Dim l As Long
 	l = Ubound(sBodyParagraphs(), 1) + 1
@@ -637,315 +625,136 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 	FootnoteStyleParser = sParaType
 End Function
 
+&apos; //////////////////////////////////////// Маркеры и Нумерованные Списки //////////////////////////////////////////////////////
+
 &apos; Обработка нумерованных и маркированных списков
 Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
 	&apos; sFormatPara - текст абзаца без тэгов форматирования
 	&apos; sFormatPara - текст абзаца с тэгами форматирования
-	If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
+	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
+		IsMarker( oPar )
 		Dim oRN, oRNI
 		oRN = oPar.NumberingRules
 		oRNI = oRN.getByIndex(0)
-		If UBound( oRNI ) = 9 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
+		Dim n As Integer : n = IsMarker( oPar )
+		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
 			Dim sNumber As String, sPos As String
 			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
 			sPos = Mid(sStringPara, 1,1)
 			If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then sFormatPara = ReplaceInString( sFormatPara, sPos, sNumber &amp; &quot; &quot; &amp; sPos, True )
 			MakeNumberingNumberPara = sFormatPara	
-		ElseIf UBound( oRNI ) = 13 Then &apos; маркированные списки - маркер не виден в строке oPar.getString()
-			If oRNI(11).Name &lt;&gt; &quot;BulletChar&quot; Then &apos;маркеры-картинки заменяем на •
-				MakeNumberingNumberPara = &quot;• &quot; &amp; sFormatPara
-			Else
-				MakeNumberingNumberPara = oRNI(11).Value &amp; &quot; &quot; &amp; sFormatPara
+		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
+			If n = 1 Then &apos; GraphicBitman
+				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
+				Dim sMarkerPara As String : sMarkerPara = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; sFormatPara
+				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
+				MakeNumberingNumberPara = sMarkerPara
+&apos;				MakeNumberingNumberPara = &quot;• &quot; &amp; sFormatPara &apos; маркеры-картинки заменяем на •
+			Else &apos; BulletChar
+				MakeNumberingNumberPara = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
 			End If
 		End If
 	End If
 End Function
 
-&apos; парсер обложек книги
-Sub MakeCoverParser
-	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
-	Dim oPar As Object 		&apos;Перебираемый параграф
-	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
-	Dim oSect As Object 	&apos;Перебиремый текстовый раздел (section)
-	Dim oCEnum As Object 	&apos;Перебирает содержимое, такое как графические объекты
-	Dim oContent As Object 	&apos;Перебираемое содержимое
-	Dim textGraphService As String, graphicService As String, customShapeService As String
-	
-	textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
-	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
-
-	oParEnum = ThisComponent.getText().createEnumeration()
-	Do While oParEnum.hasMoreElements()
-		oPar = oParEnum.nextElement()
-		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
-			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
-			Do While oCEnum.hasMoreElements()
-				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
-					oContent.supportsService(customShapeService) Then
-					&apos; нашли обложку книги, привязанной к параграфу
-					MakeCoverTag( oContent, True )
-				Else
-					&apos; Привязка к параграфу
-					If oContent.ShapeType = &quot;FrameShape&quot; Then
-						If oContent.FrameStyleName = &quot;Frame&quot; Then
-							&apos; Парсер Текстовой Врезки
-						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
-							&apos; нашли обложку книги - формулу, привязанную к параграфу
-							MakeCoverTag( oContent, False )
-						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
-							&apos; нашли обложку книги - диаграмму, привязанную к параграфу
-							MakeCoverTag( oContent, False )
-						End If
-					End If
-				End If
-			Loop
-
-			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты, которые привязаны к символу, или вставлены как символы
-			oSectEnum = oPar.createEnumeration()
-			Do While oSectEnum.hasMoreElements()
-				oSect = oSectEnum.nextElement()
-				If oSect.TextPortionType = &quot;Frame&quot; Then
-					oCEnum = oSect.createContentEnumeration(textGraphService)
-					Do While oCEnum.hasMoreElements()
-						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
-							oContent.supportsService(customShapeService) Then
-							&apos; нашли обложку книги, привязанной к символу
-							MakeCoverTag( oContent, True )
-						Else
-							If oContent.ShapeType = &quot;FrameShape&quot; Then
-								If oContent.FrameStyleName = &quot;Frame&quot; Then
-									&apos; Парсер Текстовой Врезки
-								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
-									&apos; нашли обложку книги - формулу, привязанную к символу
-									MakeCoverTag( oContent, False )
-								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; нашли обложку книги - диаграмму, привязанную к символу
-									MakeCoverTag( oContent, False )
-								End If
-							End If
-						End If
-					Loop
-				End If
-			Loop
-			&apos; Теперь - если стиль абзаца - Название Книги, то выход - дальше обложек быть не может
-			If oPar.ParaStyleName = sStyleBookTitle Then
-				Exit Sub
-			End If
-		End If
-	Loop
-End Sub
-
-&apos; добавляем данные об очередной картинке-обложке в массив
-Sub MakeCoverTag( oContent As Object, bIsTextGraphic As Boolean )
-	&apos; заносим тэги обложек в массив
-	Dim sExt As String
-	sExt = GetGraphicType( oContent, bIsTextGraphic )
-	&apos; приведение расширения графики к допустимому для fb2-читалок
-	sExt = ValidateFileExt( sExt )
+&apos; Что за абзац: 0 - нумерованный список, 1 или 2 - маркер
+Function IsMarker( oPar ) As Integer
+	&apos; У Маркерованных списков oRNI(?).Name=&quot;GraphicBitman&quot; или oRNI(?).Name=&quot;BulletChar&quot; 
+	Dim oRN, oRNI
 	Dim i As Integer
-	i = Ubound(Covers()) + 1
-	ReDim Preserve Covers(i)
-	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-End Sub
-
-&apos; данные графики и ее расширение
-Function GetGraphicType( ByVal oContent As Object, bIsTextGraphic As Boolean ) As String
-	Dim sExt As String, sUrl As String, sFD As Object, i As Integer
-	
-	&apos; определяем тип документа
-	sFD = GetFileData( ThisComponent.getURL() )
-	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-		&apos; картинки лежат все конвертируемого файла (html, ...)
-		If bIsTextGraphic Then
-			sUrl = ConvertFromURL( oContent.GraphicUrl )
-			If Mid( sUrl, 1, 1 ) &lt;&gt; &quot;/&quot; AND InStr( sUrl, &quot;file:/&quot; ) &lt; 1 Then &apos; нет &quot;нормального&quot; пути к файлу
-				sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
-			Else
-				sFD = GetFileData( sUrl )
-				sExt = sFD.sExt
-			End If
-		Else &apos; для формул и диаграм
-			sExt = sOLEAs
+	oRN = oPar.NumberingRules
+	oRNI = oRN.getByIndex(0)
+	For i=0 To UBound( oRNI )
+		If oRNI(i).Name = &quot;GraphicBitmap&quot; Then
+			IsMarker = 1
+			Exit Function
+		ElseIf oRNI(i).Name = &quot;BulletChar&quot; Then
+			IsMarker = 2
+			Exit Function
 		End If
-	Else
-		&apos; картинки лежат внутри конвертируемого файла (odt, doc, rtf...)
-		If bIsTextGraphic Then
-			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
-		Else &apos; для формул и диаграм
-			sExt = sOLEAs
-		End If
-	End If
-	GetGraphicType = sExt
+	Next i
+	IsMarker = 0
 End Function
 
-&apos; приведение расширения графики к допустимому для fb2-читалок
-Function ValidateFileExt( sExt As String ) As String
-	If LCase(sExt) &lt;&gt; &quot;png&quot; And LCase(sExt) &lt;&gt; &quot;jpeg&quot; And LCase(sExt) &lt;&gt; &quot;jpg&quot; Then
-		If sExt = LCase(&quot;gif&quot;) Then
-			sExt = sGifAs
-		ElseIf sExt = LCase(&quot;tif&quot;) Or sExt = LCase(&quot;tiff&quot;) Or sExt = LCase(&quot;bmp&quot;) Then
-			sExt = sTifBMPAs &apos; для &quot;основных&quot; растровых форматов
-		Else
-			sExt = sAnyAs &apos; для остальных форматов, включая векторные
+&apos; Получить символ маркера
+Function GetBulletChar( oPar ) As String
+	Dim oRN, oRNI
+	Dim i As Integer
+	oRN = oPar.NumberingRules
+	oRNI = oRN.getByIndex(0)
+	For i=0 To UBound( oRNI )
+		If oRNI(i).Name = &quot;BulletChar&quot; Then
+			GetBulletChar = oRNI(i).Value
+			Exit Function
 		End If
-	End If
-	ValidateFileExt = sExt
+	Next i
 End Function
 
-&apos; создание картинки из графических объектов
-Sub MakeGraphic( oContent As Object, bIsTextGraphic As Boolean )
-	&apos; определяем тип (расширение) картинки
-	Dim sExt As String
-	sExt = GetGraphicType( oContent, bIsTextGraphic )
-	&apos; приведение расширения графики к допустимому для fb2-читалок
-	sExt = ValidateFileExt( sExt )
-	&apos; создание тэгов картинок
-	If oContent.AnchorType = 1 Then
-		sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-	Else
-		If bSaveImageTitle=True Then
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-		Else
-			AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-		End If
-	End If
-	
+&apos; создание картинки маркера
+Sub MakeMarkerGraphic( oGraphic As Object, sExt As String )
 	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
 	If bExportGraphics Then
-		SaveGraphicToFile( oContent, bIsTextGraphic, sExt )
+		SaveMarkerGraphicToFile( oGraphic, sExt )
 	End If
 	
 	iImgCurrent = iImgCurrent+1
 	sPrevStyle = &quot;Image&quot;
 End Sub
 
-Sub	SaveGraphicToFile( oContent As Object, bIsTextGraphic As Boolean, sExt As String)
-	&apos; экспорт картинки в файл
-	Dim sFileNameURL As String, sFD As Object
-	&apos; определяем тип документа
-	sFD = GetFileData( ThisComponent.getURL() )
-	If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-		If bIsTextGraphic Then
-			sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
-			If Mid( sFileNameURL, 1, 1 ) &lt;&gt; &quot;/&quot; AND InStr( sFileNameURL, &quot;file:/&quot; ) &lt; 1 Then &apos; нет &quot;нормального&quot; пути к файлу
-				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-				ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
-			End If
-		Else &apos; для формул и диаграмм
-			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-			ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
-		End If
-	Else
-		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-		ExportGraphicToFile( oContent, bIsTextGraphic, sFileNameURL, sExt )
+&apos; сохранение картинки в файл png или jpg
+Sub	SaveMarkerGraphicToFile( oGraphic As Object, sExt As String )
+	
+	Dim sFileNameURL As String 
+	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+		MkDir getOOoFBToolsTempPath()
 	End If
+
+	If FileExists( GetOOoFBToolsImageURL( sExt ) ) Then
+		Kill GetOOoFBToolsImageURL( sExt )
+	End If
+	
+	sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+	ExportMarkerGraphicToFile( oGraphic, sFileNameURL, sExt )
 	
 	&apos; кодирование картинки
 	CodeToBase64( sFileNameURL, sExt )
 End Sub
 
-&apos; возвращает путь к будущему mime-файлу в зависимости от системы
-Function GetOOoFBToolsImageURL( sExt As String ) As String
-	If GetOS() = 0 Then &apos; для Windows-системы
-		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
-	Else &apos; для Mac OS X - системы и Unix-систем
-		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
-	End If
-End Function
-
-&apos; экспорт картинки в файл
-Sub ExportGraphicToFile( oContent As Object, bIsTextGraphic As String, sFileNameURL As String, ByVal sExt As String )
-	Dim sFileExt As String : sFileExt = sExt
-	Dim oGP As Object, oGraphic As Object
+&apos; преобразование маркера-картинки в нужный формат в файл.
+Sub ExportMarkerGraphicToFile( oGraphic As Object, sFileNameURL As String, sExt As String )
+	Dim oGP As Object
 	Dim args(3) As New com.sun.star.beans.PropertyValue
 	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
 
-	If bIsTextGraphic Then
-		oGraphic = oContent.Graphic
-	Else
-		oGraphic = oContent.ReplacementGraphic
-	End If
-	
-	&apos; для jpg-файлов приводим mime-тип к правильному значению
 	If LCase(sExt) = &quot;jpg&quot; Then
 		sFileExt = &quot;jpeg&quot;
 	End If
-
-	If FileExists( sFileNameURL ) Then
-		Kill sFileNameURL
-	End If
-
+	
 	args(0).Name  = &quot;MimeType&quot;
-	args(0).Value = &quot;image/&quot; &amp; sFileExt
+	args(0).Value = &quot;image/&quot; &amp; sExt
 	args(1).Name  = &quot;URL&quot;
 	args(1).Value = ConvertToURL( sFileNameURL )
 	args(2).Name  = &quot;Compression&quot;
 	args(2).Value = 1
-	args(3).Name  =&quot;Interlaced&quot;
+	args(3).Name  = &quot;Interlaced&quot;
 	args(3).Value = 0
 	
 	&apos; сохраняем картинку
 	oGP.storeGraphic(oGraphic, args)
 End Sub
 
-&apos; генерируем base64-код картинок, формул и диаграм
-Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
-	&apos; удаляем временные файлы-скрипты
-	Dim sFileImage As String : sFileImage = getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;
-	If FileExists( sFileImage ) Then
-		Kill sFileImage
-	End If
-	
-	&apos; кодируем картинки
-	Dim sMimeFile As String
-	Dim sScript As String
+&apos; Возвращает Графику Макера
+Function GetMarkerGraphic( oPar ) As Object
+	Dim oRN, oRNI
 	Dim i As Integer
-	If GetOS() = 0 Then &apos; для Windows-системы
-		&apos; данные картинки и ее расширение
-		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;\base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
-		&apos; генерируем скрипт
-		sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL(getRootStorage( &quot;DikBSD.OOoFBTools&quot; )) &amp; &quot;\win32\base64.exe&quot;&quot; &quot; &amp; _
-				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile
-		Dim sBatFile As String : sBatFile = getOOoFBToolsTempPath() &amp; &quot;\OOoFBTools-base64.bat&quot;
-		SaveText( sBatFile, sScript, &quot;utf-8&quot; )
-		&apos; конвертируем картинку в base64
-		Shell( sBatFile, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
-	Else &apos; для Unix-систем
-		&apos; данные картинки и ее расширение
-		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
-	
-&apos;		Dim sFD As Object
-		&apos; определяем тип документа
-&apos;		sFD = GetFileData( ThisComponent.getURL() )
-&apos;		If LCase( sFD.sExt ) = &quot;html&quot; Or LCase( sFD.sExt ) = &quot;htm&quot; Then
-&apos;			If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
-&apos;				MkDir getOOoFBToolsTempPath()
-&apos;			End If
-&apos;			FileCopy sGraphicUrl, getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы (base64 почему-то не воспринимает)
-			&apos; генерируем скрипт
-&apos;			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/1.&quot; &amp; sExt &amp; &quot; &gt;&gt; &quot; &amp; sMimeFile
-&apos;		Else
-			&apos; генерируем скрипт
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot; &amp; sMimeFile
-&apos;		End If
-		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-
-		&apos; делаем скрипт исполняемым
-		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
-	
-		&apos; конвертируем картинку в base64
-		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
-	End If
-
-	If FileExists( sMimeFile ) Then
-		&apos; добавляем расширение очередной картинки в массив
-		i = Ubound(Images()) + 1
-		ReDim Preserve Images(i)
-		Images(i) = sExt
-	End If
-End Sub
+	oRN = oPar.NumberingRules
+	oRNI = oRN.getByIndex(0)
+	For i=0 To UBound( oRNI )
+		If oRNI(i).Name = &quot;GraphicBitmap&quot; Then
+			GetMarkerGraphic = oRNI(i).Value
+			Exit Function
+		End If
+	Next i
+End Function
 
 </script:module>

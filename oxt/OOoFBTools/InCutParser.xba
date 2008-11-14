@@ -54,16 +54,16 @@ Sub TextFrameTableParser( oContent As Object )
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
 							&apos; графика внутри Текстовой Врезки
-							sExt = GetValidateForFB2FileExt( oContent, True )
+							sExt = GetValidateForFB2FileExt( oContent )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							MakeTableInCutGraphic( oContent, True )
+							MakeGraphic( oContent, False )
 						Else
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; формулы и диаграммы
-									sExt = GetValidateForFB2FileExt( oContent, False )
+									sExt = GetValidateForFB2FileExt( oContent )
 									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-									MakeTableInCutGraphic( oContent, False )
+									MakeGraphic( oContent, False )
 								End If
 							End If
 						End If
@@ -103,9 +103,9 @@ Sub TextFrameTableParser( oContent As Object )
 		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
 			&apos; парсер таблицы
 			Dim sT As String, sTI As String, nMaxCol As Integer
-			nMaxCol = GetMaxColInTable( ThisComponent.getTextTables().getByIndex( iCurrentTable ) )
+			nMaxCol = GetMaxColInTable( oPar )
 			If nMaxCol &gt; nMaxCollCount Then nMaxCollCount = nMaxCol
-			sT = OOo23TextTableParserForTextInCut( iCurrentTable )
+			sT = OOo23TextTableParserForTextInCut( oPar )
 			sTI = ReplaceInString( sT, &quot;&lt;table&gt;&quot; &amp; chr(10), &quot;&quot;, False )
 			sTI = ReplaceInString( sTI, chr(10) &amp; &quot;&lt;/table&gt;&quot;, &quot;&quot;, False )
 			AddNewItemTotTableRowsInCutArray( TableRows, sTI &amp; chr(10), True )
@@ -153,16 +153,16 @@ Sub TextFrameCiteParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sExt = GetValidateForFB2FileExt( oContent, True )
+							sExt = GetValidateForFB2FileExt( oContent )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							MakeTableInCutGraphic( oContent, True )
+							MakeGraphic( oContent, False )
 						Else
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; формулы и диаграммы
-									sExt = GetValidateForFB2FileExt( oContent, False )
+									sExt = GetValidateForFB2FileExt( oContent )
 									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-									MakeTableInCutGraphic( oContent, False )
+									MakeGraphic( oContent, False )
 								End If
 							End If
 						End If
@@ -195,7 +195,7 @@ Sub TextFrameCiteParser( oContent As Object )
 			End If
 		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
 			&apos; парсер таблицы
-			sCite = sCite &amp; OOo23TextTableParserForTextInCut( iCurrentTable ) &amp; chr(10)
+			sCite = sCite &amp; OOo23TextTableParserForTextInCut( oPar ) &amp; chr(10)
 		End If
 	Loop
 	&apos; обработка начала и конца строки
@@ -225,24 +225,24 @@ Sub TextFrameTextParser( oContent As Object )
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
 							&apos; графика внутри Текстовой Врезки - как отдельный тэг
-							sExt = GetValidateForFB2FileExt( oContent, True )
+							sExt = GetValidateForFB2FileExt( oContent )
 							If oContent.AnchorType = 1 Then
 								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							Else
 								sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
 							End If
-							MakeTableInCutGraphic( oContent, True )
+							MakeGraphic( oContent, False )
 						Else
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; формулы и диаграммы
-									sExt = GetValidateForFB2FileExt( oContent, False )
+									sExt = GetValidateForFB2FileExt( oContent )
 									If oContent.AnchorType = 1 Then
 										sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 									Else
 										sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
 									End If
-									MakeTableInCutGraphic( oContent, False )
+									MakeGraphic( oContent, False )
 								End If
 							End If
 						End If
@@ -275,7 +275,7 @@ Sub TextFrameTextParser( oContent As Object )
 			End If
 		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
 			&apos; парсер таблицы
-			sText = sText &amp; OOo23TextTableParserForTextInCut( iCurrentTable ) &amp; chr(10)
+			sText = sText &amp; OOo23TextTableParserForTextInCut( oPar ) &amp; chr(10)
 		End If
 	Loop
 	
@@ -304,7 +304,7 @@ Sub TextFrameStructParser( oContent As Object )
 						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 							oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
-							sExt = GetValidateForFB2FileExt( oContent, True )
+							sExt = GetValidateForFB2FileExt( oContent )
 							If oContent.AnchorType = 1 Then &apos; картинка, как символ
 								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							Else
@@ -312,12 +312,12 @@ Sub TextFrameStructParser( oContent As Object )
 								AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
 								sPrevStyle = &quot;Image&quot;
 							End If
-							MakeTableInCutGraphic( oContent, True )
+							MakeGraphic( oContent, False )
 						Else
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; парсер формул и диаграм
-									sExt = GetValidateForFB2FileExt( oContent, True )
+									sExt = GetValidateForFB2FileExt( oContent )
 									If oContent.AnchorType = 1 Then &apos; картинка, как символ
 										sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 									Else
@@ -325,7 +325,7 @@ Sub TextFrameStructParser( oContent As Object )
 										AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
 										sPrevStyle = &quot;Image&quot;
 									End If
-									MakeTableInCutGraphic( oContent, True )
+									MakeGraphic( oContent, False )
 								End If
 							End If
 						End If
@@ -349,7 +349,7 @@ Sub TextFrameStructParser( oContent As Object )
 		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
 			&apos; парсер таблицы
 			Dim sTable as String
-			sTable = OOo23TextTableParserForTextInCut( iCurrentTable )
+			sTable = OOo23TextTableParserForTextInCut( oPar )
 			&apos;sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
 			AddBodyArray(sTable, &quot;Table&quot;, False)
 		End If
@@ -357,16 +357,11 @@ Sub TextFrameStructParser( oContent As Object )
 End Sub
 
 &apos; парсер таблиц внутри Текстовой Врезки
-Function OOo23TextTableParserForTextInCut( iCurrentTable As Integer ) As String
+Function OOo23TextTableParserForTextInCut( oTable As Object ) As String
 	Dim nHeaderRowCount As Integer
-	Dim oTables As Object, oTable As Object
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
 	Dim iCel As Integer &apos; текушая ячейка
 	Dim CellNames
-	&apos; все таблицы документа
-	oTables = ThisComponent.getTextTables() 
-	&apos; получаем текущую таблицу
-	oTable = oTables.getByIndex(iCurrentTable)
 	iCel = 0 &apos; текушая ячейка
 	CellNames = oTable.getCellNames()
 	
@@ -380,7 +375,6 @@ Function OOo23TextTableParserForTextInCut( iCurrentTable As Integer ) As String
 		&apos;Сложная таблица с разным числом столбцов в строке
 		sTable = MakeComplexTable(nHeaderRowCount, oTable, CellNames)
 	End If	
-	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
 	OOo23TextTableParserForTextInCut = sTable
 End Function
 
@@ -393,13 +387,13 @@ Function ImagesTextInCutParser( oContent As Object, sExt As String ) As String
 	End If
 End Function
 
-Function AddNewItemTotTableRowsInCutArray( sArray() As tTableRowsInCut, sStr As String, isTable As Boolean )
+Sub AddNewItemTotTableRowsInCutArray( sArray() As tTableRowsInCut, sStr As String, isTable As Boolean )
 	Dim j As Long
 	j = Ubound(sArray()) + 1
 	ReDim Preserve sArray(j)
 	sArray(j).str = sStr
 	sArray(j).isTable = isTable
-End Function
+End Sub
 
 &apos; вставляем colspan для строки из 1-й ячейки (colspan=nCollMaxInTable)
 Function InsertColspanForInCutRow( sText As String, nCollMaxInTable As Integer ) As String
@@ -436,32 +430,14 @@ Function MakeStartEndOfText( sText As String ) As String
 	MakeStartEndOfText = sText
 End Function
 
-&apos; возвращает валидное расширение файла
-Function GetValidateForFB2FileExt( oContent As Object, bIsTextGraphic as Boolean ) As String
+&apos; возвращает валидное расширение файла Графики
+Function GetValidateForFB2FileExt( oContent As Object ) As String
 	&apos; определяем тип (расширение) картинки
 	Dim sExt As String
-	sExt = GetGraphicType( oContent, bIsTextGraphic )
+	sExt = GetGraphicExt( oContent )
 	&apos; приведение расширения графики к допустимому для fb2-читалок
 	sExt = ValidateFileExt( sExt )
 	GetValidateForFB2FileExt = sExt
 End Function
-
-&apos; создание картинки из графических объектов для текстовых врезок и таблиц
-Sub MakeTableInCutGraphic( oContent As Object, bIsTextGraphic As Boolean )
-	
-	&apos; определяем тип (расширение) картинки
-	Dim sExt As String
-	sExt = GetGraphicType( oContent, bIsTextGraphic )
-	&apos; приведение расширения графики к допустимому для fb2-читалок
-	sExt = ValidateFileExt( sExt )
-	
-	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
-	If bExportGraphics Then
-		SaveGraphicToFile( oContent, bIsTextGraphic, sExt )
-	End If
-	
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Sub
 
 </script:module>

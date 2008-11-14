@@ -19,16 +19,11 @@ Function GetHeaderRowCount( oTable As Object) As Integer
 	End If
 End Function
 
-Function OOo23TextTableParser(iCurrentTable As Integer)
+Sub OOo23TextTableParser( oTable As Object )
 	Dim nHeaderRowCount As Integer
-	Dim oTables As Object, oTable As Object
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
 	Dim iCel As Integer &apos; текушая ячейка
 	Dim CellNames
-	&apos; все таблицы документа
-	oTables = ThisComponent.getTextTables() 
-	&apos; получаем текущую таблицу
-	oTable = oTables.getByIndex(iCurrentTable)
 	iCel = 0 &apos; текушая ячейка
 	CellNames = oTable.getCellNames()
 	
@@ -41,14 +36,14 @@ Function OOo23TextTableParser(iCurrentTable As Integer)
 	Else
 		&apos;Сложная таблица с разным числом столбцов в строке
 		sTable = MakeComplexTable(nHeaderRowCount, oTable, CellNames)
-	End If	
-	iCurrentTable = iCurrentTable + 1 &apos; на следующую таблицу, если она есть
+	End If
 	sPrevStyle = &quot;Table&quot;
 	AddBodyArray(sTable, &quot;Table&quot;, False)
-End Function
+End Sub
 
 &apos; форматирование стилями каждого абзаца ячейки oCell
 Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As Integer ) As String
+	On Error GoTo ErrHndlr &apos; в случае очень сложной таблицы (ими богаты html-файлы) при сбое ф-ции работа не прерывается, а просто ята ячейка не экспортируется. Лучше так, чем ничего :-)
 	Dim oCellParEnum, oCellPar, oWordEnum, oWord
 	Dim sRes As String, sFormatPara As String
 	oCellParEnum = oCell.createEnumeration()
@@ -68,16 +63,16 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 						oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Or _
 						oContent.supportsService(&quot;com.sun.star.drawing.CustomShape&quot;) Then
 						&apos; парсер картинок
-						sExt = GetValidateForFB2FileExt( oContent, True )
+						sExt = GetValidateForFB2FileExt( oContent )
 						sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-						MakeTableInCutGraphic( oContent, True )
+						MakeGraphic( oContent, False )
 					Else
 						If oContent.ShapeType = &quot;FrameShape&quot; Then
 							If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
 								&apos; парсер формул и диаграм
-								sExt = GetValidateForFB2FileExt( oContent, False )
+								sExt = GetValidateForFB2FileExt( oContent )
 								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-								MakeTableInCutGraphic( oContent, False )
+								MakeGraphic( oContent, False )
 							End If
 						End If
 					End If
@@ -96,9 +91,9 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 				End If
 			End If
 		Loop
-		
+
 		If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
-			MakeNumberingNumberPara( oCellPar, sString, sFormatPara )
+			sFormatPara = MakeNumberingNumberPara( oCellPar, sString, sFormatPara )
 		End If
 		
 		&apos; задаем аттрибуты
@@ -136,6 +131,7 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		End If
 		
 	Loop
+ErrHndlr:
 	sRes = Mid( sRes, 1, Len(sRes)-1 )
 	FormatCellPara = sRes
 End Function
