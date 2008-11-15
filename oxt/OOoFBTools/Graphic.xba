@@ -273,12 +273,25 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		
 		&apos; конвертируем картинку в base64
 		Shell( sBatFile, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
-	Else &apos; для Unix-систем
+	ElseIf GetOS() = 1 Then &apos; для mac Os X
+		&apos; данные картинки и ее расширение
+		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
+		
+		&apos; генерируем скрипт
+		sScript = &quot;openssl base64 -in &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; -out &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
+		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
+
+		&apos; делаем скрипт исполняемым
+		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+	
+		&apos; конвертируем картинку в base64
+		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+	Else &apos; для Linux и других Unix-систем
 		&apos; данные картинки и ее расширение
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
 
 		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot; &amp; sMimeFile
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 
 		&apos; делаем скрипт исполняемым
