@@ -629,7 +629,7 @@ End Function
 
 &apos; Обработка нумерованных и маркированных списков
 Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
-	&apos; sFormatPara - текст абзаца без тэгов форматирования
+	&apos; sStringPara - текст абзаца без тэгов форматирования
 	&apos; sFormatPara - текст абзаца с тэгами форматирования
 	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
 		IsMarker( oPar )
@@ -638,10 +638,9 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 		oRNI = oRN.getByIndex(0)
 		Dim n As Integer : n = IsMarker( oPar )
 		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
-			Dim sNumber As String, sPos As String
+			Dim sNumber As String
 			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
-			sPos = Mid(sStringPara, 1,1)
-			If sFormatPara &lt;&gt; &quot;&quot; And sPos &lt;&gt; &quot;&quot; Then sFormatPara = ReplaceInString( sFormatPara, sPos, sNumber &amp; &quot; &quot; &amp; sPos, True )
+			If sFormatPara &lt;&gt; &quot;&quot; Then sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
 			MakeNumberingNumberPara = sFormatPara	
 		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If n = 1 Then &apos; GraphicBitman

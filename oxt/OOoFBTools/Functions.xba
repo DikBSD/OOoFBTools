@@ -243,7 +243,7 @@ End Sub
 &apos; /// Корректура строки ///
 
 &apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert
-Function InsertInString( sSource As String, sBefore As String, sInsert As String )
+Function InsertInString( sSource As String, sBefore As String, sInsert As String ) As String
 	Dim i As Integer, sStr1 As String, sStr2 As String
 	i = InStr(sSource, sBefore)
 	If i=0 Then
@@ -253,11 +253,12 @@ Function InsertInString( sSource As String, sBefore As String, sInsert As String
 	sStr1 = Mid( sSource, 1, Instr(sSource, sBefore)-1 )
 	sStr2 = Mid( sSource, Instr(sSource, sBefore)+1, Len(sSource) )
 	sSource = sStr1 &amp; sInsert &amp; sStr2
+	InsertInString = sSource
 End Function
 
+&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
+&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
 Function ReplaceFromString( sSource As String, sDel As String, sReplace As String ) As Integer
-	&apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
-	&apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
 	If sSource = &quot;&quot; Then
 		ReplaceFromString = 0
 		Exit Function
