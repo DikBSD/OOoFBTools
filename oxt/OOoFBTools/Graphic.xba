@@ -278,7 +278,7 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
 		
 		&apos; генерируем скрипт
-		sScript = &quot;openssl base64 -in &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; -out &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;openssl base64 -in &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; -out &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 
 		&apos; делаем скрипт исполняемым

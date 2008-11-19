@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="MarkersAndNumbers" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+&apos; //////////////////////////////////////// Маркеры и Нумерованные Списки //////////////////////////////////////////////////////
+
+&apos; Обработка нумерованных и маркированных списков
+Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
+	&apos; sStringPara - текст абзаца без тэгов форматирования
+	&apos; sFormatPara - текст абзаца с тэгами форматирования
+	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
+		IsMarker( oPar )
+		Dim oRN, oRNI
+		oRN = oPar.NumberingRules
+		oRNI = oRN.getByIndex(0)
+		Dim n As Integer : n = IsMarker( oPar )
+		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
+			Dim sNumber As String
+			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
+			If sFormatPara &lt;&gt; &quot;&quot; Then sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
+			MakeNumberingNumberPara = sFormatPara	
+		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
+			If n = 1 Then &apos; GraphicBitman
+				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
+				Dim sMarkerPara As String : sMarkerPara = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot; &quot; &amp; sFormatPara
+				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
+				MakeNumberingNumberPara = sMarkerPara
+&apos;				MakeNumberingNumberPara = &quot;• &quot; &amp; sFormatPara &apos; маркеры-картинки заменяем на •
+			Else &apos; BulletChar
+				MakeNumberingNumberPara = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
+			End If
+		End If
+	End If
+End Function
+
+&apos; Что за абзац: 0 - нумерованный список, 1 или 2 - маркер
+Function IsMarker( oPar ) As Integer
+	&apos; У Маркерованных списков oRNI(?).Name=&quot;GraphicBitman&quot; или oRNI(?).Name=&quot;BulletChar&quot; 
+	Dim oRN, oRNI
+	Dim i As Integer
+	oRN = oPar.NumberingRules
+	oRNI = oRN.getByIndex(0)
+	For i=0 To UBound( oRNI )
+		If oRNI(i).Name = &quot;GraphicBitmap&quot; Then
+			IsMarker = 1
+			Exit Function
+		ElseIf oRNI(i).Name = &quot;BulletChar&quot; Then
+			IsMarker = 2
+			Exit Function
+		End If
+	Next i
+	IsMarker = 0
+End Function
+
+&apos; Получить символ маркера
+Function GetBulletChar( oPar ) As String
+	Dim oRN, oRNI
+	Dim i As Integer
+	oRN = oPar.NumberingRules
+	oRNI = oRN.getByIndex(0)
+	For i=0 To UBound( oRNI )
+		If oRNI(i).Name = &quot;BulletChar&quot; Then
+			GetBulletChar = oRNI(i).Value
+			Exit Function
+		End If
+	Next i
+End Function
+
+&apos; создание картинки маркера
+Sub MakeMarkerGraphic( oGraphic As Object, sExt As String )
+	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
+	If bExportGraphics Then
+		SaveMarkerGraphicToFile( oGraphic, sExt )
+	End If
+	
+	iImgCurrent = iImgCurrent+1
+	sPrevStyle = &quot;Image&quot;
+End Sub
+
+&apos; сохранение картинки в файл png или jpg
+Sub	SaveMarkerGraphicToFile( oGraphic As Object, sExt As String )
+	
+	Dim sFileNameURL As String 
+	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+		MkDir getOOoFBToolsTempPath()
+	End If
+
+	If FileExists( GetOOoFBToolsImageURL( sExt ) ) Then
+		Kill GetOOoFBToolsImageURL( sExt )
+	End If
+	
+	sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+	ExportMarkerGraphicToFile( oGraphic, sFileNameURL, sExt )
+	
+	&apos; кодирование картинки
+	CodeToBase64( sFileNameURL, sExt )
+End Sub
+
+&apos; преобразование маркера-картинки в нужный формат в файл.
+Sub ExportMarkerGraphicToFile( oGraphic As Object, sFileNameURL As String, sExt As String )
+	Dim oGP As Object
+	Dim args(3) As New com.sun.star.beans.PropertyValue
+	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
+
+	If LCase(sExt) = &quot;jpg&quot; Then
+		sFileExt = &quot;jpeg&quot;
+	End If
+	
+	args(0).Name  = &quot;MimeType&quot;
+	args(0).Value = &quot;image/&quot; &amp; sExt
+	args(1).Name  = &quot;URL&quot;
+	args(1).Value = ConvertToURL( sFileNameURL )
+	args(2).Name  = &quot;Compression&quot;
+	args(2).Value = 1
+	args(3).Name  = &quot;Interlaced&quot;
+	args(3).Value = 0
+	
+	&apos; сохраняем картинку
+	oGP.storeGraphic(oGraphic, args)
+End Sub
+
+&apos; Возвращает Графику Макера
+Function GetMarkerGraphic( oPar ) As Object
+	Dim oRN, oRNI
+	Dim i As Integer
+	oRN = oPar.NumberingRules
+	oRNI = oRN.getByIndex(0)
+	For i=0 To UBound( oRNI )
+		If oRNI(i).Name = &quot;GraphicBitmap&quot; Then
+			GetMarkerGraphic = oRNI(i).Value
+			Exit Function
+		End If
+	Next i
+End Function
+
+</script:module>
