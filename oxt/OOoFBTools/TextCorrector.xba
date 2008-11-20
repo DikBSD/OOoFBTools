@@ -377,8 +377,8 @@ Sub TextCorrectorDlgOk
 		End If
 	End If
 
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 96)
-	oProgressBar.setValue(nCur) &apos; 0
+	oProgressBar.start(&quot;Корректировка документа:&quot;, 98)
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
 	If bDelEmptyPar = True Then
@@ -386,26 +386,26 @@ Sub TextCorrectorDlgOk
 		oReplace.SearchString = &quot;^$&quot;
 		oReplace.ReplaceString = &quot;&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 1
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	If bBreakLine = True Then
 		&apos; Разрывы строк
 		If bDel = True Then
 			&apos; Удаляем разрыв строки
-			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
+			oReplace.SearchString = chr(10)
 			oReplace.ReplaceString = &quot;&quot;
 		ElseIf bPar = True Then
 			&apos; Заменяем разрыв строки на абзац
-			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
+			oReplace.SearchString = chr(10)
 			oReplace.ReplaceString = &quot;\n&quot;
 		ElseIf bSpace = True Then
 			&apos; Заменяем разрыв строки на 1 пробел
-			oReplace.SearchString = chr(10)&apos;&quot;\n&quot;
+			oReplace.SearchString = chr(10
 			oReplace.ReplaceString = &quot; &quot;
 		End If
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 2
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	&apos; Кавычки, Дефисы, Разное
@@ -414,17 +414,17 @@ Sub TextCorrectorDlgOk
 		oReplace.SearchString = &quot;--&quot;
 		oReplace.ReplaceString = &quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 3
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = chr(8211) &amp; chr(8211)
 		oReplace.ReplaceString = &quot; — &quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 4
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	If bHyphenToDash = True Then
 		&apos; Заменить, дефис используемый вместо тире на тире
-		&apos;(Речь, между слов, но не в &quot;какой-то, где-то...&quot;)
+		&apos; (В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
 		HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
 	End If
 	If bDefis = True Then
@@ -432,7 +432,19 @@ Sub TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\&gt;-\&lt;&quot;
 		oReplace.ReplaceString = chr(8211)
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 57
+		oProgressBar.setValue(nCur)
+		nCur = nCur+1
+		
+		oReplace.SearchString = &quot;\&gt;- \&lt;&quot;
+		oReplace.ReplaceString = chr(8211)
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(nCur)
+		nCur = nCur+1
+		
+		oReplace.SearchString = &quot;\&gt; -\&lt;&quot;
+		oReplace.ReplaceString = chr(8211)
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	If bPoints = True Then
@@ -440,12 +452,12 @@ Sub TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\.\.\.&quot;
 		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 58
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\. \. \.&quot;
 		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 59
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	If bKav = True Then
@@ -457,42 +469,42 @@ Sub TextCorrectorDlgOk
 		oReplace.SearchString = &quot;\(c\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 76
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(с\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 77
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(C\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 78
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(С\)&quot;
 		oReplace.ReplaceString = &quot;©&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 79
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(r\)&quot;
 		oReplace.ReplaceString = &quot;®&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 80
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(R\)&quot;
 		oReplace.ReplaceString = &quot;®&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 81
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(TM\)&quot;
 		oReplace.ReplaceString = &quot;™&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 82
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		oReplace.SearchString = &quot;\(ТМ\)&quot;
 		oReplace.ReplaceString = &quot;™&quot;
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur) &apos; 83
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	
@@ -510,7 +522,7 @@ Sub DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 	oReplace.SearchString = &quot;\x00AD&quot;
 	oReplace.ReplaceString = &quot;&quot;
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 93
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 End Sub
 
@@ -621,7 +633,7 @@ Sub JoinWordDefisParaInText( oProgressBar As Object )
 	&apos; поиск с регулярными выражениями
 	With vSearch
 		.SearchRegularExpression = True
-		.SearchString = &quot;[-–]$&quot;
+		.SearchString = &quot;[-&quot; &amp; chr(8211) &amp; &quot;]$&quot;
 	End With
 	&apos; Находим первый идентификатор
 	vStartFound = oDoc.findFirst(vSearch)
@@ -682,7 +694,7 @@ Sub JoinWordDefisParaInTables( oProgressBar As Object )
 		&apos; Создать дескриптор поиска
 		vSearch = oDoc.createSearchDescriptor()
 		With vSearch
-			.SearchString = &quot;[-–]$&quot;
+			.SearchString = &quot;[-&quot; &amp; chr(8211) &amp; &quot;]$&quot;
 			.SearchRegularExpression = True
 		End With
 	
@@ -752,7 +764,7 @@ Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
 		&apos; Создать дескриптор поиска
 		vSearch = oDoc.createSearchDescriptor()
 		With vSearch
-			.SearchString = &quot;[-–]$&quot;
+			.SearchString = &quot;[-&quot; &amp; chr(8211) &amp; &quot;]$&quot;
 			.SearchRegularExpression = True
 		End With
 	
@@ -815,7 +827,7 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressB
 			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		ElseIf bDefisWordDeAll Then
 			&apos; еще и для слов удаляем и перенос, и символ абзаца
-			RegReplaceSymbol( &quot;[-–]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+			RegReplaceSymbol( &quot;[-&quot; &amp; chr(8211) &amp; &quot;]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		End If
 	End If
@@ -992,7 +1004,7 @@ Function DeletePunctMarkInString( byval sString As String ) As String
 End Function
 
 &apos; Заменить, дефис используемый вместо тире на тире
-&apos;(Речь, между слов, но не в &quot;какой-то, где-то...&quot;)
+&apos;(В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
 Function HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
 	oReplace.SearchString = &quot;^ {1,}-&quot;
 	oReplace.ReplaceString = chr(8212) &amp; &quot; &quot;
@@ -1271,7 +1283,7 @@ Function DelSpace( oDoc, oReplace, oProgressBar, nCur )
 	oReplace.SearchString = &quot;\t&quot;
 	oReplace.ReplaceString = &quot; &quot;
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 84
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; Удаляем все стартовые табуляции
 	&apos;oReplace.SearchString = &quot;^\t{1,}&quot;
@@ -1289,46 +1301,46 @@ Function DelSpace( oDoc, oReplace, oProgressBar, nCur )
 	oReplace.SearchString = &quot;^ {1,}&quot;
 	oReplace.ReplaceString = &quot;&quot;
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 85
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; Удаляем все конечные пробелы
 	oReplace.SearchString = &quot; {1,}$&quot;
 	oReplace.ReplaceString = &quot;&quot;
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 86
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; Обработка множественных пробелов
 	oReplace.SearchString = &quot; +&quot; &apos;&quot;  {1,2}&quot;
 	oReplace.ReplaceString = &quot; &quot;
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 87
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; Обработка множественных неразрывных пробелов
 	oReplace.SearchString = &quot; +&quot;
 	oReplace.ReplaceString = &quot; &quot;
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 88
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; Обработка оставшихся комбинаций пробелов и неразрывных пробелов
 	oReplace.SearchString = &quot;   &quot; &apos; неразрывный, простой, неразрывный
 	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 89
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	oReplace.SearchString = &quot;   &quot; &apos; простой, неразрывный, простой
 	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 90
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	oReplace.SearchString = &quot;  &quot; &apos; неразрывный, простой
 	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 91
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	oReplace.SearchString = &quot;  &quot; &apos; простой, неразрывный
 	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) &apos; 92
+	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 End Function
 
