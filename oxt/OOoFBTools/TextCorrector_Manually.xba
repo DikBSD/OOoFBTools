@@ -3,24 +3,112 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector_Manually" script:language="StarBasic">REM  *****  BASIC  *****
 &apos; ////////////////////////////////////////////////////////////////
 &apos; модуль инструментов:
-&apos; 1. поиск в документе слов с дефисом или минусов
-&apos; 2. поиск в документе слов с разорванным дефисом или минусов
+&apos; 1. поиск в документе Слов с дефисом, тире или минусом
+&apos; 2. поиск в документе Слов с разорванным абзацем переносом (дефис, тире или минус)
+&apos; 3. поиск в документе Обрыва предложения на словах, знаках препинания, кавычках и скобках
+&apos; 4. поиск в документе Места с недостающим пробелом между словами
 &apos; ////////////////////////////////////////////////////////////////
 option explicit
 
+Type tFindData
+	sRegString As String
+	sMessage As String
+End Type
+
+Private oTDF As Object
+Private oDocController As Object
+Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
+
 Private oDocControl, otxtCurs &apos; текстовый курсор
 
-&apos; ////////////////////////////////////////////////////////////////
-&apos; Поиск слов с разорванным дефисом, минусом или тире
-Sub LDefisPara
-	FindRegWord( &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;, &quot;Поиск слов с разорванным дефисом&quot; )
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub TextDefectFinderDlg_windowActivated(oEv)
+	oDocController = ThisComponent.getCurrentController()
 End Sub
 
-&apos; ////////////////////////////////////////////////////////////////
-&apos; Поиск слов с дефисом, минусом или тире
-Sub LDefisR
-	FindRegWord( &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;, &quot;Поиск слов с дефисом&quot; )
+Sub TextDefectFinderDlg_windowDeactivated(oEv)
 End Sub
+
+Sub TextDefectFinderDlg_windowOpened(oEv)
+End Sub
+
+Sub TextDefectFinderDlg_windowClosing(oEv)
+	bFindEnd = True
+End Sub
+
+Sub TextDefectFinderDlg_windowClosed(oEv)
+End Sub
+
+Sub TextDefectFinderDlg_windowMinimized(oEv)
+End Sub
+
+Sub TextDefectFinderDlg_windowNormalized(oEv)
+End Sub
+
+Sub TextDefectFinderDlg_disposing(oEv)
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация и запуск диалога поиска
+Sub TextDefectFinderStart
+	Dim aModeList() As String
+	aModeList() = Array(&quot;Слово с дефисом, тире или минусом&quot;, _
+						&quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;, _
+						&quot;Обрыв предложения на словах, знаках препинания, кавычках и скобках&quot;, _
+						&quot;Место с недостающим пробелом между словами&quot;)
+	
+	GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)   
+	oTDF = LoadDialog(&quot;OOoFBTools&quot;, &quot;TextDefectFinderDlg&quot;)
+	
+	With oTDF.Model
+		.Title = &quot;Поиск дефектов в тексте&quot;
+		.Height = 30
+		.Width = 272
+		.lbTDFMode.StringItemList = aModeList()
+	End With
+	oTDF.getControl(&quot;lbTDFMode&quot;).SelectItemPos(0, True)
+
+	bFindEnd = False
+	
+	Dim oList : oList = createUnoListener(&quot;TextDefectFinderDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot;) 
+	oTDF.addTopWindowListener(oList)
+
+	oTDF.setVisible(true)  
+	While Not bFindEnd
+		Wait 200     
+	Wend
+	oTDF.setVisible(false)
+End Sub
+
+&apos; Поиск по заданному режиму
+Sub TDFFind()
+	Dim sTDF As tFindData
+	sTDF = GetRegString( oTDF.getControl(&quot;lbTDFMode&quot;) )
+	FindRegWord( sTDF.sRegString, sTDF.sMessage )
+End Sub
+
+&apos; возвращает строку с регулярным выражением для поиска, в зависимости от режима поиска
+Function GetRegString( oLB As Object ) As tFindData
+	Dim sTDF As tFindData
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;
+			sTDF.sMessage = &quot;Поиск слов с дефисом, тире или минусом&quot;
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
+			sTDF.sMessage = &quot;Поиск слов с разорванным переносом (дефис, тире или минус)&quot;
+		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
+			sTDF.sMessage = &quot;Поиск обрыва предложения на словах, знаках препинания, кавычках и скобках&quot;
+		Case 3 &apos; Место с недостающим пробелом между словами
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],.!?…»”\&quot;&quot;:;][:alnum:]+&quot;
+			sTDF.sMessage = &quot;Поиск мест с недостающим пробелом между словами&quot;
+		Case Else
+			sTDF.sRegString = &quot;[:alnum:]+&quot;
+			sTDF.sMessage = &quot;Поиск слов&quot;
+	End Select
+	GetRegString = sTDF
+End Function
 
 &apos; ////////////////////////////////////////////////////////////////
 &apos; Поиск регулярного выражения в тексте
@@ -90,5 +178,7 @@ Function FindNextInText( sFind ) As Boolean
 
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 </script:module>
