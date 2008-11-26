@@ -20,6 +20,7 @@ Private oDocController As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
 Private oDocControl, otxtCurs &apos; текстовый курсор
+Private sOCRTCSettingsFilename As String
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub TextDefectFinderDlg_windowActivated(oEv)
@@ -51,6 +52,12 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога поиска
 Sub TextDefectFinderStart
+	&apos; файл начтроек Корректора Текста
+	sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
+	&apos; ситаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadOCRCorrectorSettings( nX, nY )
+	
 	Dim aModeList() As String
 	aModeList() = Array(&quot;Слово с дефисом, тире или минусом&quot;, _
 						&quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;, _
@@ -61,12 +68,13 @@ Sub TextDefectFinderStart
 	oTDF = LoadDialog(&quot;OOoFBTools&quot;, &quot;TextDefectFinderDlg&quot;)
 	
 	With oTDF.Model
-		.Title = &quot;Поиск дефектов в тексте&quot;
-		.Height = 30
-		.Width = 272
+		.Title = &quot;Поиск OCR ошибок в тексте&quot;
+	&apos;	.Height = 30
+	&apos;	.Width = 272
 		.lbTDFMode.StringItemList = aModeList()
 	End With
 	oTDF.getControl(&quot;lbTDFMode&quot;).SelectItemPos(0, True)
+	oTDF.setPosSize( nX, nY, 30, 272, com.sun.star.awt.PosSize.POS )
 
 	bFindEnd = False
 	
@@ -77,6 +85,8 @@ Sub TextDefectFinderStart
 	While Not bFindEnd
 		Wait 200     
 	Wend
+	&apos; записываем настройки диалога
+	SaveSettings(sOCRTCSettingsFilename, oTDF)
 	oTDF.setVisible(false)
 End Sub
 
@@ -180,5 +190,34 @@ Function FindNextInText( sFind ) As Boolean
 End Function
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Function ReadOCRCorrectorSettings( nX As Integer, nY As Integer ) As Boolean
+	&apos; Читаем настройки очистки текста и задаем значения контролам формы
+	If FileExists(sOCRTCSettingsFilename) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sOCRTCSettingsFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные OCR корректора текста
+				Dim sSetting() As String
+				sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		ReadOCRCorrectorSettings = True
+	Else
+		ReadOCRCorrectorSettings = False
+	End If
+End Function
 
 </script:module>
