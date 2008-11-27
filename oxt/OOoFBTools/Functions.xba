@@ -26,7 +26,7 @@ Function IsFileEmpty( sFileInput As String ) As Boolean
 	IsFileEmpty = bFileEmpty
 End Function
 
-Function SaveArray( aArray() As String, sFile As String )
+Sub SaveArray( aArray() As String, sFile As String )
 	&apos; Запись массива в файл
 	Dim oOS As Object, oFA As Object, oTOS As Object, i As Integer
 
@@ -42,9 +42,9 @@ Function SaveArray( aArray() As String, sFile As String )
 		oTOS.writeString(aArray(i) &amp; chr(10))
 	Next i
 	oTOS.closeOutput()
-End Function
+End Sub
 
-Function ReadFileInArray( aArray() As String, sFile As String )
+Sub ReadFileInArray( aArray() As String, sFile As String )
 	&apos; чтение файла в массив
 	If FileExists(sFile) Then
 		Dim sLine As String
@@ -70,9 +70,9 @@ Function ReadFileInArray( aArray() As String, sFile As String )
 		Loop
 		oTIS.closeInput()
 	End If
-End Function
+End Sub
 
-Function SaveSettings(sSettingsFilename As String, oDlg As Object)
+Sub SaveSettings(sSettingsFilename As String, oDlg As Object)
 	&apos; записываем установки
 	Dim oOS As Object, oFA As Object, oTOS As Object
 	Dim oLB As Object &apos; Для работы с ListBox`ами
@@ -104,10 +104,10 @@ Function SaveSettings(sSettingsFilename As String, oDlg As Object)
 	oTOS.writeString(&quot;Y=&quot; &amp; oDlg.PosSize.Y &amp; chr(10))
 	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
 	oTOS.closeOutput()
-End Function
+End Sub
 
-Function SetSettingsInControlls(sCurrentLine As String, oDlg)
-	On Error Goto ErrorHandler
+Sub SetSettingsInControlls(sCurrentLine As String, oDlg)
+	On Error Resume Next &apos;Goto ErrorHandler
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	Dim sSetting() As String
 	sSetting = Split(sCurrentLine, &quot;=&quot;)
@@ -124,9 +124,9 @@ Function SetSettingsInControlls(sCurrentLine As String, oDlg)
 		oLB = oDlg.getControl(sSetting(0))
 		oLB.SelectItemPos(sSetting(1), True)
 	End If
-	Exit Function
-	ErrorHandler: &apos; идем дальше
-End Function
+	&apos;Exit Sub
+	&apos;ErrorHandler: &apos; идем дальше
+End Sub
 
 Function SaveText(sFile As String, sText As String, sEncoding As String)
 	&apos; Сохранение текстовой строки в файл

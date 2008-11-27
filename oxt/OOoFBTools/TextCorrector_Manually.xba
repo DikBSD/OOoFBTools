@@ -20,8 +20,6 @@ Private oDocController As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
 Private oDocControl, otxtCurs &apos; текстовый курсор
-Private sOCRTCSettingsFilename As String
-
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub TextDefectFinderDlg_windowActivated(oEv)
 	oDocController = ThisComponent.getCurrentController()
@@ -53,11 +51,7 @@ End Sub
 &apos; инициализация и запуск диалога поиска
 Sub TextDefectFinderStart
 	&apos; файл начтроек Корректора Текста
-	sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
-	&apos; ситаем положение диалога из файла настроек
-	Dim nX As Integer, nY As Integer
-	ReadOCRCorrectorSettings( nX, nY )
-	
+	Dim sOCRTCSettingsFilename As String : sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
 	Dim aModeList() As String
 	aModeList() = Array(&quot;Слово с дефисом, тире или минусом&quot;, _
 						&quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;, _
@@ -74,6 +68,10 @@ Sub TextDefectFinderStart
 		.lbTDFMode.StringItemList = aModeList()
 	End With
 	oTDF.getControl(&quot;lbTDFMode&quot;).SelectItemPos(0, True)
+	
+	&apos; ситаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadOCRCorrectorSettings( sOCRTCSettingsFilename, nX, nY )
 	oTDF.setPosSize( nX, nY, 30, 272, com.sun.star.awt.PosSize.POS )
 
 	bFindEnd = False
@@ -190,12 +188,13 @@ Function FindNextInText( sFind ) As Boolean
 End Function
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Function ReadOCRCorrectorSettings( nX As Integer, nY As Integer ) As Boolean
+Function ReadOCRCorrectorSettings( sOCRTCSettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
 	&apos; Читаем настройки очистки текста и задаем значения контролам формы
+	On Error Resume Next
 	If FileExists(sOCRTCSettingsFilename) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
-
+		
 		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 		oFS = oSFA.openFileRead ( ConvertToURL (sOCRTCSettingsFilename) )
 		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
@@ -210,6 +209,9 @@ Function ReadOCRCorrectorSettings( nX As Integer, nY As Integer ) As Boolean
 					nX = sSetting(1)
 				ElseIf sSetting(0) = &quot;Y&quot; Then
 					nY = sSetting(1)
+				ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+					Dim oLB As Object : oLB = oTDF.getControl(sSetting(0))
+					oLB.SelectItemPos(sSetting(1), True)
 				End If
 			End If
 		Loop
