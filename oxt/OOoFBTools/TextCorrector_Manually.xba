@@ -209,9 +209,14 @@ Function ReadOCRCorrectorSettings( sOCRTCSettingsFilename As String, nX As Integ
 					nX = sSetting(1)
 				ElseIf sSetting(0) = &quot;Y&quot; Then
 					nY = sSetting(1)
-				ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-					Dim oLB As Object : oLB = oTDF.getControl(sSetting(0))
-					oLB.SelectItemPos(sSetting(1), True)
+				Else
+					Dim oCtrl As Object : oCtrl = oTDF.GetControl(sSetting(0))
+					If Not IsNull( oCtrl ) Then
+						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+							Dim oLB As Object : oLB = oTDF.getControl(sSetting(0))
+							oLB.SelectItemPos(sSetting(1), True)
+						End If
+					End If
 				End If
 			End If
 		Loop

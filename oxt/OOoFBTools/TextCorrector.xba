@@ -8,7 +8,6 @@ Private oReplace As Object
 
 Private sCorrectorSettingsFilename As String
 Private oTextCorrectorDlg As Object
-Private bCorrectorExecute As Boolean
 
 Private bDelSpace As Boolean
 
@@ -77,8 +76,6 @@ Sub TextCorrector
 	
 	&apos; центрирование на экране
 &apos;	ToScreenCenter(oTextCorrectorDlg)
-	
-	TextCorrector = bCorrectorExecute
 End Sub
 
 Function ReadCorrectorSettings As Boolean
@@ -95,7 +92,11 @@ Function ReadCorrectorSettings As Boolean
 			sLine = oTIS.readLine()
 			If sLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные корректора текста
-				SetCorrectorSettingsInControlls(sLine)
+				SetSettingsInControlls(sLine, oTextCorrectorDlg)
+				cboxWordDefisParaEnabled
+				cboxImagesEnabled
+				cboxBreakLineEnabled
+				cboxBreakLinesInParaEnabled
 			End If
 		Loop
 		oTIS.closeInput()
@@ -142,16 +143,6 @@ Sub SaveCorrectorSettings
 	
 End Sub
 
-Sub SetCorrectorSettingsInControlls(sCurrentLine)
-	SetSettingsInControlls(sCurrentLine, oTextCorrectorDlg)
-
-	cboxWordDefisParaEnabled
-	cboxImagesEnabled
-	cboxBreakLineEnabled
-	cboxBreakLinesInParaEnabled
-
-End Sub
-
 Sub SetCorrectorSettingDefault
 	&apos; Установка настроек по умолчанию в контролы
 	Dim oLB As Object &apos; Для работы с ListBox`ами
@@ -194,11 +185,6 @@ Sub SetCorrectorSettingDefault
 	cboxImagesEnabled
 	cboxBreakLineEnabled
 	cboxBreakLinesInParaEnabled
-End Sub
-
-Sub TextCorrectorDlgCanceled
-	bCorrectorExecute = False
-	oTextCorrectorDlg.endExecute()
 End Sub
 
 Sub CheckAllOptions
@@ -295,7 +281,6 @@ Sub TextCorrectorDlgOk
 	End If
 	
 	&apos; Принятие параметров чистки текста
-	bCorrectorExecute = True
 	oTextCorrectorDlg.endExecute()
 	
 	SaveCorrectorSettings &apos; сохранение настроек чистки текста
