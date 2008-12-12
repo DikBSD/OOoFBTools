@@ -312,7 +312,7 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 				_UnoInsertBookmark( sBookMarkFNText )
 				Do While  oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &gt;= 0
 					&apos; мы все еще внутри зоны поиска... ищем следующий номер сноски в списке
-					vSearch.SearchString = &quot;^[:digit:]+\.&quot; &apos; &quot;^[:digit:]+\.|^[:digit:]+\. +&quot; - не работает
+					vSearch.SearchString = GetRegStringNFNInListForNextFind() &apos; для дальнейшего поиска согласно выбранного шаблона поиска номера сноски в списке сносок
 					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 					If Not IsNull(vFound) Then
 						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; Then &apos; сноски не обрабатываем
@@ -359,9 +359,10 @@ End Function
 
 &apos; обработка блока текста сносок
 Sub ProcessingFootNoteZone( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oBookMarks As Object, _
-							sBookMarkBlockNote As String, sBookMarkFNNumber As String, sBookMarkFNText As String ) 
+							sBookMarkBlockNote As String, sBookMarkFNNumber As String, sBookMarkFNText As String, _
+							sForLeft As String, sForRight As String ) 
 	Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
-		If InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, &quot;\([:digit:]+\)&quot;, sBookMarkFNNumber ) Then
+		If InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, GetRegStringNFNInText(), sBookMarkFNNumber ) Then
 			Dim oBookMark As Object	: oBookMark	= oBookMarks.getByName( sBookMarkFNNumber ).getAnchor()
 			Dim sNumber As String	: sNumber	= oBookMark.getString() &apos; текст с номером очередной сноски
 			&apos; выделяем номер из строки
@@ -370,7 +371,7 @@ Sub ProcessingFootNoteZone( oDoc As Object, oViewCursor As Object, oLCurs As Obj
 			Dim oBlockNoteZoneBookMark : oBlockNoteZoneBookMark = oBookMarks.getByName(sBookMarkBlockNote).getAnchor()
 			&apos; перевод курсора на начала закладки зоны поиска текста сносок
 			oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
-			If InsertBookmarkToTextForFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark, &quot;^&quot; &amp; sNumber &amp; &quot;\.&quot;, sBookMarkFNText ) Then
+			If InsertBookmarkToTextForFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark, sForLeft &amp; sNumber &amp; sForRight, sBookMarkFNText ) Then
 				&apos; вырезать выделенный текст сноски в буфер
 				_UnoCut()
 				&apos; переход курсора на закладку - номер сноски
@@ -398,57 +399,6 @@ Sub ProcessingFootNoteZone( oDoc As Object, oViewCursor As Object, oLCurs As Obj
 			Exit Sub
 		End If
 	Loop
-End Sub
-
-&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Sub DeleteAllEmptyParaInBookMark( oDoc As Object, oViewCursor As Object, oBookMarks As Object, sBookMarkBlockNote As String )
-	If IsNull(oDoc) Then Exit Sub
-	Dim oBookMark As Object	: oBookMark	= oBookMarks.getByName(sBookMarkBlockNote).getAnchor()
-	
-	&apos; поиск с регулярными выражениями
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = &quot;^$&quot;
-	End With
-	
-	Dim vFound As Variant : vFound = oDoc.findNext( oBookMark.getStart(), vSearch )
-	If Not IsNull(vFound) Then &apos; нашли
-		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; And _
-			IsEmpty( vFound.TextFrame ) Then  &apos; сноски и фрэймы не обрабатываем, таблицы пропускаем
-			If Not IsEmpty( vFound.TextTable ) Then &apos; пропускаем таблицу
-				Do While Not IsEmpty( vFound.TextTable )
-					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-					&apos; на начало абзаца, иначе будет пропущенодин этот результат поиска, а он нужен
-					vFound.gotoStartOfParagraph(False)
-				Loop
-			End If
-			If oDoc.Text.compareRegionEnds( vFound.getStart(), oBookMark.getEnd() ) &lt;= 0 Then Exit Sub &apos; вышли за правую границу или прямо на ней
-			&apos; переводим курсор на найденный пустой абзац и удаляем его
-			oViewCursor.gotoRange( vFound.getStart(), False )
-			_UnoDelete()
-			Do &apos; ищем следующиий пустой абзац
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-				If Not IsNull(vFound) Then &apos; нашли
-					If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; And IsEmpty( vFound.TextFrame ) Then
-						&apos; сноски и фрэймы не обрабатываем, таблицы пропускаем
-						If Not IsEmpty( vFound.TextTable ) Then &apos; пропускаем таблицу
-							Do While Not IsEmpty( vFound.TextTable )
-								vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-								&apos; на начало абзаца, иначе будет пропущенодин этот результат поиска, а он нужен
-								vFound.gotoStartOfParagraph(False)
-							Loop
-						End If
-						If oDoc.Text.compareRegionEnds( vFound.getStart(), oBookMark.getEnd() ) &lt;= 0 Then Exit Sub &apos; вышли за правую границу или прямо на ней
-						&apos; переводим курсор на найденный пустой абзац и удаляем его
-						oViewCursor.gotoRange( vFound.getStart(), False )
-						_UnoDelete()
-					End If
-				End If
-			Loop While oDoc.Text.compareRegionEnds( vFound.getStart(), oBookMark.getEnd() ) &gt;= 0 &apos; мы все еще внутри зоны поиска... ищем следующий пустой абзац
-		End If
-	End If
 End Sub
 
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -482,10 +432,13 @@ Sub BuildFootNote()
 	
 	If oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).State Then
 		&apos; режим: Блок текста сносок - после каждой главы
+		&apos; левая и правая часть регулярного выражения для 1-го поиска номера сноски в списке сносок
+		Dim sLeft	As String : sLeft = GetRegStringNFNInListForLeft()
+		Dim sRight	As String : sRight = GetRegStringNFNInListForRight()
 		Dim l As Long
 		For l=0 To UBound( aBookMarks() )
 			Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-			ProcessingFootNoteZone( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), sBookMarkFNNumber, sBookMarkFNText ) 
+			ProcessingFootNoteZone( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), sBookMarkFNNumber, sBookMarkFNText, sLeft, sRight ) 
 			&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sBookMarkBlockNote )
 			GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
 			&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
@@ -536,6 +489,9 @@ Function ReadBuildFootEndNoteDlgSettings( sBuildFootEndNoteSettingsFilename As S
 							oCtrl.State = sSetting(1)
 						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
 							oCtrl.State = sSetting(1)
+						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+							Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( sSetting(0) )
+							oLB.SelectItemPos( sSetting(1), True )
 						End If
 					End If
 				End If
@@ -548,9 +504,104 @@ Function ReadBuildFootEndNoteDlgSettings( sBuildFootEndNoteSettingsFilename As S
 	End If
 End Function
 
+&apos; возвращает строку с регулярным выражением для поиска, в зависимости от выбора шаблона номера сноски в тексте
+Function GetRegStringNFNInText() As String
+	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl(&quot;lblNFNInTextTemplate&quot;)
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; ... текст (x)
+			GetRegStringNFNInText = &quot;\([:digit:]+\)&quot;
+		Case 1 &apos; ... текст [x]
+			GetRegStringNFNInText = &quot;\[[:digit:]+\]&quot;
+		Case 2 &apos; ... текст {x}
+			GetRegStringNFNInText = &quot;\{[:digit:]+\}&quot;
+		Case 3 &apos; ... текст &lt;x&gt;
+			GetRegStringNFNInText = &quot;&lt;[:digit:]+&gt;&quot;
+		Case 4 &apos; ... текст /x/
+			GetRegStringNFNInText = &quot;/[:digit:]+/&quot;
+		Case Else
+			GetRegStringNFNInText = &quot;\([:digit:]+\)&quot;
+	End Select
+End Function
+
+&apos; возвращает строку с регулярным выражением для поиска, в зависимости от выбора шаблона номера сноски в списке сносок
+Function GetRegStringNFNInListForNextFind() As String
+	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl(&quot;lblNFNInListTemplate&quot;)
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x. Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^[:digit:]+\.&quot;
+		Case 1 &apos; (x). Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^\([:digit:]+\)\.&quot;
+		Case 2 &apos; [x]. Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^\[[:digit:]+\]\.&quot;
+		Case 3 &apos; {x}. Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^\{[:digit:]+\}\.&quot;
+		Case 4 &apos; &lt;x&gt;. Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^&lt;[:digit:]+&gt;\.&quot;
+		Case 5 &apos; /x/. Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^/[:digit:]+/\.&quot;
+		Case Else
+			GetRegStringNFNInListForNextFind = &quot;^[:digit:]+\.&quot;
+	End Select
+End Function
+
+Function GetRegStringNFNInListForLeft() As String
+	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl(&quot;lblNFNInListTemplate&quot;)
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x. Текст ...
+			GetRegStringNFNInListForLeft = &quot;^&quot;
+		Case 1 &apos; (x). Текст ...
+			GetRegStringNFNInListForLeft = &quot;^\(&quot;
+		Case 2 &apos; [x]. Текст ...
+			GetRegStringNFNInListForLeft = &quot;^\[&quot;
+		Case 3 &apos; {x}. Текст ...
+			GetRegStringNFNInListForLeft = &quot;^\{&quot;
+		Case 4 &apos; &lt;x&gt;. Текст ...
+			GetRegStringNFNInListForLeft = &quot;^&lt;&quot;
+		Case 5 &apos; /x/. Текст ...
+			GetRegStringNFNInListForLeft = &quot;^/&quot;
+		Case Else
+			GetRegStringNFNInListForLeft = &quot;^&quot;
+	End Select
+End Function
+
+Function GetRegStringNFNInListForRight() As String
+	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl(&quot;lblNFNInListTemplate&quot;)
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x. Текст ...
+			GetRegStringNFNInListForRight = &quot;\.&quot;
+		Case 1 &apos; (x). Текст ...
+			GetRegStringNFNInListForRight = &quot;\)\.&quot;
+		Case 2 &apos; [x]. Текст ...
+			GetRegStringNFNInListForRight = &quot;\]\.&quot;
+		Case 3 &apos; {x}. Текст ...
+			GetRegStringNFNInListForRight = &quot;\}\.&quot;
+		Case 4 &apos; &lt;x&gt;. Текст ...
+			GetRegStringNFNInListForRight = &quot;&gt;\.&quot;
+		Case 5 &apos; /x/. Текст ...
+			GetRegStringNFNInListForRight = &quot;/\.&quot;
+		Case Else
+			GetRegStringNFNInListForRight = &quot;\.&quot;
+	End Select
+End Function
+
+&apos; запуск диалога генерации сносок
 Sub StartBuildFootEndNoteDlg()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oBuildFootEndNoteDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.BuildFootEndNoteDlg)
+	
+	Dim aNFNInTextList() As String
+	aNFNInTextList() = Array(&quot;... текст (x)&quot;, _
+							&quot;... текст [x]&quot;, _
+							&quot;... текст {x}&quot;, _
+							&quot;... текст &lt;x&gt;&quot;, _
+							&quot;... текст /x/&quot;)
+	Dim aNFNInListList() As String
+	aNFNInListList() = Array(&quot;x. Текст ...&quot;, _
+							&quot;(x). Текст ...&quot;, _
+							&quot;[x]. Текст ...&quot;, _
+							&quot;{x}. Текст ...&quot;, _
+							&quot;&lt;x&gt;. Текст ...&quot;, _
+							&quot;/x/. Текст ...&quot;)
 	
 	&apos; файл настроек BuildFootEndNoteDlg
 	sBuildFootEndNoteSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/BuildFootEndNoteDlgSettings.txt&quot;
@@ -560,14 +611,16 @@ Sub StartBuildFootEndNoteDlg()
 
 	With oBuildFootEndNoteDlg.Model
 		.Title = &quot;Генерация сносок&quot;
-&apos;		.Height = 30
+		.lblNFNInTextTemplate.StringItemList = aNFNInTextList()
+		.lblNFNInListTemplate.StringItemList = aNFNInListList()
+&apos;		.Height = 76
 &apos;		.Width = 270
 	End With
 	
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadBuildFootEndNoteDlgSettings( sBuildFootEndNoteSettingsFilename, nX, nY )
-	oBuildFootEndNoteDlg.setPosSize( nX, nY, 30, 270, com.sun.star.awt.PosSize.POS )
+	oBuildFootEndNoteDlg.setPosSize( nX, nY, 76, 270, com.sun.star.awt.PosSize.POS )
 	
 	oBuildFootEndNoteDlg.execute()
 End Sub
