@@ -72,7 +72,6 @@ End Sub
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos; Другие функции
 &apos;//////////////////////////////////////////////////////////////////////////////
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; Вставить текст в место закладки.
 &apos; возвращает: True - если вставили текст в место закладки. False - если нет такой закладки
 Function InsertTextToBookMark( sBookMarkName As String, sText As String ) As Boolean
@@ -116,9 +115,10 @@ Function ExtendSelectTextToBookMark( oViewCursor As Object, sBookMarkName As Str
 		ExtendSelectTextToBookMark = True
 	End If
 End Function
+
 &apos;//////////////////////////////////////////////////////////////////////////////
-&apos; возвращает массив с названиями зон поиска - помеченных закладками зон текста сносок (не по порядку их добавления. а по индексу их массива закладок)
-Function GetFindBlockNoteZones( oBookMarks As Object, sBookMarkBlockNote As String ) As Array
+&apos; возвращает массив с названиями зон поиска - помеченных закладками списка текста сносок (не по порядку их добавления. а по индексу их массива закладок)
+Function GetFindListNoteZones( oBookMarks As Object, sBookMarkBlockNote As String ) As Array
 	Dim l As Long
 	Dim aBookMarks() As String
 	For l=0 To oBookMarks.getCount()-1
@@ -128,12 +128,40 @@ Function GetFindBlockNoteZones( oBookMarks As Object, sBookMarkBlockNote As Stri
 			AddNewItemToArray1( aBookMarks(), s )
 		End If
 	Next l
-	GetFindBlockNoteZones = aBookMarks()
+	GetFindListNoteZones = aBookMarks()
 End Function
 
+&apos; //////////////////////////////////////////////////////////////////////////
+&apos; есть ли выделение курсором. True - есть
+Function IsSelection( oSel As Object ) As Boolean
+	Dim oCursor : oCursor = ThisComponent.Text.CreateTextCursorByRange(oSel)
+	If oCursor.IsCollapsed() Then &apos; ничего не выделено
+		IsSelection = False
+	Else
+		IsSelection = True
+	End If
+End Function
+
+&apos; //////////////////////////////////////////////////////////////////////////
+&apos; сколько выделено областей текста
+Function GetSelectionCount() As Long
+	Dim lCount As Long : lCount = 0
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If Not IsNull(oSels) Then
+		Dim lSelCount As Long : lSelCount = oSels.getCount()
+		Dim l As Long
+		For l = 0 To lSelCount - 1
+			Dim oSel As Object : oSel = oSels.getByIndex(l)
+			If IsSelection( oSel ) Then lCount = lCount+1
+		Next l
+	End If
+	GetSelectionCount = lCount
+End Function
+
+&apos; //////////////////////////////////////////////////////////////////////////
 &apos; удаление всех закладок, соответствующих шаблону sBookMarkTemplate
 Sub DeleteAllBookMarkWithTemplate( oBookMarks As Object, sBookMarkTemplate As String )
-	Dim aBookMarks() As String : aBookMarks = GetFindBlockNoteZones( oBookMarks, sBookMarkTemplate )
+	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkTemplate )
 	Dim l As Long
 	For l=0 To UBound( aBookMarks() )
 		_UnoDeleteBookMark( aBookMarks(l) )
@@ -154,7 +182,36 @@ Sub ExtendSelectTextToEndBookMark( oDoc As Object, oViewCursor As Object, sBookM
 	_UnoInsertBookmark( sBookMarkStartName )
 End Sub
 
-&apos; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ///////////////////////////////////////////////////////////////////
+&apos; возвращает &quot;реальную&quot; левую границу курсора (и для случая, если конец курсора находится раньше начала)
+Function GetLeftMostCursor( oSel As Object ) As Object
+	Dim oRange, oCursor
+	If oSel.getText().compareRegionStarts(oSel.getEnd(), oSel) &gt;= 0 Then
+		oRange = oSel.getEnd()
+	Else
+		oRange = oSel.getStart()
+	End If
+	oCursor = oSel.getText().CreateTextCursorByRange(oRange)
+	oCursor.goRight(0, False)
+	GetLeftMostCursor = oCursor
+End Function
+&apos; ///////////////////////////////////////////////////////////////////
+&apos; возвращает &quot;реальную&quot; правую границу курсора (и для случая, если конец курсора находится раньше начала)
+Function GetRightMostCursor( oSel As Object ) As Object
+	Dim oRange, oCursor
+	If oSel.getText().compareRegionStarts(oSel.getEnd(), oSel) &gt;= 0 Then
+		oRange = oSel.getStart()
+	Else
+		oRange = oSel.getEnd()
+	End If
+	oCursor = oSel.getText().CreateTextCursorByRange(oRange)
+	oCursor.goLeft(0, False)
+	GetRightMostCursor = oCursor
+End Function
+
+&apos;//////////////////////////////////////////////////////////////////////////////
+&apos;				Функции алгоритма генерации сносок
+&apos;//////////////////////////////////////////////////////////////////////////////
 &apos; вставка закладки на место номера очередной сноски
 &apos; sRegFind - строка поиска (с регулярными выражениями)
 &apos; oLCurs - начало зоны поиска номера очередной сноски
@@ -402,7 +459,7 @@ Sub BuildFootNote()
 	oBuildFootEndNoteDlg.endExecute()
 	SaveSettings( sBuildFootEndNoteSettingsFilename, oBuildFootEndNoteDlg ) &apos; сохранение настроек
 	
-	Dim sBookMarkBlockNote	As String : sBookMarkBlockNote	= &quot;_ooo_ocr_tc_foot_note_block_dikbsd_&quot;		&apos; закладка - зона поиска блока текста сносок
+	Dim sBookMarkBlockNote	As String : sBookMarkBlockNote	= &quot;_ooo_ocr_tc_foot_note_list_dikbsd_&quot;		&apos; закладка - зона поиска списка текста сносок
 	Dim sBookMarkFNNumber	As String : sBookMarkFNNumber	= &quot;_ooo_ocr_tc_foot_note_number_dikbsd_&quot;	&apos; закладка на найденный номер сноски
 	Dim sBookMarkFNText		As String : sBookMarkFNText		= &quot;_ooo_ocr_tc_foot_note_text_dikbsd_&quot;		&apos; закладка на найденный текст сноски, указанного номера
 	
@@ -417,9 +474,9 @@ Sub BuildFootNote()
 	DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkFNText )
 	
 	&apos; получаем зоны для обработки сносок
-	Dim aBookMarks() As String : aBookMarks = GetFindBlockNoteZones( oBookMarks, sBookMarkBlockNote )
+	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkBlockNote )
 	If UBound( aBookMarks() ) = -1 Then
-		MsgBox &quot;Нет ни одной выделенной закладкой зоны, содержащей текст сносок!&quot;, 64, sBuildFootEndNoteName
+		MsgBox &quot;Нет ни одной выделенной закладкой зоны, содержащей список текста сносок!&quot;, 64, sBuildFootEndNoteName
 		Exit Sub	
 	End If
 	
@@ -515,5 +572,80 @@ Sub StartBuildFootEndNoteDlg()
 	oBuildFootEndNoteDlg.execute()
 End Sub
 
+&apos; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; Работа со служебными закладками
+&apos; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub InsertFindFootNoteTextListBookMark
+	&apos; всиавка очередной закладки для зоны поиска текста сносок
+	Dim sBookMark	As String	: sBookMark		= &quot;_ooo_ocr_tc_foot_note_list_dikbsd_&quot; &apos; шаблон закладки для списка текста сносок
+	Dim sMessTitle	As String	: sMessTitle	= &quot;Вставка служебной закладки для списка текста сносок&quot;
+	Dim l As Long : l = GetSelectionCount()
+	If l = 0 Then
+		&apos; Нет ни одной выделенной области текста
+		_UnoInsertBookmark( sBookMark )
+		MsgBox &quot;Не выделено ни одного символа текста.&quot; &amp; chr(10) &amp; &quot;Закладка-шаблон для списка текста сносок вставлена.&quot; &amp; chr(10) &amp; _
+				&quot;Начало и конец закладки совпадают.&quot;, 64, sMessTitle
+	ElseIf l &gt; 1 Then
+		MsgBox &quot;Выделено &quot; &amp; l &amp; &quot; областей текста.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выделите только 1 список текста сносок!&quot; &amp; chr(10) &amp; _
+				&quot;Если в вашем документе списков текста сносок несколько (для каждой главы...), то поставить закладку надо для каждого блока отдельно.&quot;, _
+				64, sMessTitle
+	Else &apos; теперь можно вставить закладку
+		&apos; проверка, есть ли эта же закладка на этом же месте...
+		Dim oDoc			As Object	: oDoc			= ThisComponent
+		Dim oSels			As Object	: oSels			= ThisComponent.getCurrentSelection()
+		Dim oSel 			As Object	: oSel			= oSels.getByIndex(0)
+		Dim oLCurs			As Object	: oLCurs		= GetLeftMostCursor(oSel)
+		Dim oRCurs			As Object	: oRCurs		= GetRightMostCursor(oSel)
+		Dim oBookMarks		As Object	: oBookMarks	= oDoc.getBookmarks()
+		Dim aBookMarks()	As String	: aBookMarks	= GetFindListNoteZones( oBookMarks, sBookMark ) &apos; список закладок, удовлетворяющих шаблону sBookMark
+
+		Dim bBookMarkInSel As Boolean : bBookMarkInSel = False &apos; флаг - есть ли на выделенном месте закладка, соответствующая шаблону
+
+		If UBound( aBookMarks() ) = -1 Then
+			&apos; Нет ни одной выделенной закладкой области, содержащей список текста сносок. Можно вставлять!
+			_UnoInsertBookmark( sBookMark )
+			MsgBox &quot;Закладка-шаблон для списка текста сносок вставлена.&quot; , 64, sMessTitle
+		ElseIf UBound( aBookMarks() ) &gt;= 0 Then &apos; есть одна закладка такая же, но возможно с номером
+			&apos; сравниваем ее границы с границей выделения
+			For l=0 To UBound( aBookMarks() )
+				Dim oBookMark	As Object : oBookMark	= oBookMarks.getByName( aBookMarks(l) )
+				Dim oAnchor		As Object : oAnchor		= oBookMark.getAnchor()
+				Dim s			As String : s			= oBookMark.Name
+				If InStr( s, sBookMark ) = 1 Then
+					If oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) = 0 And _
+						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) = 0 Then
+						bBookMarkInSel = True
+						MsgBox &quot;Выделенная область текста полностью совпадает с уже имеющейся закладкой &quot; &amp; aBookMarks(l), 64, sMessTitle
+					ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt;= 0 And _
+						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt;= 0 Then
+						bBookMarkInSel = True
+						MsgBox &quot;Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку &quot; &amp; aBookMarks(l), 64, sMessTitle
+					ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &lt;= 0 And _
+						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &gt;= 0 Then
+						bBookMarkInSel = True
+						MsgBox &quot;Выделенная область текста находится внутри уже имеющейся закладки &quot; &amp; aBookMarks(l), 64, sMessTitle
+					ElseIf ( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt; 0 And _
+						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getStart() ) &lt; 0 ) Or _
+						( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getEnd() ) &gt; 0 And _
+						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt; 0 ) Then
+						bBookMarkInSel = True
+						MsgBox &quot;Выделенная область текста частично совпадает с уже имеющейся закладкой &quot; &amp; aBookMarks(l), 64, sMessTitle
+					&apos;Else &apos;выделение никак ни касается своими границами закладки-шаблона (&quot;пустое&quot; место).
+						&apos;bBookMarkInSel = False не ставим, т.к. оно уже стоит выше, в определении флага,
+						&apos;а здесь это False приведет на очередной иетерации цикла, если закладка не касается выделения,
+						&apos;что предыдущее соответсвие закладки шаблону станет недействительным!!!!!
+					End If
+				Else &apos;выделение не соответствует закладке-шаблону
+					bBookMarkInSel = False
+				End If
+			Next l
+		End If
+		If Not bBookMarkInSel Then
+			&apos; На этом месте документа нет закладки-шаблона для списка текста сносок. Можно вставлять!
+			_UnoInsertBookmark( sBookMark )
+			MsgBox &quot;Закладка-шаблон для списка текста сносок вставлена.&quot;, 64, sMessTitle
+		End If
+	End If
+End Sub
 
 </script:module>
