@@ -414,81 +414,85 @@ Sub BuildFootNote()
 	oBuildFootEndNoteDlg.endExecute()
 	SaveSettings( sBuildFootEndNoteSettingsFilename, oBuildFootEndNoteDlg ) &apos; сохранение настроек
 	
-	Dim sBookMarkNZoneNote	As String : sBookMarkNZoneNote	= &quot;_ooo_ocr_tc_foot_note_number_zone_dikbsd_&quot;	&apos; закладка - зона поиска номера сноски
-	Dim sBookMarkListNote	As String : sBookMarkListNote	= &quot;_ooo_ocr_tc_foot_note_list_zone_dikbsd_&quot;		&apos; закладка - зона поиска списка текста сносок
-	Dim sBookMarkFNNumber	As String : sBookMarkFNNumber	= &quot;_ooo_ocr_tc_foot_note_find_number_dikbsd_&quot;	&apos; закладка на найденный номер сноски
-	Dim sBookMarkFNText		As String : sBookMarkFNText		= &quot;_ooo_ocr_tc_foot_note_find_text_dikbsd_&quot;		&apos; закладка на найденный текст сноски, указанного номера
+	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnSimpleFootNote&quot; ).State Then
+		MsgBox &quot;Простой режим генерации сносок еще не сделан!&quot;, 64, sBuildFootEndNoteName
+	ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnComplexFootNote&quot; ).State Then
+		&apos; Сложный режим генерации сносок
+		Dim sBookMarkNZoneNote	As String : sBookMarkNZoneNote	= &quot;_ooo_ocr_tc_foot_note_number_zone_dikbsd_&quot;	&apos; закладка - зона поиска номера сноски
+		Dim sBookMarkListNote	As String : sBookMarkListNote	= &quot;_ooo_ocr_tc_foot_note_list_zone_dikbsd_&quot;		&apos; закладка - зона поиска списка текста сносок
+		Dim sBookMarkFNNumber	As String : sBookMarkFNNumber	= &quot;_ooo_ocr_tc_foot_note_find_number_dikbsd_&quot;	&apos; закладка на найденный номер сноски
+		Dim sBookMarkFNText		As String : sBookMarkFNText		= &quot;_ooo_ocr_tc_foot_note_find_text_dikbsd_&quot;		&apos; закладка на найденный текст сноски, указанного номера
 	
-	Dim oDoc		As Object	: oDoc			= ThisComponent
-	Dim oViewCursor As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
-	Dim oBookMarks	As Object	: oBookMarks	= oDoc.getBookmarks()
-	Dim oLCurs		As Object	: oLCurs		= oDoc.Text.createTextCursor()
-	oLCurs.gotoStart(False) &apos; на начало документа
+		Dim oDoc		As Object	: oDoc			= ThisComponent
+		Dim oViewCursor As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+		Dim oBookMarks	As Object	: oBookMarks	= oDoc.getBookmarks()
+		Dim oLCurs		As Object	: oLCurs		= oDoc.Text.createTextCursor()
+		oLCurs.gotoStart(False) &apos; на начало документа
 	
-	&apos; удаляем служебные закладки, если они есть
-	DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkFNNumber )
-	DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkFNText )
+		&apos; удаляем служебные закладки, если они есть
+		DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkFNNumber )
+		DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkFNText )
 	
-	&apos; получаем зоны для обработки сносок
-	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkListNote )
-	If UBound( aBookMarks() ) = -1 Then
-		MsgBox &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК ТЕКСТА сносок!&quot;, 64, sBuildFootEndNoteName
-		Exit Sub	
-	End If
-	
-	Dim sRegStringNFNInText As String : sRegStringNFNInText = GetRegStringNFNInText()
-	&apos; левая и правая часть регулярного выражения для 1-го поиска номера сноски в списке сносок
-	Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft()
-	Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
-
-	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
-		&apos; режим: Блок текста сносок - после каждой главы
-		Dim l As Long
-		For l=0 To UBound( aBookMarks() )
-			Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-			ProcessingFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), sBookMarkFNNumber, sBookMarkFNText, _
-									sRegStringNFNInText, sLeft, sRight ) 
-			&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sBookMarkListNote )
-			GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
-			&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
-			oLCurs.gotoRange( oRCurs.getEnd(), False )
-			oLCurs.goRight( 1, False )
-		Next l
-	Else
-		&apos; режим: Все блоки текста сносок - в конце книги
-		&apos; получаем L-зоны для поиска номеров сносок
-		Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkNZoneNote )
-		If UBound( aLBookMarks() ) = -1 Then
-			MsgBox &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА сносок!&quot;, 64, sBuildFootEndNoteName
+		&apos; получаем зоны для обработки сносок
+		Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkListNote )
+		If UBound( aBookMarks() ) = -1 Then
+			MsgBox &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК ТЕКСТА сносок!&quot;, 64, sBuildFootEndNoteName
 			Exit Sub	
 		End If
+	
+		Dim sRegStringNFNInText As String : sRegStringNFNInText = GetRegStringNFNInText()
+		&apos; левая и правая часть регулярного выражения для 1-го поиска номера сноски в списке сносок
+		Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft()
+		Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
 
-		For l=0 To UBound( aBookMarks() )
-			&apos; левая граница поиска номеров сносок - текстовый курсор на очередной закладке (начало главы и т.д.)
-			Dim oLBMs As Object : oLBMs = oBookMarks.getByName( aLBookMarks(l) ).getAnchor()
-			oLCurs.gotoRange( oLBMs, False )
-			&apos; правая граница - следующая левая грпница или начало 1-й закладки списка сносок
-			If l &lt; UBound( aBookMarks() ) Then
-				oRCurs = oBookMarks.getByName( aLBookMarks(l+1) ).getAnchor()
-			Else
-				oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
+		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
+			&apos; режим: Блок текста сносок - после каждой главы
+			Dim l As Long
+			For l=0 To UBound( aBookMarks() )
+				Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
+				ProcessingFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), sBookMarkFNNumber, sBookMarkFNText, _
+										sRegStringNFNInText, sLeft, sRight ) 
+				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sBookMarkListNote )
+				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
+				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
+				oLCurs.gotoRange( oRCurs.getEnd(), False )
+				oLCurs.goRight( 1, False )
+			Next l
+		Else
+			&apos; режим: Все блоки текста сносок - в конце книги
+			&apos; получаем L-зоны для поиска номеров сносок
+			Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkNZoneNote )
+			If UBound( aLBookMarks() ) = -1 Then
+				MsgBox &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА сносок!&quot;, 64, sBuildFootEndNoteName
+				Exit Sub	
 			End If
-			&apos; перемещаем курсор в новую зону поиска
-			GoToViewCursorToBookMark( oViewCursor, aLBookMarks(l), False )
-			ProcessingFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), sBookMarkFNNumber, sBookMarkFNText, _
-									sRegStringNFNInText, sLeft, sRight )
-		Next l
-		oViewCursor.goRight( 1, False )
-	End If
 
-	If oBuildFootEndNoteDlg.GetControl( &quot;cboxDelBookMarks&quot; ).State Then
-		&apos; удаляем служебные закладки, если они есть
-		DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkNZoneNote )
-		DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkListNote )
+			For l=0 To UBound( aBookMarks() )
+				&apos; левая граница поиска номеров сносок - текстовый курсор на очередной закладке (начало главы и т.д.)
+				Dim oLBMs As Object : oLBMs = oBookMarks.getByName( aLBookMarks(l) ).getAnchor()
+				oLCurs.gotoRange( oLBMs, False )
+				&apos; правая граница - следующая левая грпница или начало 1-й закладки списка сносок
+				If l &lt; UBound( aBookMarks() ) Then
+					oRCurs = oBookMarks.getByName( aLBookMarks(l+1) ).getAnchor()
+				Else
+					oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
+				End If
+				&apos; перемещаем курсор в новую зону поиска
+				GoToViewCursorToBookMark( oViewCursor, aLBookMarks(l), False )
+				ProcessingFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), sBookMarkFNNumber, sBookMarkFNText, _
+										sRegStringNFNInText, sLeft, sRight )
+			Next l
+			oViewCursor.goRight( 1, False )
+		End If
+
+		If oBuildFootEndNoteDlg.GetControl( &quot;cboxDelBookMarks&quot; ).State Then
+			&apos; удаляем служебные закладки, если они есть
+			DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkNZoneNote )
+			DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkListNote )
+		End If
+	
+		MsgBox &quot;Все сноски, для которых найден текст, сгенерированы!&quot;, 64, sBuildFootEndNoteName
 	End If
-	
-	MsgBox &quot;Все сноски, для которых найден текст, сгенерированы!&quot;, 64, sBuildFootEndNoteName
-	
 End Sub
 
 &apos; возвращает строку с регулярным выражением для поиска, в зависимости от выбора шаблона номера сноски в тексте
@@ -605,9 +609,10 @@ Sub StartBuildFootEndNoteDlg()
 	
 	With oBuildFootEndNoteDlg.Model
 		.Title = &quot;Генерация сносок&quot;
+		.lblNSimpleFNInTextTemplate.StringItemList = aNFNInTextList()
 		.lblNFNInTextTemplate.StringItemList = aNFNInTextList()
 		.lblNFNInListTemplate.StringItemList = aNFNInListList()
-&apos;		.Height = 76
+&apos;		.Height = 100
 &apos;		.Width = 270
 	End With
 	
@@ -617,19 +622,25 @@ Sub StartBuildFootEndNoteDlg()
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadBuildFootEndNoteDlgSettings( sBuildFootEndNoteSettingsFilename, nX, nY )
-	oBuildFootEndNoteDlg.setPosSize( nX, nY, 76, 270, com.sun.star.awt.PosSize.POS )
+	oBuildFootEndNoteDlg.setPosSize( nX, nY, 100, 270, com.sun.star.awt.PosSize.POS )
+	
+	ControlModeEnabled()
 	
 	oBuildFootEndNoteDlg.execute()
 End Sub
 
 Sub SetBuildFootEndNoteDlgSettingDefault
 	&apos; Установка настроек по умолчанию в контролы
+	oBuildFootEndNoteDlg.GetControl( &quot;optbtnSimpleFootNote&quot; ).State = 0
+	oBuildFootEndNoteDlg.GetControl( &quot;optbtnComplexFootNote&quot; ).State = 1
 	oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State = 1
 	oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State = 0
 	Dim oLB As Object
-	oLB = oBuildFootEndNoteDlg.getControl(&quot;lblNFNInTextTemplate&quot; )
+	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
 	oLB.SelectItemPos( 0, True )
-	oLB = oBuildFootEndNoteDlg.getControl(&quot;lblNFNInListTemplate&quot; )
+	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInTextTemplate&quot; )
+	oLB.SelectItemPos( 0, True )
+	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInListTemplate&quot; )
 	oLB.SelectItemPos( 0, True )
 End Sub
 
@@ -673,6 +684,32 @@ Function ReadBuildFootEndNoteDlgSettings( sBuildFootEndNoteSettingsFilename As S
 		ReadBuildFootEndNoteDlgSettings = False
 	End If
 End Function
+
+Sub ControlModeEnabled()
+	If oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State Then
+		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInText&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInList&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = True
+		
+		oBuildFootEndNoteDlg.GetControl(&quot;lblSimpleFN&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = False
+	Else
+		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInText&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInList&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = False
+		
+		oBuildFootEndNoteDlg.GetControl(&quot;lblSimpleFN&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = True
+	End If
+End Sub
 
 &apos; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; Работа со служебными закладками
