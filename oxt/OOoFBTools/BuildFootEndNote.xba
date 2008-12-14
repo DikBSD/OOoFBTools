@@ -505,6 +505,8 @@ Function GetRegStringNFNInText() As String
 			GetRegStringNFNInText = &quot;&lt;[:digit:]+&gt;&quot;
 		Case 4 &apos; ... текст /x/
 			GetRegStringNFNInText = &quot;/[:digit:]+/&quot;
+		Case 5 &apos; ... текст \x\
+			GetRegStringNFNInText = &quot;\\[:digit:]+\\&quot;
 		Case Else
 			GetRegStringNFNInText = &quot;\([:digit:]+\)&quot;
 	End Select
@@ -526,6 +528,8 @@ Function GetRegStringNFNInListForNextFind() As String
 			GetRegStringNFNInListForNextFind = &quot;^&lt;[:digit:]+&gt;\.&quot;
 		Case 5 &apos; /x/. Текст ...
 			GetRegStringNFNInListForNextFind = &quot;^/[:digit:]+/\.&quot;
+		Case 6 &apos; \x\. Текст ...
+			GetRegStringNFNInListForNextFind = &quot;^\\[:digit:]+\\\.&quot;
 		Case Else
 			GetRegStringNFNInListForNextFind = &quot;^[:digit:]+\.&quot;
 	End Select
@@ -546,6 +550,8 @@ Function GetRegStringNFNInListForLeft() As String
 			GetRegStringNFNInListForLeft = &quot;^&lt;&quot;
 		Case 5 &apos; /x/. Текст ...
 			GetRegStringNFNInListForLeft = &quot;^/&quot;
+		Case 6 &apos; \x\. Текст ...
+			GetRegStringNFNInListForLeft = &quot;^\\&quot;
 		Case Else
 			GetRegStringNFNInListForLeft = &quot;^&quot;
 	End Select
@@ -566,6 +572,8 @@ Function GetRegStringNFNInListForRight() As String
 			GetRegStringNFNInListForRight = &quot;&gt;\.&quot;
 		Case 5 &apos; /x/. Текст ...
 			GetRegStringNFNInListForRight = &quot;/\.&quot;
+		Case 6 &apos; \x\. Текст ...
+			GetRegStringNFNInListForRight = &quot;\\\.&quot;
 		Case Else
 			GetRegStringNFNInListForRight = &quot;\.&quot;
 	End Select
@@ -581,14 +589,16 @@ Sub StartBuildFootEndNoteDlg()
 							&quot;... текст [x] ...&quot;, _
 							&quot;... текст {x} ...&quot;, _
 							&quot;... текст &lt;x&gt; ...&quot;, _
-							&quot;... текст /x/ ...&quot;)
+							&quot;... текст /x/ ...&quot;, _
+							&quot;... текст \x\ ...&quot;)
 	Dim aNFNInListList() As String
 	aNFNInListList() = Array(&quot;x. Текст ...&quot;, _
 							&quot;(x). Текст ...&quot;, _
 							&quot;[x]. Текст ...&quot;, _
 							&quot;{x}. Текст ...&quot;, _
 							&quot;&lt;x&gt;. Текст ...&quot;, _
-							&quot;/x/. Текст ...&quot;)
+							&quot;/x/. Текст ...&quot;, _
+							&quot;\x\. Текст ...&quot;)
 	
 	&apos; файл настроек BuildFootEndNoteDlg
 	sBuildFootEndNoteSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/BuildFootEndNoteDlgSettings.txt&quot;
