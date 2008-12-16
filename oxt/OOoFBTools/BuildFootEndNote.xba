@@ -160,13 +160,14 @@ End Function
 
 &apos; //////////////////////////////////////////////////////////////////////////
 &apos; удаление всех закладок, соответствующих шаблону sBookMarkTemplate
-Sub DeleteAllBookMarkWithTemplate( oBookMarks As Object, sBookMarkTemplate As String )
+Function DeleteAllBookMarkWithTemplate( oBookMarks As Object, sBookMarkTemplate As String ) As Integer
 	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkTemplate )
 	Dim l As Long
 	For l=0 To UBound( aBookMarks() )
 		_UnoDeleteBookMark( aBookMarks(l) )
+		DeleteAllBookMarkWithTemplate = DeleteAllBookMarkWithTemplate+1
 	Next l
-End Sub
+End Function
 
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos; расширение курсора от закладки 1 до конца закладки 2
@@ -364,9 +365,15 @@ Sub ProcessingFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Obj
 	Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
 		If InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, sBookMarkFNNumber ) Then
 			Dim oBookMark As Object	: oBookMark	= oBookMarks.getByName( sBookMarkFNNumber ).getAnchor()
-			Dim sNumber As String	: sNumber	= oBookMark.getString() &apos; текст с номером очередной сноски
+			Dim sTempNumber As String : sTempNumber	= oBookMark.getString() &apos; текст с номером очередной сноски
 			&apos; выделяем номер из строки
-			sNumber = Mid( sNumber, 2, Len( sNumber )-2 )
+&apos;			Dim sNumber As String : sNumber = Mid( sTempNumber, 2, Len( sTempNumber )-2 )
+			Dim sNumber As String : sNumber = &quot;&quot;
+			Dim i As Integer
+			For i=1 To Len( sTempNumber )
+				Dim sChar As String : sChar = Mid( sTempNumber, i, 1 )
+				If IsNumeric( sChar ) Then sNumber = sNumber &amp; sChar
+			Next i
 			&apos; ищем текст для сноски этого номера в блоке текста сносок
 			Dim oBlockNoteZoneBookMark : oBlockNoteZoneBookMark = oBookMarks.getByName(sBookMarkListNote).getAnchor()
 			&apos; перевод курсора на начала закладки зоны поиска текста сносок
@@ -803,6 +810,24 @@ Sub InsertFindFootNoteTextListBookMark
 			&apos; На этом месте документа нет закладки-шаблона для списка текста сносок. Можно вставлять!
 			_UnoInsertBookmark( sBookMark )
 			MsgBox &quot;Закладка-шаблон для списка текста сносок вставлена.&quot;, 64, sMessTitle
+		End If
+	End If
+End Sub
+
+&apos; удаляем служебные закладки, если они есть
+Sub DeleteAllWorkFootNoteBookMark()
+	Dim sMessTitle As String : sMessTitle = &quot;Удаление рабочих закладок&quot;
+	If MsgBox( &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста сносок?&quot; &amp; chr(10), _
+				1 + 32 + 256, sMessTitle ) = 1 Then
+		Dim oBookMarks			As Object : oBookMarks			= ThisComponent.getBookmarks()
+		Dim sBookMarkNZoneNote	As String : sBookMarkNZoneNote	= &quot;_ooo_ocr_tc_foot_note_number_zone_dikbsd_&quot;	&apos; закладка - зона поиска номера сноски
+		Dim sBookMarkListNote	As String : sBookMarkListNote	= &quot;_ooo_ocr_tc_foot_note_list_zone_dikbsd_&quot;		&apos; закладка - зона поиска списка текста сносок	
+		Dim nN As Integer : nN = DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkNZoneNote )
+		Dim nL As Integer : nL = DeleteAllBookMarkWithTemplate( oBookMarks, sBookMarkListNote )
+		If nN=0 And nL=0 Then
+			MsgBox &quot;Не найдено ни одной закладки-пометки зон поиска сносок!&quot;, 64, sMessTitle
+		Else
+			MsgBox &quot;Удалено закладок-пометок зон поиска:&quot; &amp; chr(10) &amp; &quot;НОМЕРОВ сносок: &quot; &amp; nN &amp; chr(10) &amp; &quot;ТЕКСТА сносок:  &quot; &amp; nL, 64, sMessTitle
 		End If
 	End If
 End Sub
