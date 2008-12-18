@@ -3,7 +3,9 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="BuildFootEndNote" script:language="StarBasic">REM  *****  BASIC  *****
 
 Private oBuildFootEndNoteDlg				As Object
+Private	oFootNoteLinkTransDlg				As Object
 Private sBuildFootEndNoteSettingsFilename	As String
+Private sFootNoteLinkTransSettingsFilename	As String
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos;							UNO функции
 &apos;//////////////////////////////////////////////////////////////////////////////
@@ -918,7 +920,7 @@ Sub DeleteAllWorkFootNoteBookMark()
 End Sub
 
 &apos;///////////////////////////////////////////////////////////////////////////////////////
-&apos; работа контролов диалога генерации сносок
+&apos; 		работа контролов диалога генерации сносок
 &apos;///////////////////////////////////////////////////////////////////////////////////////
 &apos; запуск диалога генерации сносок
 Sub StartBuildFootEndNoteDlg()
@@ -1064,5 +1066,183 @@ Sub BuildFootNote()
 	End If
 	
 End Sub
+
+&apos;///////////////////////////////////////////////////////////////////////////////////////
+&apos; 		работа контролов диалога преобразования номера сносок
+&apos;///////////////////////////////////////////////////////////////////////////////////////
+&apos; запуск диалога генерации сносок
+Sub StartFootNoteLinkTransDlg()
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oFootNoteLinkTransDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.FootNoteLinkTransDlg )
+	
+	Dim aList() As String
+	aList() = Array(&quot;... текст (x) ...&quot;, _
+					&quot;... текст [x] ...&quot;, _
+					&quot;... текст {x} ...&quot;, _
+					&quot;... текст &lt;x&gt; ...&quot;, _
+					&quot;... текст /x/ ...&quot;, _
+					&quot;... текст \x\ ...&quot;)
+
+	&apos; файл настроек oFootNoteLinkTransDlg
+	sFootNoteLinkTransSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/FootNoteLinkTransDlgSettings.txt&quot;
+	
+	With oFootNoteLinkTransDlg.Model
+		.Title = &quot;Преобразование № сноски в верхнем индексе по шаблону&quot;
+		.lboxFNLTrans.StringItemList = aList()
+		.Height = 50
+		.Width = 220
+	End With
+	
+	&apos; Настройки По умолчанию - в контролы
+	SetFootNoteLinkTransDlgSettingDefault
+	
+	&apos; ситаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	FootNoteLinkTransDlgSettings( sFootNoteLinkTransSettingsFilename, nX, nY )
+	oFootNoteLinkTransDlg.setPosSize( nX, nY, 50, 220, com.sun.star.awt.PosSize.POS )
+	
+	oFootNoteLinkTransDlg.execute()
+End Sub
+
+&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; Установка настроек по умолчанию в контролы
+Sub SetFootNoteLinkTransDlgSettingDefault
+	Dim oLB As Object
+	oLB = oFootNoteLinkTransDlg.getControl( &quot;lboxFNLTrans&quot; )
+	oLB.SelectItemPos( 0, True )
+End Sub
+
+Function FootNoteLinkTransDlgSettings( sFootNoteLinkTransSettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
+	&apos; Читаем настройки и задаем значения контролам формы
+	If FileExists( sFootNoteLinkTransSettingsFilename ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFootNoteLinkTransSettingsFilename ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные в контролы		
+				Dim sSetting() As String
+				sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					Dim oCtrl As Object : oCtrl = oFootNoteLinkTransDlg.GetControl( sSetting(0) )
+					If Not IsNull( oCtrl ) Then
+						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+							Dim oLB As Object : oLB = oFootNoteLinkTransDlg.getControl( sSetting(0) )
+							oLB.SelectItemPos( sSetting(1), True )
+						End If
+					End If
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		FootNoteLinkTransDlgSettings = True
+	Else
+		FootNoteLinkTransDlgSettings = False
+	End If
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; генерация сносок в зависимости от режима (простой или сложный)
+Sub TransformationFootNote()
+	oFootNoteLinkTransDlg.endExecute()
+	&apos; сохранение настроек
+	SaveSettings( sFootNoteLinkTransSettingsFilename, oFootNoteLinkTransDlg )
+
+	&apos; обход всего документа
+	Dim sMessTitle As String : sMessTitle = &quot;Преобразование номеров сносок в верхнем индексе&quot;
+	Dim lCount As Long : lCount = TextParser()
+	If lCount() &gt; 0 Then
+		MsgBox &quot;Найдено номеров сносок в верхнем индексе: &quot; &amp; lCount, 64, sMessTitle
+	Else
+		MsgBox &quot;Не найдено ни одного номера сноски в верхнем индексе.&quot;, 64, sMessTitle
+	End If
+	
+End Sub
+
+&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;				Функции алгоритма преобразования номеров сносок в верхнем индексе в вид по шаблону
+&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; преобразование номеров сносок в верхнем индексе в вид по шаблону
+Function TextParser() As Long
+	Dim lFindCount As Long : lFindCount = 0
+	Dim oParEnum As Object : oParEnum = ThisComponent.getText().createEnumeration() &apos;Счетчик, используемый для перебора параграфов
+	Do While oParEnum.hasMoreElements()
+		Dim oPar As Object : oPar = oParEnum.nextElement() &apos;Перебираемый параграф
+		&apos; сначала ищем таблицы
+		If oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+			&apos; парсер таблицы
+			&apos; обрабатываем ячейки  таблицы
+			Dim aCellNames()	As String	: aCellNames = oPar.getCellNames()
+			Dim lCellCount		As Long		: lCellCount = 0
+			Do While lCellCount &lt;= UBound( aCellNames() )
+				Dim oCell As Object	: oCell	= oPar.getCellByName( aCellNames( lCellCount ) )
+				lFindCount = lFindCount + CellParaParser( oCell )
+				lCellCount = lCellCount + 1
+			Loop
+		ElseIf oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			Dim oSectEnum As Object : oSectEnum = oPar.createEnumeration() &apos;Счетчик, используемый для перебора текстовых разделов
+			Dim sPara As String : sPara = &quot;&quot;
+			Do While oSectEnum.hasMoreElements()
+				Dim oSect As Object : oSect = oSectEnum.nextElement() &apos;Перебиремый текстовый раздел (section)			
+				If oSect.TextPortionType = &quot;Text&quot; Then
+					&apos; парсер текстового абзаца
+					If ParaParser( oSect ) Then &apos; это - число в верхнем индексе
+						lFindCount = lFindCount + 1
+						
+						msgbox oSect.getString()
+						&apos; преобразуем в шаблонный вид
+					End If
+				End If
+			Loop
+		End If
+	Loop
+	TextParser = lFindCount
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; поиск символов в верхнем регистре в абзацах ячейки таблицы
+Function CellParaParser( oCell As Object ) As Long
+	On Error Resume Next
+	Dim lFindCount As Long : lFindCount = 0
+	Dim oCellParEnum : oCellParEnum = oCell.createEnumeration()
+	Do While oCellParEnum.hasMoreElements()
+		Dim oCellPar : oCellPar = oCellParEnum.nextElement()
+		Dim oWordEnum : oWordEnum = oCellPar.createEnumeration()
+		Do While oWordEnum.hasMoreElements()
+			Dim oWord : oWord = oWordEnum.nextElement()
+			If oWord.TextPortionType = &quot;Text&quot; Then
+				&apos; парсер текстового абзаца
+				If ParaParser( oWord ) Then &apos; это - число в верхнем индексе
+					msgbox oWord.getString()
+					lFindCount = lFindCount + 1
+					
+					&apos; преобразуем в шаблонный вид
+					
+				End If
+			End If
+		Loop
+	Loop
+	CellParaParser = lFindCount
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; поиск символов в верхнем регистре в абзаце
+Function ParaParser( oSect As Object ) As Boolean
+	ParaParser = False
+	If oSect.CharEscapement &gt; 0 Then
+		If IsNumeric( oSect.getString() ) Then
+			ParaParser = True
+		End If
+	End If
+End Function
+
 
 </script:module>
