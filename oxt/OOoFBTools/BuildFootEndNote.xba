@@ -277,44 +277,42 @@ End Function
 &apos;				Функции алгоритма простой генерации сносок
 &apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; для режима простой генерации сносок - левая часть регулярного выражения
-Function GetRegStringFNForLeft() As String
-	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
+Function GetRegStringForLeft( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; ... текст (x)
-			GetRegStringFNForLeft = &quot;\(&quot;
+			GetRegStringForLeft = &quot;\(&quot;
 		Case 1 &apos; ... текст [x]
-			GetRegStringFNForLeft = &quot;\[&quot;
+			GetRegStringForLeft = &quot;\[&quot;
 		Case 2 &apos; ... текст {x}
-			GetRegStringFNForLeft = &quot;\{&quot;
+			GetRegStringForLeft = &quot;\{&quot;
 		Case 3 &apos; ... текст &lt;x&gt;
-			GetRegStringFNForLeft = &quot;&lt;&quot;
+			GetRegStringForLeft = &quot;&lt;&quot;
 		Case 4 &apos; ... текст /x/
-			GetRegStringFNForLeft = &quot;/&quot;
+			GetRegStringForLeft = &quot;/&quot;
 		Case 5 &apos; ... текст \x\
-			GetRegStringFNForLeft = &quot;\\&quot;
+			GetRegStringForLeft = &quot;\\&quot;
 		Case Else
-			GetRegStringFNForLeft = &quot;\(&quot;
+			GetRegStringForLeft = &quot;\(&quot;
 	End Select
 End Function
 
 &apos; для режима простой генерации сносок - правая часть регулярного выражения
-Function GetRegStringFNForRight() As String
-	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
+Function GetRegStringForRight( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; ... текст (x)
-			GetRegStringFNForRight = &quot;\)&quot;
+			GetRegStringForRight = &quot;\)&quot;
 		Case 1 &apos; ... текст [x]
-			GetRegStringFNForRight = &quot;\]&quot;
+			GetRegStringForRight = &quot;\]&quot;
 		Case 2 &apos; ... текст {x}
-			GetRegStringFNForRight = &quot;\}&quot;
+			GetRegStringForRight = &quot;\}&quot;
 		Case 3 &apos; ... текст &lt;x&gt;
-			GetRegStringFNForRight = &quot;&gt;&quot;
+			GetRegStringForRight = &quot;&gt;&quot;
 		Case 4 &apos; ... текст /x/
-			GetRegStringFNForRight = &quot;/&quot;
+			GetRegStringForRight = &quot;/&quot;
 		Case 5 &apos; ... текст \x\
-			GetRegStringFNForRight = &quot;\\&quot;
+			GetRegStringForRight = &quot;\\&quot;
 		Case Else
-			GetRegStringFNForRight = &quot;\)&quot;
+			GetRegStringForRight = &quot;\)&quot;
 	End Select
 End Function
 
@@ -326,8 +324,9 @@ Sub BuildFootNoteSimple()
 	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
 	
 	&apos; левая и правая часть регулярного выражения для поиска текста сноски
-	Dim sLeft	As String : sLeft	= GetRegStringFNForLeft()
-	Dim sRight	As String : sRight	= GetRegStringFNForRight()
+	Dim oLB		As Object : oLB		= oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
+	Dim sLeft	As String : sLeft	= GetRegStringForLeft( oLB )
+	Dim sRight	As String : sRight	= GetRegStringForRight( oLB )
 	Dim lFound As Long : lFound = 0
 	For l = LBound( oCurs() ) To UBound( oCurs() )
 		lFound = lFound + BuildFootNoteSimpleWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), sLeft &amp; &quot;.+&quot; &amp; sRight )
@@ -1156,23 +1155,32 @@ Sub TransformationFootNote()
 	&apos; сохранение настроек
 	SaveSettings( sFootNoteLinkTransSettingsFilename, oFootNoteLinkTransDlg )
 
+	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( &quot;Преобразование сносок:&quot;, ThisComponent.ParagraphCount )
+	
 	&apos; обход всего документа
 	Dim sMessTitle As String : sMessTitle = &quot;Преобразование номеров сносок в верхнем индексе&quot;
-	Dim lCount As Long : lCount = TextParser()
+	Dim lCount As Long : lCount = TextParser( oProgressBar )
 	If lCount() &gt; 0 Then
 		MsgBox &quot;Найдено номеров сносок в верхнем индексе: &quot; &amp; lCount, 64, sMessTitle
 	Else
 		MsgBox &quot;Не найдено ни одного номера сноски в верхнем индексе.&quot;, 64, sMessTitle
 	End If
-	
+	oProgressBar.end
 End Sub
 
 &apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos;				Функции алгоритма преобразования номеров сносок в верхнем индексе в вид по шаблону
 &apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; преобразование номеров сносок в верхнем индексе в вид по шаблону
-Function TextParser() As Long
-	Dim lFindCount As Long : lFindCount = 0
+Function TextParser( oProgressBar ) As Long
+	Dim nCharEscapementHeight As Integer : nCharEscapementHeight = 0
+	Dim oLB		As Object : oLB		= oFootNoteLinkTransDlg.getControl( &quot;lboxFNLTrans&quot; )
+	Dim sLeft	As String : sLeft	= GetStringLeft( oLB )
+	Dim sRight	As String : sRight	= GetStringRight( oLB )
+	
+	Dim lCur		As Long : lCur = 0 &apos; текущее положение прогрессбара
+	Dim lFindCount	As Long : lFindCount = 0
 	Dim oParEnum As Object : oParEnum = ThisComponent.getText().createEnumeration() &apos;Счетчик, используемый для перебора параграфов
 	Do While oParEnum.hasMoreElements()
 		Dim oPar As Object : oPar = oParEnum.nextElement() &apos;Перебираемый параграф
@@ -1184,7 +1192,7 @@ Function TextParser() As Long
 			Dim lCellCount		As Long		: lCellCount = 0
 			Do While lCellCount &lt;= UBound( aCellNames() )
 				Dim oCell As Object	: oCell	= oPar.getCellByName( aCellNames( lCellCount ) )
-				lFindCount = lFindCount + CellParaParser( oCell )
+				lFindCount = lFindCount + CellParaParser( oCell, sLeft, sRight )
 				lCellCount = lCellCount + 1
 			Loop
 		ElseIf oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
@@ -1194,23 +1202,27 @@ Function TextParser() As Long
 				Dim oSect As Object : oSect = oSectEnum.nextElement() &apos;Перебиремый текстовый раздел (section)			
 				If oSect.TextPortionType = &quot;Text&quot; Then
 					&apos; парсер текстового абзаца
-					If ParaParser( oSect ) Then &apos; это - число в верхнем индексе
+					If ParaParser( oSect, nCharEscapementHeight ) Then &apos; это - число в верхнем индексе
 						lFindCount = lFindCount + 1
-						
-						msgbox oSect.getString()
 						&apos; преобразуем в шаблонный вид
+						oSect.CharEscapementHeight = nCharEscapementHeight
+						oSect.CharEscapement = 0
+						oSect.setString( sLeft &amp; oSect.getString() &amp; sRight )
 					End If
 				End If
 			Loop
 		End If
+		oProgressBar.setValue( lCur )
+		lCur = lCur+1
 	Loop
 	TextParser = lFindCount
 End Function
 
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; поиск символов в верхнем регистре в абзацах ячейки таблицы
-Function CellParaParser( oCell As Object ) As Long
+Function CellParaParser( oCell As Object, sLeft as String, sRight as String ) As Long
 	On Error Resume Next
+	Dim nCharEscapementHeight As Integer : nCharEscapementHeight = 0
 	Dim lFindCount As Long : lFindCount = 0
 	Dim oCellParEnum : oCellParEnum = oCell.createEnumeration()
 	Do While oCellParEnum.hasMoreElements()
@@ -1220,12 +1232,12 @@ Function CellParaParser( oCell As Object ) As Long
 			Dim oWord : oWord = oWordEnum.nextElement()
 			If oWord.TextPortionType = &quot;Text&quot; Then
 				&apos; парсер текстового абзаца
-				If ParaParser( oWord ) Then &apos; это - число в верхнем индексе
-					msgbox oWord.getString()
+				If ParaParser( oWord, nCharEscapementHeight ) Then &apos; это - число в верхнем индексе
 					lFindCount = lFindCount + 1
-					
 					&apos; преобразуем в шаблонный вид
-					
+					oWord.CharEscapementHeight = nCharEscapementHeight
+					oWord.CharEscapement = 0
+					oWord.setString( sLeft &amp; oWord.getString() &amp; sRight )
 				End If
 			End If
 		Loop
@@ -1235,14 +1247,55 @@ End Function
 
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; поиск символов в верхнем регистре в абзаце
-Function ParaParser( oSect As Object ) As Boolean
+Function ParaParser( oSect As Object, nCharEscapementHeight As Integer ) As Boolean
 	ParaParser = False
 	If oSect.CharEscapement &gt; 0 Then
 		If IsNumeric( oSect.getString() ) Then
 			ParaParser = True
 		End If
+	Else
+		nCharEscapementHeight = oSect.CharEscapementHeight &apos; для предыдущего слова
 	End If
 End Function
 
+&apos; для режима преобразования - левая часть
+Function GetStringLeft( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; ... текст (x)
+			GetStringLeft = &quot;(&quot;
+		Case 1 &apos; ... текст [x]
+			GetStringLeft = &quot;[&quot;
+		Case 2 &apos; ... текст {x}
+			GetStringLeft = &quot;{&quot;
+		Case 3 &apos; ... текст &lt;x&gt;
+			GetStringLeft = &quot;&lt;&quot;
+		Case 4 &apos; ... текст /x/
+			GetStringLeft = &quot;/&quot;
+		Case 5 &apos; ... текст \x\
+			GetStringLeft = &quot;\&quot;
+		Case Else
+			GetStringLeft = &quot;(&quot;
+	End Select
+End Function
+
+&apos; для режима преобразования - правая часть
+Function GetStringRight( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; ... текст (x)
+			GetStringRight = &quot;)&quot;
+		Case 1 &apos; ... текст [x]
+			GetStringRight = &quot;]&quot;
+		Case 2 &apos; ... текст {x}
+			GetStringRight = &quot;}&quot;
+		Case 3 &apos; ... текст &lt;x&gt;
+			GetStringRight = &quot;&gt;&quot;
+		Case 4 &apos; ... текст /x/
+			GetStringRight = &quot;/&quot;
+		Case 5 &apos; ... текст \x\
+			GetStringRight = &quot;\&quot;
+		Case Else
+			GetStringRight = &quot;)&quot;
+	End Select
+End Function
 
 </script:module>
