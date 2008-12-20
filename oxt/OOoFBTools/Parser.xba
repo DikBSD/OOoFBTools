@@ -21,6 +21,7 @@ Public	sFootnoteText() As String
 Private iFootnoteCount	As Integer
 Private iImgCurrent		As Integer	&apos; для формирования номера картинки
 Private sPrevStyle		As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
+Private sNotesPrevStyle As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк в тексте сносок
 Private sPara			As String	&apos; отформатированный текст параграфа
 
 Sub DocumentParser
@@ -456,8 +457,7 @@ Function FormatFootnoteText(oSect)
 End Function
 
 Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
-	Dim l As Long
-	l = Ubound(sBodyParagraphs(), 1) + 1
+	Dim l As Long : l = Ubound(sBodyParagraphs(), 1) + 1
 	&apos; для уровней - проверка на несколько строк
 	If bLevel = False Then 
 		If l &gt; 0 Then
@@ -486,8 +486,7 @@ End Function
 
 Function AddLinksToArray(lTo As Long, sID As String)
 	&apos; формирование строк массива  КУДА (№ строки массива sBodyParagraphs)
-	Dim l As Long
-	l = Ubound(sLinksTo(), 1) + 1
+	Dim l As Long : l = Ubound(sLinksTo(), 1) + 1
 	If l &gt; 0 Then
 		ReDim Preserve sLinksTo(l, 1)
 	Else Redim sLinksTo(l, 1)
@@ -498,16 +497,14 @@ End Function
 
 Function AddBookAnnotation(sPara As String)
 	&apos; Собираем всю &quot;отформатированную&quot; Аннотацию на Книгу
-	Dim l As Long
-	l = Ubound(sBookAnnotation()) + 1
+	Dim l As Long : l = Ubound(sBookAnnotation()) + 1
 	ReDim Preserve sBookAnnotation(l)
 	sBookAnnotation(l) = sPara
 	oProgressBar.setValue(UBound(sBodyParagraphs),0 &amp; UBound(sBookAnnotation) &apos; Статусбар
 End Function
 
 Function AddNotesArray(sTextArray As String, TextType As String, sPara As String, bLevel As Boolean)
-	Dim l As Long
-	l = Ubound(sTextArray()) + 1
+	Dim l As Long : l = Ubound(sTextArray()) + 1
 	&apos; для уровней - проверка на несколько строк
 	If bLevel = False Then 
 		If l &gt; 0 Then
@@ -516,7 +513,7 @@ Function AddNotesArray(sTextArray As String, TextType As String, sPara As String
 		End If
 		sTextArray(l) = sPara
 	Else
-		If TextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
+		If TextType &lt;&gt; sNotesPrevStyle Then &apos; Разные уровни
 			If l &gt; 0 Then
 				ReDim Preserve sTextArray(l)
 			Else Redim sTextArray(l)
@@ -543,8 +540,7 @@ End Function
 
 Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPara As String) As String
 	&apos; перебор по стилям
-	Dim sParaType As String
-	sParaType = sParaStyleName
+	Dim sParaType As String : sParaType = sParaStyleName
 	If sPara = &quot;&quot; Then
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
@@ -621,7 +617,7 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 				sParaType = &quot;Para&quot;
 		End Select
 	End If
-	sPrevStyle = sParaStyleName
+	sNotesPrevStyle = sParaStyleName
 	FootnoteStyleParser = sParaType
 End Function
 
