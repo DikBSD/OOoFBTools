@@ -1,53 +1,153 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="VirtualKeyboards" script:language="StarBasic">REM  *****  BASIC  *****
-Public oCurrencyVKDlg As Object
-Public oMatchVKDlg As Object
-Public oNumbersVKDlg As Object
-Public oMiscVKDlg As Object
-Public oGVKDlg As Object
-Public oHVKDlg As Object
+Public oCurrencyVKDlg	As Object
+Public oMatchVKDlg		As Object
+Public oNumbersVKDlg	As Object
+Public oMiscVKDlg		As Object
+Public oGVKDlg			As Object
+Public oHVKDlg			As Object
+
 Private sOldCharFontName As String
 
-Function GreekKeyboard
+Private bGreekKeyboardEnd		As Boolean &apos; флаг конца работы - закрытия диалога (True)
+Private bHebrewKeyboardEnd		As Boolean &apos; флаг конца работы - закрытия диалога (True)
+Private bCurrencyKeyboardEnd	As Boolean &apos; флаг конца работы - закрытия диалога (True)
+Private bMatchKeyboardEnd		As Boolean &apos; флаг конца работы - закрытия диалога (True)
+Private bNumbersKeyboardEnd		As Boolean &apos; флаг конца работы - закрытия диалога (True)
+Private bMiscKeyboardEnd		As Boolean &apos; флаг конца работы - закрытия диалога (True)
+
+&apos;////////////////////////////////////////////////////////////////////////////////////
+Sub GreekKeyboard_windowActivated(oEv)
+End Sub
+
+Sub GreekKeyboard_windowDeactivated(oEv)
+End Sub
+
+Sub GreekKeyboard_windowOpened(oEv)
+End Sub
+
+Sub GreekKeyboard_windowClosing(oEv)
+	bGreekKeyboardEnd = True
+End Sub
+
+Sub GreekKeyboard_windowClosed(oEv)
+End Sub
+
+Sub GreekKeyboard_windowMinimized(oEv)
+End Sub
+
+Sub GreekKeyboard_windowNormalized(oEv)
+End Sub
+
+Sub GreekKeyboard_disposing(oEv)
+End Sub
+
+Sub GreekKeyboard()
 						
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oGVKDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.GreekVKDlg)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oGVKDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.GreekVKDlg )
 
 	With oGVKDlg.Model
-		.Title = &quot;Виртуальная клавиатура (Greek Keyboard)&quot;
-		.Height = 136
-		.Width = 498
+		.Title	= &quot;Виртуальная клавиатура (Greek Keyboard)&quot;
+		.Height	= 136
+		.Width	= 498
 	End With
 	
 	ChangeGreekGeneralKeys &apos; инициализация греческой виртуальной клавиатуры (1-я страница формы...)
 	
-	oGVKDlg.execute()
+	bGreekKeyboardEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;GreekKeyboard_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oGVKDlg.addTopWindowListener( oList )
+	
+	oGVKDlg.setVisible( True )  
+	While Not bGreekKeyboardEnd
+		Wait 200     
+	Wend
+	oGVKDlg.setVisible( False )
+End Sub
 
-End Function
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub HebrewKeyboard_windowActivated(oEv)
+End Sub
 
-Function HebrewKeyboard
+Sub HebrewKeyboard_windowDeactivated(oEv)
+End Sub
+
+Sub HebrewKeyboard_windowOpened(oEv)
+End Sub
+
+Sub HebrewKeyboard_windowClosing(oEv)
+	bHebrewKeyboardEnd = True
+End Sub
+
+Sub HebrewKeyboard_windowClosed(oEv)
+End Sub
+
+Sub HebrewKeyboard_windowMinimized(oEv)
+End Sub
+
+Sub HebrewKeyboard_windowNormalized(oEv)
+End Sub
+
+Sub HebrewKeyboard_disposing(oEv)
+End Sub
+
+Sub HebrewKeyboard()
 						
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oHVKDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.HebrewVKDlg)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oHVKDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.HebrewVKDlg )
 
 	With oHVKDlg.Model
-		.Title = &quot;Виртуальная клавиатура (Hebrew Keyboard)&quot;
-		.Height = 130
-		.Width = 422
+		.Title	= &quot;Виртуальная клавиатура (Hebrew Keyboard)&quot;
+		.Height	= 130
+		.Width	= 422
 	End With
-	
-	oHVKDlg.execute()
 
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oHVKDlg)
+	bHebrewKeyboardEnd = False
 	
-End Function
+	Dim oList : oList = createUnoListener( &quot;HebrewKeyboard_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oHVKDlg.addTopWindowListener( oList )
+	
+	oHVKDlg.setVisible( True )  
+	While Not bHebrewKeyboardEnd
+		Wait 200     
+	Wend
+	oHVKDlg.setVisible( False )
+	
+End Sub
 
-Function CurrencyKeyboard
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub CurrencyKeyboard_windowActivated(oEv)
+End Sub
+
+Sub CurrencyKeyboard_windowDeactivated(oEv)
+End Sub
+
+Sub CurrencyKeyboard_windowOpened(oEv)
+End Sub
+
+Sub CurrencyKeyboard_windowClosing(oEv)
+	bCurrencyKeyboardEnd = True
+End Sub
+
+Sub CurrencyKeyboard_windowClosed(oEv)
+End Sub
+
+Sub CurrencyKeyboard_windowMinimized(oEv)
+End Sub
+
+Sub CurrencyKeyboard_windowNormalized(oEv)
+End Sub
+
+Sub CurrencyKeyboard_disposing(oEv)
+End Sub
+
+Sub CurrencyKeyboard()
 						
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oCurrencyVKDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.CurrencyDlg)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oCurrencyVKDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.CurrencyDlg )
 
 	With oCurrencyVKDlg.Model
 		.Title = &quot;Ввиртуальная клавиатера (Денежные знаки)&quot;
@@ -55,67 +155,170 @@ Function CurrencyKeyboard
 		.Width = 310
 	End With
 	
-	oCurrencyVKDlg.execute()
+	bCurrencyKeyboardEnd = False
 	
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oCurrencyVKDlg)
+	Dim oList : oList = createUnoListener( &quot;CurrencyKeyboard_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oCurrencyVKDlg.addTopWindowListener( oList )
+	
+	oCurrencyVKDlg.setVisible( True )  
+	While Not bCurrencyKeyboardEnd
+		Wait 200     
+	Wend
+	oCurrencyVKDlg.setVisible( False )
 
-End Function
+End Sub
 
-Function MatchKeyboard
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub MatchKeyboard_windowActivated(oEv)
+End Sub
+
+Sub MatchKeyboard_windowDeactivated(oEv)
+End Sub
+
+Sub MatchKeyboard_windowOpened(oEv)
+End Sub
+
+Sub MatchKeyboard_windowClosing(oEv)
+	bMatchKeyboardEnd = True
+End Sub
+
+Sub MatchKeyboard_windowClosed(oEv)
+End Sub
+
+Sub MatchKeyboard_windowMinimized(oEv)
+End Sub
+
+Sub MatchKeyboard_windowNormalized(oEv)
+End Sub
+
+Sub MatchKeyboard_disposing(oEv)
+End Sub
+
+Sub MatchKeyboard()
 						
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oMatchVKDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.MatchDlg)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oMatchVKDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.MatchDlg )
 
 	With oMatchVKDlg.Model
-		.Title = &quot;Ввиртуальная клавиатура (Математическая)&quot;
-		.Height = 38
-		.Width = 322
+		.Title	= &quot;Ввиртуальная клавиатура (Математическая)&quot;
+		.Height	= 38
+		.Width	= 322
 	End With
 	
-	oMatchVKDlg.execute()
+	bMatchKeyboardEnd = False
 	
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oMatchVKDlg)
+	Dim oList : oList = createUnoListener( &quot;MatchKeyboard_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oMatchVKDlg.addTopWindowListener( oList )
+	
+	oMatchVKDlg.setVisible( True )  
+	While Not bMatchKeyboardEnd
+		Wait 200     
+	Wend
+	oMatchVKDlg.setVisible( False )
+	
+End Sub
 
-End Function
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub NumbersKeyboard_windowActivated(oEv)
+End Sub
 
-Function NumbersKeyboard
+Sub NumbersKeyboard_windowDeactivated(oEv)
+End Sub
+
+Sub NumbersKeyboard_windowOpened(oEv)
+End Sub
+
+Sub NumbersKeyboard_windowClosing(oEv)
+	bNumbersKeyboardEnd = True
+End Sub
+
+Sub NumbersKeyboard_windowClosed(oEv)
+End Sub
+
+Sub NumbersKeyboard_windowMinimized(oEv)
+End Sub
+
+Sub NumbersKeyboard_windowNormalized(oEv)
+End Sub
+
+Sub NumbersKeyboard_disposing(oEv)
+End Sub
+
+Sub NumbersKeyboard()
 						
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oNumbersVKDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.NumbersDlg)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oNumbersVKDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.NumbersDlg )
 
 	With oNumbersVKDlg.Model
-		.Title = &quot;Ввиртуальная клавиатура (Числа)&quot;
-		.Height = 36
-		.Width = 324
+		.Title	= &quot;Ввиртуальная клавиатура (Числа)&quot;
+		.Height	= 36
+		.Width	= 324
 	End With
 	
-	oNumbersVKDlg.execute()
+	bNumbersKeyboardEnd = False
 	
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oNumbersVKDlg)
+	Dim oList : oList = createUnoListener( &quot;NumbersKeyboard_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oNumbersVKDlg.addTopWindowListener( oList )
 	
-End Function
+	oNumbersVKDlg.setVisible( True )  
+	While Not bNumbersKeyboardEnd
+		Wait 200     
+	Wend
+	oNumbersVKDlg.setVisible( False )
+		
+End Sub
 
-Function MiscKeyboard
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub MiscKeyboard_windowActivated(oEv)
+End Sub
+
+Sub MiscKeyboard_windowDeactivated(oEv)
+End Sub
+
+Sub MiscKeyboard_windowOpened(oEv)
+End Sub
+
+Sub MiscKeyboard_windowClosing(oEv)
+	bMiscKeyboardEnd = True
+End Sub
+
+Sub MiscKeyboard_windowClosed(oEv)
+End Sub
+
+Sub MiscKeyboard_windowMinimized(oEv)
+End Sub
+
+Sub MiscKeyboard_windowNormalized(oEv)
+End Sub
+
+Sub MiscKeyboard_disposing(oEv)
+End Sub
+
+Sub MiscKeyboard()
 						
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oMiscVKDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.MiscDlg)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oMiscVKDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.MiscDlg )
 
 	With oMiscVKDlg.Model
-		.Title = &quot;Ввиртуальная клавиатура (Разное)&quot;
-		.Height = 36
-		.Width = 228
+		.Title	= &quot;Ввиртуальная клавиатура (Разное)&quot;
+		.Height	= 36
+		.Width	= 228
 	End With
 	
-	oMiscVKDlg.execute()
+	bMiscKeyboardEnd = False
 	
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oMiscVKDlg)
+	Dim oList : oList = createUnoListener( &quot;MiscKeyboard_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oMiscVKDlg.addTopWindowListener( oList )
 	
-End Function
+	oMiscVKDlg.setVisible( True )  
+	While Not bMiscKeyboardEnd
+		Wait 200     
+	Wend
+	oMiscVKDlg.setVisible( False )
+	
+End Sub
 
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub InsertSymbol(o)
 	Dim oText As Object, oVCurs As Object, oTCurs As Object
 	oText = ThisComponent.Text
@@ -152,18 +355,16 @@ Sub ChangeKeys(o)
 	End If
 End Sub
 
-Function ChangeGreekGeneralKeys
+Sub ChangeGreekGeneralKeys()
 	oGVKDlg.Model.Step = 1
 	oGVKDlg.Model.cmdVKSpace.PositionY = 65
 	oGVKDlg.Model.cmdVKSpace.PositionX = 1
 	oGVKDlg.Model.Width = 403
 	oGVKDlg.Model.Height = 85
 	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - 3
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oGVKDlg)
-End Function
+End Sub
 
-Function ChangeGreekCapitalKeys
+Sub ChangeGreekCapitalKeys()
 	oGVKDlg.Model.Step = 2
 	oGVKDlg.Model.cmdVKSpace.PositionY = 90
 	oGVKDlg.Model.cmdVKSpace.PositionX = 49
@@ -171,11 +372,9 @@ Function ChangeGreekCapitalKeys
 	oGVKDlg.Model.Width = 370
 	oGVKDlg.Model.Height = 136
 	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - oGVKDlg.Model.cmdVKSpace.PositionX - 3
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oGVKDlg)
-End Function
+End Sub
 
-Function ChangeGreekSmallKeys
+Sub ChangeGreekSmallKeys()
 	oGVKDlg.Model.Step = 3
 	oGVKDlg.Model.cmdVKSpace.PositionY = 90
 	oGVKDlg.Model.cmdVKSpace.PositionX = 49
@@ -183,8 +382,6 @@ Function ChangeGreekSmallKeys
 	oGVKDlg.Model.Width = 498
 	oGVKDlg.Model.Height = 136
 	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - oGVKDlg.Model.cmdVKSpace.PositionX - 3
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oGVKDlg)
-End Function
+End Sub
 
 </script:module>

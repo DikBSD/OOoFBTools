@@ -20,6 +20,7 @@ Private oDocController As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
 Private oDocControl, otxtCurs &apos; текстовый курсор
+
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub TextDefectFinderDlg_windowActivated(oEv)
 	oDocController = ThisComponent.getCurrentController()
@@ -63,8 +64,8 @@ Sub TextDefectFinderStart
 	
 	With oTDF.Model
 		.Title = &quot;Поиск OCR ошибок в тексте&quot;
-	&apos;	.Height = 30
-	&apos;	.Width = 272
+		.Height = 30
+		.Width = 272
 		.lbTDFMode.StringItemList = aModeList()
 	End With
 	oTDF.getControl(&quot;lbTDFMode&quot;).SelectItemPos(0, True)
@@ -76,16 +77,16 @@ Sub TextDefectFinderStart
 
 	bFindEnd = False
 	
-	Dim oList : oList = createUnoListener(&quot;TextDefectFinderDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot;) 
-	oTDF.addTopWindowListener(oList)
+	Dim oList : oList = createUnoListener( &quot;TextDefectFinderDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oTDF.addTopWindowListener( oList )
 
-	oTDF.setVisible(true)  
+	oTDF.setVisible( True )  
 	While Not bFindEnd
 		Wait 200     
 	Wend
 	&apos; записываем настройки диалога
-	SaveSettings(sOCRTCSettingsFilename, oTDF)
-	oTDF.setVisible(false)
+	SaveSettings( sOCRTCSettingsFilename, oTDF )
+	oTDF.setVisible( False )
 End Sub
 
 &apos; Поиск по заданному режиму
