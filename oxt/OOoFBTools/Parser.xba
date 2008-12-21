@@ -25,17 +25,16 @@ Private sNotesPrevStyle As String	&apos; название предыдущего
 Private sPara			As String	&apos; отформатированный текст параграфа
 
 Sub DocumentParser
-	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
-	Dim oPar As Object 		&apos;Перебираемый параграф
-	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
-	Dim oSect As Object 	&apos;Перебиремый текстовый раздел (section)
-	Dim oCEnum As Object 	&apos;Перебирает содержимое, такое как графические объекты
-	Dim oContent As Object 	&apos;Перебираемое содержимое
-	Dim textGraphService As String, graphicService As String, customShapeService As String
+	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
+	Dim oPar		As Object &apos;Перебираемый параграф
+	Dim oSectEnum	As Object &apos;Счетчик, используемый для перебора текстовых разделов
+	Dim oSect		As Object &apos;Перебиремый текстовый раздел (section)
+	Dim oCEnum		As Object &apos;Перебирает содержимое, такое как графические объекты
+	Dim oContent	As Object &apos;Перебираемое содержимое
 	
-	textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
-	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	Dim customShapeService	As String : customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
 
 	iImgCurrent = 0		&apos; номер текущей картинки, если она есть
 	
@@ -138,12 +137,11 @@ Sub DocumentParser
 							AddLinksToArray(UBound(sBodyParagraphs)+1, oSect.Bookmark.Name)
 						Else
 							If sLinksTo(UBound(sLinksTo), 0) &lt;&gt; UBound(sBodyParagraphs)+1 AND _
-								sLinksTo(UBound(sLinksTo), 1) &lt;&gt; oSect.Bookmark.Name Then
+								sLinksTo(UBound(sLinksTo), 1) &lt;&gt; &quot;_&quot; &amp; oSect.Bookmark.Name Then
 								AddLinksToArray(UBound(sBodyParagraphs)+1, oSect.Bookmark.Name)
 							End If
 						End If
 					End If
-					&apos;MsgBox &quot;Закладка - &quot; &amp; oSect.Bookmark.Name
 				&apos;Else
 				&apos;	MsgBox &quot;Что-то другое : &quot; &amp; oSect.TextPortionType
 				End If

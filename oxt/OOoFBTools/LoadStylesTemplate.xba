@@ -23,29 +23,29 @@ Sub LoadStylesTemplate
 	Next i
 	
 	If sPath = &quot;&quot; Then
-		MsgBox &quot;Файл стилей не был добавлен в шаблоны OOo&quot; &amp; chr(10) &amp; &quot;Добавьте его через меню Файл-&gt;Шаблоны-&gt;Управление...&quot;, 64, sConvertorName
+		MsgBox &quot;Файл стилей не был добавлен в шаблоны OOo.&quot; &amp; chr(10) &amp; &quot;Добавьте его через меню Файл-&gt;Шаблоны-&gt;Управление...&quot;, 64, sConvertorName
 		Exit Sub
 	End If
 	
 	&apos;Загрузка шаблона в переменную
-	oDesktop =   createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
-	Dim aArgs(1)  As New com.sun.star.beans.PropertyValue
-	aArgs(0).Name = &quot;AsTemplate&quot;
-	aArgs(0).Value = False
-	aArgs(1).Name=&quot;Hidden&quot;
-   	aArgs(1).Value=True
+	oDesktop = createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	Dim aArgs(1) As New com.sun.star.beans.PropertyValue
+	aArgs(0).Name	= &quot;AsTemplate&quot;
+	aArgs(0).Value	= False
+	aArgs(1).Name	= &quot;Hidden&quot;
+   	aArgs(1).Value	= True
 	oTemplate = oDesktop.loadComponentFromURL( sPath, &quot;_blank&quot;, 0, aArgs() )
 		
 	&apos; Загрузка и переименовывание стилей для докуменета из шаблона
-    aArgs(0).Name = &quot;OverwriteStyles&quot;
-    aArgs(0).Value = True
-    aArgs(1).Name = &quot;&quot;
-    aArgs(1).Value = &quot;&quot;
+    aArgs(0).Name	= &quot;OverwriteStyles&quot;
+    aArgs(0).Value	= True
+    aArgs(1).Name	= &quot;&quot;
+    aArgs(1).Value	= &quot;&quot;
     oDoc.stylefamilies.loadStylesFromURL( sPath, aArgs() )
 	
 	&apos; привязываем наш документ к шаблону
-    oDoc.DocumentInfo.Template = oTemplate.DocumentInfo.Title
-    oDoc.DocumentInfo.TemplateFileName = sPath
+    oDoc.DocumentInfo.Template			= oTemplate.DocumentInfo.Title
+    oDoc.DocumentInfo.TemplateFileName	= sPath
        
     oTemplate.Close (false)
 End Sub
