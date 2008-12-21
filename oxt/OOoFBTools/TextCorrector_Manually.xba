@@ -53,11 +53,10 @@ End Sub
 Sub TextDefectFinderStart
 	&apos; файл начтроек Корректора Текста
 	Dim sOCRTCSettingsFilename As String : sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
-	Dim aModeList() As String
-	aModeList() = Array(&quot;Слово с дефисом, тире или минусом&quot;, _
-						&quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;, _
-						&quot;Обрыв предложения на словах, знаках препинания, кавычках и скобках&quot;, _
-						&quot;Место с недостающим пробелом между словами (вероятно)&quot;)
+	Dim aModeList() As String : aModeList() = Array(&quot;Слово с дефисом, тире или минусом&quot;, _
+													&quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;, _
+													&quot;Обрыв предложения на словах, знаках препинания, кавычках и скобках&quot;, _
+													&quot;Место с недостающим пробелом между словами (вероятно)&quot;)
 	
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
 	oTDF = LoadDialog( &quot;OOoFBTools&quot;, &quot;TextDefectFinderDlg&quot; )
@@ -70,7 +69,7 @@ Sub TextDefectFinderStart
 	End With
 	oTDF.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
 	
-	&apos; ситаем положение диалога из файла настроек
+	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadOCRCorrectorSettings( sOCRTCSettingsFilename, nX, nY )
 	oTDF.setPosSize( nX, nY, 30, 272, com.sun.star.awt.PosSize.POS )
