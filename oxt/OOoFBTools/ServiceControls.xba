@@ -3,65 +3,60 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ServiceControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public oServiceDlg As Object
-Public sHeaderTVA As String
-Public sLineTVA As String
-Public sTextFrameToFB2 As String &apos; экспортировать врезки как...
+Public oServiceDlg		As Object
+Public sHeaderTVA		As String
+Public sLineTVA			As String
+Public sTextFrameToFB2	As String &apos; экспортировать врезки как...
 
-Private sFootStyleList() As String &apos; стиль сносок
-Private sFootTitleList() As String &apos; Название секции сносок
-Private sHVList() As String &apos; выравнивание по высоте
-Private sTFList() As String &apos; вид экспорта врезок
-Private sGraphList() As String &apos; форматы для преобразования графики
-Private bServiceExecute As Boolean
+Private sFootStyleList()	As String &apos; стиль сносок
+Private sFootTitleList()	As String &apos; Название секции сносок
+Private sHVList()			As String &apos; выравнивание по высоте
+Private sTFList()			As String &apos; вид экспорта врезок
+Private sGraphList()		As String &apos; форматы для преобразования графики
 
-Function ServiceDlgExec As Boolean
-	sFootStyleList() = Array(&quot;x&quot;, &quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
-	sFootTitleList() = Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
-	sHVList() = Array(&quot;&quot;, &quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
-	sTFList() = Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;, &quot;Структура&quot;)
-	sGraphList() = Array(&quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot;)
+Sub ServiceDlgExec()
+	sFootStyleList()	= Array(&quot;x&quot;, &quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
+	sFootTitleList()	= Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
+	sHVList()			= Array(&quot;&quot;, &quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
+	sTFList()			= Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;, &quot;Структура&quot;)
+	sGraphList()		= Array(&quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot;)
 						
-	oServiceDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.ServiceDlg)
+	oServiceDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.ServiceDlg )
 	With oServiceDlg.Model
-		.Title = &quot;Дополнительные настройки&quot;
-		.Height = 306
-		.Width = 368
-		.cmbboxStyle.StringItemList = sFootStyleList()
-		.cmbboxTitle.StringItemList = sFootTitleList()
-		.cmbboxHeaderTHV.StringItemList = sHVList()
-		.cmbboxLineTDV.StringItemList = sHVList()
-		.cmbboxTextFrame.StringItemList = sTFList()
-		.lbGifAs.StringItemList = sGraphList()
-		.lbTifBMPAs.StringItemList = sGraphList()
-		.lbAnyAs.StringItemList = sGraphList()
-		.lbOLEAs.StringItemList = sGraphList()
+		.Title	= &quot;Дополнительные настройки&quot;
+		.Height	= 306
+		.Width	= 368
+		.cmbboxStyle.StringItemList		= sFootStyleList()
+		.cmbboxTitle.StringItemList		= sFootTitleList()
+		.cmbboxHeaderTHV.StringItemList	= sHVList()
+		.cmbboxLineTDV.StringItemList	= sHVList()
+		.cmbboxTextFrame.StringItemList	= sTFList()
+		.lbGifAs.StringItemList			= sGraphList()
+		.lbTifBMPAs.StringItemList		= sGraphList()
+		.lbAnyAs.StringItemList			= sGraphList()
+		.lbOLEAs.StringItemList			= sGraphList()
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
 	SetDefaultSettingsInControls
-	&apos; Считываем и устанавливаем настройки
-	ReadSettings(True)
 	
-	cboxExportGraphicsEnabled
+	&apos; Считываем и устанавливаем настройки
+	Dim nX As Integer, nY As Integer
+	ReadSettings( True, nX, nY )
+	oServiceDlg.setPosSize( nX, nY, 306, 368, com.sun.star.awt.PosSize.POS )
+	
+	cboxExportGraphicsEnabled()
 	
 	oServiceDlg.execute()
+End Sub
 
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oServiceDlg)
-
-	ServiceDlgExec = bServiceExecute
-
-End Function
-
-Function ServiceDlgCanceled
-	bServiceExecute = False
+Sub ServiceDlgCanceled()
 	oServiceDlg.endExecute()
-End Function
+End Sub
 
-Function ServiceDlgOk
+Sub ServiceDlgOk()
 	&apos; Сохраняем настройки в файл
-	SaveSettings(sSettingsFilename, oServiceDlg)
+	SaveSettings( getUserPath() &amp; sConstSettings, oServiceDlg )
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
@@ -73,7 +68,7 @@ Function ServiceDlgOk
 	&apos; Для тех новых опций, которых еще нет в файле settings.txt значения будут по умолчанию,
 	&apos; а для остальных - считаны из файла.
 	&apos; Когда же User запустит форму Настроек и пересохранит ВСЕ настройки Конвертора,
-	&apos; то вне переменные и контролы будут иметь значения из файла!
+	&apos; то все переменные и контролы будут иметь значения из файла!
 	
 	&apos; Задаем настройки в контролы по умолчанию
 	SetDefaultSettingsInVars
@@ -81,48 +76,46 @@ Function ServiceDlgOk
 	ReadSettings(False)
 
 	&apos; Инициализация поиска &quot;служебных стилей&quot;
-	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
-	ReDim  sGenres() As String
-	ReDim  sAuthors() As String
-	ReDim  sTranslators() As String
-	ReDim  sSequences() As String
-	ReDim  sPubSequences() As String
-	ReDim  sCustomInfos() As String
-	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = Ubound(sGenres())+1
-	oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
-	oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
-	oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
-	oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
-	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = Ubound(sCustomInfos())+1
+	oProgressBar.start( &quot;Инициализация:&quot;, ThisComponent.ParagraphCount )
+	ReDim  sGenres()		As String
+	ReDim  sAuthors()		As String
+	ReDim  sTranslators()	As String
+	ReDim  sSequences()		As String
+	ReDim  sPubSequences()	As String
+	ReDim  sCustomInfos()	As String
+	oInfoDlg.GetControl( &quot;lblGenres&quot; ).Text			= Ubound(sGenres())+1
+	oInfoDlg.GetControl( &quot;lblBookAutors&quot; ).Text		= Ubound(sAuthors())+1
+	oInfoDlg.GetControl( &quot;lblTranslators&quot; ).Text	= Ubound(sTranslators())+1
+	oInfoDlg.GetControl( &quot;lblSequences&quot; ).Text		= Ubound(sSequences())+1
+	oInfoDlg.GetControl( &quot;lblPubSequences&quot; ).Text	= Ubound(sPubSequences())+1
+	oInfoDlg.GetControl( &quot;lbCustomInfo&quot; ).Text		= Ubound(sCustomInfos())+1
 	&apos; Поиск &quot;служебных стилей&quot;
 	oServiceDlg.Enable = False
 	ReadServiceStyles(0)
 	oServiceDlg.Enable = True	
 
-	bServiceExecute = True
 	oServiceDlg.endExecute()
+End Sub
 
-End Function
-
-Sub cboxExportGraphicsEnabled
-	If oServiceDlg.GetControl(&quot;cboxExportGraphics&quot;).State = 1 Then
-		oServiceDlg.GetControl(&quot;lblGif&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lbGifAs&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lblTif&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lbTifBMPAs&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lblAny&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lbAnyAs&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lblOLE&quot;).Enable = True
-		oServiceDlg.GetControl(&quot;lbOLEAs&quot;).Enable = True
+Sub cboxExportGraphicsEnabled()
+	If oServiceDlg.GetControl( &quot;cboxExportGraphics&quot; ).State = 1 Then
+		oServiceDlg.GetControl( &quot;lblGif&quot; ).Enable		= True
+		oServiceDlg.GetControl( &quot;lbGifAs&quot; ).Enable		= True
+		oServiceDlg.GetControl( &quot;lblTif&quot; ).Enable		= True
+		oServiceDlg.GetControl( &quot;lbTifBMPAs&quot; ).Enable	= True
+		oServiceDlg.GetControl( &quot;lblAny&quot; ).Enable		= True
+		oServiceDlg.GetControl( &quot;lbAnyAs&quot; ).Enable		= True
+		oServiceDlg.GetControl( &quot;lblOLE&quot; ).Enable		= True
+		oServiceDlg.GetControl( &quot;lbOLEAs&quot; ).Enable		= True
 	Else
-		oServiceDlg.GetControl(&quot;lblGif&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lbGifAs&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lblTif&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lbTifBMPAs&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lblAny&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lbAnyAs&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lblOLE&quot;).Enable = False
-		oServiceDlg.GetControl(&quot;lbOLEAs&quot;).Enable = False
+		oServiceDlg.GetControl( &quot;lblGif&quot; ).Enable		= False
+		oServiceDlg.GetControl( &quot;lbGifAs&quot; ).Enable		= False
+		oServiceDlg.GetControl( &quot;lblTif&quot; ).Enable		= False
+		oServiceDlg.GetControl( &quot;lbTifBMPAs&quot; ).Enable	= False
+		oServiceDlg.GetControl( &quot;lblAny&quot; ).Enable		= False
+		oServiceDlg.GetControl( &quot;lbAnyAs&quot; ).Enable		= False
+		oServiceDlg.GetControl( &quot;lblOLE&quot; ).Enable		= False
+		oServiceDlg.GetControl( &quot;lbOLEAs&quot; ).Enable		= False
 	End If
 End Sub
 

@@ -2,6 +2,9 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="DescriptionStyles" script:language="StarBasic">REM  *****  BASIC  *****
 
+Const sConstDescGenre	As String = &quot;/OOoFBTools/DescGenre.txt&quot;
+Const sConstDescLang	As String = &quot;/OOoFBTools/DescLange.txt&quot;
+
 Private oTCurs &apos; текстовый курсор
 Private oDGDlg As Object
 Private oDLDlg As Object
@@ -109,32 +112,33 @@ End Function
 
 &apos; //////////////// вставка Языка в Служебную область ///////////////////
 &apos; запуск диалога работы со списком выбранных жанров для книги
-Sub ViewDescGenreDlg
+Sub ViewDescGenreDlg()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oDGDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.DescGenreDlg)
+	oDGDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.DescGenreDlg )
 	
 	If oDGDlg.Model.obDGFB21.State = 1 Then
-		InitDEFB21 &apos; Инициализация жанрами схемы FictionBook 2.1
+		InitDEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
 	Else
-		InitDEFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
+		InitDEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
 	End If
 	
 	With oDGDlg.Model
-		.Height = 130
-		.Width = 265
+		.Height	= 130
+		.Width	= 265
 		.numMatch.Value = &quot;&quot;
 		.lbGenres.StringItemList = sGLN()
 	End With
-	
-	&apos; файл Избранных Жанров
-	sGEFilename = getUserPath() &amp; &quot;/OOoFBTools/mygenre.txt&quot;
-	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadXYFormPos( getUserPath() &amp; sConstDescGenre, nX, nY )
+	oDGDlg.setPosSize( nX, nY, 130, 265, com.sun.star.awt.PosSize.POS )
+
 	oDGDlg.execute()
 End Sub
 
-Sub InitDEFB21
+Sub InitDEFB21()
 	&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
-	GenreFB21
+	GenreFB21()
 
 	With oDGDlg.Model
 		.Title = &quot;Вставка Жанров в Служебную область - схема fb2.1&quot;
@@ -143,9 +147,9 @@ Sub InitDEFB21
 
 End Sub
 
-Sub InitDEFB22
+Sub InitDEFB22()
 	&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
-	GenreFB22
+	GenreFB22()
 
 	With oDGDlg.Model
 		.Title = &quot;Вставка Жанров в Служебную область - схема fb2.2&quot;
@@ -154,7 +158,7 @@ Sub InitDEFB22
 	
 End Sub
 
-Sub DGAdd
+Sub DGAdd()
 	&apos; Добавить жанр в список Избранного
 	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
 	sTitle = &quot;Добавление Жанра в Список&quot;
@@ -200,7 +204,7 @@ Sub DGAdd
 	
 End Sub
 
-Sub DGRemove
+Sub DGRemove()
 	&apos; Удалить жанр из списка Избранного
 	Dim oLB As Object, aArray() As String, sTitle As String
 	sTitle = &quot;Удаление Жанра из Списка Выбранных для Книги&quot;
@@ -231,11 +235,18 @@ End Sub
 Sub InsertDescGenre()
 	Dim aArray() As String
 	aArray = oDGDlg.Model.lbSelectedGenres.StringItemList
-	If UBound( aArray() ) = -1 Then Exit Sub
+	If UBound( aArray() ) = -1 Then
+		MsgBox &quot;Нет ни одного Жанра в саиске: Выбранные Жанры для Книги!&quot; &amp; chr(10) &amp; _
+				&quot;Пожалуста, выберите один или несколько жанров из выпадающего списка Жанр или Избранные Жанры и добавьте их кнопкой Добавить, &quot; &amp; _
+				&quot;а потом нажмите Ok.&quot;, 64, &quot;Вставка Жанра в служебную область&quot;
+		Exit Sub
+	End If
+	&apos; записываем настройки диалога
+	SaveSettings( getUserPath() &amp; sConstDescGenre, oDGDlg )
 	&apos; Установка стилей по умолчанию
-	SetStylesVarsDefault
+	SetStylesVarsDefault()
 	&apos; читаем стили из файла и заносим их в переменные
-	ReadStyles(getUserPath() &amp; &quot;/OOoFBTools/styles.txt&quot;, False)
+	ReadStyles( getUserPath() &amp; sConstStyles, False )
 	
 	Dim i As Integer
 	Dim sGenreName As String, sGenreMath As String, sGanrePara As String, sItem As String
@@ -250,14 +261,14 @@ Sub InsertDescGenre()
 	oDGDlg.endExecute()
 End Sub
 
-Sub DescGenreElite_Focus
+Sub DescGenreElite_Focus()
 	Dim aArray() As String
-	ReadFileInArray( aArray(), sGEFilename )
+	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	oDGDlg.Model.lbDescGenreElite.StringItemList = aArray
 End Sub
 
 &apos; вставка Избранного Жанра в основной бокс Жанров
-Sub InsertGEToDescGenreBox(oEvent)
+Sub InsertGEToDescGenreBox( oEvent )
 	&apos; убираем chr(10) изназвания жанра - строки листбокса
 	Dim sCR As String : sCR = oEvent.source.getSelectedItem
 	If InStr(sCR, chr(10)) &gt; 0 Then
@@ -269,32 +280,40 @@ End Sub
 
 &apos; //////////////// вставка Языка в Служебную область ///////////////////
 &apos; запуск диалога работы с языками книги
-Sub ViewDescLangDlg
+Sub ViewDescLangDlg()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oDLDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.DescLangDlg)
 	
 	MakeLangList( sLangList() )
 	With oDLDlg.Model
-		.Title = &quot;Вставка Языка Книги в Служебную область&quot;
-		.Height = 46
-		.Width = 159
+		.Title	= &quot;Вставка Языка Книги в Служебную область&quot;
+		.Height	= 46
+		.Width	= 159
 		.lbLangBook.StringItemList = sLangList()
 		.lbLangOriginal.StringItemList = sLangList()
 	End With
-	oDLDlg.getControl(&quot;lbLangBook&quot;).selectItem(&quot;ru&quot;, True)
-	oDLDlg.getControl(&quot;lbLangOriginal&quot;).AddItem(&quot;&quot;, 0)
+	oDLDlg.getControl( &quot;lbLangBook&quot;).selectItem(&quot;ru&quot;, True )
+	oDLDlg.getControl( &quot;lbLangOriginal&quot; ).AddItem( &quot;&quot;, 0 )
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getUserPath() &amp; sConstDescLang, oDLDlg, nX, nY )
+	oDLDlg.setPosSize( nX, nY, 49, 159, com.sun.star.awt.PosSize.POS )
+	
 	oDLDlg.execute()
 End Sub
 
 Sub InsertDescLang()
 	&apos; читаем стили из файла и заносим их в переменные
+	&apos; записываем настройки диалога
+	SaveSettings( getUserPath() &amp; sConstDescLang, oDLDlg )
 	&apos; Установка стилей по умолчанию
-	SetStylesVarsDefault
-	ReadStyles(getUserPath() &amp; &quot;/OOoFBTools/styles.txt&quot;, False)
-	
+	SetStylesVarsDefault()
+	ReadStyles( getUserPath() &amp; sConstStyles, False )
+
 	Dim sLangBook As String, sLangOriginal As String, sLangPara As String
-	sLangBook = oDLDlg.getControl(&quot;lbLangBook&quot;).SelectedItem
-	sLangOriginal = oDLDlg.getControl(&quot;lbLangOriginal&quot;).SelectedItem
+	sLangBook = oDLDlg.getControl( &quot;lbLangBook&quot; ).SelectedItem
+	sLangOriginal = oDLDlg.getControl( &quot;lbLangOriginal&quot; ).SelectedItem
 	sLangPara = &quot;Language of Book: &quot; &amp; sLangBook
 	If sLangOriginal &lt;&gt; &quot;&quot; Then
 		sLangPara = sLangPara &amp; &quot;, Original: &quot; &amp; sLangOriginal

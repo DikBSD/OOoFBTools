@@ -72,7 +72,82 @@ Sub ReadFileInArray( aArray() As String, sFile As String )
 	End If
 End Sub
 
-Sub SaveSettings(sSettingsFilename As String, oDlg As Object)
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; Читаем настройки и задаем координаты X,Y форме
+Function ReadXYFormPos( sFileName As String, nX As Integer, nY As Integer ) As Boolean
+	On Error Resume Next
+	If FileExists( sFileName ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFileName ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные
+				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		ReadXYFormPos = True
+	Else
+		ReadXYFormPos = False
+	End If
+End Function
+
+&apos; Читаем настройки и задаем значения контролам формы
+Function ReadDlgSettings( sFileName As String, oDlg, nX As Integer, nY As Integer ) As Boolean
+	If FileExists( sFileName ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFileName ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные в контролы		
+				Dim sSetting() As String : 	sSetting = Split( sLine, &quot;=&quot; )
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					Dim oCtrl As Object : oCtrl = oDlg.GetControl( sSetting(0) )
+					If Not IsNull( oCtrl ) Then
+						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot;	Then
+							oCtrl.State = sSetting(1)
+						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot;	Then
+							oCtrl.State = sSetting(1)
+						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot;	Then
+							Dim oLB As Object : oLB = oDlg.getControl( sSetting(0) )
+							oLB.SelectItemPos( sSetting(1), True )
+						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot;	Then
+							oCtrl.Text = sSetting(1)
+						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot;		Then
+							oCtrl.Text = sSetting(1)
+						End If
+					End If
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		ReadDlgSettings = True
+	Else
+		ReadDlgSettings = False
+	End If
+End Function
+
+Sub SaveSettings( sSettingsFilename As String, oDlg As Object )
 	&apos; записываем установки
 	Dim oOS As Object, oFA As Object, oTOS As Object
 	Dim oLB As Object &apos; Для работы с ListBox`ами
@@ -106,11 +181,10 @@ Sub SaveSettings(sSettingsFilename As String, oDlg As Object)
 	oTOS.closeOutput()
 End Sub
 
-Sub SetSettingsInControlls(sCurrentLine As String, oDlg)
+Sub SetSettingsInControlls( sCurrentLine As String, oDlg )
 	On Error Resume Next &apos;Goto ErrorHandler
 	Dim oLB As Object &apos; Для работы с ListBox`ами
-	Dim sSetting() As String
-	sSetting = Split(sCurrentLine, &quot;=&quot;)
+	Dim sSetting() As String : sSetting = Split(sCurrentLine, &quot;=&quot;)
 	
 	If oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
 		oDlg.GetControl(sSetting(0)).Text = sSetting(1)

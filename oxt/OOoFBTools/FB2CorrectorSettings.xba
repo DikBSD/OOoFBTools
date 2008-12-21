@@ -2,133 +2,61 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="FB2CorrectorSettings" script:language="StarBasic">REM  *****  BASIC  *****
 
+Const sConstFB2Corrector As String = &quot;/OOoFBTools/fb2corrector.txt&quot;
+
 Public oFB2CorrectorDlg As Object
-Private bFB2CorrectorExecute As Boolean
 Private sFB2ConvertorName As String
 Public sTags() As String, sTagsAttr() As String
 
-Private sFB2CorrectorSettingsFilename As String
 Private bFB2MakeBackup As Boolean
 Private bFB2Superfluous As Boolean
 Private bFB2StyleSpace As Boolean
 Private bFB2BadSymbols As Boolean
 
-Sub FB2FileCorrector
-				
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+Sub FB2FileCorrector()
+	MsgBox &quot;Извините, код пока не отлажен, работает с ошибками...&quot;, 64, &quot;FB2File Corrector (Коррекция fb2 файла)&quot;
+	Exit Sub
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oFB2CorrectorDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.FB2CorrectorDlg)
 	
 	sFB2ConvertorName = &quot;FB2File Corrector&quot;
-	&apos; файл настроек FB2Corrector
-	sFB2CorrectorSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/fb2corrector.txt&quot;
 	
 	&apos; Настройки По умолчанию - в контролы
-	SetDefaultFB2CorrectorSettingsInControls
-	&apos; Считываем и устанавливаем настройки
-	ReadFB2CorrectorSettings
+	SetDefaultFB2CorrectorSettingsInControls()
 	
 	With oFB2CorrectorDlg.Model
-		.Title = &quot;FB2File Corrector (Коррекция fb2 файла)&quot;
-		.Height = 93
-		.Width = 257
+		.Title	= &quot;FB2File Corrector (Коррекция fb2 файла)&quot;
+		.Height	= 93
+		.Width	= 257
 	End With
 	
-	oFB2CorrectorDlg.Model.Step = 0
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getUserPath() &amp; sConstFB2Corrector, oFB2CorrectorDlg, nX, nY )
+	oFB2CorrectorDlg.setPosSize( nX, nY, 93, 257, com.sun.star.awt.PosSize.POS )
+	
 	oFB2CorrectorDlg.execute()
-
-	&apos; центрирование на экране
-	&apos;ToScreenCenter(oFB2CorrectorDlg)
-
-	FB2FileCorrector = bFB2CorrectorExecute
-
 End Sub
 
-Function FB2CorrectorDlgCanceled
-	bFB2CorrectorExecute = False
+Sub FB2CorrectorDlgCanceled()
 	oFB2CorrectorDlg.endExecute()
-End Function
+End Sub
 
-Function ReadFB2CorrectorSettings As Boolean
-	&apos; Читаем настройки очистки текста и задаем значения контролам формы
-	If FileExists(sFB2CorrectorSettingsFilename) Then
-		Dim iFileNo As Integer, sCurrentLine As String
-		&apos; Установление свободного файлового манипулятора
-		iFileNo = Freefile
-		&apos; Открытие файла (в режиме на чтение)
-		Open sFB2CorrectorSettingsFilename For Input As #iFileNo
-		&apos; Проверка, был ли достигнут конец файла
-		Do While NOT eof(iFileNo)
-			&apos; Чтение строки
-			Line Input #iFileNo, sCurrentLine
-			If sCurrentLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные настроек
-				SetFB2CorrectorSettings(sCurrentLine)
-			End If
-		Loop
-		&apos; Закрытие файла
-		Close #iFileNo
-		ReadFB2CorrectorSettings = True
-	Else
-		ReadFB2CorrectorSettings = False
-	End If
-End Function
-
-Function SaveFB2CorrectorSettings
-	&apos; записываем настройки очистки текста
-	Dim iFileNo As Integer, sCurrentLine As String
-	iFileNo = Freefile &apos; Установление свободного файлового манипулятора
-	Open sFB2CorrectorSettingsFilename For Output As #iFileNo &apos; Открытие файла (в режиме на запись)
-	
-	Dim ctrl As Object, i As Integer
-	ctrl = oFB2CorrectorDlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			Print #iFileNo, ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text
-		End If
-	Next i
-	
-	Close #iFileNo &apos; Закрытие файла
-	&apos; заполняем переменные
-	bFB2MakeBackup = oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State
-	bFB2Superfluous = oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State
-	bFB2StyleSpace = oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State
-	bFB2BadSymbols = oFB2CorrectorDlg.GetControl(&quot;cboxFB2BadSymbols&quot;).State
-
-End Function
-
-Function SetFB2CorrectorSettings(sCurrentLine)
-	On Error Goto ErrorHandler
-	Dim sFB2CorrectorSettings() As String
-	sFB2CorrectorSettings = Split(sCurrentLine, &quot;=&quot;)
-	
-	If oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-		oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).State = sFB2CorrectorSettings(1)
-	ElseIf oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-		oFB2CorrectorDlg.GetControl(sFB2CorrectorSettings(0)).Text = sFB2CorrectorSettings(1)
-	End If
-
-	Exit Function
-	
-	ErrorHandler: &apos; идем дальше
-End Function
-
-Function SetDefaultFB2CorrectorSettingsInControls
+Sub SetDefaultFB2CorrectorSettingsInControls()
 	&apos; Установка настроек по умолчанию в контролы
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State = 1
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State = 1
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State = 1
 	oFB2CorrectorDlg.GetControl(&quot;cboxFB2BadSymbols&quot;).State = 1
-End Function
+End Sub
 
-Function OpenFB2File
+Sub OpenFB2File()
 	Dim oFileDlg As Object
 	Dim sArg() As String
 	Dim sPath As String, sInitPath As String
 	Dim oUcb as object
 	
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
 		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
 	End If
 	
@@ -159,29 +87,34 @@ Function OpenFB2File
 		End If
 	End If
 	oFileDlg.Dispose()
-End Function
+End Sub
 
-Function FB2CorrectorDlgOk
+Sub FB2CorrectorDlgOk()
 	If Trim(oFB2CorrectorDlg.Model.tfFB2File.Text) = &quot;&quot; Then
 		MsgBox &quot;Выберите fb2 файл для корректуры&quot;, 64, sFB2ConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	If oFB2CorrectorDlg.Model.cboxFB2Superfluous.State = 0 And _
 		oFB2CorrectorDlg.Model.cboxFB2StyleSpace.State = 0 And _
 		oFB2CorrectorDlg.Model.cboxFB2BadSymbols.State = 0 Then
 		MsgBox &quot;Выберите хоть одну опцию корректуры fb2 файла&quot;, 64, sFB2ConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	If Not FileExists(Trim(oFB2CorrectorDlg.Model.tfFB2File.Text)) Then
 		MsgBox &quot;Указанный файл не найден!&quot;, 64, sFB2ConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	
-	bFB2CorrectorExecute = True
 	oFB2CorrectorDlg.endExecute()
 	
-	&apos; Сохраняем настройки в файл
-	SaveFB2CorrectorSettings
+	&apos; заполняем переменные
+	bFB2MakeBackup = oFB2CorrectorDlg.GetControl(&quot;cboxFB2MakeBackup&quot;).State
+	bFB2Superfluous = oFB2CorrectorDlg.GetControl(&quot;cboxFB2Superfluous&quot;).State
+	bFB2StyleSpace = oFB2CorrectorDlg.GetControl(&quot;cboxFB2StyleSpace&quot;).State
+	bFB2BadSymbols = oFB2CorrectorDlg.GetControl(&quot;cboxFB2BadSymbols&quot;).State
+	
+	&apos; сохранение настроек
+	SaveSettings( getUserPath() &amp; sConstFB2Corrector, oFB2CorrectorDlg )
 	
 	&apos; заполняем массив тэгов
 	sTags = Array(&quot;&lt;p&gt;&quot;,&quot;&lt;/p&gt;&quot;,&quot;&lt;/a&gt;&quot;,&quot;&lt;empty-line/&gt;&quot;, _
@@ -273,6 +206,6 @@ Function FB2CorrectorDlgOk
 	MsgBox sMsg, 64, sFB2ConvertorName &amp; &quot; - Статистика&quot;
 	oProgressBar.end
 
-End Function
+End Sub
 
 </script:module>

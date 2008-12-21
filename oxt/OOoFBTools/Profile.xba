@@ -3,9 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Profile" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public sFB2AuthorFilename As String &apos; файл профиля автора fb2-документа
-
-Function ReadProfile(sFilename As String, nN As Integer)
+Sub ReadProfile( sFilename As String, nN As Integer )
 	&apos; nN - идентификатор типа профиля: 0 - для Автора Книги, 1 - для Автора fb2-документа
 	If FileExists(sFilename) Then
 		Dim sLine As String
@@ -30,21 +28,21 @@ Function ReadProfile(sFilename As String, nN As Integer)
 		Loop
 		oTIS.closeInput()
 	End If
-End Function
+End Sub
 
 &apos;/////////////////////////////////////
 &apos;/// Профиль Автора fb2-документа ////
 &apos;/////////////////////////////////////
-Function ReadUserProfile
+Sub ReadUserProfile()
 	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
 				&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;, 128 + 32 + 1, sConvertorName) = 2 Then
-		Exit Function
+		Exit Sub
 	End If
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
-	ReadProfile(sFB2AuthorFilename, 1)
-End Function
+	ReadProfile( getUserPath() &amp; sConstFB2AuthorProfile, 1 )
+End Sub
 
-Function SetFB2AuthorProfile(sCurrentLine)
+Sub SetFB2AuthorProfile( sCurrentLine )
 	On Error Goto ErrorHandler
 	Dim sProfile() As String
 	
@@ -67,12 +65,12 @@ Function SetFB2AuthorProfile(sCurrentLine)
 		Case &quot;HistoryTextField&quot;
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
 	End Select
-	Exit Function
+	Exit Sub
 	
 	ErrorHandler: &apos; Идем дальше
-End Function
+End Sub
 
-Function AppendDocAuthorInArray
+Sub AppendDocAuthorInArray()
 	Dim i As Integer
 	i = Ubound(sDocAuthors(), 1) + 1
 	If i &gt; 0 Then
@@ -87,13 +85,13 @@ Function AppendDocAuthorInArray
 	sDocAuthors(i, 5) = Trim(oInfoDlg.Model.diHomepageField.Text)
 	sDocAuthors(i, 6) = Trim(oInfoDlg.Model.HistoryTextField.Text)
 	oInfoDlg.GetControl(&quot;lblDocAutors&quot;).Text = i+1
-End Function
+End Sub
 
-Function SaveProfile
+Sub SaveProfile()
 	&apos; записываем установки
 	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
 				&quot;Если вы раньше сохраняли свой профиль, то он будет перезаписан!&quot;, 128 + 32 + 1, sConvertorName) = 2 Then
-		Exit Function
+		Exit Sub
 	End If
 	
 	Dim oOS As Object, oFA As Object, oTOS As Object
@@ -101,7 +99,7 @@ Function SaveProfile
 	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	
-	oOS = oFA.openFileWrite(sFB2AuthorFilename)
+	oOS = oFA.openFileWrite( getUserPath() &amp; sConstFB2AuthorProfile )
 	oOS.truncate()
 	oTOS.setOutputStream(oOS)
 	oTOS.setEncoding(&quot;utf-8&quot;)
@@ -117,12 +115,12 @@ Function SaveProfile
 	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
 	oTOS.closeOutput()
 	
-End Function
+End Sub
 
 &apos;//////////////////////////////
 &apos;/// Профили Авторов Книги ////
 &apos;//////////////////////////////
-Function LoadBookAuthorProfile
+Sub LoadBookAuthorProfile()
 	&apos; Загрузка Автора Книга из файла профиля этого Автора
 	Dim oFileDlg As Object
 	Dim sArg() As String
@@ -146,15 +144,15 @@ Function LoadBookAuthorProfile
 	End If
 	oFileDlg.Dispose()
 
-End Function
+End Sub
 
-Function SaveBookAuthorProfile
+Sub SaveBookAuthorProfile()
 	&apos; Сохранение Автора Книга в файл профиля этого Автора
 	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
 		MsgBox &quot;Заполните, пожалуйста, хотя бы одно поле для Автора Книги!&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	
 	Dim oFileDlg As Object
@@ -208,9 +206,9 @@ Function SaveBookAuthorProfile
 	End If
 	oFileDlg.Dispose()
 	
-End Function
+End Sub
 
-Function SetBookAuthorProfile(sCurrentLine)
+Sub SetBookAuthorProfile( sCurrentLine )
 	On Error Goto ErrorHandler
 	Dim sProfile() As String
 	Dim oLB As Object
@@ -238,12 +236,12 @@ Function SetBookAuthorProfile(sCurrentLine)
 			oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
 			oLB.SelectItemPos(sProfile(1), True)
 	End Select
-	Exit Function
+	Exit Sub
 	
 	ErrorHandler: &apos; Идем дальше
-End Function
+End Sub
 
-Function ClearBookAuthorFields
+Sub ClearBookAuthorFields()
 	&apos; Очистка всех полей для Автора Книги
 	oInfoDlg.Model.tiFirst.Text = &quot;&quot;
 	oInfoDlg.Model.tiMiddle.Text = &quot;&quot;
@@ -254,12 +252,12 @@ Function ClearBookAuthorFields
 	Dim oLB As Object
 	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
 	oLB.SelectItemPos(0, True)
-End Function
+End Sub
 
 &apos;////////////////////////////
 &apos;/// Профили Издательств ////
 &apos;////////////////////////////
-Function LoadPublisherProfile
+Sub LoadPublisherProfile()
 	&apos; Загрузка данных Издательства из файла профиля этого Издательства
 	Dim oFileDlg As Object
 	Dim sArg() As String
@@ -283,13 +281,13 @@ Function LoadPublisherProfile
 	End If
 	oFileDlg.Dispose()
 
-End Function
+End Sub
 
-Function SavePublisherProfile
+Sub SavePublisherProfile()
 	&apos; Сохранение Автора Книга в файл профиля этого Автора
 	If Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; Then
 		MsgBox &quot;Заполните, пожалуйста, хотя бы одно поле для Издательства!&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	
 	Dim oFileDlg As Object
@@ -333,9 +331,9 @@ Function SavePublisherProfile
 	End If
 	oFileDlg.Dispose()
 	
-End Function
+End Sub
 
-Function SetPublisherProfile(sCurrentLine)
+Sub SetPublisherProfile( sCurrentLine )
 	On Error Goto ErrorHandler
 	Dim sProfile() As String
 	sProfile = Split(sCurrentLine, &quot;=&quot;)
@@ -345,12 +343,12 @@ Function SetPublisherProfile(sCurrentLine)
 		Case &quot;pubCityTextField&quot;
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
 	End Select
-	Exit Function
+	Exit Sub
 	
 	ErrorHandler: &apos; идем дальше
-End Function
+End Sub
 
-Function ClearPaperBookFields
+Sub ClearPaperBookFields()
 	&apos; Очистка всех полей для Бумажной книги
 	oInfoDlg.Model.pubBookNameTextField.Text = &quot;&quot;
 	oInfoDlg.Model.pubISBNTextField.Text = &quot;&quot;
@@ -359,6 +357,6 @@ Function ClearPaperBookFields
 	oInfoDlg.Model.pubYearTextField.Text = &quot;&quot;
 	oInfoDlg.Model.pubSequenseTextField.Text = &quot;&quot;
 	oInfoDlg.Model.pubSequenseNumberTextField.Text = &quot;&quot;
-End Function
+End Sub
 
 </script:module>

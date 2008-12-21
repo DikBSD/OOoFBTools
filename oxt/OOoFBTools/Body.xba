@@ -2,9 +2,10 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Body" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
+
 Public bELForStartAnnot As Boolean
 
-Function IsAECP(sStyle As String) As Boolean
+Function IsAECP( sStyle As String ) As Boolean
 	&apos; Если sStyle - это Эпиграф, Цитата или Поэма - то возвращается True, иначе - False
 	Select Case sStyle
 			Case sStylePoem
@@ -34,7 +35,7 @@ Function IsAECP(sStyle As String) As Boolean
 	End Select
 End Function
 
-Function SaveBody
+Sub SaveBody()
 	Dim lParaCount As Long
 	If  IsLevel(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True OR _
 		IsAECP(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True Then
@@ -54,9 +55,9 @@ Function SaveBody
 	
 	MakeBody(sBodyParagraphs, True)
 	
-End Function
+End Sub
 
-Function MakeBody(sArray As String, bBody As Boolean)
+Function MakeBody( sArray As String, bBody As Boolean )
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
 	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
@@ -165,7 +166,7 @@ Function MakeBody(sArray As String, bBody As Boolean)
 	End If
 End Function
 
-Function SaveNotes
+Sub SaveNotes()
 	Dim lCount As Long, l As Long
 	Dim sNotePars() As String
 	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
@@ -207,7 +208,7 @@ Function SaveNotes
 		oProgressBar.setValue(lCount) &apos; Статусбар
 	Next lCount
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
-End Function
+End Sub
 
 &apos; печатаем коды картинок
 Function SaveImages() As Integer

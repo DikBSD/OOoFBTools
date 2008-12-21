@@ -3,31 +3,33 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="InfoControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public oInfoDlg As Object
-Public oGEDlg As Object
-Const sDlgTitle = &quot;Данные о книге&quot;
-
-Public sGEFilename As String &apos; файл Избранных Жанров
-
-Public sGenres() As String REM book&apos;s genres
-Public sAuthors() As String REM book&apos;s authors
-Public sTranslators() As String REM book&apos;s translators
-Public sSequences() As String REM book&apos;s sequences
-Public sDocAuthors() As String REM doc&apos;s authors
-Public sPubSequences() As String REM publisher book&apos;s sequences
-Public sCustomInfos() As String  REM данные пользователя
-
+Public Const sConstMyGenre			As String = &quot;/OOoFBTools/mygenre.txt&quot;	&apos; файл Избранных Жанров
+Public Const sConstMyGenreSettings	As String = &quot;/OOoFBTools/mygenre_settings.txt&quot;	&apos; файл настроек Избранных Жанров
+Public Const sConstSettings			As String = &quot;/OOoFBTools/settings.txt&quot;	&apos; файл настроек
+Public Const sConstFB2AuthorProfile	As String = &quot;/OOoFBTools/profile.txt&quot;	&apos; файл профиля Автора fb2 документа
+Const sConstMainDlg					As String = &quot;/OOoFBTools/main_dialog.txt&quot;	&apos; файл настроек основного диалога
+Const sDlgTitle						As String = &quot;Данные о Книге&quot; &apos; Заголовок основной формы
+	
 Public oProgressBar
+Public oInfoDlg		As Object
+Public oGEDlg		As Object
+
+Public sGenres()		As String &apos; book&apos;s genres
+Public sAuthors()		As String &apos; book&apos;s authors
+Public sTranslators()	As String &apos; book&apos;s translators
+Public sSequences()		As String &apos; book&apos;s sequences
+Public sDocAuthors()	As String &apos; doc&apos;s authors
+Public sPubSequences()	As String &apos; publisher book&apos;s sequences
+Public sCustomInfos()	As String &apos; данные пользователя
 
 Private sLangList() As String
 Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
 
-Private bExecute As Boolean
-Private bAppendBtn As Boolean
+Private bExecute	As Boolean
+Private bAppendBtn	As Boolean
 
-Sub GenreFB21
-	&apos; жанры схемы fb2.1
-		&apos; Инициализация жанрами схемы FictionBook 2.1
+Sub GenreFB21()
+	&apos; жанры схемы fb2.1 - Инициализация жанрами схемы FictionBook 2.1
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
 				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
@@ -74,8 +76,8 @@ Sub GenreFB21
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
 End Sub
 
-Sub GenreFB22
-	&apos; жанры схемы fb2.2
+Sub GenreFB22()
+	&apos; жанры схемы fb2.2 - Инициализация жанрами схемы FictionBook 2.2
 	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
 				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
 				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
@@ -127,9 +129,9 @@ Sub GenreFB22
 			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
 End Sub
 
-Sub InitFB21
+Sub InitFB21()
 	&apos; Инициализация жанрами схемы FictionBook 2.1
-	GenreFB21
+	GenreFB21()
 
 	With oInfoDlg.Model
 		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.1&quot;
@@ -138,9 +140,9 @@ Sub InitFB21
 
 End Sub
 
-Sub InitFB22
+Sub InitFB22()
 	&apos; Инициализация жанрами схемы FictionBook 2.2
-	GenreFB22
+	GenreFB22()
 
 	With oInfoDlg.Model
 		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.2&quot;
@@ -156,47 +158,39 @@ Sub MakeLangList( aLangList() )
 						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
 End Sub
 
-Function InfoDlgExec As Boolean
+Function InfoDlgExec() As Boolean
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
 	oProgressBar.setValue(0)
 	
-	&apos; файл настроек
-	sSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/settings.txt&quot;
-	&apos; файл профиля Автора fb2 документа
-	sFB2AuthorFilename = getUserPath() &amp; &quot;/OOoFBTools/profile.txt&quot;
-	&apos; файл Избранных Жанров
-	sGEFilename = getUserPath() &amp; &quot;/OOoFBTools/mygenre.txt&quot;
-	
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oInfoDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.InfoDlg)
 	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(sCurDocFile)
 	
 	If oInfoDlg.Model.obtnFB21.State = 1 Then
-		InitFB21 &apos; Инициализация жанрами схемы FictionBook 2.1
+		InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
 	Else
-		InitFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
+		InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
 	End If
 	oProgressBar.setValue(3) &apos; Статусбар
 	
 	MakeLangList( sLangList() )
 	oProgressBar.setValue(4) &apos; Статусбар
 
-	Dim sNow As String
-	sNow = Now
+	Dim sNow As String : sNow = Now
 	With oInfoDlg.Model
-		.Height = 362
-		.Width = 408
-		.NumericFieldMatch.Value = &quot;&quot;
-		.LangComboBox.StringItemList = sLangList()
-		.SrcLangComboBox.StringItemList = sLangList()
-		.BookTitleField.Text = FindTextOfStyle(sStyleBookTitle, true)
-		.diDateTextField.Text = Date
-		.diDateValueField.Text = Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
-		.ProgrammUsedField.Text = &quot;ExportToFB21&quot;
-		.IDField.Text = GetNewBookID()
-		.VersionField.Text = &quot;1.0&quot;
-		.KeywordsField.Text = FindTextOfStyle(sStyle_BookKeywords, true)
+		.Height	= 362
+		.Width	= 408
+		.NumericFieldMatch.Value		= &quot;&quot;
+		.LangComboBox.StringItemList	= sLangList()
+		.SrcLangComboBox.StringItemList	= sLangList()
+		.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
+		.diDateTextField.Text	= Date
+		.diDateValueField.Text	= Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
+		.ProgrammUsedField.Text	= &quot;ExportToFB21&quot;
+		.IDField.Text			= GetNewBookID()
+		.VersionField.Text		= &quot;1.0&quot;
+		.KeywordsField.Text		= FindTextOfStyle(sStyle_BookKeywords, true)
 	End With
 	
 	oInfoDlg.getControl(&quot;LangComboBox&quot;).selectItem(&quot;ru&quot;, True)
@@ -204,12 +198,15 @@ Function InfoDlgExec As Boolean
 	oInfoDlg.getControl(&quot;Codepage&quot;).addItems(Array(&quot;utf-8&quot;, &quot;windows-1251&quot;), 0)
 	oInfoDlg.getControl(&quot;Codepage&quot;).SelectItemPos(0, True)
 	
-	&apos; центрирование на экране
-	&apos;ToScreenCenter(oInfoDlg)
+	&apos; ситаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadXYFormPos( getUserPath() &amp; sConstMainDlg, nX, nY )
+	oInfoDlg.setPosSize( nX, nY, 362, 408, com.sun.star.awt.PosSize.POS )
+	
 	oProgressBar.setValue(5) &apos; Статусбар
 	
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
-	ReadProfile(sFB2AuthorFilename, 1)
+	ReadProfile( getUserPath() &amp; sConstFB2AuthorProfile, 1 )
 	oProgressBar.setValue(6) &apos; Статусбар
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
@@ -225,28 +222,27 @@ Function InfoDlgExec As Boolean
 	&apos; то вне переменные и контролы будут иметь значения из файла!
 	
 	&apos; Задаем настройки в переменные по умолчанию
-	SetDefaultSettingsInVars
+	SetDefaultSettingsInVars()
 	oProgressBar.setValue(7) &apos; Статусбар
 	&apos; только теперь считываем настройки из файла в переменные
 	ReadSettings(False)
 	oProgressBar.setValue(8) &apos; Статусбар
 	
-	&apos; читаем и заносим в контролы данныен служебных стилей для Description
+	&apos; читаем и заносим в контролы данные служебных стилей для Description
 	ReadServiceStyles(8)
 	
 	bAppendBtn = True
 	
 	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
-	ReadFileInArray( aArray(), sGEFilename)
+	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	oInfoDlg.Model.lbGenreElite.StringItemList = aArray()
 	
 	oInfoDlg.execute()
 	InfoDlgExec = bExecute
-
 End Function
 
-Function ReadServiceStyles(lProgress As Long)
+Sub ReadServiceStyles( lProgress As Long )
 	Dim oSect As Object, oCEnum As Object, oContent As Object
 	Dim oCursor As Object, lPara As Long &apos; для статусбара
 	oCursor = ThisComponent.Text.createTextCursor()
@@ -284,14 +280,14 @@ Function ReadServiceStyles(lProgress As Long)
 		oProgressBar.setValue(lPara) &apos; Статусбар
 	Loop While oCursor.gotoNextParagraph(False)
 	oProgressBar.end
-End Function
+End Sub
 
-Sub InfoDlgCanceled
+Sub InfoDlgCanceled()
 	bExecute = False
 	oInfoDlg.endExecute()
 End Sub
 
-Sub NewBookID
+Sub NewBookID()
 	oInfoDlg.Model.IDField.Text = GetNewBookID()
 End Sub
 
@@ -303,53 +299,56 @@ Function GetNewBookID() As String
 				&quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
 End Function
 
-Function ConvertingFile
+Sub ConvertingFile()
+	&apos; сохраняем настройки формы
+	SaveSettings( getUserPath() &amp; sConstMainDlg, oInfoDlg )
+	
 	If oInfoDlg.getControl(&quot;GenreComboBox&quot;).SelectedItem = &quot;&quot; And UBound( sGenres() ) = -1 Then
 		MsgBox &quot;Выберите, пожалуйста, Жанр Книги&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.BookTitleField.Text) = &quot;&quot; Then
 		MsgBox &quot;Заполните, пожалуйста, поля Названия Книги&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.VersionField.Text) = &quot;&quot; Then
 		MsgBox &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.IDField.Text) = &quot;&quot; Then
 		MsgBox &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
 	bAppendBtn = False
-	If Not AppendBookGenre Then
-		Exit Function
+	If Not AppendBookGenre() Then
+		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; OR _
 		Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiHomepage.Text) &lt;&gt; &quot;&quot; Then 
-		AddBookAuthor
+		AddBookAuthor()
 	End If
 	If Trim(oInfoDlg.Model.tiTransFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransLast.Text) &lt;&gt; &quot;&quot; OR _
 		Trim(oInfoDlg.Model.tiTransNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransHomepage.Text) &lt;&gt; &quot;&quot; Then 
-		AddBookTranslator
+		AddBookTranslator()
 	End If
 	If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
-		AddBookSequence
+		AddBookSequence()
 	End If
 	If Trim(oInfoDlg.Model.diFirstField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diMiddleField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diLastField.Text) &lt;&gt; &quot;&quot; OR _
 		Trim(oInfoDlg.Model.diNicknameField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diEmailField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
-		AddDocAuthor
+		AddDocAuthor()
 	End If
 	If Trim(oInfoDlg.Model.pubSequenseTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) &lt;&gt; &quot;&quot; Then
-		AddPublisherSequence
+		AddPublisherSequence()
 	End If
 	If Trim(oInfoDlg.Model.cusTypeTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) &lt;&gt; &quot;&quot; Then
-		AddCustomInfos
+		AddCustomInfos()
 	End If
 	bExecute = True
 	oInfoDlg.endExecute()
-End Function
+End Sub
 
-Function SaveAs
+Sub SaveAs()
 	Dim oFileDlg As Object
 	Dim sArg() As String
 	Dim sDir As String
@@ -381,9 +380,9 @@ Function SaveAs
 		oInfoDlg.Model.FilenameTextField.Text = sFile
 	End If
 	oFileDlg.Dispose()
-End Function
+End Sub
 
-Function AppendBookGenre As Boolean
+Function AppendBookGenre() As Boolean
 	Dim oLB As Object
 	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
 	IF bAppendBtn = True Then
@@ -419,16 +418,16 @@ Function AppendBookGenre As Boolean
 	AppendBookGenre = True
 End Function
 
-Function AppendBookAuthor
+Sub AppendBookAuthor()
 	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
 		 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
-	AddBookAuthor
-End Function
+	AddBookAuthor()
+End Sub
 
-Function AddBookAuthor
+Sub AddBookAuthor()
 	Dim i As Integer
 	i = Ubound(sAuthors(), 1) + 1
 	If i &gt; 0 Then
@@ -450,18 +449,18 @@ Function AddBookAuthor
 		.tiHomepage.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = i+1
-End Function
+End Sub
 
-Function AppendBookTranslator
+Sub AppendBookTranslator()
 	If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
-	AddBookTranslator
-End Function
+	AddBookTranslator()
+End Sub
 
-Function AddBookTranslator
+Sub AddBookTranslator()
 	Dim i As Integer
 	i = Ubound(sTranslators(), 1) + 1
 	If i &gt; 0 Then
@@ -483,17 +482,17 @@ Function AddBookTranslator
 		.tiTransHomepage.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = i+1
-End Function
+End Sub
 
-Function AppendBookSequence
+Sub AppendBookSequence()
 	If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
-	AddBookSequence
-End Function
+	AddBookSequence()
+End Sub
 
-Function AddBookSequence
+Sub AddBookSequence
 	Dim i As Integer
 	i = Ubound(sSequences(), 1) + 1
 	If i &gt; 0 Then
@@ -507,18 +506,18 @@ Function AddBookSequence
 		.SequenceNumberTextField.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = i+1
-End Function
+End Sub
 
-Function AppendDocAuthor
+Sub AppendDocAuthor
 	If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
-	AddDocAuthor
-End Function
+	AddDocAuthor()
+End Sub
 
-Function AddDocAuthor
+Sub AddDocAuthor()
 	Dim i As Integer
 	i = Ubound(sDocAuthors(), 1) + 1
 	If i &gt; 0 Then
@@ -540,17 +539,17 @@ Function AddDocAuthor
 		.diHomepageField.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lblDocAutors&quot;).Text = i+1
-End Function
+End Sub
 
-Function AppendPublisherSequence
+Sub AppendPublisherSequence()
 	If Trim(oInfoDlg.Model.pubSequenseTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
-	AddPublisherSequence
-End Function
+	AddPublisherSequence()
+End Sub
 
-Function AddPublisherSequence
+Sub AddPublisherSequence()
 	Dim i As Integer
 	i = Ubound(sPubSequences(), 1) + 1
 	If i &gt; 0 Then
@@ -564,17 +563,17 @@ Function AddPublisherSequence
 		.pubSequenseNumberTextField.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = i+1
-End Function
+End Sub
 
-Function AppendCustomInfos
+Sub AppendCustomInfos()
 	If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
 		MsgBox &quot;Пожалуйста, заполните оба поля для Custom Info&quot;, 64, sConvertorName
-		Exit Function
+		Exit Sub
 	End If
-	AddCustomInfos
-End Function
+	AddCustomInfos()
+End Sub
 
-Function AddCustomInfos
+Sub AddCustomInfos()
 	Dim i As Integer
 	i = Ubound(sCustomInfos(), 1) + 1
 	If i &gt; 0 Then
@@ -588,9 +587,9 @@ Function AddCustomInfos
 		.cusValueTextField.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = i+1
-End Function
+End Sub
 
-Sub ReadBookAuthorsOrTranslatorsInfo(oCursor, sArray())
+Sub ReadBookAuthorsOrTranslatorsInfo( oCursor, sArray() )
 	If oCursor.String = &quot;&quot; Then	&apos;
 		Exit Sub
 	End If
@@ -963,7 +962,7 @@ Function ShowCustomInfoCount
 	MsgBox sStr, 64, &quot;Список серий для Custom Info&quot;
 End Function
 
-Function ShowGenresCount
+Sub ShowGenresCount()
 	Dim sStr As String, sLine As String
 	sLine = &quot;-------------------------&quot;
 	sStr = &quot;№ п/п | Жанр | Match, %&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
@@ -982,39 +981,45 @@ Function ShowGenresCount
 		End If
 	End If
 	MsgBox sStr, 64, &quot;Список Жанров Книги&quot;
-End Function
+End Sub
 
 
 &apos; //////////////////////////////////////////////////////////////////////
 &apos; //////////////////// Работа с Избранным Жанров ///////////////////////
 &apos; //////////////////////////////////////////////////////////////////////
 
-Sub cbtnGenreElite_Click
+Sub cbtnGenreElite_Click()
 	&apos; запуск диалога работы со списком избранных жанров
-	oGEDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.GenreEliteDlg)
+	oGEDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.GenreEliteDlg )
 	
 	If oGEDlg.Model.obtnGEFB21.State = 1 Then
-		InitGEFB21 &apos; Инициализация жанрами схемы FictionBook 2.1
+		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
 	Else
-		InitGEFB22 &apos; Инициализация жанрами схемы FictionBook 2.2
+		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
 	End If
 	
 	With oGEDlg.Model
-		.Height = 165
-		.Width = 215
+		.Height	= 165
+		.Width	= 215
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getUserPath() &amp; sConstMyGenreSettings, oGEDlg, nX, nY )
+	oGEDlg.setPosSize( nX, nY, 165, 215, com.sun.star.awt.PosSize.POS )
+	
 	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
-	ReadFileInArray( aArray(), sGEFilename)
+	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	oGEDlg.Model.lbGE.StringItemList = aArray()
+	
 	oGEDlg.execute()
 End Sub
 
-Sub InitGEFB21
+Sub InitGEFB21()
 	&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
-	GenreFB21
+	GenreFB21()
 
 	With oGEDlg.Model
 		.Title = &quot;Избранные Жанры - схема fb2.1&quot;
@@ -1023,9 +1028,9 @@ Sub InitGEFB21
 
 End Sub
 
-Sub InitGEFB22
+Sub InitGEFB22()
 	&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
-	GenreFB22
+	GenreFB22()
 
 	With oGEDlg.Model
 		.Title = &quot;Избранные Жанры - схема fb2.2&quot;
@@ -1034,7 +1039,7 @@ Sub InitGEFB22
 	
 End Sub
 
-Sub GEAdd
+Sub GEAdd()
 	&apos; Добавить жанр в список Избранного
 	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Добавление Жанра в Избранное&quot;
@@ -1071,7 +1076,7 @@ Sub GEAdd
 	
 End Sub
 
-Sub GERemove
+Sub GERemove()
 	&apos; Удалить жанр из списка Избранного
 	Dim oLB As Object, aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Удаление Жанра из Избранного&quot;
@@ -1100,23 +1105,25 @@ Sub GERemove
 End Sub
 
 &apos; сохраняем список Избранных Жанров в файл
-Sub GEOK
+Sub GEOK()
+	&apos; сохранение настроек
+	SaveSettings( getUserPath() &amp; sConstMyGenreSettings, oGEDlg )
 	Dim aArray() As String
 	aArray = oGEDlg.Model.lbGE.StringItemList
 	If UBound(aArray()) &gt; -1 Then
-		SaveArray( aArray(), sGEFilename)
+		SaveArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	End If
 	oGEDlg.endExecute()
 End Sub
 
-Sub GenreElite_Focus
+Sub GenreElite_Focus()
 	Dim aArray() As String
-	ReadFileInArray( aArray(), sGEFilename )
+	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	oInfoDlg.Model.lbGenreElite.StringItemList = aArray
 End Sub
 
 &apos; вставка Избранного Жанра в основной бокс Жанров
-Sub InsertGEToGenreBox(oEvent)
+Sub InsertGEToGenreBox( oEvent )
 	&apos; убираем chr(10) изназвания жанра - строки листбокса
 	Dim sCR As String : sCR = oEvent.source.getSelectedItem
 	If InStr(sCR, chr(10)) &gt; 0 Then
@@ -1125,7 +1132,7 @@ Sub InsertGEToGenreBox(oEvent)
 	oInfoDlg.getControl(&quot;GenreComboBox&quot;).selectItem( sCR, True )
 End Sub
 
-Sub SortGenre
+Sub SortGenre()
 	&apos; сортировка списка Избранных Жанров
 	Dim aArray() As String
 	If	MsgBox(&quot;Вы действительно хотите отсортировать список Избранных Жанров,&quot; &amp; chr(10), _
@@ -1139,7 +1146,7 @@ Sub SortGenre
 	End If
 End Sub
 
-Sub GenreUp
+Sub GenreUp()
 	&apos; перемещение выбранного жанра списка Избранных Жанров вверх
 	Dim aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вверх&quot;
@@ -1158,7 +1165,7 @@ Sub GenreUp
 	End If
 End Sub
 
-Sub GenreDown
+Sub GenreDown()
 	&apos; перемещение выбранного жанра списка Избранных Жанров вниз
 	Dim aArray() As String, sTitle As String
 	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вниз&quot;

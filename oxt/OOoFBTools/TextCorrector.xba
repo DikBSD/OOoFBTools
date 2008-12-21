@@ -3,10 +3,11 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+Const sConstCorrector As String = &quot;/OOoFBTools/corrector.txt&quot; &apos; файл начтроек Корректора Текста
+
 Private oDoc As Object
 Private oReplace As Object
 
-Private sCorrectorSettingsFilename As String
 Private oTextCorrectorDlg As Object
 
 Private bDelSpace As Boolean
@@ -39,12 +40,9 @@ Private bC As Boolean
 Private bImages As Boolean
 Private nAnchor As String
 
-Sub TextCorrector
+Sub TextCorrector()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oTextCorrectorDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.TextCorrectorDlg)
-	
-	&apos; файл начтроек Корректора Текста
-	sCorrectorSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/corrector.txt&quot;
 	
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
@@ -68,48 +66,25 @@ Sub TextCorrector
 	&apos; то вне переменные и контролы будут иметь значения из файла!
 		
 	&apos; Задаем настройки очистки текста в контролы по умолчанию
-	SetCorrectorSettingDefault
+	SetCorrectorSettingDefault()
 	&apos; только теперь считывание настройки из файла
-	ReadCorrectorSettings
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
+	oTextCorrectorDlg.setPosSize( nX, nY, 242, 318, com.sun.star.awt.PosSize.POS )
 	
+	cboxWordDefisParaEnabled()
+	cboxImagesEnabled()
+	cboxBreakLineEnabled()
+	cboxBreakLinesInParaEnabled()
+				
 	oTextCorrectorDlg.execute()
-	
-	&apos; центрирование на экране
-&apos;	ToScreenCenter(oTextCorrectorDlg)
+
 End Sub
 
-Function ReadCorrectorSettings As Boolean
-	&apos; Читаем настройки очистки текста и задаем значения контролам формы
-	If FileExists(sCorrectorSettingsFilename) Then
-		Dim sLine As String
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-
-		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL (sCorrectorSettingsFilename) )
-		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
-		oTIS.setInputStream (oFS)
-		Do While ( NOT oTIS.isEOF() )
-			sLine = oTIS.readLine()
-			If sLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные корректора текста
-				SetSettingsInControlls(sLine, oTextCorrectorDlg)
-				cboxWordDefisParaEnabled
-				cboxImagesEnabled
-				cboxBreakLineEnabled
-				cboxBreakLinesInParaEnabled
-			End If
-		Loop
-		oTIS.closeInput()
-		ReadCorrectorSettings = True
-	Else
-		ReadCorrectorSettings = False
-	End If
-End Function
-
-Sub SaveCorrectorSettings
+Sub SaveCorrectorSettings()
 	&apos; записываем настройки очистки текста
 	Dim oLB As Object &apos; Для работы с ListBox`ами
-	SaveSettings(sCorrectorSettingsFilename, oTextCorrectorDlg)
+	SaveSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg )
 	
 	&apos; заполняем переменные
 	bWordDefisPara = oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State
@@ -143,7 +118,7 @@ Sub SaveCorrectorSettings
 	
 End Sub
 
-Sub SetCorrectorSettingDefault
+Sub SetCorrectorSettingDefault()
 	&apos; Установка настроек по умолчанию в контролы
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Работа с пробелами и табуляциями
@@ -187,7 +162,7 @@ Sub SetCorrectorSettingDefault
 	cboxBreakLinesInParaEnabled
 End Sub
 
-Sub CheckAllOptions
+Sub CheckAllOptions()
 	Dim ctrl As Object, i As Integer
 	ctrl = oTextCorrectorDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
@@ -201,7 +176,7 @@ Sub CheckAllOptions
 	cboxBreakLinesInParaEnabled
 End Sub
 
-Sub UnCheckAllOptions
+Sub UnCheckAllOptions()
 	Dim ctrl As Object, i As Integer
 	ctrl = oTextCorrectorDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
@@ -215,7 +190,7 @@ Sub UnCheckAllOptions
 	cboxBreakLinesInParaEnabled
 End Sub
 
-Sub cboxWordDefisParaEnabled
+Sub cboxWordDefisParaEnabled()
 	If oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable = True
@@ -227,7 +202,7 @@ Sub cboxWordDefisParaEnabled
 	End If
 End Sub
 
-Sub cboxImagesEnabled
+Sub cboxImagesEnabled()
 	If oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = True
@@ -237,7 +212,7 @@ Sub cboxImagesEnabled
 	End If
 End Sub
 
-Sub cboxBreakLineEnabled
+Sub cboxBreakLineEnabled()
 	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = True
@@ -249,7 +224,7 @@ Sub cboxBreakLineEnabled
 	End If
 End Sub
 
-Sub cboxBreakLinesInParaEnabled
+Sub cboxBreakLinesInParaEnabled()
 	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = True
@@ -261,7 +236,7 @@ End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////
 &apos; запуск корректировки
-Sub TextCorrectorDlgOk
+Sub TextCorrectorDlgOk()
 	Dim sCorrectorName As String
 	sCorrectorName = &quot;Корректирование текста&quot;
 	&apos; Если есть опции для чистки, то - работаем

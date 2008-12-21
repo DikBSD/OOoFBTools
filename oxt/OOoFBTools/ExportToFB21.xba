@@ -57,9 +57,6 @@ Sub ExportToFB21
 	Dim oDoc As Object
 	sConvertorName = &quot;ExportToFB2.1&quot;
 	
-	&apos; файл пользовательских стилей
-	sStylesFilename = getUserPath() &amp; &quot;/OOoFBTools/styles.txt&quot;
-	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. конвертор развивается, и в диалоге Переопределения пользовательских стилей появляются НОВЫЕ поля стилей,
 	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых стилей нет,
@@ -73,7 +70,7 @@ Sub ExportToFB21
 	&apos; Установка стилей по умолчанию
 	SetStylesVarsDefault
 	&apos; Только теперь загружаем стили из файла в переменные
-	ReadStyles(sStylesFilename, False)
+	ReadStyles( getUserPath() &amp; sConstStyles, False )
 	
 	Dim oOutputStream As Object
 	Dim oFileAccess As Object
@@ -108,13 +105,13 @@ Sub ExportToFB21
 		sCurDocFile = sCurDocFile &amp; &quot;.fb2&quot;
 	End If
 	
-	If Not InfoDlgExec Then
+	If Not InfoDlgExec() Then
 		Exit Sub
 	End If
 	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
 	If IsStyleExists( sStyleBookTitle ) And ThisComponent.getGraphicObjects().Count &gt; 0 Then
-		MakeCoverParser
+		MakeCoverParser()
 	End If
 
 	oProgressBar.start(&quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount + 50)
@@ -132,17 +129,17 @@ Sub ExportToFB21
 	oTextOutputStream.setEncoding(oCodeLB.SelectedItem)
 	
 	&apos; печатаем данные из &lt;description&gt;
-	SaveDescription
+	SaveDescription()
 	
 	&apos; печатаем данные из &lt;body&gt;
 	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))
-	SaveBody	
+	SaveBody()
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
 	If UBound(sFootnoteText()) &lt;&gt; -1 Then
 		oProgressBar.start(&quot;Экспортирование в FB2: Сохранение сносок&quot;, UBound(sFootnoteText())
 		oProgressBar.setValue(0)
-		SaveNotes
+		SaveNotes()
 	End If
 	
 	&apos; печатаем коды картинок, если они есть
@@ -158,8 +155,8 @@ Sub ExportToFB21
 	oProgressBar.end
 		
 	&apos; запустить полученный файл на просмотр и валидацию, если нужно
-	Dim sValidateMessage As String : sValidateMessage = &quot;Запущена валидация файла.&quot;
-	Dim sEndMessage As String : sEndMessage = &quot;Создание книги в fb2 формате завершено!&quot;
+	Dim sValidateMessage	As String : sValidateMessage	= &quot;Запущена валидация файла.&quot;
+	Dim sEndMessage			As String : sEndMessage			= &quot;Создание книги в fb2 формате завершено!&quot;
 	If iSI &gt; 0 Then sEndMessage = sEndMessage &amp; chr(10) &amp; &quot;Экспортировано Графических Объектов: &quot; &amp; iSI &amp; &quot; из &quot; &amp; UBound(Images())+1 &amp; &quot; найденных в документе.&quot;
 	
 	Dim sFB2File As String : sFB2File = oInfoDlg.Model.FilenameTextField.Text

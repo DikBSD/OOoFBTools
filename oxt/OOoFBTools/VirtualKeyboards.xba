@@ -58,7 +58,7 @@ Sub GreekKeyboard()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadVKeyboardSettings( sVKeyboardSettingsFilename, nX, nY )
+	ReadXYFormPos( sVKeyboardSettingsFilename, nX, nY )
 	oGVKDlg.setPosSize( nX, nY, 136, 498, com.sun.star.awt.PosSize.POS )
 	
 	bGreekKeyboardEnd = False
@@ -114,7 +114,7 @@ Sub HebrewKeyboard()
 
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadVKeyboardSettings( sVKeyboardSettingsFilename, nX, nY )
+	ReadXYFormPos( sVKeyboardSettingsFilename, nX, nY )
 	oHVKDlg.setPosSize( nX, nY, 130, 422, com.sun.star.awt.PosSize.POS )
 	
 	bHebrewKeyboardEnd = False
@@ -170,8 +170,8 @@ Sub CurrencyKeyboard()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadVKeyboardSettings( sVKeyboardSettingsFilename, nX, nY )
-	oCurrencyVKDlg.setPosSize( nX, nY, 130, 422, com.sun.star.awt.PosSize.POS )
+	ReadXYFormPos( sVKeyboardSettingsFilename, nX, nY )
+	oCurrencyVKDlg.setPosSize( nX, nY, 21, 310, com.sun.star.awt.PosSize.POS )
 	
 	bCurrencyKeyboardEnd = False
 	
@@ -226,8 +226,8 @@ Sub MatchKeyboard()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadVKeyboardSettings( sVKeyboardSettingsFilename, nX, nY )
-	oMatchVKDlg.setPosSize( nX, nY, 130, 422, com.sun.star.awt.PosSize.POS )
+	ReadXYFormPos( sVKeyboardSettingsFilename, nX, nY )
+	oMatchVKDlg.setPosSize( nX, nY, 38, 322, com.sun.star.awt.PosSize.POS )
 	
 	bMatchKeyboardEnd = False
 	
@@ -282,8 +282,8 @@ Sub NumbersKeyboard()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadVKeyboardSettings( sVKeyboardSettingsFilename, nX, nY )
-	oNumbersVKDlg.setPosSize( nX, nY, 130, 422, com.sun.star.awt.PosSize.POS )
+	ReadXYFormPos( sVKeyboardSettingsFilename, nX, nY )
+	oNumbersVKDlg.setPosSize( nX, nY, 36, 324, com.sun.star.awt.PosSize.POS )
 	
 	bNumbersKeyboardEnd = False
 	
@@ -338,8 +338,8 @@ Sub MiscKeyboard()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadVKeyboardSettings( sVKeyboardSettingsFilename, nX, nY )
-	oMiscVKDlg.setPosSize( nX, nY, 130, 422, com.sun.star.awt.PosSize.POS )
+	ReadXYFormPos( sVKeyboardSettingsFilename, nX, nY )
+	oMiscVKDlg.setPosSize( nX, nY, 36, 228, com.sun.star.awt.PosSize.POS )
 	
 	bMiscKeyboardEnd = False
 	
@@ -420,37 +420,5 @@ Sub ChangeGreekSmallKeys()
 	oGVKDlg.Model.Height = 136
 	oGVKDlg.Model.cmdVKSpace.Width = oGVKDlg.Model.Width - oGVKDlg.Model.cmdVKSpace.PositionX - 3
 End Sub
-
-&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Function ReadVKeyboardSettings( sVKeyboardSettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
-	&apos; Читаем настройки и задаем координаты форме
-	On Error Resume Next
-	If FileExists( sVKeyboardSettingsFilename ) Then
-		Dim sLine As String
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-		
-		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
-		oFS = oSFA.openFileRead ( ConvertToURL ( sVKeyboardSettingsFilename ) )
-		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
-		oTIS.setInputStream (oFS)
-		Do While ( NOT oTIS.isEOF() )
-			sLine = oTIS.readLine()
-			If sLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные
-				Dim sSetting() As String
-				sSetting = Split(sLine, &quot;=&quot;)
-				If sSetting(0) = &quot;X&quot; Then
-					nX = sSetting(1)
-				ElseIf sSetting(0) = &quot;Y&quot; Then
-					nY = sSetting(1)
-				End If
-			End If
-		Loop
-		oTIS.closeInput()
-		ReadVKeyboardSettings = True
-	Else
-		ReadVKeyboardSettings = False
-	End If
-End Function
 
 </script:module>
