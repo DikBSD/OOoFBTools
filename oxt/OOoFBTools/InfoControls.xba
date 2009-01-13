@@ -609,18 +609,20 @@ Sub ReadBookAuthorsOrTranslatorsInfo( oCursor, sArray() )
 		oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.CharStyleName = sStyle_Name Then
-				sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
-				sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_Family Then
-				sArray(i, 2) = sArray(i, 2) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_Nick Then
-				sArray(i, 3) = sArray(i, 3) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_Email Then
-				sArray(i, 4) = sArray(i, 4) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_WebSite Then
-				sArray(i, 5) = sArray(i, 5) &amp;  oTextPortion.getString()
+			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; Then
+				If oTextPortion.CharStyleName = sStyle_Name Then
+					sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
+					sArray(i, 1) = sArray(i, 1) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Family Then
+					sArray(i, 2) = sArray(i, 2) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Nick Then
+					sArray(i, 3) = sArray(i, 3) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_Email Then
+					sArray(i, 4) = sArray(i, 4) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_WebSite Then
+					sArray(i, 5) = sArray(i, 5) &amp;  oTextPortion.getString()
+				End If
 			End If
 		Wend
 	Wend
@@ -648,16 +650,18 @@ Sub ReadPaperBookInfo( oCursor )
 		oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.CharStyleName = sStyle_PaperBookName Then
-				asPaperBook(i, 0) = asPaperBook(i, 0) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
-				asPaperBook(i, 1) = asPaperBook(i, 1) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
-				asPaperBook(i, 2) = asPaperBook(i, 2) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
-				asPaperBook(i, 3) = asPaperBook(i, 3) &amp; oTextPortion.getString()
-			ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
-				asPaperBook(i, 4) = asPaperBook(i, 4) &amp; oTextPortion.getString()
+			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; Then
+				If oTextPortion.CharStyleName = sStyle_PaperBookName Then
+					asPaperBook(i, 0) = asPaperBook(i, 0) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
+					asPaperBook(i, 1) = asPaperBook(i, 1) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
+					asPaperBook(i, 2) = asPaperBook(i, 2) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
+					asPaperBook(i, 3) = asPaperBook(i, 3) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
+					asPaperBook(i, 4) = asPaperBook(i, 4) &amp; oTextPortion.getString()
+				End If
 			End If
 		Wend
 	Wend
