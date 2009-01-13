@@ -184,7 +184,7 @@ Function InfoDlgExec() As Boolean
 		.NumericFieldMatch.Value		= &quot;&quot;
 		.LangComboBox.StringItemList	= sLangList()
 		.SrcLangComboBox.StringItemList	= sLangList()
-		.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
+&apos;		.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
 		.diDateTextField.Text	= Date
 		.diDateValueField.Text	= Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
 		.ProgrammUsedField.Text	= &quot;ExportToFB21&quot;
@@ -253,6 +253,7 @@ Sub ReadServiceStyles( lProgress As Long )
 		oCursor.gotoEndOfParagraph(True)
 		Select Case oCursor.ParaStyleName
 		Case sStyleBookTitle
+			ReadBookTitleInfo( oCursor )
 			If bUp = True Then Exit Do
 		Case sStyle_BookAuthor
 			ReadBookAuthorsOrTranslatorsInfo( oCursor, sAuthors )
@@ -589,6 +590,26 @@ Sub AddCustomInfos()
 	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = i+1
 End Sub
 
+Sub ReadBookTitleInfo( oCursor )
+	If oCursor.String = &quot;&quot; Then	&apos;
+		Exit Sub
+	End If
+	
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	
+	oEnum = oCursor.createEnumeration
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; And oTextPortion.TextPortionType &lt;&gt; &quot;Footnote&quot; Then
+				oInfoDlg.Model.BookTitleField.Text = oInfoDlg.Model.BookTitleField.Text &amp; oTextPortion.getString()
+			End If
+		Wend
+	Wend
+End Sub
+
 Sub ReadBookAuthorsOrTranslatorsInfo( oCursor, sArray() )
 	If oCursor.String = &quot;&quot; Then	&apos;
 		Exit Sub
@@ -609,7 +630,7 @@ Sub ReadBookAuthorsOrTranslatorsInfo( oCursor, sArray() )
 		oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; Then
+			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; And oTextPortion.TextPortionType &lt;&gt; &quot;Footnote&quot; Then
 				If oTextPortion.CharStyleName = sStyle_Name Then
 					sArray(i, 0) = sArray(i, 0) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_Patronymic Then
@@ -650,7 +671,7 @@ Sub ReadPaperBookInfo( oCursor )
 		oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
 			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; Then
+			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; And oTextPortion.TextPortionType &lt;&gt; &quot;Footnote&quot; Then
 				If oTextPortion.CharStyleName = sStyle_PaperBookName Then
 					asPaperBook(i, 0) = asPaperBook(i, 0) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
