@@ -34,7 +34,7 @@ Sub DocumentParser
 	
 	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
 	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService	As String : customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
+&apos;	Dim customShapeService	As String : customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
 
 	iImgCurrent = 0		&apos; номер текущей картинки, если она есть
 	
@@ -52,8 +52,7 @@ Sub DocumentParser
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
-					oContent.supportsService(customShapeService) Then
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 					&apos; парсер графики, привязанной к параграфу
 					MakeGraphic( oContent, True )
 				Else
@@ -94,8 +93,7 @@ Sub DocumentParser
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
-							oContent.supportsService(customShapeService) Then
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 							&apos; парсер графики, привязанной к символу
 							MakeGraphic( oContent, True )
 						Else

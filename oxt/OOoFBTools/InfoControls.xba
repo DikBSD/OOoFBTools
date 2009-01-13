@@ -184,7 +184,7 @@ Function InfoDlgExec() As Boolean
 		.NumericFieldMatch.Value		= &quot;&quot;
 		.LangComboBox.StringItemList	= sLangList()
 		.SrcLangComboBox.StringItemList	= sLangList()
-&apos;		.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
+		.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
 		.diDateTextField.Text	= Date
 		.diDateValueField.Text	= Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
 		.ProgrammUsedField.Text	= &quot;ExportToFB21&quot;
@@ -243,17 +243,14 @@ Function InfoDlgExec() As Boolean
 End Function
 
 Sub ReadServiceStyles( lProgress As Long )
-	Dim oSect As Object, oCEnum As Object, oContent As Object
-	Dim oCursor As Object, lPara As Long &apos; для статусбара
-	oCursor = ThisComponent.Text.createTextCursor()
+	Dim oCursor As Object : oCursor = ThisComponent.Text.createTextCursor()
 	oCursor.gotoStart(False)
-	lPara = lProgress
+	Dim lPara As Long : lPara = lProgress &apos; для статусбара
 	Do
 		lPara = lPara+1
 		oCursor.gotoEndOfParagraph(True)
 		Select Case oCursor.ParaStyleName
 		Case sStyleBookTitle
-			ReadBookTitleInfo( oCursor )
 			If bUp = True Then Exit Do
 		Case sStyle_BookAuthor
 			ReadBookAuthorsOrTranslatorsInfo( oCursor, sAuthors )
@@ -278,8 +275,8 @@ Sub ReadServiceStyles( lProgress As Long )
 		Case sStyle_Lang	
 			ReadLangInfo( oCursor )
 		End Select
-		oProgressBar.setValue(lPara) &apos; Статусбар
-	Loop While oCursor.gotoNextParagraph(False)
+		oProgressBar.setValue( lPara ) &apos; Статусбар
+	Loop While oCursor.gotoNextParagraph( False )
 	oProgressBar.end
 End Sub
 
@@ -588,26 +585,6 @@ Sub AddCustomInfos()
 		.cusValueTextField.Text = &quot;&quot;
 	End With
 	oInfoDlg.GetControl(&quot;lbCustomInfo&quot;).Text = i+1
-End Sub
-
-Sub ReadBookTitleInfo( oCursor )
-	If oCursor.String = &quot;&quot; Then	&apos;
-		Exit Sub
-	End If
-	
-	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
-	
-	oEnum = oCursor.createEnumeration
-	While oEnum.hasMoreElements
-		oText = oEnum.nextElement
-		oSecEnum = oText.createEnumeration
-		While oSecEnum.hasMoreElements
-			oTextPortion = oSecEnum.nextElement	
-			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; And oTextPortion.TextPortionType &lt;&gt; &quot;Footnote&quot; Then
-				oInfoDlg.Model.BookTitleField.Text = oInfoDlg.Model.BookTitleField.Text &amp; oTextPortion.getString()
-			End If
-		Wend
-	Wend
 End Sub
 
 Sub ReadBookAuthorsOrTranslatorsInfo( oCursor, sArray() )

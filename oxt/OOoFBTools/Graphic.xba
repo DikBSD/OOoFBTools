@@ -19,11 +19,11 @@ Sub MakeCoverParser
 	Dim oSect As Object 	&apos;Перебиремый текстовый раздел (section)
 	Dim oCEnum As Object 	&apos;Перебирает содержимое, такое как графические объекты
 	Dim oContent As Object 	&apos;Перебираемое содержимое
-	Dim textGraphService As String, graphicService As String, customShapeService As String
 	
-	textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
-	graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
+	
+	Dim textGraphService As String	: textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService As String	: graphicService	= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+&apos;	Dim customShapeService As String : customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
 
 	oParEnum = ThisComponent.getText().createEnumeration()
 	Do While oParEnum.hasMoreElements()
@@ -32,8 +32,7 @@ Sub MakeCoverParser
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
-					oContent.supportsService(customShapeService) Then
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 					&apos; нашли обложку книги, привязанной к параграфу
 					MakeCoverTag( oContent )
 				Else
@@ -60,8 +59,7 @@ Sub MakeCoverParser
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Or _
-							oContent.supportsService(customShapeService) Then
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 							&apos; нашли обложку книги, привязанной к символу
 							MakeCoverTag( oContent )
 						Else
