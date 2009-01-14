@@ -242,7 +242,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 	args(1).Value = ConvertToURL( sFileNameURL )
 	args(2).Name  = &quot;Compression&quot;
 	args(2).Value = 1
-	args(3).Name  =&quot;Interlaced&quot;
+	args(3).Name  = &quot;Interlaced&quot;
 	args(3).Value = 0
 	
 	&apos; сохраняем картинку
@@ -280,10 +280,11 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 
 		&apos; делаем скрипт исполняемым
-		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+&apos;		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
 	
 		&apos; конвертируем картинку в base64
-		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+&apos;		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+		Shell( &quot;/bin/sh&quot;, 1, &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, true ) 
 	Else &apos; для Linux и других Unix-систем
 		&apos; данные картинки и ее расширение
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
@@ -293,10 +294,11 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
 
 		&apos; делаем скрипт исполняемым
-		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+&apos;		Shell( &quot;&quot;&quot;&quot; &amp; getHomePath() &amp; &quot;/.OOoFBTools-mef.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
 	
 		&apos; конвертируем картинку в base64
-		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+&apos;		Shell( &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, 1, &quot;&quot;, true )
+		Shell( &quot;/bin/sh&quot;, 1, &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, true ) 
 	End If
 
 	If FileExists( sMimeFile ) Then

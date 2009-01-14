@@ -908,7 +908,7 @@ Function getOOoFBToolsTempPath() As String
 End Function
 
 &apos; что за система: 0 - Windows, 1 - Mac OS X, 2 - Linux, FreeBSD и т.д.
-Function GetOS() As Integer
+Function _GetOS() As Integer &apos; старая ф-я определения OS - не работает под Linux и OOo 3.0
 	Dim oPathSettings, sDir As String
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
 	sDir = oPathSettings.Work
@@ -919,6 +919,17 @@ Function GetOS() As Integer
 	Else
 		GetOS = 0 &apos; Windows
 	End If
+End Function
+
+Function GetOS() As Integer 
+   Dim sDir As String : sDir = GetHomePath() 
+   If InStr( sDir, &quot;file:///home/&quot; ) &gt; 0 Then 
+      GetOS = 2 &apos; Linux, FreeBSD и т.д. 
+   ElseIf InStr( sDir, &quot;file:///Users/&quot; ) &gt; 0 Then 
+      GetOS = 1 &apos; Mac OS X 
+   Else 
+      GetOS = 0 &apos; Windows 
+   End If 
 End Function
 
 &apos; &quot;Путь&quot; к расширению
