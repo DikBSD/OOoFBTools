@@ -21,6 +21,7 @@ Public sSequences()		As String &apos; book&apos;s sequences
 Public sDocAuthors()	As String &apos; doc&apos;s authors
 Public sPubSequences()	As String &apos; publisher book&apos;s sequences
 Public sCustomInfos()	As String &apos; данные пользователя
+Private asPaperBook(4)	As String &apos; Данные о бумажном варианте книги 
 
 Private sLangList() As String
 Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
@@ -632,44 +633,34 @@ Sub ReadPaperBookInfo( oCursor )
 		Exit Sub
 	End If
 	
-	Dim asPaperBook() As String
-	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
-	Dim i As Integer
-	
-	i = Ubound(asPaperBook(), 1) + 1
-	If i &gt; 0 Then
-		ReDim Preserve asPaperBook(i, 4)
-	Else Redim asPaperBook(i, 4)
-	End If
-	
-	oEnum = oCursor.createEnumeration
+	Dim oEnum As Object : oEnum = oCursor.createEnumeration
 	While oEnum.hasMoreElements
-		oText = oEnum.nextElement
-		oSecEnum = oText.createEnumeration
+		Dim oText As Object : oText = oEnum.nextElement
+		Dim oSecEnum As Object : oSecEnum = oText.createEnumeration
 		While oSecEnum.hasMoreElements
-			oTextPortion = oSecEnum.nextElement	
+			Dim oTextPortion As Object : oTextPortion = oSecEnum.nextElement	
 			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; And oTextPortion.TextPortionType &lt;&gt; &quot;Footnote&quot; Then
 				If oTextPortion.CharStyleName = sStyle_PaperBookName Then
-					asPaperBook(i, 0) = asPaperBook(i, 0) &amp; oTextPortion.getString()
+					asPaperBook(0) = asPaperBook(0) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
-					asPaperBook(i, 1) = asPaperBook(i, 1) &amp; oTextPortion.getString()
+					asPaperBook(1) = asPaperBook(1) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
-					asPaperBook(i, 2) = asPaperBook(i, 2) &amp; oTextPortion.getString()
+					asPaperBook(2) = asPaperBook(2) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
-					asPaperBook(i, 3) = asPaperBook(i, 3) &amp; oTextPortion.getString()
+					asPaperBook(3) = asPaperBook(3) &amp; oTextPortion.getString()
 				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
-					asPaperBook(i, 4) = asPaperBook(i, 4) &amp; oTextPortion.getString()
+					asPaperBook(4) = asPaperBook(4) &amp; oTextPortion.getString()
 				End If
 			End If
 		Wend
 	Wend
 	If UBound( asPaperBook() ) &lt;&gt; -1 Then
 		With oInfoDlg.Model
-			.pubBookNameTextField.Text = asPaperBook(0,0)
-			.pubPublisherTextField.Text = asPaperBook(0,1)
-			.pubCityTextField.Text = asPaperBook(0,2)
-			.pubYearTextField.Text = asPaperBook(0,3)
-			.pubISBNTextField.Text = asPaperBook(0,4)
+			.pubBookNameTextField.Text = asPaperBook(0)
+			.pubPublisherTextField.Text = asPaperBook(1)
+			.pubCityTextField.Text = asPaperBook(2)
+			.pubYearTextField.Text = asPaperBook(3)
+			.pubISBNTextField.Text = asPaperBook(4)
 		End With
 	End If
 End Sub
