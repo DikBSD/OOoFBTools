@@ -3,12 +3,16 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Description" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Function SaveDescription
+Sub SaveDescription()
 	Dim i As Integer
-	Dim s As String
-	Dim oCodeLB As Object
-	oCodeLB = oInfoDlg.getControl(&quot;Codepage&quot;)
-	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; Trim(oCodeLB.SelectedItem) &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
+
+	Dim oCodeLB As Object : oCodeLB = oInfoDlg.getControl(&quot;Codepage&quot;)
+	Dim sFB2Encoding As String : sFB2Encoding = Trim( oCodeLB.SelectedItem )
+	If bSaveUTF8 And bMarker Then &apos; сохранение fb2-файла в UTF-8, т.к. в тексте есть маркерные списки
+		sFB2Encoding = &quot;utf-8&quot;
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; sFB2Encoding &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;FictionBook xmlns=&quot;&quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot; xmlns:l=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot;&gt;&quot;&amp;chr(10))
 	oTextOutputStream.writeString(&quot;&lt;description&gt;&quot; &amp; chr(10))
 	
@@ -37,7 +41,7 @@ Function SaveDescription
 			SaveAuthor( sAuthors(i, 0), sAuthors(i, 1), sAuthors(i, 2), sAuthors(i, 3), sAuthors(i, 4), sAuthors(i, 5) )
 		Next i
 	Else
-		SaveEmptyAuthor
+		SaveEmptyAuthor()
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.BookTitleField.Text) ) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
@@ -65,6 +69,7 @@ Function SaveDescription
 		End If
 	End If
 
+	Dim s As String
 	If UBound( Covers() ) &gt;= 0 Then
 		s = &quot;&lt;coverpage&gt;&quot; &amp; chr(10)
 		For i=0 To UBound( Covers() )
@@ -107,7 +112,7 @@ Function SaveDescription
 			SaveAuthor( sDocAuthors(i, 0), sDocAuthors(i, 1), sDocAuthors(i, 2), sDocAuthors(i, 3), sDocAuthors(i, 4), sDocAuthors(i, 5) )
 		Next i
 	Else
-		SaveEmptyAuthor
+		SaveEmptyAuthor()
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.ProgrammUsedField.Text) ) &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
@@ -139,9 +144,9 @@ Function SaveDescription
 	SaveCustomInfo
 	oTextOutputStream.writeString(&quot;&lt;/description&gt;&quot;&amp;chr(10))
 
-End Function
+End Sub
 
-Function SaveAuthor(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String) 
+Sub SaveAuthor(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String) 
 	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;first-name&gt;&quot; &amp; CorrectPara( Str1 ) &amp; &quot;&lt;/first-name&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;middle-name&gt;&quot; &amp; CorrectPara( Str2 ) &amp; &quot;&lt;/middle-name&gt;&quot; &amp; chr(10))
@@ -156,11 +161,11 @@ Function SaveAuthor(Str1 As String, Str2 As String, Str3 As String, Str4 As Stri
 		oTextOutputStream.writeString(&quot;&lt;email&gt;&quot; &amp; CorrectPara( Str5 ) &amp; &quot;&lt;/email&gt;&quot; &amp; chr(10))
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/author&gt;&quot;&amp; chr(10))
-End Function
+End Sub
 
-Function SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String)
+Sub SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String)
 	If Str1 = &quot;&quot; AND Str2 = &quot;&quot; AND Str3 = &quot;&quot; AND Str4 = &quot;&quot; AND Str5 = &quot;&quot; AND Str6 = &quot;&quot; Then
-		Exit Function
+		Exit Sub
 	End If
 	oTextOutputStream.writeString(&quot;&lt;translator&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;first-name&gt;&quot; &amp; CorrectPara( Str1 ) &amp; &quot;&lt;/first-name&gt;&quot; &amp; chr(10))
@@ -176,9 +181,9 @@ Function SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As 
 		oTextOutputStream.writeString(&quot;&lt;email&gt;&quot; &amp; CorrectPara( Str5 ) &amp; &quot;&lt;/email&gt;&quot; &amp; chr(10))
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/translator&gt;&quot;&amp; chr(10))
-End Function
+End Sub
 
-Sub SavePublisher
+Sub SavePublisher()
 	If Trim(oInfoDlg.Model.pubBookNameTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.pubYearTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.pubISBNTextField.Text) = &quot;&quot; AND UBound(sPubSequences) = -1 Then
@@ -214,7 +219,7 @@ Sub SavePublisher
 	oTextOutputStream.writeString(&quot;&lt;/publish-info&gt;&quot; &amp; chr(10))
 End Sub
 
-Sub SaveCustomInfo
+Sub SaveCustomInfo()
 	If UBound(sCustomInfos) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sCustomInfos)
@@ -223,7 +228,7 @@ Sub SaveCustomInfo
 	End If
 End Sub
 
-Sub SaveEmptyAuthor
+Sub SaveEmptyAuthor()
 	&apos; если автора нет, то записываем только пустые обязательные тэги для валидности книги
 	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;first-name/&gt;&quot; &amp; chr(10))

@@ -3,6 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="MarkersAndNumbers" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+Public bMarker As Boolean &apos; флаг - если в книге есть маркерованные списки, то - True (для принудительного сохранения в UTF-8)
 &apos; //////////////////////////////////////// Маркеры и Нумерованные Списки //////////////////////////////////////////////////////
 
 &apos; Обработка нумерованных и маркированных списков
@@ -30,6 +31,7 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 			Else &apos; BulletChar
 				MakeNumberingNumberPara = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
 			End If
+			bMarker = True
 		End If
 	End If
 End Function
