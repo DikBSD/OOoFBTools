@@ -155,10 +155,10 @@ Sub SaveSettings( sSettingsFilename As String, oDlg As Object )
 	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	
-	oOS = oFA.openFileWrite(sSettingsFilename)
+	oOS = oFA.openFileWrite( sSettingsFilename )
 	oOS.truncate()
-	oTOS.setOutputStream(oOS)
-	oTOS.setEncoding(&quot;utf-8&quot;)
+	oTOS.setOutputStream( oOS )
+	oTOS.setEncoding( &quot;utf-8&quot; )
 	
 	Dim ctrl As Object, i As Integer
 	ctrl = oDlg.getControls()
@@ -936,6 +936,16 @@ Function getMyVersion( sOXTName As String ) As String
 		End If
 	Next
 	getMyVersion = &quot;&quot;
+End Function
+
+Function getSetSection ( Section As String )
+	Dim nodeArgs(0) As New com.sun.star.beans.PropertyValue
+	nodeArgs(0).Name = &quot;nodepath&quot;
+	nodeArgs(0).Value = Section
+	nodeArgs(0).State = com.sun.star.beans.PropertyState.DEFAULT_VALUE
+	nodeArgs(0).Handle = -1
+	Dim Provider : Provider = createUnoService( &quot;com.sun.star.comp.configuration.ConfigurationProvider&quot; )
+	getSetSection = Provider.createInstanceWithArguments( &quot;com.sun.star.configuration.ConfigurationAccess&quot;, nodeArgs() )
 End Function
 
 &apos; Запустить указанный файл
