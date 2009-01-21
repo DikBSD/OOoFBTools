@@ -938,14 +938,9 @@ Function getMyVersion( sOXTName As String ) As String
 	getMyVersion = &quot;&quot;
 End Function
 
-Function getSetSection ( Section As String )
-	Dim nodeArgs(0) As New com.sun.star.beans.PropertyValue
-	nodeArgs(0).Name = &quot;nodepath&quot;
-	nodeArgs(0).Value = Section
-	nodeArgs(0).State = com.sun.star.beans.PropertyState.DEFAULT_VALUE
-	nodeArgs(0).Handle = -1
-	Dim Provider : Provider = createUnoService( &quot;com.sun.star.comp.configuration.ConfigurationProvider&quot; )
-	getSetSection = Provider.createInstanceWithArguments( &quot;com.sun.star.configuration.ConfigurationAccess&quot;, nodeArgs() )
+&apos; Возвращает язык (local) системы
+Function getSystemLang() As String
+	getSystemLang = ThisComponent().CharLocale.Language
 End Function
 
 &apos; Запустить указанный файл
