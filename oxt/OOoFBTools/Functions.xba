@@ -938,9 +938,20 @@ Function getMyVersion( sOXTName As String ) As String
 	getMyVersion = &quot;&quot;
 End Function
 
-&apos; Возвращает язык (local) системы
-Function getSystemLang() As String
-	getSystemLang = ThisComponent().CharLocale.Language
+&apos; Возвращает локаль ( например ru-RU, если bShort=False или ru, если bShort=True )
+Function getOOoLocal( bShort As Boolean ) As String
+	Dim nodeArgs(0) As New com.sun.star.beans.PropertyValue
+	nodeArgs(0).Name = &quot;nodepath&quot;
+	nodeArgs(0).Value = &quot;/org.openoffice.Office.Linguistic/General&quot;
+	nodeArgs(0).State = com.sun.star.beans.PropertyState.DEFAULT_VALUE
+	nodeArgs(0).Handle = -1
+	Dim Provider	As Object	: Provider = createUnoService(&quot;com.sun.star.comp.configuration.ConfigurationProvider&quot;)
+	Dim oSet		As Object	: oSet = Provider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;, nodeArgs())
+	If bShort Then
+		getOOoLocal = LCase( Left( Trim( oSet.DefaultLocale ), 2 ) )
+	Else
+		getOOoLocal = OOLangue.DefaultLocale
+	End If
 End Function
 
 &apos; Запустить указанный файл

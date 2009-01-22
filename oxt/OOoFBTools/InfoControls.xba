@@ -175,6 +175,9 @@ Function InfoDlgExec() As Boolean
 	End If
 	oProgressBar.setValue(3) &apos; Статусбар
 	
+	&apos; инициализация основной формы в зависимости от локали
+	InitInfoDlg()
+	
 	MakeLangList( sLangList() )
 	oProgressBar.setValue(4) &apos; Статусбар
 
@@ -194,10 +197,10 @@ Function InfoDlgExec() As Boolean
 		.KeywordsField.Text		= FindTextOfStyle(sStyle_BookKeywords, true)
 	End With
 	
-	oInfoDlg.getControl(&quot;LangComboBox&quot;).selectItem(&quot;ru&quot;, True)
-	oInfoDlg.getControl(&quot;SrcLangComboBox&quot;).AddItem(&quot;&quot;, 0)
-	oInfoDlg.getControl(&quot;Codepage&quot;).addItems(Array(&quot;utf-8&quot;, &quot;windows-1251&quot;), 0)
-	oInfoDlg.getControl(&quot;Codepage&quot;).SelectItemPos(0, True)
+	oInfoDlg.getControl( &quot;LangComboBox&quot; ).selectItem( getOOoLocal( True ), True )
+	oInfoDlg.getControl( &quot;SrcLangComboBox&quot; ).AddItem( &quot;&quot;, 0 )
+	oInfoDlg.getControl( &quot;Codepage&quot; ).addItems(Array( &quot;utf-8&quot;, &quot;windows-1251&quot;), 0 )
+	oInfoDlg.getControl( &quot;Codepage&quot; ).SelectItemPos( 0, True )
 	
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
