@@ -3,12 +3,11 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="InfoControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public Const sConstMyGenre			As String = &quot;/OOoFBTools/mygenre.txt&quot;	&apos; файл Избранных Жанров
+Public Const sConstMyGenre			As String = &quot;/OOoFBTools/mygenre.txt&quot;			&apos; файл Избранных Жанров
 Public Const sConstMyGenreSettings	As String = &quot;/OOoFBTools/mygenre_settings.txt&quot;	&apos; файл настроек Избранных Жанров
-Public Const sConstSettings			As String = &quot;/OOoFBTools/settings.txt&quot;	&apos; файл настроек
-Public Const sConstFB2AuthorProfile	As String = &quot;/OOoFBTools/profile.txt&quot;	&apos; файл профиля Автора fb2 документа
-Const sConstMainDlg					As String = &quot;/OOoFBTools/main_dialog.txt&quot;	&apos; файл настроек основного диалога
-Const sDlgTitle						As String = &quot;Данные о Книге&quot; &apos; Заголовок основной формы
+Public Const sConstSettings			As String = &quot;/OOoFBTools/settings.txt&quot;			&apos; файл настроек
+Public Const sConstFB2AuthorProfile	As String = &quot;/OOoFBTools/profile.txt&quot;			&apos; файл профиля Автора fb2 документа
+Const sConstMainDlg					As String = &quot;/OOoFBTools/main_dialog.txt&quot;		&apos; файл настроек основного диалога
 	
 Public oProgressBar
 Public oInfoDlg		As Object
@@ -135,7 +134,7 @@ Sub InitFB21()
 	GenreFB21()
 
 	With oInfoDlg.Model
-		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.1&quot;
+		.Title = sIDD.sInfoDlgTitle &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB21
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 
@@ -146,7 +145,7 @@ Sub InitFB22()
 	GenreFB22()
 
 	With oInfoDlg.Model
-		.Title = sDlgTitle &amp; &quot; - жанры схемы fb2.2&quot;
+		.Title = sIDD.sInfoDlgTitle &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB22
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 	
@@ -160,8 +159,11 @@ Sub MakeLangList( aLangList() )
 End Sub
 
 Function InfoDlgExec() As Boolean
+	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
+	InitInfoDlgMessage()
+	
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start(&quot;Инициализация:&quot;, ThisComponent.ParagraphCount)
+	oProgressBar.start( sIDD.sInfoDlgInit, ThisComponent.ParagraphCount )
 	oProgressBar.setValue(0)
 	
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
@@ -175,7 +177,7 @@ Function InfoDlgExec() As Boolean
 	End If
 	oProgressBar.setValue(3) &apos; Статусбар
 	
-	&apos; инициализация основной формы в зависимости от локали
+	&apos; инициализация основной формы конвертера в зависимости от локали
 	InitInfoDlg()
 	
 	MakeLangList( sLangList() )
@@ -306,19 +308,19 @@ Sub ConvertingFile()
 	SaveSettings( getUserPath() &amp; sConstMainDlg, oInfoDlg )
 	
 	If oInfoDlg.getControl(&quot;GenreComboBox&quot;).SelectedItem = &quot;&quot; And UBound( sGenres() ) = -1 Then
-		MsgBox &quot;Выберите, пожалуйста, Жанр Книги&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgSelectGenre, 64, sConvertorName
 		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.BookTitleField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните, пожалуйста, поля Названия Книги&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillBookTitle, 64, sConvertorName
 		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.VersionField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillVersion, 64, sConvertorName
 		Exit Sub
 	End If
 	If Trim(oInfoDlg.Model.IDField.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillID, 64, sConvertorName
 		Exit Sub
 	End If
 	bAppendBtn = False
@@ -369,7 +371,7 @@ Sub SaveAs()
 	With oFileDlg
 		.initialize(sArg())
 		.appendFilter(&quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot;)
-		.setTitle(&quot;Сохранить как...&quot;)
+		.setTitle( sIDD.sFileDlgSaveAs )
 		.setDisplayDirectory(sDir)
 		.setDefaultName(sFName)
 	End With
@@ -386,10 +388,10 @@ End Sub
 
 Function AppendBookGenre() As Boolean
 	Dim oLB As Object
-	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
+	oLB = oInfoDlg.getControl( &quot;GenreComboBox&quot; )
 	IF bAppendBtn = True Then
 		If oLB.SelectedItem = &quot;&quot; Then
-			MsgBox &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
+			MsgBox sIDD.sInfoDlgSelectGenre, 64, sConvertorName
 			AppendBookGenre = False
 			Exit Function
 		End If
@@ -398,7 +400,7 @@ Function AppendBookGenre() As Boolean
 	Dim sGenre As String : sGenre = GetGenreInList( oLB.SelectedItem )
 	Dim i As Integer
 	If sGenre = &quot;?&quot; Then
-		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgGenreGroup, 64, sConvertorName
 		AppendBookGenre = False
 		Exit Function
 	End If
@@ -423,7 +425,7 @@ End Function
 Sub AppendBookAuthor()
 	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND _
 		 Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Автора Книги&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillBookAuthor, 64, sConvertorName
 		Exit Sub
 	End If
 	AddBookAuthor()
@@ -456,7 +458,7 @@ End Sub
 Sub AppendBookTranslator()
 	If Trim(oInfoDlg.Model.tiTransFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransMiddle.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransLast.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiTransNickname.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiTransHomepage.Text) = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillBookTrans, 64, sConvertorName
 		Exit Sub
 	End If
 	AddBookTranslator()

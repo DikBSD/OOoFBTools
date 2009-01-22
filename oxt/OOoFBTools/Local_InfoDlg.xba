@@ -5,7 +5,26 @@
 &apos; модуль локализации основной формы конвертера
 &apos; /////////////////////////////////////////////
 
-&apos; инициализация основной формы в зависимости от локали
+&apos; для хранения сообщений для основной формы конвертера
+Type tInfoDlgData	
+	sInfoDlgTitle			As String &apos; Заголовок основной формы конвертера
+	sInfoDlgInit			As String &apos; Инициализация
+	sInfoDlgSchemeFB21		As String &apos; Жанры схемы fb2.1
+	sInfoDlgSchemeFB22		As String &apos; Жанры схемы fb2.2
+	sInfoDlgSelectGenre		As String &apos; Выберите, пожалуйста, Жанр Книги
+	sInfoDlgFillBookTitle	As String &apos; Заполните, пожалуйста, поля Названия Книги
+	sInfoDlgFillVersion		As String &apos; Заполните, пожалуйста, поле Версии Книги (например, 1.0)
+	sInfoDlgFillID			As String &apos; Заполните, пожалуйста, поле ID Книги произвольным образом, или нажмите на кнопку new ID
+	sInfoDlgGenreGroup		As String &apos; Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!
+	sInfoDlgFillBookAuthor	As String &apos; Пожалуйста, заполните хоть одно поле для Автора Книги
+	sInfoDlgFillBookTrans	As String &apos; Пожалуйста, заполните хоть одно поле для Переводчика Книги
+	
+	sFileDlgSaveAs			As String &apos; Сохранить как...
+End Type
+
+Dim sIDD As tInfoDlgData
+
+&apos; инициализация основной формы конвертера в зависимости от локали
 Sub InitInfoDlg()
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With oInfoDlg.getModel
@@ -214,6 +233,45 @@ Sub InitInfoDlg()
 			.OkButton.Label			= &quot;Create fb2 file&quot;
 			.CancelButton.Label		= &quot;Cancel&quot;
 			.ServiceButton.Label	= &quot;Settings&quot;
+		End With
+	End If
+End Sub
+
+
+
+&apos; инициализация сообщений основной формы конвертера в зависимости от локали
+Sub InitInfoDlgMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sIDD
+			.sInfoDlgTitle			= &quot;Описание Книги&quot;
+			.sInfoDlgInit			= &quot;Инициализация:&quot;
+			.sInfoDlgSchemeFB21		= &quot;жанры схемы fb2.1&quot;
+			.sInfoDlgSchemeFB22		= &quot;жанры схемы fb2.2&quot;
+			.sInfoDlgSelectGenre	= &quot;Выберите, пожалуйста, Жанр Книги.&quot;
+			.sInfoDlgFillBookTitle	= &quot;Заполните, пожалуйста, поля Названия Книги.&quot;
+			.sInfoDlgFillVersion	= &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;
+			.sInfoDlgFillID			= &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;
+			.sInfoDlgGenreGroup		= &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;
+			.sInfoDlgFillBookAuthor = &quot;Пожалуйста, заполните хоть одно поле для Автора Книги.&quot;
+			.sInfoDlgFillBookTrans	= &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги&quot;
+	
+			.sFileDlgSaveAs			= &quot;Сохранить как...&quot;
+		End With
+	Else
+		With sIDD
+			.sInfoDlgTitle			= &quot;Description of the Book&quot;
+			.sInfoDlgInit			= &quot;Initialization:&quot;
+			.sInfoDlgSchemeFB21		= &quot;Genres of Scheme fb2.1&quot;
+			.sInfoDlgSchemeFB22		= &quot;Genres of Scheme fb2.2&quot;
+			.sInfoDlgSelectGenre	= &quot;Please, select the Genre of the Book.&quot;
+			.sInfoDlgFillBookTitle	= &quot;Please, fiil the Field of the Book Title.&quot;
+			.sInfoDlgFillVersion	= &quot;Please, fiil the Field of the Book Version (for example, 1.0)&quot;
+			.sInfoDlgFillID			= &quot;Please, fiil at will the Field of the Book Version,&quot; &amp; chr(10) &amp; &quot;or click on the Button new ID.&quot;
+			.sInfoDlgGenreGroup		= &quot;You choose Name of the Genres Group.&quot; &amp; chr(10) &amp; &quot;Please, select the Genre of the Book!&quot;
+			.sInfoDlgFillBookAuthor = &quot;Please, fiil though one Field for Book Author.&quot;
+			.sInfoDlgFillBookTrans = &quot;Please, fiil though one Field for Book Translator.&quot;
+
+			.sFileDlgSaveAs			= &quot;Save As...&quot;
 		End With
 	End If
 End Sub
