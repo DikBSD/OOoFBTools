@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_InfoDlg" script:language="StarBasic">REM  *****  BASIC  *****
-&apos; /////////////////////////////////////////////
-&apos; модуль локализации основной формы конвертера
-&apos; /////////////////////////////////////////////
+&apos; /////////////////////////////////////////////////////
+&apos; модуль локализации основной формы конвертера и Жанров
+&apos; /////////////////////////////////////////////////////
 
 Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
 
@@ -13,13 +13,10 @@ Type tInfoDlgData
 	sInfoDlsCreateDialog			As String &apos; Создание диалога
 	sInfoDlgTitle					As String &apos; Заголовок основной формы конвертера
 	sInfoDlgInit					As String &apos; Инициализация
-	sInfoDlgSchemeFB21				As String &apos; Жанры схемы fb2.1
-	sInfoDlgSchemeFB22				As String &apos; Жанры схемы fb2.2
 	sInfoDlgSelectGenre				As String &apos; Выберите, пожалуйста, Жанр Книги
 	sInfoDlgFillBookTitle			As String &apos; Заполните, пожалуйста, поля Названия Книги
 	sInfoDlgFillVersion				As String &apos; Заполните, пожалуйста, поле Версии Книги (например, 1.0)
 	sInfoDlgFillID					As String &apos; Заполните, пожалуйста, поле ID Книги произвольным образом, или нажмите на кнопку new ID
-	sInfoDlgGenreGroup				As String &apos; Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!
 	sInfoDlgFillBookAuthor			As String &apos; Пожалуйста, заполните хоть одно поле для Автора Книги
 	sInfoDlgFillBookTrans			As String &apos; Пожалуйста, заполните хоть одно поле для Переводчика Книги
 	sInfoDlgFillBookSequence		As String &apos; Пожалуйста, заполните поля названия и (или) номера для Серии Книги
@@ -42,34 +39,50 @@ Type tInfoDlgData
 	sInfoDlgStatPaperBookSequencesList	As String &apos; Список серий для Бумажной Книги
 	sInfoDlgStatBookCustomInfoList		As String &apos; Список серий для Custom Info
 	sInfoDlgStatBookGenresList			As String &apos; Список Жанров Книги
+End Type
+
+&apos; для хранения сообщений для жанров
+Type tGenreData
+	sGenreGroup					As String &apos; Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!
+	sSchemeFB21					As String &apos; схема fb2.1
+	sSchemeFB22					As String &apos; схема fb2.2
 	&apos; Избранные Жанры
-	sInfoDlgGenreElite					As String &apos; Избранные Жанры
-	sInfoDlgGenreEliteAdd				As String &apos; Добавление Жанра в Избранное
-	sInfoDlgGenreEliteRemove			As String &apos; Удаление Жанра из Избранного
-	sInfoDlgGenreEliteSorting			As String &apos; Сортировка списка Избранных Жанров
-	sInfoDlgGenreEliteUp				As String &apos; Перемещение Жанра вверх
-	sInfoDlgGenreEliteDown				As String &apos; Перемещение Жанра вниз
-	sInfoDlgGenreEliteSelected			As String &apos; Выбраный жанр
-	sInfoDlgGenreEliteSelectFromList	As String &apos; Пожалуйста, выберите Жанр из выпадающего списка!
-	sInfoDlgGenreEliteSelectOther		As String &apos; Пожалуйста, выберите другой жанр книги!
-	sInfoDlgGenreEliteIsExists			As String &apos; уже имеется в списке Избранных Жанров.
-	sInfoDlgGenreEliteSelectForRemove	As String &apos; Пожалуйста, выберите Жанр из Избранного для удаления.
-	sInfoDlgGenreEliteQuestionRemove	As String &apos; Вы действительно хотите удалить выбранный жанр из Избранного:
-	sInfoDlgGenreEliteQuestionSort		As String &apos; Вы действительно хотите отсортировать список Избранных Жанров
-	sInfoDlgGenreEliteSelectToUp		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!
-	sInfoDlgGenreEliteSelectToDown		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!
+	sGenreElite					As String &apos; Избранные Жанры
+	sGenreEliteAdd				As String &apos; Добавление Жанра в Избранное
+	sGenreEliteRemove			As String &apos; Удаление Жанра из Избранного
+	sGenreEliteSorting			As String &apos; Сортировка списка Избранных Жанров
+	sGenreEliteUp				As String &apos; Перемещение Жанра вверх
+	sGenreEliteDown				As String &apos; Перемещение Жанра вниз
+	sGenreEliteSelected			As String &apos; Выбраный жанр
+	sGenreEliteSelectFromList	As String &apos; Пожалуйста, выберите Жанр из выпадающего списка!
+	sGenreEliteSelectOther		As String &apos; Пожалуйста, выберите другой жанр книги!
+	sGenreEliteIsExists			As String &apos; уже имеется в списке Избранных Жанров.
+	sGenreEliteSelectForRemove	As String &apos; Пожалуйста, выберите Жанр из Избранного для удаления.
+	sGenreEliteQuestionRemove	As String &apos; Вы действительно хотите удалить выбранный жанр из Избранного:
+	sGenreEliteQuestionSort		As String &apos; Вы действительно хотите отсортировать список Избранных Жанров
+	sGenreEliteSelectToUp		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!
+	sGenreEliteSelectToDown		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!
 End Type
 
 Dim sIDD As tInfoDlgData
+Dim sGD As tGenreData
 
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация основной формы конвертера в зависимости от локали
 Sub InitInfoDlg()
+	&apos; инициализация сообщений диалогов по работе с Жанрами в зависимости от локали
+	InitGenreMessage()
+	
+	With oInfoDlg.getModel
+		&apos; Title Info
+		.lbGenreElite.HelpText	= sGD.sGenreElite
+	End With
+	
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With oInfoDlg.getModel
 			&apos; Title Info
 			.fcTI.Label				= &quot; Книга (Title Info) &quot;
 			.lblGenre.Label					= &quot;Жанр:&quot;
-			.lbGenreElite.HelpText			= sIDD.sInfoDlgGenreElite
 			.GenreCommandButton.HelpText	= &quot;Добавить в список еще жанр&quot;
 			.cbtnGenreElite.HelpText		= &quot;Работа со списком Избранных Жанров...&quot;
 			
@@ -173,7 +186,6 @@ Sub InitInfoDlg()
 			&apos; Title Info
 			.fcTI.Label				= &quot; Book (Title Info) &quot;
 			.lblGenre.Label					= &quot;Genre:&quot;
-			.lbGenreElite.HelpText			= sIDD.sInfoDlgGenreElite
 			.GenreCommandButton.HelpText	= &quot;Add next Genre to List&quot;
 			.cbtnGenreElite.HelpText		= &quot;Work with the Elite Genres List...&quot;
 			
@@ -275,8 +287,6 @@ Sub InitInfoDlg()
 	End If
 End Sub
 
-
-
 &apos; инициализация сообщений основной формы конвертера в зависимости от локали
 Sub InitInfoDlgMessage()
 	If getOOoLocal( True ) = &quot;ru&quot; Then
@@ -285,13 +295,10 @@ Sub InitInfoDlgMessage()
 			.sInfoDlsCreateDialog	= &quot;Создание диалога:&quot;
 			.sInfoDlgTitle			= &quot;Описание Книги&quot;
 			.sInfoDlgInit			= &quot;Инициализация:&quot;
-			.sInfoDlgSchemeFB21		= &quot;жанры схемы fb2.1&quot;
-			.sInfoDlgSchemeFB22		= &quot;жанры схемы fb2.2&quot;
 			.sInfoDlgSelectGenre	= &quot;Выберите, пожалуйста, Жанр Книги.&quot;
 			.sInfoDlgFillBookTitle	= &quot;Заполните, пожалуйста, поля Названия Книги.&quot;
 			.sInfoDlgFillVersion	= &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;
 			.sInfoDlgFillID			= &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;
-			.sInfoDlgGenreGroup		= &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;
 			.sInfoDlgFillBookAuthor = &quot;Пожалуйста, заполните хоть одно поле для Автора Книги.&quot;
 			.sInfoDlgFillBookTrans	= &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги.&quot;
 			.sInfoDlgFillBookSequence		= &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Книги.&quot;
@@ -314,22 +321,6 @@ Sub InitInfoDlgMessage()
 			.sInfoDlgStatPaperBookSequencesList	= &quot;Список серий для Бумажной Книги&quot;
 			.sInfoDlgStatBookCustomInfoList		= &quot;Список серий для Custom Info&quot;
 			.sInfoDlgStatBookGenresList			= &quot;Список Жанров Книги&quot;
-			&apos; Избранные Жанры
-			.sInfoDlgGenreElite					= &quot;Избранные Жанры&quot;
-			.sInfoDlgGenreEliteAdd				= &quot;Добавление Жанра в Избранное&quot;
-			.sInfoDlgGenreEliteRemove			= &quot;Удаление Жанра из Избранного&quot;
-			.sInfoDlgGenreEliteSorting			= &quot;Сортировка списка Избранных Жанров&quot;
-			.sInfoDlgGenreEliteUp				= &quot;Перемещение Жанра вверх&quot;
-			.sInfoDlgGenreEliteDown				= &quot;Перемещение Жанра вниз&quot;
-			.sInfoDlgGenreEliteSelected			= &quot;Выбраный жанр&quot;
-			.sInfoDlgGenreEliteSelectFromList	= &quot;Пожалуйста, выберите Жанр из выпадающего списка!&quot;
-			.sInfoDlgGenreEliteSelectOther		= &quot;Пожалуйста, выберите другой жанр книги!&quot;
-			.sInfoDlgGenreEliteIsExists			= &quot;уже имеется в списке Избранных Жанров.&quot;
-			.sInfoDlgGenreEliteSelectForRemove	= &quot;Пожалуйста, выберите Жанр из Избранного для удаления.&quot;
-			.sInfoDlgGenreEliteQuestionRemove	= &quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot;
-			.sInfoDlgGenreEliteQuestionSort		= &quot;Вы действительно хотите отсортировать список Избранных Жанров&quot;
-			.sInfoDlgGenreEliteSelectToUp		= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;
-			.sInfoDlgGenreEliteSelectToDown		= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;
 		End With
 	Else
 		With sIDD
@@ -337,13 +328,10 @@ Sub InitInfoDlgMessage()
 			.sInfoDlsCreateDialog	= &quot;Creating the Dialog:&quot;
 			.sInfoDlgTitle			= &quot;Description of the Book&quot;
 			.sInfoDlgInit			= &quot;Initialization:&quot;
-			.sInfoDlgSchemeFB21		= &quot;Genres of Scheme fb2.1&quot;
-			.sInfoDlgSchemeFB22		= &quot;Genres of Scheme fb2.2&quot;
 			.sInfoDlgSelectGenre	= &quot;Please, select the Genre of the Book.&quot;
 			.sInfoDlgFillBookTitle	= &quot;Please, fiil the Field of the Book Title.&quot;
 			.sInfoDlgFillVersion	= &quot;Please, fiil the Field of the Book Version (for example, 1.0)&quot;
 			.sInfoDlgFillID			= &quot;Please, fiil at will the Field of the Book Version,&quot; &amp; chr(10) &amp; &quot;or click on the Button new ID.&quot;
-			.sInfoDlgGenreGroup		= &quot;You choose Name of the Genres Group.&quot; &amp; chr(10) &amp; &quot;Please, select the Genre of the Book!&quot;
 			.sInfoDlgFillBookAuthor = &quot;Please, fiil though one Field for Book Author.&quot;
 			.sInfoDlgFillBookTrans	= &quot;Please, fiil though one Field for Book Translator.&quot;
 			.sInfoDlgFillBookSequence		= &quot;Please, fiil the Fields Name And (Or) Number of the Book Sequence.&quot;
@@ -366,26 +354,58 @@ Sub InitInfoDlgMessage()
 			.sInfoDlgStatPaperBookSequencesList	= &quot;The Paper Book Sequences List&quot;
 			.sInfoDlgStatBookCustomInfoList		= &quot;The Custom Info List&quot;
 			.sInfoDlgStatBookGenresList			= &quot;The Genres List&quot;
-			&apos; Elite Genres
-			.sInfoDlgGenreElite					= &quot;The Elite Genres&quot;
-			.sInfoDlgGenreEliteAdd				= &quot;Add the Genre to the Elite Genres List&quot;
-			.sInfoDlgGenreEliteRemove			= &quot;Remove the Genre from the Elite Genres List&quot;
-			.sInfoDlgGenreEliteSorting			= &quot;Sorting of the Elite Genres List&quot;
-			.sInfoDlgGenreEliteUp				= &quot;Genre Movement Up&quot;
-			.sInfoDlgGenreEliteDown				= &quot;Genre Movement Down&quot;
-			.sInfoDlgGenreEliteSelected			= &quot;Selected Genre&quot;
-			.sInfoDlgGenreEliteSelectFromList	= &quot;Please, select the Genre from out-of-order Box!&quot;
-			.sInfoDlgGenreEliteSelectOther		= &quot;Please, select the Other Book Genre!&quot;
-			.sInfoDlgGenreEliteIsExists			= &quot;is exists in the Elite Genres List.&quot;
-			.sInfoDlgGenreEliteSelectForRemove	= &quot;Please, select the Genre from Elite Genres List for Remove.&quot;
-			.sInfoDlgGenreEliteQuestionRemove	= &quot;Do You want Remove the selected Genre from Elite Genres List:&quot;
-			.sInfoDlgGenreEliteQuestionSort		= &quot;Do You want to Sort the Elite Genres List&quot;
-			.sInfoDlgGenreEliteSelectToUp		= &quot;Please, select the Genre from Elite Genres List for Up Movement!&quot;
-			.sInfoDlgGenreEliteSelectToDown		= &quot;Please, select the Genre from Elite Genres List for Down Movement!&quot;
 		End With
 	End If
 End Sub
 
+&apos; инициализация сообщений диалогов по работе с Жанрами в зависимости от локали
+Sub InitGenreMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sGD
+			.sGenreGroup				= &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;
+			.sSchemeFB21				= &quot;схема fb2.1&quot;
+			.sSchemeFB22				= &quot;схема fb2.2&quot;
+			&apos; Избранные Жанры
+			.sGenreElite				= &quot;Избранные Жанры&quot;
+			.sGenreEliteAdd				= &quot;Добавление Жанра в Избранное&quot;
+			.sGenreEliteRemove			= &quot;Удаление Жанра из Избранного&quot;
+			.sGenreEliteSorting			= &quot;Сортировка списка Избранных Жанров&quot;
+			.sGenreEliteUp				= &quot;Перемещение Жанра вверх&quot;
+			.sGenreEliteDown			= &quot;Перемещение Жанра вниз&quot;
+			.sGenreEliteSelected		= &quot;Выбраный жанр&quot;
+			.sGenreEliteSelectFromList	= &quot;Пожалуйста, выберите Жанр из выпадающего списка!&quot;
+			.sGenreEliteSelectOther		= &quot;Пожалуйста, выберите другой жанр книги!&quot;
+			.sGenreEliteIsExists		= &quot;уже имеется в списке Избранных Жанров.&quot;
+			.sGenreEliteSelectForRemove	= &quot;Пожалуйста, выберите Жанр из Избранного для удаления.&quot;
+			.sGenreEliteQuestionRemove	= &quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot;
+			.sGenreEliteQuestionSort	= &quot;Вы действительно хотите отсортировать список Избранных Жанров&quot;
+			.sGenreEliteSelectToUp		= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;
+			.sGenreEliteSelectToDown	= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;
+		End With
+	Else
+		With sGD
+			.sGenreGroup				= &quot;You choose Name of the Genres Group.&quot; &amp; chr(10) &amp; &quot;Please, select the Genre of the Book!&quot;
+			.sSchemeFB21				= &quot;fb2.1 Scheme&quot;
+			.sSchemeFB22				= &quot;fb2.2 Scheme&quot;
+			&apos; Elite Genres
+			.sGenreElite				= &quot;The Elite Genres&quot;
+			.sGenreEliteAdd				= &quot;Add the Genre to the Elite Genres List&quot;
+			.sGenreEliteRemove			= &quot;Remove the Genre from the Elite Genres List&quot;
+			.sGenreEliteSorting			= &quot;Sorting of the Elite Genres List&quot;
+			.sGenreEliteUp				= &quot;Genre Movement Up&quot;
+			.sGenreEliteDown			= &quot;Genre Movement Down&quot;
+			.sGenreEliteSelected		= &quot;Selected Genre&quot;
+			.sGenreEliteSelectFromList	= &quot;Please, select the Genre from out-of-order Box!&quot;
+			.sGenreEliteSelectOther		= &quot;Please, select the Other Book Genre!&quot;
+			.sGenreEliteIsExists		= &quot;is exists in the Elite Genres List.&quot;
+			.sGenreEliteSelectForRemove	= &quot;Please, select the Genre from Elite Genres List for Remove.&quot;
+			.sGenreEliteQuestionRemove	= &quot;Do You want Remove the selected Genre from Elite Genres List:&quot;
+			.sGenreEliteQuestionSort	= &quot;Do You want to Sort the Elite Genres List&quot;
+			.sGenreEliteSelectToUp		= &quot;Please, select the Genre from Elite Genres List for Up Movement!&quot;
+			.sGenreEliteSelectToDown	= &quot;Please, select the Genre from Elite Genres List for Down Movement!&quot;
+		End With
+	End If
+End Sub
 
 &apos; жанры схемы fb2.1 - Инициализация жанрами схемы FictionBook 2.1
 Sub GenreFB21()
@@ -553,5 +573,6 @@ Sub GenreFB22()
 			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
 			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
 End Sub
+
 
 </script:module>

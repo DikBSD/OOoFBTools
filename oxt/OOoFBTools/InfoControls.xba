@@ -32,7 +32,7 @@ Sub InitFB21()
 	GenreFB21()
 
 	With oInfoDlg.Model
-		.Title = sIDD.sInfoDlgTitle &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB21
+		.Title = sIDD.sInfoDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB21
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 
@@ -43,7 +43,7 @@ Sub InitFB22()
 	GenreFB22()
 
 	With oInfoDlg.Model
-		.Title = sIDD.sInfoDlgTitle &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB22
+		.Title = sIDD.sInfoDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 	
@@ -301,7 +301,7 @@ Function AppendBookGenre() As Boolean
 	Dim sGenre As String : sGenre = GetGenreInList( oLB.SelectedItem )
 	Dim i As Integer
 	If sGenre = &quot;?&quot; Then
-		MsgBox sIDD.sInfoDlgGenreGroup, 64, sConvertorName
+		MsgBox sGD.sGenreGroup, 64, sConvertorName
 		AppendBookGenre = False
 		Exit Function
 	End If
@@ -922,7 +922,7 @@ Sub InitGEFB21()
 	GenreFB21()
 
 	With oGEDlg.Model
-		.Title = sIDD.sInfoDlgGenreElite &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB21
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB21
 		.cboxGE.StringItemList = sGLN()
 	End With
 
@@ -933,7 +933,7 @@ Sub InitGEFB22()
 	GenreFB22()
 
 	With oGEDlg.Model
-		.Title = sIDD.sInfoDlgGenreElite &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB22
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
@@ -942,7 +942,7 @@ End Sub
 &apos; Добавить жанр в список Избранного
 Sub GEAdd()
 	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteAdd
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteAdd
 	sGenre = &quot;&quot;
 	For i=0 To UBound(sGLN())
 		If sGLN(i) = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem Then
@@ -956,21 +956,21 @@ Sub GEAdd()
 	aArray = oGEDlg.Model.lbGE.StringItemList
 	For i=0 To UBound(aArray())
 		If aArray(i) = sGenreName Then
-			MsgBox sIDD.sInfoDlgGenreEliteSelected &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
-					sIDD.sInfoDlgGenreEliteIsExists &amp; chr(10) &amp; _
-					sIDD.sInfoDlgGenreEliteSelectOther, 64, sTitle
+			MsgBox sGD.sGenreEliteSelected &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					sGD.sGenreEliteIsExists &amp; chr(10) &amp; _
+					sGD.sGenreEliteSelectOther, 64, sTitle
 			oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()		
 			Exit Sub
 		End If
 	Next i
 	
 	If sGenre = &quot;?&quot; Then
-		MsgBox sIDD.sInfoDlgGenreGroup, 64, sTitle
+		MsgBox sGD.sGenreGroup, 64, sTitle
 	ElseIf sGenreName&lt;&gt;&quot;&quot; Then
 		oGEDlg.getControl(&quot;lbGE&quot;).AddItem(sGenreName, oGEDlg.getControl(&quot;lbGE&quot;).ItemCount) &apos; в конец списка
 		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sGenreName, True)
 	Else
-		MsgBox sIDD.sInfoDlgGenreEliteSelectFromList, 64, sTitle
+		MsgBox sGD.sGenreEliteSelectFromList, 64, sTitle
 	End If
 	oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()
 	
@@ -979,14 +979,14 @@ End Sub
 &apos; Удалить жанр из списка Избранного
 Sub GERemove()
 	Dim oLB As Object, aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteRemove
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteRemove
 	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
 	If oLB.SelectedItem = &quot;&quot; Then
-		MsgBox sIDD.sInfoDlgGenreEliteSelectForRemove, 64, sTitle
+		MsgBox sGD.sGenreEliteSelectForRemove, 64, sTitle
 		Exit Sub
 	End If
 	
-	If	MsgBox( sIDD.sInfoDlgGenreEliteQuestionRemove &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+	If	MsgBox( sGD.sGenreEliteQuestionRemove &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
 				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle ) = 6 Then
 		Dim sItem As String, i As Integer
 		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
@@ -1035,8 +1035,8 @@ End Sub
 &apos; сортировка списка Избранных Жанров
 Sub SortGenre()
 	Dim aArray() As String
-	If	MsgBox( sIDD.sInfoDlgGenreEliteQuestionSort &amp; &quot;,&quot; &amp; chr(10), _
-				32 + 4 + 256, sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteSorting ) = 6 Then
+	If	MsgBox( sGD.sGenreEliteQuestionSort &amp; &quot;,&quot; &amp; chr(10), _
+				32 + 4 + 256, sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteSorting ) = 6 Then
 		Dim sItem As String
 		sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
 		aArray = oGEDlg.Model.lbGE.StringItemList
@@ -1049,9 +1049,9 @@ End Sub
 &apos; перемещение выбранного жанра списка Избранных Жанров вверх
 Sub GenreUp()
 	Dim aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteUp
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteUp
 	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
-		MsgBox sIDD.sInfoDlgGenreEliteSelectToUp, 64, sTitle
+		MsgBox sGD.sGenreEliteSelectToUp, 64, sTitle
 		Exit Sub
 	End If
 	
@@ -1068,9 +1068,9 @@ End Sub
 &apos; перемещение выбранного жанра списка Избранных Жанров вниз
 Sub GenreDown()
 	Dim aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteDown
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteDown
 	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
-		MsgBox sIDD.sInfoDlgGenreEliteSelectToDown, 64, sTitle
+		MsgBox sGD.sGenreEliteSelectToDown, 64, sTitle
 		Exit Sub
 	End If
 	aArray = oGEDlg.Model.lbGE.StringItemList

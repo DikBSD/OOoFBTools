@@ -53,7 +53,7 @@ On Error GoTo Errorhandler
 	SetParagraphStyle = True
 	Exit Function
 Errorhandler:
-	MsgBox &quot;Стиль абзаца: &quot; &amp; sParaStyle &amp; chr(10) &amp; &quot;отсутствует в списке Пользовательских Стилей Абзаца!&quot;, 64, &quot;Служебные стили (Description)&quot;
+	MsgBox sDSD.sGenreParaStyle &amp; &quot;: &quot; &amp; sParaStyle &amp; chr(10) &amp; sDSD.sNotExistsUserParaStyleList, 64, sDSD.sDescriptionStyle
 	SetParagraphStyle = False
 End Function
 
@@ -82,7 +82,7 @@ On Error GoTo Errorhandler
 		Exit Function
 	End If
 Errorhandler:
-	MsgBox &quot;Стиль символа: &quot; &amp; sStyle &amp; chr(10) &amp; &quot;отсутствует в списке Пользовательских Стилей Символов!&quot;, 64, &quot;Служебные стили (Description)&quot;
+	MsgBox sDSD.sGenreSymbolStyle &amp; &quot;: &quot; &amp; sStyle &amp; chr(10) &amp; sDSD.sNotExistsUserSymbolStyleList, 64, sDSD.sDescriptionStyle
 	SetSymbolStyle = False
 End Function
 
@@ -116,6 +116,9 @@ Sub ViewDescGenreDlg()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oDGDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.DescGenreDlg )
 	
+	&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
+	InitDescGenreDlg()
+	
 	If oDGDlg.Model.obDGFB21.State = 1 Then
 		InitDEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
 	Else
@@ -141,7 +144,7 @@ Sub InitDEFB21()
 	GenreFB21()
 
 	With oDGDlg.Model
-		.Title = &quot;Вставка Жанров в Служебную область - схема fb2.1&quot;
+		.Title = sDSD.sInsertGenresToDescriptionZone &amp; &quot; - &quot; &amp; sGD.sSchemeFB21
 		.lbGenres.StringItemList = sGLN()
 	End With
 
@@ -152,17 +155,17 @@ Sub InitDEFB22()
 	GenreFB22()
 
 	With oDGDlg.Model
-		.Title = &quot;Вставка Жанров в Служебную область - схема fb2.2&quot;
+		.Title = sDSD.sInsertGenresToDescriptionZone &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
 		.lbGenres.StringItemList = sGLN()
 	End With
 	
 End Sub
 
+&apos; Добавить жанр в список Избранного
 Sub DGAdd()
-	&apos; Добавить жанр в список Избранного
-	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
-	sTitle = &quot;Добавление Жанра в Список&quot;
-	sGenre = &quot;&quot;
+	Dim sGenreName As String, i As Integer, aArray() As String
+	Dim sTitle As String : sTitle = sDSD.sGenreAddToList
+	Dim sGenre As String : sGenre = &quot;&quot;
 	For i=0 To UBound(sGLN())
 		If sGLN(i) = oDGDlg.getControl(&quot;lbGenres&quot;).SelectedItem Then
 			sGenreName = oDGDlg.getControl(&quot;lbGenres&quot;).SelectedItem
@@ -175,16 +178,16 @@ Sub DGAdd()
 	aArray = oDGDlg.Model.lbSelectedGenres.StringItemList
 	For i=0 To UBound(aArray())
 		If aArray(i) = sGenreName Then
-			MsgBox &quot;Выбраный жанр &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
-					&quot;уже имеется в списке Жанров.&quot; &amp; chr(10) &amp; _
-					&quot;Пожалуйста, выберите другой жанр книги!&quot;, 64, sTitle
+			MsgBox sGD.sGenreEliteSelected &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					sDSD.sGenreIsExists &amp; chr(10) &amp; _
+					sGD.sGenreEliteSelectOther, 64, sTitle
 			oDGDlg.getControl(&quot;lbGenres&quot;).SetFocus()		
 			Exit Sub
 		End If
 	Next i
 	
 	If sGenre = &quot;?&quot; Then
-		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sTitle
+		MsgBox sGD.sGenreGroup, 64, sTitle
 	ElseIf sGenreName &lt;&gt; &quot;&quot; Then
 		Dim sMatch As String
 		If oDGDlg.Model.numMatch.Value = &quot;&quot; Then
@@ -198,7 +201,7 @@ Sub DGAdd()
 		oDGDlg.getControl(&quot;lbSelectedGenres&quot;).AddItem(sGenreName, oDGDlg.getControl(&quot;lbSelectedGenres&quot;).ItemCount) &apos; в конец списка
 		oDGDlg.getControl(&quot;lbSelectedGenres&quot;).selectItem(sGenreName, True)
 	Else
-		MsgBox &quot;Пожалуйста, выберите Жанр из выпадающего списка&quot;, 64, sTitle
+		MsgBox sGD.sGenreEliteSelectFromList, 64, sTitle
 	End If
 	oDGDlg.getControl(&quot;lbGenres&quot;).SetFocus()
 	
@@ -206,16 +209,16 @@ End Sub
 
 Sub DGRemove()
 	&apos; Удалить жанр из списка Избранного
-	Dim oLB As Object, aArray() As String, sTitle As String
-	sTitle = &quot;Удаление Жанра из Списка Выбранных для Книги&quot;
+	Dim oLB As Object, aArray() As String
+	Dim sTitle As String : sTitle = sDSD.sGenreRemove
 	oLB = oDGDlg.getControl(&quot;lbSelectedGenres&quot;)
 	If oLB.SelectedItem = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите Жанр из Списка для удаления&quot;, 64, sTitle
+		MsgBox sDSD.sGenreSelectForRemove, 64, sTitle
 		Exit Sub
 	End If
 	
-	If	MsgBox(&quot;Вы действительно хотите удалить выбранный жанр из Списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
-				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle) = 6 Then
+	If	MsgBox( sDSD.sGenreQuestionRemove &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle ) = 6 Then
 		Dim sItem As String, i As Integer
 		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
 			i = oLB.SelectedItemPos+1
@@ -236,9 +239,7 @@ Sub InsertDescGenre()
 	Dim aArray() As String
 	aArray = oDGDlg.Model.lbSelectedGenres.StringItemList
 	If UBound( aArray() ) = -1 Then
-		MsgBox &quot;Нет ни одного Жанра в саиске: Выбранные Жанры для Книги!&quot; &amp; chr(10) &amp; _
-				&quot;Пожалуста, выберите один или несколько жанров из выпадающего списка Жанр или Избранные Жанры и добавьте их кнопкой Добавить, &quot; &amp; _
-				&quot;а потом нажмите Ok.&quot;, 64, &quot;Вставка Жанра в служебную область&quot;
+		MsgBox sDSD.sGenreInsertNotExists, 64, sDSD.sInsertGenresToDescriptionZone
 		Exit Sub
 	End If
 	&apos; записываем настройки диалога
@@ -284,13 +285,15 @@ Sub ViewDescLangDlg()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oDLDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.DescLangDlg)
 	
+	&apos; инициализация формы вставки Языка Книги в Служебную области Текста
+	InitDescLangDlg()
+
 	MakeLangList( sLangList() )
 	With oDLDlg.Model
-		.Title	= &quot;Вставка Языка Книги в Служебную область&quot;
 		.Height	= 46
 		.Width	= 159
-		.lbLangBook.StringItemList = sLangList()
-		.lbLangOriginal.StringItemList = sLangList()
+		.lbLangBook.StringItemList		= sLangList()
+		.lbLangOriginal.StringItemList	= sLangList()
 	End With
 	oDLDlg.getControl( &quot;lbLangBook&quot;).selectItem(&quot;ru&quot;, True )
 	oDLDlg.getControl( &quot;lbLangOriginal&quot; ).AddItem( &quot;&quot;, 0 )
