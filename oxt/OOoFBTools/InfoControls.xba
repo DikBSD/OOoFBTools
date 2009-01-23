@@ -23,111 +23,9 @@ Public sCustomInfos()	As String &apos; данные пользователя
 Private asPaperBook(4)	As String &apos; Данные о бумажном варианте книги 
 
 Private sLangList() As String
-Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
 
 Private bExecute	As Boolean
 Private bAppendBtn	As Boolean
-
-Sub GenreFB21()
-	&apos; жанры схемы fb2.1 - Инициализация жанрами схемы FictionBook 2.1
-	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
-				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
-				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
-				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
-				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
-				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
-				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
-				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Проза: Прочее&quot;,_
-				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
-				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,_
-				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
-				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
-				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
-				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
-				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
-				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
-				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
-				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
-				&quot;Политика&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
-				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
-				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
-				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
-				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
-				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
-				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
-				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
-				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
-				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;)
-	
- 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
-			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
-			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;child_prose&quot;,_
-			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,_
-			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
-			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
-			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
-			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
-			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
-			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
-			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
-			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
-			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
-			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
-			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
-End Sub
-
-Sub GenreFB22()
-	&apos; жанры схемы fb2.2 - Инициализация жанрами схемы FictionBook 2.2
-	sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
-				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
-				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
-				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
-				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
-				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
-				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
-				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Военная проза&quot;, &quot;Проза: Прочее&quot;,_
-				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
-				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,&quot;Фантастическая любовь&quot;,_
-				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
-				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
-				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
-				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
-				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
-				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
-				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
-				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
-				&quot;Политика&quot;, &quot;Деловая литература&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
-				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
-				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
-				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
-				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
-				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
-				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
-				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
-				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
-				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;,_
-				&quot;== Экономика и Бизнес ==&quot;, &quot;Поиск работы&quot;, &quot;Подбор персонала&quot;, &quot;Продажи, Реклама, PR&quot;, &quot;Банковское дело&quot;,_
-				&quot;Ценные бумаги, Инвестиции&quot;, &quot;Бухучет, Налогообложение, Аудит&quot;, &quot;Внешнеэкономическая деятельность&quot;,_
-				&quot;Экономика&quot;, &quot;Отраслевые издания&quot;, &quot;Корпоративная культура&quot;, &quot;Личные финансы&quot;, &quot;Недвижимость&quot;, &quot;Популярно о бизнесе&quot;,_
-				&quot;Малый бизнес&quot;, &quot;Делопроизводство&quot;, &quot;Справочники&quot; )
-	
- 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
-			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
-			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;prose_military&quot;,&quot;child_prose&quot;,_
-			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,&quot;love_sf&quot;,_
-			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
-			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
-			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
-			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
-			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_business&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
-			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
-			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
-			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
-			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
-			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
-			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
-			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
-End Sub
 
 Sub InitFB21()
 	&apos; Инициализация жанрами схемы FictionBook 2.1
@@ -163,12 +61,18 @@ Function InfoDlgExec() As Boolean
 	InitInfoDlgMessage()
 	
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( sIDD.sInfoDlgInit, ThisComponent.ParagraphCount )
-	oProgressBar.setValue(0)
+	oProgressBar.start( sIDD.sInfoDlsCreateDialog, 1 )
+	oProgressBar.setValue(1)
 	
+	&apos; Создание формы
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	oInfoDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.InfoDlg)
-	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl(sCurDocFile)
+	oInfoDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.InfoDlg )
+	oProgressBar.setValue(2)
+	
+	&apos; инициализация основной формы конвертера в зависимости от локали
+	oProgressBar.start( sIDD.sInfoDlgInit, ThisComponent.ParagraphCount )
+	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl( sCurDocFile )
+	InitInfoDlg() &apos; инициализация основной формы конвертера в зависимости от локали
 	
 	If oInfoDlg.Model.obtnFB21.State = 1 Then
 		InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
@@ -176,10 +80,7 @@ Function InfoDlgExec() As Boolean
 		InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
 	End If
 	oProgressBar.setValue(3) &apos; Статусбар
-	
-	&apos; инициализация основной формы конвертера в зависимости от локали
-	InitInfoDlg()
-	
+
 	MakeLangList( sLangList() )
 	oProgressBar.setValue(4) &apos; Статусбар
 
@@ -490,7 +391,7 @@ End Sub
 
 Sub AppendBookSequence()
 	If Trim(oInfoDlg.Model.SequenceTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.SequenceNumberTextField.Text) = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Книги&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillBookSequence, 64, sConvertorName
 		Exit Sub
 	End If
 	AddBookSequence()
@@ -513,9 +414,10 @@ Sub AddBookSequence
 End Sub
 
 Sub AppendDocAuthor
-	If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND _
-		Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа&quot;, 64, sConvertorName
+	If Trim(oInfoDlg.Model.diFirstField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diMiddleField.Text) = &quot;&quot; AND _
+		Trim(oInfoDlg.Model.diLastField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diNicknameField.Text) = &quot;&quot; AND _
+		Trim(oInfoDlg.Model.diEmailField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.diHomepageField.Text) = &quot;&quot; Then
+		MsgBox sIDD.sInfoDlgFillFB2Author, 64, sConvertorName
 		Exit Sub
 	End If
 	AddDocAuthor()
@@ -547,7 +449,7 @@ End Sub
 
 Sub AppendPublisherSequence()
 	If Trim(oInfoDlg.Model.pubSequenseTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillPaperBookSequence, 64, sConvertorName
 		Exit Sub
 	End If
 	AddPublisherSequence()
@@ -571,7 +473,7 @@ End Sub
 
 Sub AppendCustomInfos()
 	If Trim(oInfoDlg.Model.cusTypeTextField.Text) = &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, заполните оба поля для Custom Info&quot;, 64, sConvertorName
+		MsgBox sIDD.sInfoDlgFillCustomInfo, 64, sConvertorName
 		Exit Sub
 	End If
 	AddCustomInfos()
@@ -797,7 +699,7 @@ End Function
 Function ShowBookAuthorsCount
 	Dim sStr As String, sLine As String
 	sLine = &quot;---------------------------------------------------------&quot;
-	sStr = &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sAuthors) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sAuthors)
@@ -807,27 +709,27 @@ Function ShowBookAuthorsCount
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; OR _
 			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiHomepage.Text) &lt;&gt; &quot;&quot; Then
-			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+			sStr = sStr &amp; sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
 					Trim(oInfoDlg.Model.tiFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiLast.Text)  &amp; &quot; | &quot; &amp; _
 					Trim(oInfoDlg.Model.tiNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiHomepage.Text)
 		End If
 	Else
 		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; OR _
 			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiHomepage.Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.Model.tiFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiLast.Text)  &amp; &quot; | &quot; &amp; _
 					Trim(oInfoDlg.Model.tiNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiHomepage.Text)
 		Else
-			sStr = &quot;Список Авторов Книги пуст!&quot;
+			sStr = sIDD.sInfoDlgStatBookAuthorsList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список Авторов Книги&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatBookAuthorsList
 End Function
 
 Function ShowBookTranslatorsCount
 	Dim sStr As String, sLine As String
 	sLine = &quot;---------------------------------------------------------&quot;
-	sStr = &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sTranslators) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sTranslators)
@@ -838,27 +740,27 @@ Function ShowBookTranslatorsCount
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransLast.Text) &lt;&gt; &quot;&quot; OR _
 			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransHomepage.Text) &lt;&gt; &quot;&quot; Then
-			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+			sStr = sStr &amp; sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
 					Trim(oInfoDlg.Model.tiTransFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransLast.Text)  &amp; &quot; | &quot; &amp; _
 					Trim(oInfoDlg.Model.tiTransNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransHomepage.Text)
 		End If
 	Else
 		If Trim(oInfoDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransLast.Text) &lt;&gt; &quot;&quot; OR _
 			Trim(oInfoDlg.Model.tiNickname.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransEmail.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.tiTransHomepage.Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.Model.tiTransFirst.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tTransiMiddle.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransLast.Text)  &amp; &quot; | &quot; &amp; _
 					Trim(oInfoDlg.Model.tiTransNickname.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransEmail.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.tiTransHomepage.Text)
 		Else
-			sStr = &quot;Список Переводчиков Книги пуст!&quot;
+			sStr = sIDD.sInfoDlgStatBookTranslationsList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список Переводчиков Книги&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatBookTranslationsList
 End Function
 
 Function ShowDocAuthorsCount
 	Dim sStr As String, sLine As String
 	sLine = &quot;---------------------------------------------------------&quot;
-	sStr = &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sDocAuthors) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sDocAuthors)
@@ -868,27 +770,27 @@ Function ShowDocAuthorsCount
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.diFirstField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diMiddleField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diLastField.Text) &lt;&gt; &quot;&quot; OR _
 			Trim(oInfoDlg.Model.diNicknameField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diEmailField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+			sStr = sStr &amp; sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
 					Trim(oInfoDlg.Model.diFirstField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diMiddleField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diLastField.Text)  &amp; &quot; | &quot; &amp; _
 					Trim(oInfoDlg.Model.diNicknameField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diEmailField.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diHomepageField.Text)
 		End If
 	Else
 		If Trim(oInfoDlg.Model.diFirstField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diMiddleField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diLastField.Text) &lt;&gt; &quot;&quot; OR _
 			Trim(oInfoDlg.Model.diNicknameField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diEmailField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.Model.diFirstField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diMiddleField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diLastField.Text)  &amp; &quot; | &quot; &amp; _
 					Trim(oInfoDlg.Model.diNicknameField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diEmailField.Text)  &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.diHomepageField.Text)
 		Else
-			sStr = &quot;Список Авторов fb2 Документа пуст!&quot;
+			sStr = sIDD.sInfoDlgStatBookFB2AuthorsList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список Авторов fb2 Документа&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatBookFB2AuthorsList
 End Function
 
 Function ShowBookSequencesCount
 	Dim sStr As String, sLine As String
 	sLine = &quot;-------------------------&quot;
-	sStr = &quot;№ п/п | Серия | Номер&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatSequenceHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sSequences) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sSequences)
@@ -896,24 +798,24 @@ Function ShowBookSequencesCount
 		Next i
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+			sStr = sStr &amp; sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
 					Trim(oInfoDlg.Model.SequenceTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.SequenceNumberTextField.Text)
 		End If
 	Else
 		If Trim(oInfoDlg.Model.SequenceTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.SequenceNumberTextField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.Model.SequenceTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.SequenceNumberTextField.Text)
 		Else
-			sStr = &quot;Список Серий пуст!&quot;
+			sStr = sIDD.sInfoDlgStatBookSequencesList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список серий для Книги&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatBookSequencesList
 End Function
 
 Function ShowPubSequencesCount
 	Dim sStr As String, sLine As String
 	sLine = &quot;-------------------------&quot;
-	sStr = &quot;№ п/п | Серия | Номер&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatSequenceHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sPubSequences) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sPubSequences)
@@ -921,24 +823,24 @@ Function ShowPubSequencesCount
 		Next i
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.pubSequenseTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+			sStr = sStr &amp; sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
 					Trim(oInfoDlg.Model.pubSequenseTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text)
 		End If
 	Else
 		If Trim(oInfoDlg.Model.pubSequenseTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.Model.pubSequenseTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.pubSequenseNumberTextField.Text)
 		Else
-			sStr = &quot;Список Серий пуст!&quot;
+			sStr = sIDD.sInfoDlgStatPaperBookSequencesList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список серий для Бумажной Книги&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatPaperBookSequencesList
 End Function
 
 Function ShowCustomInfoCount
 	Dim sStr As String, sLine As String
 	sLine = &quot;-------------------------&quot;
-	sStr = &quot;№ п/п | Type | Value&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatCustomInfoHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sCustomInfos) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sCustomInfos)
@@ -946,24 +848,24 @@ Function ShowCustomInfoCount
 		Next i
 		sStr = sStr &amp; sLine &amp; chr(10)
 		If Trim(oInfoDlg.Model.cusTypeTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = sStr &amp; &quot;В поле ввода:&quot; &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
+			sStr = sStr &amp; sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; i+1 &amp; &quot;. | &quot; &amp; _
 					Trim(oInfoDlg.Model.cusTypeTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.cusValueTextField.Text)
 		End If
 	Else
 		If Trim(oInfoDlg.Model.cusTypeTextField.Text) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.Model.cusValueTextField.Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.Model.cusTypeTextField.Text) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.Model.cusValueTextField.Text)
 		Else
-			sStr = &quot;Список Custom Info пуст!&quot;
+			sStr = sIDD.sInfoDlgStatBookCustomInfoList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список серий для Custom Info&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatBookCustomInfoList
 End Function
 
 Sub ShowGenresCount()
 	Dim sStr As String, sLine As String
 	sLine = &quot;-------------------------&quot;
-	sStr = &quot;№ п/п | Жанр | Match, %&quot; &amp; chr(10) &amp; sLine &amp; chr(10)
+	sStr = sIDD.sInfoDlgStatGenreHeadline &amp; chr(10) &amp; sLine &amp; chr(10)
 	If UBound(sGenres) &lt;&gt; -1 Then
 		Dim i As Integer
 		For i = 0 To UBound(sGenres)
@@ -972,13 +874,13 @@ Sub ShowGenresCount()
 		sStr = sStr &amp; sLine &amp; chr(10)
 	Else
 		If Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).SelectedItem) &lt;&gt; &quot;&quot; OR Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text) &lt;&gt; &quot;&quot; Then
-			sStr = &quot;В поле ввода:&quot; &amp; chr(10) &amp; _
+			sStr = sIDD.sInfoDlgStatInputField &amp; chr(10) &amp; _
 					Trim(oInfoDlg.GetControl(&quot;GenreComboBox&quot;).SelectedItem) &amp; &quot; | &quot; &amp; Trim(oInfoDlg.GetControl(&quot;NumericFieldMatch&quot;).Text)
 		Else
-			sStr = &quot;Список Жанров пуст!&quot;
+			sStr = sIDD.sInfoDlgStatBookGenresList &amp; &quot; &quot; &amp; sIDD.sInfoDlgStatEmpty
 		End If
 	End If
-	MsgBox sStr, 64, &quot;Список Жанров Книги&quot;
+	MsgBox sStr, 64, sIDD.sInfoDlgStatBookGenresList
 End Sub
 
 
@@ -986,8 +888,8 @@ End Sub
 &apos; //////////////////// Работа с Избранным Жанров ///////////////////////
 &apos; //////////////////////////////////////////////////////////////////////
 
+&apos; запуск диалога работы со списком избранных жанров
 Sub cbtnGenreElite_Click()
-	&apos; запуск диалога работы со списком избранных жанров
 	oGEDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.GenreEliteDlg )
 	
 	If oGEDlg.Model.obtnGEFB21.State = 1 Then
@@ -1015,32 +917,32 @@ Sub cbtnGenreElite_Click()
 	oGEDlg.execute()
 End Sub
 
+&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
 Sub InitGEFB21()
-	&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
 	GenreFB21()
 
 	With oGEDlg.Model
-		.Title = &quot;Избранные Жанры - схема fb2.1&quot;
+		.Title = sIDD.sInfoDlgGenreElite &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB21
 		.cboxGE.StringItemList = sGLN()
 	End With
 
 End Sub
 
+&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
 Sub InitGEFB22()
-	&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
 	GenreFB22()
 
 	With oGEDlg.Model
-		.Title = &quot;Избранные Жанры - схема fb2.2&quot;
+		.Title = sIDD.sInfoDlgGenreElite &amp; &quot; - &quot; &amp; sIDD.sInfoDlgSchemeFB22
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
 End Sub
 
+&apos; Добавить жанр в список Избранного
 Sub GEAdd()
-	&apos; Добавить жанр в список Избранного
 	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - Добавление Жанра в Избранное&quot;
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteAdd
 	sGenre = &quot;&quot;
 	For i=0 To UBound(sGLN())
 		If sGLN(i) = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem Then
@@ -1054,38 +956,38 @@ Sub GEAdd()
 	aArray = oGEDlg.Model.lbGE.StringItemList
 	For i=0 To UBound(aArray())
 		If aArray(i) = sGenreName Then
-			MsgBox &quot;Выбраный жанр &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
-					&quot;уже имеется в списке Избранных Жанров.&quot; &amp; chr(10) &amp; _
-					&quot;Пожалуйста, выберите другой жанр книги!&quot;, 64, sTitle
+			MsgBox sIDD.sInfoDlgGenreEliteSelected &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					sIDD.sInfoDlgGenreEliteIsExists &amp; chr(10) &amp; _
+					sIDD.sInfoDlgGenreEliteSelectOther, 64, sTitle
 			oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()		
 			Exit Sub
 		End If
 	Next i
 	
 	If sGenre = &quot;?&quot; Then
-		MsgBox &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;, 64, sTitle
+		MsgBox sIDD.sInfoDlgGenreGroup, 64, sTitle
 	ElseIf sGenreName&lt;&gt;&quot;&quot; Then
 		oGEDlg.getControl(&quot;lbGE&quot;).AddItem(sGenreName, oGEDlg.getControl(&quot;lbGE&quot;).ItemCount) &apos; в конец списка
 		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sGenreName, True)
 	Else
-		MsgBox &quot;Пожалуйста, выберите Жанр из выпадающего списка&quot;, 64, sTitle
+		MsgBox sIDD.sInfoDlgGenreEliteSelectFromList, 64, sTitle
 	End If
 	oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()
 	
 End Sub
 
+&apos; Удалить жанр из списка Избранного
 Sub GERemove()
-	&apos; Удалить жанр из списка Избранного
 	Dim oLB As Object, aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - Удаление Жанра из Избранного&quot;
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteRemove
 	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
 	If oLB.SelectedItem = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для удаления&quot;, 64, sTitle
+		MsgBox sIDD.sInfoDlgGenreEliteSelectForRemove, 64, sTitle
 		Exit Sub
 	End If
 	
-	If	MsgBox(&quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
-				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle) = 6 Then
+	If	MsgBox( sIDD.sInfoDlgGenreEliteQuestionRemove &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle ) = 6 Then
 		Dim sItem As String, i As Integer
 		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
 			i = oLB.SelectedItemPos+1
@@ -1130,11 +1032,11 @@ Sub InsertGEToGenreBox( oEvent )
 	oInfoDlg.getControl(&quot;GenreComboBox&quot;).selectItem( sCR, True )
 End Sub
 
+&apos; сортировка списка Избранных Жанров
 Sub SortGenre()
-	&apos; сортировка списка Избранных Жанров
 	Dim aArray() As String
-	If	MsgBox(&quot;Вы действительно хотите отсортировать список Избранных Жанров,&quot; &amp; chr(10), _
-				32 + 4 + 256, sConvertorName &amp; &quot; - Сортировка списка Избранных Жанров&quot;) = 6 Then
+	If	MsgBox( sIDD.sInfoDlgGenreEliteQuestionSort &amp; &quot;,&quot; &amp; chr(10), _
+				32 + 4 + 256, sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteSorting ) = 6 Then
 		Dim sItem As String
 		sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
 		aArray = oGEDlg.Model.lbGE.StringItemList
@@ -1144,12 +1046,12 @@ Sub SortGenre()
 	End If
 End Sub
 
+&apos; перемещение выбранного жанра списка Избранных Жанров вверх
 Sub GenreUp()
-	&apos; перемещение выбранного жанра списка Избранных Жанров вверх
 	Dim aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вверх&quot;
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteUp
 	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;, 64, sTitle
+		MsgBox sIDD.sInfoDlgGenreEliteSelectToUp, 64, sTitle
 		Exit Sub
 	End If
 	
@@ -1163,12 +1065,12 @@ Sub GenreUp()
 	End If
 End Sub
 
+&apos; перемещение выбранного жанра списка Избранных Жанров вниз
 Sub GenreDown()
-	&apos; перемещение выбранного жанра списка Избранных Жанров вниз
 	Dim aArray() As String, sTitle As String
-	sTitle = sConvertorName &amp; &quot; - Перемещение Жанра вниз&quot;
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sIDD.sInfoDlgGenreEliteDown
 	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;, 64, sTitle
+		MsgBox sIDD.sInfoDlgGenreEliteSelectToDown, 64, sTitle
 		Exit Sub
 	End If
 	aArray = oGEDlg.Model.lbGE.StringItemList

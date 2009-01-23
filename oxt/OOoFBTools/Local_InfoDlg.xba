@@ -5,21 +5,59 @@
 &apos; модуль локализации основной формы конвертера
 &apos; /////////////////////////////////////////////
 
+Private sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
+
 &apos; для хранения сообщений для основной формы конвертера
 Type tInfoDlgData	
-	sInfoDlgTitle			As String &apos; Заголовок основной формы конвертера
-	sInfoDlgInit			As String &apos; Инициализация
-	sInfoDlgSchemeFB21		As String &apos; Жанры схемы fb2.1
-	sInfoDlgSchemeFB22		As String &apos; Жанры схемы fb2.2
-	sInfoDlgSelectGenre		As String &apos; Выберите, пожалуйста, Жанр Книги
-	sInfoDlgFillBookTitle	As String &apos; Заполните, пожалуйста, поля Названия Книги
-	sInfoDlgFillVersion		As String &apos; Заполните, пожалуйста, поле Версии Книги (например, 1.0)
-	sInfoDlgFillID			As String &apos; Заполните, пожалуйста, поле ID Книги произвольным образом, или нажмите на кнопку new ID
-	sInfoDlgGenreGroup		As String &apos; Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!
-	sInfoDlgFillBookAuthor	As String &apos; Пожалуйста, заполните хоть одно поле для Автора Книги
-	sInfoDlgFillBookTrans	As String &apos; Пожалуйста, заполните хоть одно поле для Переводчика Книги
-	
-	sFileDlgSaveAs			As String &apos; Сохранить как...
+	&apos; основной диалог
+	sInfoDlsCreateDialog			As String &apos; Создание диалога
+	sInfoDlgTitle					As String &apos; Заголовок основной формы конвертера
+	sInfoDlgInit					As String &apos; Инициализация
+	sInfoDlgSchemeFB21				As String &apos; Жанры схемы fb2.1
+	sInfoDlgSchemeFB22				As String &apos; Жанры схемы fb2.2
+	sInfoDlgSelectGenre				As String &apos; Выберите, пожалуйста, Жанр Книги
+	sInfoDlgFillBookTitle			As String &apos; Заполните, пожалуйста, поля Названия Книги
+	sInfoDlgFillVersion				As String &apos; Заполните, пожалуйста, поле Версии Книги (например, 1.0)
+	sInfoDlgFillID					As String &apos; Заполните, пожалуйста, поле ID Книги произвольным образом, или нажмите на кнопку new ID
+	sInfoDlgGenreGroup				As String &apos; Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!
+	sInfoDlgFillBookAuthor			As String &apos; Пожалуйста, заполните хоть одно поле для Автора Книги
+	sInfoDlgFillBookTrans			As String &apos; Пожалуйста, заполните хоть одно поле для Переводчика Книги
+	sInfoDlgFillBookSequence		As String &apos; Пожалуйста, заполните поля названия и (или) номера для Серии Книги
+	sInfoDlgFillFB2Author			As String &apos; Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа
+	sInfoDlgFillPaperBookSequence	As String &apos; Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги
+	sInfoDlgFillCustomInfo			As String &apos; Пожалуйста, заполните оба поля для Custom Info
+	&apos; диалог сохранения файла
+	sFileDlgSaveAs					As String &apos; Сохранить как...
+	&apos; статистика
+	sInfoDlgStatHeadline				As String &apos; № п/п | Имя | Отчество | Фамилия | Ник | Email | Cite
+	sInfoDlgStatSequenceHeadline		As String &apos; № п/п | Серия | Номер
+	sInfoDlgStatCustomInfoHeadline		As String &apos; № п/п | Type | Value
+	sInfoDlgStatGenreHeadline			As String &apos; № п/п | Жанр | Match, %
+	sInfoDlgStatInputField				As String &apos; В поле ввода:
+	sInfoDlgStatEmpty					As String &apos; пуст!
+	sInfoDlgStatBookAuthorsList			As String &apos; Список Авторов Книги
+	sInfoDlgStatBookTranslationsList	As String &apos; Список Переводчиков Книги
+	sInfoDlgStatBookFB2AuthorsList		As String &apos; Список Авторов fb2 Документа
+	sInfoDlgStatBookSequencesList		As String &apos; Список серий для Книги
+	sInfoDlgStatPaperBookSequencesList	As String &apos; Список серий для Бумажной Книги
+	sInfoDlgStatBookCustomInfoList		As String &apos; Список серий для Custom Info
+	sInfoDlgStatBookGenresList			As String &apos; Список Жанров Книги
+	&apos; Избранные Жанры
+	sInfoDlgGenreElite					As String &apos; Избранные Жанры
+	sInfoDlgGenreEliteAdd				As String &apos; Добавление Жанра в Избранное
+	sInfoDlgGenreEliteRemove			As String &apos; Удаление Жанра из Избранного
+	sInfoDlgGenreEliteSorting			As String &apos; Сортировка списка Избранных Жанров
+	sInfoDlgGenreEliteUp				As String &apos; Перемещение Жанра вверх
+	sInfoDlgGenreEliteDown				As String &apos; Перемещение Жанра вниз
+	sInfoDlgGenreEliteSelected			As String &apos; Выбраный жанр
+	sInfoDlgGenreEliteSelectFromList	As String &apos; Пожалуйста, выберите Жанр из выпадающего списка!
+	sInfoDlgGenreEliteSelectOther		As String &apos; Пожалуйста, выберите другой жанр книги!
+	sInfoDlgGenreEliteIsExists			As String &apos; уже имеется в списке Избранных Жанров.
+	sInfoDlgGenreEliteSelectForRemove	As String &apos; Пожалуйста, выберите Жанр из Избранного для удаления.
+	sInfoDlgGenreEliteQuestionRemove	As String &apos; Вы действительно хотите удалить выбранный жанр из Избранного:
+	sInfoDlgGenreEliteQuestionSort		As String &apos; Вы действительно хотите отсортировать список Избранных Жанров
+	sInfoDlgGenreEliteSelectToUp		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!
+	sInfoDlgGenreEliteSelectToDown		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!
 End Type
 
 Dim sIDD As tInfoDlgData
@@ -31,7 +69,7 @@ Sub InitInfoDlg()
 			&apos; Title Info
 			.fcTI.Label				= &quot; Книга (Title Info) &quot;
 			.lblGenre.Label					= &quot;Жанр:&quot;
-			.lbGenreElite.HelpText			= &quot;Избранные Жанры&quot;
+			.lbGenreElite.HelpText			= sIDD.sInfoDlgGenreElite
 			.GenreCommandButton.HelpText	= &quot;Добавить в список еще жанр&quot;
 			.cbtnGenreElite.HelpText		= &quot;Работа со списком Избранных Жанров...&quot;
 			
@@ -135,7 +173,7 @@ Sub InitInfoDlg()
 			&apos; Title Info
 			.fcTI.Label				= &quot; Book (Title Info) &quot;
 			.lblGenre.Label					= &quot;Genre:&quot;
-			.lbGenreElite.HelpText			= &quot;Elite Genres&quot;
+			.lbGenreElite.HelpText			= sIDD.sInfoDlgGenreElite
 			.GenreCommandButton.HelpText	= &quot;Add next Genre to List&quot;
 			.cbtnGenreElite.HelpText		= &quot;Work with the Elite Genres List...&quot;
 			
@@ -243,6 +281,8 @@ End Sub
 Sub InitInfoDlgMessage()
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With sIDD
+			&apos; основной диалог
+			.sInfoDlsCreateDialog	= &quot;Создание диалога:&quot;
 			.sInfoDlgTitle			= &quot;Описание Книги&quot;
 			.sInfoDlgInit			= &quot;Инициализация:&quot;
 			.sInfoDlgSchemeFB21		= &quot;жанры схемы fb2.1&quot;
@@ -253,12 +293,48 @@ Sub InitInfoDlgMessage()
 			.sInfoDlgFillID			= &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;
 			.sInfoDlgGenreGroup		= &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;
 			.sInfoDlgFillBookAuthor = &quot;Пожалуйста, заполните хоть одно поле для Автора Книги.&quot;
-			.sInfoDlgFillBookTrans	= &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги&quot;
-	
-			.sFileDlgSaveAs			= &quot;Сохранить как...&quot;
+			.sInfoDlgFillBookTrans	= &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги.&quot;
+			.sInfoDlgFillBookSequence		= &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Книги.&quot;
+			.sInfoDlgFillFB2Author			= &quot;Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа.&quot;
+			.sInfoDlgFillPaperBookSequence	= &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги.&quot;
+			.sInfoDlgFillCustomInfo			= &quot;Пожалуйста, заполните оба поля для Custom Info.&quot;
+			&apos; диалог сохранения файла
+			.sFileDlgSaveAs					= &quot;Сохранить как...&quot;
+			&apos; статистика
+			.sInfoDlgStatHeadline				= &quot;№ п/п | Имя | Отчество | Фамилия | Ник | Email | Cite&quot;
+			.sInfoDlgStatSequenceHeadline		= &quot;№ п/п | Серия | Номер&quot;
+			.sInfoDlgStatCustomInfoHeadline		= &quot;№ п/п | Тип | Значение&quot;
+			.sInfoDlgStatGenreHeadline			= &quot;№ п/п | Жанр | Match, %&quot;
+			.sInfoDlgStatInputField				= &quot;В поле ввода:&quot;
+			.sInfoDlgStatEmpty					= &quot;пуст!&quot;
+			.sInfoDlgStatBookAuthorsList		= &quot;Список Авторов Книги&quot;
+			.sInfoDlgStatBookTranslationsList	= &quot;Список Переводчиков Книги&quot;
+			.sInfoDlgStatBookFB2AuthorsList		= &quot;Список Авторов fb2 Документа&quot;
+			.sInfoDlgStatBookSequencesList		= &quot;Список серий для Книги&quot;
+			.sInfoDlgStatPaperBookSequencesList	= &quot;Список серий для Бумажной Книги&quot;
+			.sInfoDlgStatBookCustomInfoList		= &quot;Список серий для Custom Info&quot;
+			.sInfoDlgStatBookGenresList			= &quot;Список Жанров Книги&quot;
+			&apos; Избранные Жанры
+			.sInfoDlgGenreElite					= &quot;Избранные Жанры&quot;
+			.sInfoDlgGenreEliteAdd				= &quot;Добавление Жанра в Избранное&quot;
+			.sInfoDlgGenreEliteRemove			= &quot;Удаление Жанра из Избранного&quot;
+			.sInfoDlgGenreEliteSorting			= &quot;Сортировка списка Избранных Жанров&quot;
+			.sInfoDlgGenreEliteUp				= &quot;Перемещение Жанра вверх&quot;
+			.sInfoDlgGenreEliteDown				= &quot;Перемещение Жанра вниз&quot;
+			.sInfoDlgGenreEliteSelected			= &quot;Выбраный жанр&quot;
+			.sInfoDlgGenreEliteSelectFromList	= &quot;Пожалуйста, выберите Жанр из выпадающего списка!&quot;
+			.sInfoDlgGenreEliteSelectOther		= &quot;Пожалуйста, выберите другой жанр книги!&quot;
+			.sInfoDlgGenreEliteIsExists			= &quot;уже имеется в списке Избранных Жанров.&quot;
+			.sInfoDlgGenreEliteSelectForRemove	= &quot;Пожалуйста, выберите Жанр из Избранного для удаления.&quot;
+			.sInfoDlgGenreEliteQuestionRemove	= &quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot;
+			.sInfoDlgGenreEliteQuestionSort		= &quot;Вы действительно хотите отсортировать список Избранных Жанров&quot;
+			.sInfoDlgGenreEliteSelectToUp		= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;
+			.sInfoDlgGenreEliteSelectToDown		= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;
 		End With
 	Else
 		With sIDD
+			&apos; main Dialog
+			.sInfoDlsCreateDialog	= &quot;Creating the Dialog:&quot;
 			.sInfoDlgTitle			= &quot;Description of the Book&quot;
 			.sInfoDlgInit			= &quot;Initialization:&quot;
 			.sInfoDlgSchemeFB21		= &quot;Genres of Scheme fb2.1&quot;
@@ -269,10 +345,213 @@ Sub InitInfoDlgMessage()
 			.sInfoDlgFillID			= &quot;Please, fiil at will the Field of the Book Version,&quot; &amp; chr(10) &amp; &quot;or click on the Button new ID.&quot;
 			.sInfoDlgGenreGroup		= &quot;You choose Name of the Genres Group.&quot; &amp; chr(10) &amp; &quot;Please, select the Genre of the Book!&quot;
 			.sInfoDlgFillBookAuthor = &quot;Please, fiil though one Field for Book Author.&quot;
-			.sInfoDlgFillBookTrans = &quot;Please, fiil though one Field for Book Translator.&quot;
-
-			.sFileDlgSaveAs			= &quot;Save As...&quot;
+			.sInfoDlgFillBookTrans	= &quot;Please, fiil though one Field for Book Translator.&quot;
+			.sInfoDlgFillBookSequence		= &quot;Please, fiil the Fields Name And (Or) Number of the Book Sequence.&quot;
+			.sInfoDlgFillFB2Author			= &quot;Please, fiil though one Field for FB2 Document Author.&quot;
+			.sInfoDlgFillPaperBookSequence	= &quot;Please, fiil the Fields Name And (Or) Number of the Paper Book Sequence.&quot;
+			.sInfoDlgFillCustomInfo			= &quot;Please, fiil all Fields for Custom Info.&quot;
+			&apos; Save As Dialog
+			.sFileDlgSaveAs					= &quot;Save As...&quot;
+			&apos; statistic
+			.sInfoDlgStatHeadline				= &quot;№ | First | Middle | Last | Nick | Email | Cite&quot;
+			.sInfoDlgStatSequenceHeadline		= &quot;№ | Sequence | Number&quot;
+			.sInfoDlgStatCustomInfoHeadline		= &quot;№ | Type | Value&quot;
+			.sInfoDlgStatGenreHeadline			= &quot;№ | Genre | Match, %&quot;
+			.sInfoDlgStatInputField				= &quot;In Input Field:&quot;
+			.sInfoDlgStatEmpty					= &quot;is empty!&quot;
+			.sInfoDlgStatBookAuthorsList		= &quot;The Book Authors List&quot;
+			.sInfoDlgStatBookTranslationsList	= &quot;The Book Translations List&quot;
+			.sInfoDlgStatBookFB2AuthorsList		= &quot;The FB2 Document Authors List&quot;
+			.sInfoDlgStatBookSequencesList		= &quot;The Book Sequences List&quot;
+			.sInfoDlgStatPaperBookSequencesList	= &quot;The Paper Book Sequences List&quot;
+			.sInfoDlgStatBookCustomInfoList		= &quot;The Custom Info List&quot;
+			.sInfoDlgStatBookGenresList			= &quot;The Genres List&quot;
+			&apos; Elite Genres
+			.sInfoDlgGenreElite					= &quot;The Elite Genres&quot;
+			.sInfoDlgGenreEliteAdd				= &quot;Add the Genre to the Elite Genres List&quot;
+			.sInfoDlgGenreEliteRemove			= &quot;Remove the Genre from the Elite Genres List&quot;
+			.sInfoDlgGenreEliteSorting			= &quot;Sorting of the Elite Genres List&quot;
+			.sInfoDlgGenreEliteUp				= &quot;Genre Movement Up&quot;
+			.sInfoDlgGenreEliteDown				= &quot;Genre Movement Down&quot;
+			.sInfoDlgGenreEliteSelected			= &quot;Selected Genre&quot;
+			.sInfoDlgGenreEliteSelectFromList	= &quot;Please, select the Genre from out-of-order Box!&quot;
+			.sInfoDlgGenreEliteSelectOther		= &quot;Please, select the Other Book Genre!&quot;
+			.sInfoDlgGenreEliteIsExists			= &quot;is exists in the Elite Genres List.&quot;
+			.sInfoDlgGenreEliteSelectForRemove	= &quot;Please, select the Genre from Elite Genres List for Remove.&quot;
+			.sInfoDlgGenreEliteQuestionRemove	= &quot;Do You want Remove the selected Genre from Elite Genres List:&quot;
+			.sInfoDlgGenreEliteQuestionSort		= &quot;Do You want to Sort the Elite Genres List&quot;
+			.sInfoDlgGenreEliteSelectToUp		= &quot;Please, select the Genre from Elite Genres List for Up Movement!&quot;
+			.sInfoDlgGenreEliteSelectToDown		= &quot;Please, select the Genre from Elite Genres List for Down Movement!&quot;
 		End With
 	End If
 End Sub
+
+
+&apos; жанры схемы fb2.1 - Инициализация жанрами схемы FictionBook 2.1
+Sub GenreFB21()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
+				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
+				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
+				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
+				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
+				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Проза: Прочее&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
+				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
+				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
+				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
+				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
+				&quot;Политика&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
+				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
+				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
+				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;)
+	Else
+		sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
+				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
+				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
+				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
+				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
+				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Проза: Прочее&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
+				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
+				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
+				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
+				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
+				&quot;Политика&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
+				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
+				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
+				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;)
+	End If
+
+ 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
+			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
+			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;child_prose&quot;,_
+			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,_
+			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
+			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
+			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
+			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
+			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
+			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
+			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
+			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
+			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
+			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
+			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
+End Sub
+
+&apos; жанры схемы fb2.2 - Инициализация жанрами схемы FictionBook 2.2
+Sub GenreFB22()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
+				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
+				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
+				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
+				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
+				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Военная проза&quot;, &quot;Проза: Прочее&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
+				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,&quot;Фантастическая любовь&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
+				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
+				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
+				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
+				&quot;Политика&quot;, &quot;Деловая литература&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
+				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
+				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
+				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;,_
+				&quot;== Экономика и Бизнес ==&quot;, &quot;Поиск работы&quot;, &quot;Подбор персонала&quot;, &quot;Продажи, Реклама, PR&quot;, &quot;Банковское дело&quot;,_
+				&quot;Ценные бумаги, Инвестиции&quot;, &quot;Бухучет, Налогообложение, Аудит&quot;, &quot;Внешнеэкономическая деятельность&quot;,_
+				&quot;Экономика&quot;, &quot;Отраслевые издания&quot;, &quot;Корпоративная культура&quot;, &quot;Личные финансы&quot;, &quot;Недвижимость&quot;, &quot;Популярно о бизнесе&quot;,_
+				&quot;Малый бизнес&quot;, &quot;Делопроизводство&quot;, &quot;Справочники&quot; )
+	Else
+		sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
+				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
+				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
+				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
+				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
+				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Военная проза&quot;, &quot;Проза: Прочее&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
+				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,&quot;Фантастическая любовь&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
+				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
+				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
+				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
+				&quot;Политика&quot;, &quot;Деловая литература&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
+				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
+				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
+				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;,_
+				&quot;== Экономика и Бизнес ==&quot;, &quot;Поиск работы&quot;, &quot;Подбор персонала&quot;, &quot;Продажи, Реклама, PR&quot;, &quot;Банковское дело&quot;,_
+				&quot;Ценные бумаги, Инвестиции&quot;, &quot;Бухучет, Налогообложение, Аудит&quot;, &quot;Внешнеэкономическая деятельность&quot;,_
+				&quot;Экономика&quot;, &quot;Отраслевые издания&quot;, &quot;Корпоративная культура&quot;, &quot;Личные финансы&quot;, &quot;Недвижимость&quot;, &quot;Популярно о бизнесе&quot;,_
+				&quot;Малый бизнес&quot;, &quot;Делопроизводство&quot;, &quot;Справочники&quot; )
+	End If
+	
+ 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
+			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
+			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classsic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;prose_military&quot;,&quot;child_prose&quot;,_
+			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,&quot;love_sf&quot;,_
+			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
+			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
+			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
+			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
+			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_business&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
+			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
+			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
+			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
+			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
+			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
+			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
+			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
+End Sub
+
 </script:module>
