@@ -1,42 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Validators" script:language="StarBasic">REM  *****  BASIC  *****
-Public oValidateDlg As Object
 
-Sub StartValidate
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oValidateDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.ValidateDlg)
+Private oValidateDlg				As Object
+Private sValidatorSettingsFilename	As String
+
+Sub StartValidate()
+	sValidatorSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/validator.txt&quot;
+	
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oValidateDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.ValidateDlg )
+	
+	&apos; инициализация диалога Валидатора в зависимости от локали
+	InitValidateDlg()
+
 	With oValidateDlg.getModel
-		.Title	= &quot;Валидация fb2-файла&quot;
 		.Height	= 66
 		.Width	= 196
 	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadXYFormPos( sValidatorSettingsFilename, nX, nY )
+	oValidateDlg.setPosSize( nX, nY, 66, 196, com.sun.star.awt.PosSize.POS )
+	
 	oValidateDlg.Execute()
 End Sub
 
-Sub OpenFB2FileForValidate
-	Dim oFileDlg As Object
-	Dim sArg() As String
-	Dim sPath As String, sInitPath As String
-	Dim oUcb as object
+Sub OpenFB2FileForValidate()
+	Dim sInitPath As String
 	
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
-		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded( &quot;Tools&quot; ) ) Then
+		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	End If
 	
-	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
-	oUcb = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	Dim oFileDlg As Object	: oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	Dim oUcb As object		: oUcb = createUnoService( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+	Dim sArg() As String	: sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
 	
 	With oFileDlg
-		.initialize(sArg())
-		.appendFilter(&quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot;)
-		.setTitle(&quot;Выберите fb2 файл...&quot;)
-		.setDefaultName(sInitPath)
+		.initialize( sArg() )
+		.appendFilter( &quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot; )
+		.setTitle( sVD.sChooseFB2File )
+		.setDefaultName( sInitPath )
 	End With
 	
 	sInitPath = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text
-	If oUcb.Exists(sInitPath) Then
+	If oUcb.Exists( sInitPath ) Then
 		&apos; Открываем папку файла
 		oFileDlg.SetDisplayDirectory( Trim(Left(sInitPath, (Len(sInitPath)-Len(Dir$(sInitPath))))) )
 	Else
@@ -45,7 +55,7 @@ Sub OpenFB2FileForValidate
 	End If
 	
 	If oFileDlg.execute() Then
-		sPath = oFileDlg.Files(0)
+		Dim sPath As String : sPath = oFileDlg.Files(0)
 		If oUcb.Exists(sPath) Then
 			oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text = ConvertFromUrl(sPath)
 		End If
@@ -53,9 +63,16 @@ Sub OpenFB2FileForValidate
 	oFileDlg.Dispose()
 End Sub
 
-Sub FB2Validate
+Sub FB2Validate()
+	&apos; записываем настройки диалога
+	SaveSettings( sValidatorSettingsFilename, oValidateDlg )
+	
+	If GetOS() &gt; 0 Then
+		MsgBox( sVD.sFB2FileValidateWarning, 64, sVD.sFB2FileValidate )
+		Exit Sub
+	End If
 	If Trim(oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text) = &quot;&quot; Then
-		MsgBox &quot;Выберите fb2 файл для валидации&quot;, 64, &quot;Валидация fb2-файла&quot;
+		MsgBox sVD.sChooseFB2FileToValidate, 64, sVD.sFB2FileValidate
 		Exit Sub
 	End If
 	Dim sFile As String : sFile = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text

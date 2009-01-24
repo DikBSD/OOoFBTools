@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_Validators" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; /////////////////////////////////////
+&apos; модуль локализации диалога Валидатора
+&apos; /////////////////////////////////////
+
+&apos; для хранения сообщений для диалога Валидатора
+Type tValidatorsDlgData
+	sChooseFB2File				As String &apos; Выберите fb2 файл...
+	sChooseFB2FileToValidate	As String &apos; Выберите fb2 файл для валидации
+	sFB2FileValidate			As String &apos; Валидация fb2-файла
+	sFB2FileValidateWarning		As String &apos; Извините, Валидатор fb2-файлов работает пока только для системы Windows
+End Type
+
+Public sVD As tValidatorsDlgData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация диалога Валидатора в зависимости от локали
+Sub InitValidateDlg()
+	&apos; инициализация сообщенийдиалога Валидатора в зависимости от локали
+	InitValidateDlgMessage()
+	
+	With oValidateDlg.getModel
+		.Title = sVD.sFB2FileValidate
+	End With
+	
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With oValidateDlg.getModel
+			.lblValidFB2Open.Label	= &quot;Открыть файл:&quot;
+			.cmdbtnValCancel.Label	= &quot;Отмена&quot;
+			.cmdbtnValidate.Label	= &quot;Проверить&quot;
+		End With
+	Else
+		With oValidateDlg.getModel
+			.lblValidFB2Open.Label	= &quot;Open the File:&quot;
+			.cmdbtnValCancel.Label	= &quot;Cancel&quot;
+			.cmdbtnValidate.Label	= &quot;Check&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация сообщений диалога Валидатора в зависимости от локали
+Sub InitValidateDlgMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sVD
+			.sFB2FileValidate			= &quot;Валидация fb2-файла&quot;
+			.sChooseFB2File				= &quot;Выберите fb2 файл...&quot;
+			.sChooseFB2FileToValidate	= &quot;Выберите fb2 файл для валидации&quot;
+			.sFB2FileValidateWarning	= &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;
+		End With
+	Else
+		With sVD
+			.sFB2FileValidate			= &quot;Validate the fb2 File&quot;
+			.sChooseFB2File				= &quot;Choose the fb2 File...&quot;
+			.sChooseFB2FileToValidate	= &quot;Choose the fb2 File for Validate&quot;
+			.sFB2FileValidateWarning	= &quot;Excuse, Validate fb2-files works while only for system Windows&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
