@@ -80,6 +80,9 @@ Function SetUserStyles() As Boolean
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oStylesDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.StylesDlg)
 	
+	&apos; инициализация диалога Пользовательских Стилей в зависимости от локали
+	InitStylesDlg()
+
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. конвертор развивается, и в диалоге Переопределения пользовательских стилей появляются НОВЫЕ поля стилей,
 	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых полей нет,
@@ -103,7 +106,6 @@ Function SetUserStyles() As Boolean
 
 	
 	With oStylesDlg.Model
-		.Title	= &quot;Определение пользовательских стилей&quot;
 		.Height	= 260
 		.Width	= 425
 	End With
@@ -526,7 +528,7 @@ Sub LoadCustomStylesProfile()
 	Dim sArg() As String
 	
 	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
-		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	End If
 
 	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
@@ -534,9 +536,9 @@ Sub LoadCustomStylesProfile()
 	
 	With oFileDlg
 		.initialize( sArg() )
-		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
-		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
-		.setTitle(&quot;Открыть профиль стилей ...&quot;)
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sSD.sOpenProfile )
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные и задаем значения контролам профиля стилей
@@ -556,26 +558,26 @@ Sub SaveCustomStylesProfile()
 	Dim sArg() As String
 	Dim sFile As String
 	
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
-		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
+		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	End If
 
-	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
-	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION )
 	
 	With oFileDlg
-		.initialize(sArg())
-		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
-		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
-		.setTitle(&quot;Сохранить профиль стилей ...&quot;)
+		.initialize( sArg() )
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sSD.sSaveProfile )
 	End With
 	If oFileDlg.execute() Then
-		sFile = ConvertFromUrl(oFileDlg.Files(0))
-		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
+		sFile = ConvertFromUrl( oFileDlg.Files(0) )
+		IF ( InStr(sFile,&quot;.txt&quot;) = 0 ) Then
 			sFile = sFile + &quot;.txt&quot;
 		End If
 		
-		SaveSettings(sFile, oStylesDlg) &apos; сохраняем стили в файл
+		SaveSettings( sFile, oStylesDlg ) &apos; сохраняем стили в файл
 	End If
 	oFileDlg.Dispose()	
 End Sub

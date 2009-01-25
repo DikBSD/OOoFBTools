@@ -15,7 +15,7 @@ Type tFindData
 	sMessage As String
 End Type
 
-Private oTDF As Object
+Public oTDF As Object
 Private oDocController As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
@@ -51,18 +51,18 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога поиска
 Sub TextDefectFinderStart
-	&apos; файл начтроек Корректора Текста
-	Dim sOCRTCSettingsFilename As String : sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
-	Dim aModeList() As String : aModeList() = Array(&quot;Слово с дефисом, тире или минусом&quot;, _
-													&quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;, _
-													&quot;Обрыв предложения на словах, знаках препинания, кавычках и скобках&quot;, _
-													&quot;Место с недостающим пробелом между словами (вероятно)&quot;)
-	
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
 	oTDF = LoadDialog( &quot;OOoFBTools&quot;, &quot;TextDefectFinderDlg&quot; )
 	
+	&apos; инициализация диалога Поиска OCR ошибок в тексте в зависимости от локали
+	InitTextDefectFinderDlg()
+	
+	&apos; файл начтроек Корректора Текста
+	Dim sOCRTCSettingsFilename As String : sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
+	Dim aModeList() As String : aModeList() = Array( sTDFD.sWordHyphenDashMinus, sTDFD.sWordBrokenParagraphCarry, _
+													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingBlank )
+													
 	With oTDF.Model
-		.Title	= &quot;Поиск OCR ошибок в тексте&quot;
 		.Height	= 30
 		.Width	= 272
 		.lbTDFMode.StringItemList = aModeList()
@@ -101,19 +101,19 @@ Function GetRegString( oLB As Object ) As tFindData
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;
-			sTDF.sMessage = &quot;Поиск слов с дефисом, тире или минусом&quot;
+			sTDF.sMessage = sTDFD.sSearchWordsHyphenDashMinus
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
-			sTDF.sMessage = &quot;Поиск слов с разорванным переносом (дефис, тире или минус)&quot;
+			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
-			sTDF.sMessage = &quot;Поиск обрыва предложения на словах, знаках препинания, кавычках и скобках&quot;
+			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим пробелом между словами
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],.!?…»”\&quot;&quot;:;][:alnum:]+&quot;
-			sTDF.sMessage = &quot;Поиск мест с недостающим пробелом между словами&quot;
+			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
 			sTDF.sRegString = &quot;[:alnum:]+&quot;
-			sTDF.sMessage = &quot;Поиск слов&quot;
+			sTDF.sMessage = sTDFD.sSearchPWords
 	End Select
 	GetRegString = sTDF
 End Function
@@ -142,7 +142,7 @@ Function IsSelTextRange( sTitle As String ) As Boolean
 		IsSelTextRange = True
 	Else &apos; защита от поиска в выделенных врезках, ячейках таблицы, картинках...
 		IsSelTextRange = False
-		MsgBox &quot;Невозможно найти слово в выделенном объекте.&quot;, 64, sTitle
+		MsgBox sTDFD.sImpossibleToFind, 64, sTitle
 	End If 
 End Function
 
@@ -155,8 +155,7 @@ Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
 	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
 		oDocControl.Select(otxtCurs) &apos; выделяем найденное
 	Else &apos; конец документа
-		If MsgBox( &quot;Достигнут конец документа.&quot; &amp; chr(10) &amp; &quot;Следущее слово не найдено.&quot; &amp; chr(10) &amp; chr(10) &amp; _
-					&quot;Продолжить поиск с начала?&quot;, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
+		If MsgBox( sTDFD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
 		oDocControl.Select(otxtCurs) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
 		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
 	End If

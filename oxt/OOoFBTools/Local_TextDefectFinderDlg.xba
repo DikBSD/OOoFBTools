@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_TextDefectFinderDlg" script:language="StarBasic">REM  *****  BASIC  *****
+
+
+&apos; /////////////////////////////////////////////////////
+&apos; модуль локализации диалога Поиска OCR ошибок в тексте
+&apos; /////////////////////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений для диалога Поиска OCR ошибок в тексте
+Type tTextDefectFinderDlgData
+	sWordHyphenDashMinus		As String &apos; Слово с дефисом, тире или минусом
+	sWordBrokenParagraphCarry	As String &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+	sBreakageOffer				As String &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
+	sPlaceMissingBlank			As String &apos; Место с недостающим пробелом между словами (вероятно)
+	
+	sSearchWordsHyphenDashMinus	As String &apos; Поиск слов с дефисом, тире или минусом
+	sSearchWrdsBrokenCarry		As String &apos; Поиск слов с разорванным переносом (дефис, тире или минус)
+	sSearchBreakageOffer		As String &apos; Поиск обрыва предложения на словах, знаках препинания, кавычках и скобках
+	sSearchPlaceMissingBlank	As String &apos; Поиск мест с недостающим пробелом между словами
+	
+	sSearchPWords				As String &apos; Поиск слов
+	sImpossibleToFind			As String &apos; Невозможно найти слово в выделенном объекте.
+	sToContinueSearch			As String &apos; Достигнут конец документа. Следущее слово не найдено. Продолжить поиск с начала?
+End Type
+
+Public sTDFD As tTextDefectFinderDlgData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация диалога Поиска OCR ошибок в тексте в зависимости от локали
+Sub InitTextDefectFinderDlg()
+	&apos; инициализация сообщений диалога Поиска OCR ошибок в тексте в зависимости от локали
+	InitTextDefectFinderDlgMessage()
+
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With oTDF.getModel
+			.Title	= &quot;Поиск OCR ошибок в тексте&quot;
+			.lblOCRFind.Label		= &quot;Вид поиска:&quot;
+			.cmdbtnTDFFind.Label	= &quot;Найти&quot;
+		End With
+	Else
+		With oTDF.getModel
+			.Title	= &quot;Search OCR of Mistakes in the Text&quot;
+			.lblOCRFind.Label		= &quot;The Search Type: &quot;
+			.cmdbtnTDFFind.Label	= &quot;Find&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация сообщений диалога Поиска OCR ошибок в тексте в зависимости от локали
+Sub InitTextDefectFinderDlgMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sTDFD
+			.sWordHyphenDashMinus		= &quot;Слово с дефисом, тире или минусом&quot;
+			.sWordBrokenParagraphCarry	= &quot;Слово с разорванным абзацем переносом (дефис, тире или минус)&quot;
+			.sBreakageOffer				= &quot;Обрыв предложения на словах, знаках препинания, кавычках и скобках&quot;
+			.sPlaceMissingBlank			= &quot;Место с недостающим пробелом между словами (вероятно)&quot;
+			
+			.sSearchWordsHyphenDashMinus	= &quot;Поиск слов с дефисом, тире или минусом&quot;
+			.sSearchWrdsBrokenCarry			= &quot;Поиск слов с разорванным переносом (дефис, тире или минус)&quot;
+			.sSearchBreakageOffer			= &quot;Поиск обрыва предложения на словах, знаках препинания, кавычках и скобках&quot;
+			.sSearchPlaceMissingBlank		= &quot;Поиск мест с недостающим пробелом между словами&quot;
+			
+			.sSearchPWords					= &quot;Поиск слов&quot;
+			.sImpossibleToFind				= &quot;Невозможно найти слово в выделенном объекте.&quot;
+			.sToContinueSearch				= &quot;Достигнут конец документа.&quot; &amp; chr(10) &amp; &quot;Следущее слово не найдено.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+												&quot;Продолжить поиск с начала?&quot;
+		End With
+	Else
+		With sTDFD
+			.sWordHyphenDashMinus		= &quot;Word with a Hyphen, a Dash or a Minus&quot;
+			.sWordBrokenParagraphCarry	= &quot;Word with the Broken off Paragraph Carry (a Hyphen, a Dash or a Minus)&quot;
+			.sBreakageOffer				= &quot;Breakage of the Offer in Words, punctuation Marks, inverted Commas and Brackets&quot;
+			.sPlaceMissingBlank			= &quot;Place with missing Blank between Words (possibly)&quot;
+			
+			.sSearchWordsHyphenDashMinus	= &quot;Search of Words with a Hyphen, a Dash or a Minus&quot;
+			.sSearchWrdsBrokenCarry			= &quot;Search of Words with the Broken off Carry (a Hyphen, a Dash or a Minus)&quot;
+			.sSearchBreakageOffer			= &quot;Search of Breakage of the Offer in Words, punctuation Marks, inverted Commas and Brackets&quot;
+			.sSearchPlaceMissingBlank		= &quot;Search of Places with missing Blank between Words&quot;
+			
+			.sSearchPWords					= &quot;Search of Words&quot;
+			.sImpossibleToFind				= &quot;It is impossible to find a Word in the allocated Object.&quot;
+			.sToContinueSearch				= &quot;The end of the document is reached. &quot; &amp; chr (10) &amp; &quot;Next the word is not found.&quot; &amp; chr (10) &amp; chr (10) &amp; _
+					 							&quot;To continue search from the beginning?&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
