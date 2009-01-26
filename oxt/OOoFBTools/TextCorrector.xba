@@ -8,7 +8,7 @@ Const sConstCorrector As String = &quot;/OOoFBTools/corrector.txt&quot; &apos; �
 Private oDoc As Object
 Private oReplace As Object
 
-Private oTextCorrectorDlg As Object
+Public oTextCorrectorDlg As Object
 
 Private bDelSpace As Boolean
 
@@ -44,10 +44,12 @@ Sub TextCorrector()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oTextCorrectorDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.TextCorrectorDlg)
 	
+	&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
+	InitTextCorrectorDlgDlg()
+	
 	Dim sAnchorsList() As String &apos; виды привязки картинки
-	sAnchorsList() = Array(&quot;К абзацу&quot;, &quot;К символу&quot;, &quot;Как символ&quot;)
+	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Title  = &quot;Корректор текста документа&quot;
 		.Height = 242
 		.Width  = 318
 		.cbAnchor.StringItemList = sAnchorsList()
@@ -238,7 +240,7 @@ End Sub
 &apos; запуск корректировки
 Sub TextCorrectorDlgOk()
 	Dim sCorrectorName As String
-	sCorrectorName = &quot;Корректирование текста&quot;
+	sCorrectorName = sTCD.sTextCorrecting
 	&apos; Если есть опции для чистки, то - работаем
 	Dim ctrl As Object, i As Integer, bSel As Boolean
 	bSel = False
@@ -251,7 +253,7 @@ Sub TextCorrectorDlgOk()
 		End If
 	Next i
 	If Not bSel Then
-		MsgBox &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;, 64, sCorrectorName
+		MsgBox sTCD.sSelectOptions, 64, sCorrectorName
 		Exit Sub
 	End If
 	
@@ -273,11 +275,11 @@ Sub TextCorrectorDlgOk()
 		Dim oThisGraphic As Object 
 		Dim iAnchor As Integer
 		Select Case nAnchor
-			Case &quot;К абзацу&quot;
+			Case sTCD.sToParagraph
 				iAnchor = 0
-			Case &quot;К символу&quot;
+			Case sTCD.sToSymbol
 				iAnchor = 4
-			Case &quot;Как символ&quot;
+			Case sTCD.sAsSymbol
 				iAnchor = 1
 			Case Else
 				iAnchor = 0
@@ -326,7 +328,7 @@ Sub TextCorrectorDlgOk()
 			&apos; в тексте, таблицах, сносках и врезках
 			JoinWordDefisParaInAllTexts( oProgressBar )
 		End If
-		oProgressBar.start( &quot;Склейка строк в параграф:&quot;, ThisComponent.ParagraphCount )
+		oProgressBar.start( sTCD.sSpliceLines, ThisComponent.ParagraphCount )
 		If bBreakLinesInParaStartSpace = True Then
 			JoinBreakLinesInParaStartSpace( oProgressBar )
 		ElseIf bBreakLinesInParaEndSymbols = True Then
@@ -334,7 +336,7 @@ Sub TextCorrectorDlgOk()
 		End If
 	End If
 
-	oProgressBar.start(&quot;Корректировка документа:&quot;, 98)
+	oProgressBar.start( sCTD.sTextCorrecting &amp; &quot;:&quot;, 98 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
@@ -470,7 +472,7 @@ Sub TextCorrectorDlgOk()
 		DelSpace( oDoc, oReplace, oProgressBar, nCur )
 	End If
 	
-	MsgBox &quot;Коррекция текста документа завершена!&quot;, 64, sCorrectorName
+	MsgBox sTCD.sEndWork, 64, sCorrectorName
 	oProgressBar.end
 End Sub
 
@@ -695,7 +697,7 @@ End Sub
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
 &apos; в тексте, таблицаъ, сносках и врезках
 Sub JoinWordDefisParaInAllTexts( oProgressBar )
-	oProgressBar.start( &quot;Удаление разрыва слов:&quot;, ThisComponent.ParagraphCount )
+	oProgressBar.start( sTCD.sDelWordBreak, ThisComponent.ParagraphCount )
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
 	JoinWordDefisParaInText( oProgressBar )
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице

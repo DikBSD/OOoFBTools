@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_TextCorrectorDlg" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; //////////////////////////////////////////////////
+&apos; модуль локализации диалога Корректора Текста
+&apos; //////////////////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений для диалога Корректора Текста
+Type tTextCorrectorDlgData
+	sToParagraph	As String &apos; К абзацу
+	sToSymbol		As String &apos; К символу
+	sAsSymbol		As String &apos; Как символ
+	sTextCorrecting	As String &apos; Корректировка текста
+	sSelectOptions	As String &apos; Выберите, пожалуйста, хоть одну опцию для корректуры текста!
+	sSpliceLines	As String &apos; Склейка строк в параграф:
+	sEndWork		As String &apos; Коррекция текста документа завершена!
+	sDelWordBreak	As String &apos; Удаление разрыва слов:
+End Type
+
+Public sTCD As tTextCorrectorDlgData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация сообщений диалога диалога Корректора Текст в зависимости от локали
+Sub InitTextCorrectorDlgMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sTCD
+			.sToParagraph	= &quot;К абзацу&quot;
+			.sToSymbol		= &quot;К символу&quot;
+			.sAsSymbol		= &quot;Как символ&quot;
+			.sTextCorrecting	= &quot;Корректировка текста&quot;
+			.sSelectOptions		= &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;
+			.sSpliceLines		= &quot;Склейка строк в параграф:&quot;
+			.sEndWork			= &quot;Коррекция текста документа завершена!&quot;
+			.sDelWordBreak		= &quot;Удаление разрыва слов:&quot;
+		End With
+	Else
+		With sTCD
+			.sToParagraph	= &quot;To Paragraph&quot;
+			.sToSymbol		= &quot;To Symbol&quot;
+			.sAsSymbol		= &quot;As Symbol&quot;
+			.sTextCorrecting	= &quot;Text Correcting&quot;
+			.sSelectOptions		= &quot;Please, select though one Option for Text Correcting!&quot;
+			.sSpliceLines		= &quot;Splice Lines to Paragraph:&quot;
+			.sEndWork			= &quot;Text Correcting is completion!&quot;
+			.sDelWordBreak		= &quot;Removing the Words Break:&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
+Sub InitTextCorrectorDlgDlg()
+	&apos; инициализация сообщений диалога диалога Корректора Текст в зависимости от локали
+	InitTextCorrectorDlgMessage()
+	
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With oTextCorrectorDlg.getModel
+			.Title 							= &quot;Корректор текста документа&quot;
+			.fcHyphenDashMinusCarry.Label	= &quot; Разорванные дефисы и переносы символом ¶ &quot;
+			.cboxWordDefisPara.Label		= &quot;Удалить разрывы для дефисов и переносов слов&quot;
+			.obtnOnlyDefisPara.Label		= &quot;Обрабатывать только разорванные дефисы&quot;
+			.obtnDefisWordDelOnlyPara.Label	= &quot;Дефисы и удаление из слов только символа ¶ без переноса (-)&quot;
+			.obtnDefisWordDeAll.Label		= &quot;Дефисы и удаление из слов разрыва: и переноса (-) и абзаца (¶)&quot;
+			.fcParaAndCarry.Label					= &quot; Абзацы и разрывы &quot;
+			.cboxBreakLinesInPara.Label				= &quot;Собрать разорванные символом ¶ строки абзаца в один абзац&quot;
+			.cboxBreakLinesInPara.HelpText			= &quot;Не включайте, если в этом нет необходимости!!!&quot;
+			.obtBreakLinesInParaStartSpace.Label	= &quot;По пробелам в начале абзаца&quot;
+			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; каждого нового абзаца - 1 или несколько стартовых пробелов&quot;
+			.obtBreakLinesInParaEndSymbols.Label	= &quot;По .!?…”»&quot;&quot;:; в конце абзаца&quot;
+			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; завершения абзаца - один из знаков окончания предложения и знак абзаца ¶&quot;
+			.cboxDelEmptyPar.Label					= &quot;Удалить пустые абзацы (замена множественных ¶ одним)&quot;
+			.cboxBreakLine.Label					= &quot;Разрыв строки:&quot;
+			.obtnDel.Label							= &quot;Удалить&quot;
+			.obtnPar.Label							= &quot;Заменить на абзац (¶)&quot;
+			.obtnSpace.Label						= &quot;Заменить на 1 пробел&quot;
+			.fcSpaces.Label							= &quot; Пробелы и Табуляции &quot;
+			.cboxDelSpace.Label						= &quot;Удалить все лишние пробелы и табуляции&quot;
+			.cboxDelSpace.HelpText					= &quot;Стартовые, конечные и между слов&quot;
+			.fcDephisMisk.Label						= &quot; Кавычки, Дефисы, Разное &quot;
+			.cbox2HyphenToDash.Label				= &quot;Заменить двойной дефис (--) на тире&quot;
+			.cboxHyphenToDash.Label					= &quot;Заменить дефис, используемый вместо тире на тире&quot;
+			.cboxDefis.Label						= &quot;Вместо минуса - дефис в &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.&quot;
+			.cboxKav.Label							= &quot;Заменить кавычки  &quot;&quot; &quot;&quot; и “ ” на  « »&quot;
+			.cboxPoints.Label						= &quot;Упорядочить многоточие&quot;
+			.cboxC.Label							= &quot;Заменить (c) на ©, (r) на ® и (TM) на ™&quot;
+			.cboxMP.Label							= &quot;Удалить мягкие переносы&quot;
+			.cboDelPB.Label							= &quot;Удалить разрывы страниц&quot;
+			.fcImages.Label							= &quot; Картинки &quot;
+			.cboxImages.Label						= &quot;Изменить привязку всех картинкок&quot;
+			.lblAnchor.Label						= &quot;Привязать:&quot;
+			
+			.cmbbtnOk.Label			= &quot;Принять&quot;
+			.cmdbtnNo.Label			= &quot;Отмена&quot;
+			.cmdbtnDef.Label		= &quot;По умолчанию&quot;
+			.cbtnCheckAll.Label		= &quot;Все&quot;
+			.cbtnUnCheckAll.Label	= &quot;Ничего&quot;
+		End With
+	Else
+		With oTextCorrectorDlg.getModel
+			.Title  						= &quot;Text Corrector&quot;
+			.fcHyphenDashMinusCarry.Label	= &quot; Разорванные дефисы и переносы символом ¶ &quot;
+			.cboxWordDefisPara.Label		= &quot;Удалить разрывы для дефисов и переносов слов&quot;
+			.obtnOnlyDefisPara.Label		= &quot;Обрабатывать только разорванные дефисы&quot;
+			.obtnDefisWordDelOnlyPara.Label	= &quot;Дефисы и удаление из слов только символа ¶ без переноса (-)&quot;
+			.obtnDefisWordDeAll.Label		= &quot;Дефисы и удаление из слов разрыва: и переноса (-) и абзаца (¶)&quot;
+			.fcParaAndCarry.Label					= &quot; Абзацы и разрывы &quot;
+			.cboxBreakLinesInPara.Label				= &quot;Собрать разорванные символом ¶ строки абзаца в один абзац&quot;
+			.cboxBreakLinesInPara.HelpText			= &quot;Не включайте, если в этом нет необходимости!!!&quot;
+			.obtBreakLinesInParaStartSpace.Label	= &quot;On Spaces in Start Paragraph&quot;
+			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; каждого нового абзаца - 1 или несколько стартовых пробелов&quot;
+			.obtBreakLinesInParaEndSymbols.Label	= &quot;On .!?…”»&quot;&quot;:; in End Paragraph&quot;
+			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; завершения абзаца - один из знаков окончания предложения и знак абзаца ¶&quot;
+			.cboxDelEmptyPar.Label					= &quot;Удалить пустые абзацы (замена множественных ¶ одним)&quot;
+			.cboxBreakLine.Label					= &quot;Line Break:&quot;
+			.obtnDel.Label							= &quot;Remove&quot;
+			.obtnPar.Label							= &quot;Replace into Paragraph (¶)&quot;
+			.obtnSpace.Label						= &quot;Replace into 1 Blank&quot;
+			.fcSpaces.Label							= &quot; Blanks and Tabulations &quot;
+			.cboxDelSpace.Label						= &quot;Удалить все лишние пробелы и табуляции&quot;
+			.cboxDelSpace.HelpText					= &quot;Стартовые, конечные и между слов&quot;
+			.fcDephisMisk.Label						= &quot; Inverted Commas, Hyphens, Misk &quot;
+			.cbox2HyphenToDash.Label				= &quot;Replace double Hyphen (--) into Dash&quot;
+			.cboxHyphenToDash.Label					= &quot;Replace Hyphen, используемый вместо тире на тире&quot;
+			.cboxDefis.Label						= &quot;Instead of Minus - Dash in &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; and etc&quot;
+			.cboxKav.Label							= &quot;Replace Inverted Commas  &quot;&quot; &quot;&quot; and “ ” into  « »&quot;
+			.cboxPoints.Label						= &quot;Regulate Dots (...)&quot;
+			.cboxC.Label							= &quot;Replace (c) into ©, (r) into ® and (TM) into ™&quot;
+			.cboxMP.Label							= &quot;Remove  smooth Division of Word&quot;
+			.cboDelPB.Label							= &quot;Remove Line Break&quot;
+			.fcImages.Label							= &quot; Images &quot;
+			.cboxImages.Label						= &quot;Change Binding all Images&quot;
+			.lblAnchor.Label						= &quot;Binding:&quot;
+			
+			.cmbbtnOk.Label			= &quot;Apply&quot;
+			.cmdbtnNo.Label			= &quot;Cancel&quot;
+			.cmdbtnDef.Label		= &quot;Default&quot;
+			.cbtnCheckAll.Label		= &quot;All&quot;
+			.cbtnUnCheckAll.Label	= &quot;Nothing&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
