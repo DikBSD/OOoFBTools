@@ -15,15 +15,18 @@ Private sTFList()			As String &apos; вид экспорта врезок
 Private sGraphList()		As String &apos; форматы для преобразования графики
 
 Sub ServiceDlgExec()
-	sFootStyleList()	= Array(&quot;x&quot;, &quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot;)
-	sFootTitleList()	= Array(&quot;Примечания&quot;, &quot;Сноски&quot;, &quot;Комментарии&quot;)
-	sHVList()			= Array(&quot;&quot;, &quot;Сверху&quot;, &quot;По Центру&quot;, &quot;Снизу&quot;)
-	sTFList()			= Array(&quot;Таблица&quot;, &quot;Текст&quot;, &quot;Цитата&quot;, &quot;Структура&quot;)
-	sGraphList()		= Array(&quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot;)
-						
 	oServiceDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.ServiceDlg )
+	
+	&apos; инициализация диалога Настроек
+	InitCorrectorDlg()
+	
+	sFootStyleList()	= Array( &quot;x&quot;, &quot;[x]&quot;, &quot;[ x ]&quot;, &quot;{x}&quot;, &quot;{ x }&quot;, &quot;(x)&quot;, &quot;( x )&quot; )
+	sFootTitleList()	= Array( sServD.sNotes, sServD.sFootNotes, sServD.sCommentaries )
+	sHVList()			= Array( &quot;&quot;, sServD.sOnTop, sServD.sOnCentre, sServD.sFromBottom )
+	sTFList()			= Array( sServD.sTable, sServD.sText, sServD.sCite, sServD.sStructure )
+	sGraphList()		= Array( &quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot; )
+						
 	With oServiceDlg.Model
-		.Title	= &quot;Дополнительные настройки&quot;
 		.Height	= 306
 		.Width	= 368
 		.cmbboxStyle.StringItemList		= sFootStyleList()
@@ -76,7 +79,7 @@ Sub ServiceDlgOk()
 	ReadSettings(False)
 
 	&apos; Инициализация поиска &quot;служебных стилей&quot;
-	oProgressBar.start( &quot;Инициализация:&quot;, ThisComponent.ParagraphCount )
+	oProgressBar.start( sServD.sInitializing, ThisComponent.ParagraphCount )
 	ReDim  sGenres()		As String
 	ReDim  sAuthors()		As String
 	ReDim  sTranslators()	As String
