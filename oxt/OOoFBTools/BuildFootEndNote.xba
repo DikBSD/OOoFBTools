@@ -252,7 +252,7 @@ Function CreateSelectedTextIterator( oDoc As Object, sPrompt As String, sMessTit
 	Dim oRCurs &apos;Курсор правой границы текущего выделения
 		
 	If Not IsAnythingSelected(ThisComponent) Then
-		If MsgBox( &quot;Нет ни одного выделенного фрагмента текста для поиска!&quot; &amp; chr(10) &amp; sPrompt, 1 + 32 + 256, sMessTitle ) = 1 Then
+		If MsgBox( sBTEND.sNoSelectText &amp; chr(10) &amp; sPrompt, 1 + 32 + 256, sMessTitle ) = 1 Then
 			oLCurs = oDoc.getText().createTextCursor()
 			oLCurs.gotoStart( False )
 			oRCurs = oDoc.getText().createTextCursor()
@@ -325,8 +325,8 @@ End Function
 &apos; простая генерация сносок
 Sub BuildFootNoteSimple()
 	Dim oCurs() As Object, l As Long
-	If Not CreateSelectedTextIterator( ThisComponent, &quot;Обрабатывать весь документ?&quot;, _
-										&quot;Поиск в выделенных областях текста&quot;, oCurs() ) Then Exit Sub
+	If Not CreateSelectedTextIterator( ThisComponent, sBTEND.sProcessAllDoc, _
+										sBTEND.sFindInSelected, oCurs() ) Then Exit Sub
 	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
 	
 	&apos; левая и правая часть регулярного выражения для поиска текста сноски
@@ -340,17 +340,15 @@ Sub BuildFootNoteSimple()
 
 	Dim sMess As String
 	If lSel = 0 Then
-		sMess = &quot;Обработан весь документ:&quot; &amp; chr(10)
+		sMess = sBTEND.sProcessAllDocEnd &amp; chr(10)
 	Else
-		sMess = &quot;Обработано выделенных фрагментов текста: &quot; &amp; lSel &amp; &quot;.&quot; &amp; chr(10)
+		sMess = sBTEND.sProcessSelectedFragments &amp; &quot; &quot; &amp; lSel &amp; &quot;.&quot; &amp; chr(10)
 	End If
 	
-	Dim sBuildFootEndNoteName As String : sBuildFootEndNoteName = &quot;Генерация сносок&quot;
 	If lFound &gt; 0 Then
-		MsgBox sMess &amp; &quot;Снерерировано сносок: &quot; &amp; lFound &amp; &quot;.&quot;, 64, sBuildFootEndNoteName
+		MsgBox sMess &amp; sBTEND.sFootnotesGenerationCount &amp; &quot; &quot; &amp; lFound &amp; &quot;.&quot;, 64, sBTEND.sFootnotesGeneration
 	Else
-		MsgBox sMess &amp; &quot;Сноски не сгенерированы:&quot; &amp; chr(10) &amp; _
-			&quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;, 64, sBuildFootEndNoteName
+		MsgBox sMess &amp; sBTEND.sFootnotesNotGeneration &amp; chr(10) &amp; sBTEND.sNotFoundSelectedTextForTemplate, 64, sBTEND.sFootnotesGeneration
 	End If
 End Sub
 
@@ -708,12 +706,10 @@ Sub BuildFootNoteComplex()
 	DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNNumber )
 	DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNText )
 	
-	Dim sBuildFootEndNoteName As String : sBuildFootEndNoteName = &quot;Генерация сносок&quot;
-	
 	&apos; получаем зоны для обработки сносок
 	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkListNote )
 	If UBound( aBookMarks() ) = -1 Then
-		MsgBox &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!&quot;, 64, sBuildFootEndNoteName
+		MsgBox sBTEND.sNotFoundBookmarkZoneForNoteList, 64, sBTEND.sFootnotesGeneration
 		Exit Sub	
 	End If
 	
@@ -738,31 +734,17 @@ Sub BuildFootNoteComplex()
 		Next l
 	Else
 		&apos; режим: Все блоки текста сносок - в конце книги
-		Dim sMT As String : sMT = &quot;: все списки текста сносок - в конце книги&quot;
+		Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
 		&apos;проверка - есть ли хоть одна закладка L-зоны
 		Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
 		If UBound( aLBookMarks() ) = -1 Then
-			MsgBox &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний!&quot;, 64, sBuildFootEndNoteName &amp; sMT
+			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sFootnotesGeneration &amp; sMT
 			Exit Sub	
 		End If
 		
 		&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
 		If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
-			MsgBox &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон списков примечаний!&quot; &amp; chr(10) &amp; _
-					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
-					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
-					&quot;Совет:&quot; &amp; chr(10) &amp; _
-					&quot;1. Если в главе нет ни одного № примечаний (ошибки OCR), то не ставьте в ее начале закладку для зоны поиска № примечаний.&quot; &amp; chr(10) &amp; _
-					&quot;Например, в книге - 5 глав, номера примечаний есть только в 3-й главе. В конце книги перечислены списки примечаний для глав 1 и 3. Оригинала книги у вас нет.&quot; &amp; chr(10) &amp; _
-					&quot;Значит, нужно поставить закладки для зон поиска № примечаний в начале глав и 1, и 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
-					&quot;2. Если списков с текстом примечаний в тексте меньше, чем глав с № примечаний (ошибки OCR), &quot; &amp; _
-					&quot;то поставьте пустую закладку для зоны поиска списков примечаний:&quot; &amp; chr(10) &amp; _
-					&quot;Например, в книге - 5 глав, № примечаний есть только в 1,3,5 главах. В конце книги перечислены списки примечаний только для глав 1 и 5. Оригинала книги у вас нет.&quot; &amp; _
-					&quot;Значит, нужно после списка примечаний для главы 1 вставть пустой абзац и на нем - закладку для зоны поиска списка примечаний.&quot; &amp; _
-					&quot;Эта закладка будет соответствовать главе 3.&quot; &amp; chr(10)  &amp;chr(10) &amp; _
-					&quot;3. Самый лучший вариант - найти бумажный оригинал книги, и по нему внести в текст все номера примечаний для глав, где они есть, &quot; &amp; _
-					&quot;и соответсвующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
-					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10), 64, sBuildFootEndNoteName &amp; sMT
+			MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sFootnotesGeneration &amp; sMT
 			Exit Sub	
 		End If
 		
@@ -791,8 +773,8 @@ Sub BuildFootNoteComplex()
 		DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkListNote )
 	End If
 	
-	MsgBox &quot;Документ обработан.&quot; &amp; chr(10) &amp;_
-			&quot;Сгенерировано сносок: &quot; &amp; lFindCount &amp; &quot;.&quot;, 64, sBuildFootEndNoteName
+	MsgBox sBTEND.sDocumentIsProcessing &amp; chr(10) &amp;_
+			sBTEND.sFootnotesGenerationCount &amp; &quot; &quot; &amp; lFindCount &amp; &quot;.&quot;, 64, sBTEND.sFootnotesGeneration
 End Sub
 
 &apos; возвращает строку с регулярным выражением для поиска, в зависимости от выбора шаблона номера сноски в тексте
@@ -887,37 +869,37 @@ End Function
 &apos;			Инструменты для работы со служебными закладками
 &apos; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; вставка очередной закладки для зоны поиска номера сносок в тексте
-Sub InsertFindFootNoteNumberZoneBookMark
-	Dim sMessTitle As String : sMessTitle = &quot;Вставка служебной закладки для зоны поиска номера примечаний&quot;
+Sub InsertFindFootNoteNumberZoneBookMark()
+	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	InitBuildTootEndNoteMessage()
+	
+	Dim sMessTitle As String : sMessTitle = sBTEND.sInsertBookmarkForNumberNoteZone
 	Dim l As Long : l = GetSelectionCount()
 	If l = 0 Then
 		&apos; Нет ни одной выделенной области текста
 		_UnoInsertBookmark( sConstBookMarkNZoneNote )&apos; шаблон закладки для зоны поиска номера сноски
-		MsgBox &quot;Закладка-шаблон для зоны поиска НОМЕРОВ примечаний ВСТАВЛЕНА.&quot;, 64, sMessTitle
+		MsgBox sBTEND.sInsertedBookmarkForNumberNoteZone, 64, sMessTitle
 		Exit Sub
 	ElseIf l &gt;= 1 Then
-		MsgBox &quot;Закладка-шаблон для зоны поиска номеров примечаний НЕ ВСТАВЛЕНА:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
-				&quot;Для того, чтобы пометить начало очередной области поиска номера примечаний НЕ НУЖНО выделять текст!&quot; &amp; chr(10) &amp; _
-				&quot;Просто поставьте курсор на начало абзаца каждой главы, в которой есть номера примечаний и запустите этот макрос.&quot; &amp; chr(10) &amp; _
-				&quot;Проделайте эти действия для каждой главы, где есть номера примечаний.&quot; &amp; chr(10), 64, sMessTitle
+		MsgBox sBTEND.sNotInsertedBookmarkForNumberNoteZone, 64, sMessTitle
 		Exit Sub
 	End If
 End Sub
 
 &apos; вставка очередной закладки для зоны поиска текста сносок (списол текста сносок)
-Sub InsertFindFootNoteTextListBookMark
-	Dim sMessTitle As String : sMessTitle = &quot;Вставка служебной закладки для списка примечаний&quot;
+Sub InsertFindFootNoteTextListBookMark()
+	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	InitBuildTootEndNoteMessage()
+	
 	Dim l As Long : l = GetSelectionCount()
 	If l = 0 Then
 		&apos; Нет ни одной выделенной области текста
 		_UnoInsertBookmark( sConstBookMarkListNote )
-		MsgBox &quot;Не выделено ни одного символа текста.&quot; &amp; chr(10) &amp; &quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot; &amp; chr(10) &amp; _
-				&quot;Начало и конец закладки совпадают.&quot;, 64, sMessTitle
+		MsgBox sBTEND.sNotFoundSymbol, 64, sBTEND.sInsertBookmarkForListNoteZone
 		Exit Sub
 	ElseIf l &gt; 1 Then
-		MsgBox &quot;Выделено &quot; &amp; l &amp; &quot; областей текста.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выделите только 1 список примечаний!&quot; &amp; chr(10) &amp; _
-				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;, _
-				64, sMessTitle
+		MsgBox sBTEND.sSelected &amp; &quot; &quot; &amp; l &amp; &quot; &quot; &amp; sBTEND.sSelecteOnlyOneTextZone, _
+				64, sBTEND.sInsertBookmarkForListNoteZone
 		Exit Sub
 	Else &apos; теперь можно вставить закладку
 		&apos; проверка, есть ли эта же закладка на этом же месте...
@@ -940,30 +922,29 @@ Sub InsertFindFootNoteTextListBookMark
 				Dim oBookMark	As Object : oBookMark	= oBookMarks.getByName( aBookMarks(l) )
 				Dim oAnchor		As Object : oAnchor		= oBookMark.getAnchor()
 				Dim s			As String : s			= oBookMark.Name
-				Dim sMessNo		As String : sMessNo		= &quot;Закладка-шаблон для СПИСКА примечаний НЕ вставлена:&quot;
 				If InStr( s, sConstBookMarkListNote ) = 1 Then
 					If oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) = 0 And _
 						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) = 0 Then
 						bBookMarkInSel = True
-						MsgBox sMessNo &amp; chr(10) &amp; _
-								&quot;Выделенная область текста полностью совпадает с уже имеющейся закладкой &quot; &amp; aBookMarks(l), 64, sMessTitle
+						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+								sBTEND.sSelectedZoneCoincideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
 					ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt;= 0 And _
 						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt;= 0 Then
 						bBookMarkInSel = True
-						MsgBox sMessNo &amp; chr(10) &amp; _
-								&quot;Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку &quot; &amp; aBookMarks(l), 64, sMessTitle
+						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+								sBTEND.sSelectedZoneTopBottomOverlapExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
 					ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &lt;= 0 And _
 						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &gt;= 0 Then
 						bBookMarkInSel = True
-						MsgBox sMessNo &amp; chr(10) &amp; _
-								&quot;Выделенная область текста находится внутри уже имеющейся закладки &quot; &amp; aBookMarks(l), 64, sMessTitle
+						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+								sBTEND.sSelectedZoneInsideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
 					ElseIf ( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt; 0 And _
 						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getStart() ) &lt; 0 ) Or _
 						( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getEnd() ) &gt; 0 And _
 						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt; 0 ) Then
 						bBookMarkInSel = True
-						MsgBox sMessNo &amp; chr(10) &amp; _
-								&quot;Выделенная область текста частично совпадает с уже имеющейся закладкой &quot; &amp; aBookMarks(l), 64, sMessTitle
+						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+								sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
 					&apos;Else &apos;выделение никак ни касается своими границами закладки-шаблона (&quot;пустое&quot; место).
 						&apos;bBookMarkInSel = False не ставим, т.к. оно уже стоит выше, в определении флага,
 						&apos;а здесь это False приведет на очередной иетерации цикла, если закладка не касается выделения,
@@ -977,23 +958,25 @@ Sub InsertFindFootNoteTextListBookMark
 		If Not bBookMarkInSel Then
 			&apos; На этом месте документа нет закладки-шаблона для списка текста сносок. Можно вставлять!
 			_UnoInsertBookmark( sConstBookMarkListNote )
-			MsgBox &quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot;, 64, sMessTitle
+			MsgBox sBTEND.sInsertedBookmarkForListNoteZone, 64, sBTEND.sInsertBookmarkForListNoteZone
 		End If
 	End If
 End Sub
 
 &apos; удаляем служебные закладки, если они есть
 Sub DeleteAllWorkFootNoteBookMark()
-	Dim sMessTitle As String : sMessTitle = &quot;Удаление рабочих закладок&quot;
-	If MsgBox( &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?&quot; &amp; chr(10), _
-				1 + 32 + 256, sMessTitle ) = 1 Then
+	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	InitBuildTootEndNoteMessage()
+
+	If MsgBox( sBTEND.sDeleteBookmarksQuestion &amp; chr(10), _
+				1 + 32 + 256, sBTEND.sDeleteBookmarks ) = 1 Then
 		Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
 		Dim nN As Integer : nN = DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkNZoneNote )	&apos; закладка - зона поиска номера сноски
 		Dim nL As Integer : nL = DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkListNote )	&apos; закладка - зона поиска списка текста сносок
 		If nN=0 And nL=0 Then
-			MsgBox &quot;Не найдено ни одной закладки-пометки зон поиска примечаний!&quot;, 64, sMessTitle
+			MsgBox sBTEND.sNotFoundNoteBookmark, 64, sBTEND.sDeleteBookmarks
 		Else
-			MsgBox &quot;Удалено закладок-пометок зон поиска:&quot; &amp; chr(10) &amp; &quot;НОМЕРОВ примечаний: &quot; &amp; nN &amp; chr(10) &amp; &quot;ТЕКСТА примечаний:  &quot; &amp; nL, 64, sMessTitle
+			MsgBox sBTEND.sDeletedSearchingZoneBookmark &amp; chr(10) &amp; sBTEND.sNoteNumbers &amp; &quot; &quot; &amp; nN &amp; chr(10) &amp; sBTEND.sNoteText &amp; &quot; &quot; &amp; nL, 64, sBTEND.sDeleteBookmarks
 		End If
 	End If
 End Sub
@@ -1005,32 +988,34 @@ End Sub
 Sub StartBuildFootEndNoteDlg()
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oBuildFootEndNoteDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.BuildFootEndNoteDlg )
+
+	&apos; инициализация диалога генерации сносок в зависимости от локали
+	InitBuildFootEndNoteDlg()
 	
 	Dim aNFNInTextList() As String
-	aNFNInTextList() = Array(&quot;... текст (x) ...&quot;, _
-							&quot;... текст [x] ...&quot;, _
-							&quot;... текст {x} ...&quot;, _
-							&quot;... текст &lt;x&gt; ...&quot;, _
-							&quot;... текст /x/ ...&quot;, _
-							&quot;... текст \x\ ...&quot;)
+	aNFNInTextList() = Array(&quot;... &quot; &amp; sBTEND.sText &amp; &quot; (x) ...&quot;, _
+							&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [x] ...&quot;, _
+							&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {x} ...&quot;, _
+							&quot;... &quot; &amp; sBTEND.sText &amp; &quot; &lt;x&gt; ...&quot;, _
+							&quot;... &quot; &amp; sBTEND.sText &amp; &quot; /x/ ...&quot;, _
+							&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;)
 	Dim aNFNInListList() As String
-	aNFNInListList() = Array(&quot;x. Текст ...&quot;, _
-							&quot;(x). Текст ...&quot;, _
-							&quot;[x]. Текст ...&quot;, _
-							&quot;{x}. Текст ...&quot;, _
-							&quot;&lt;x&gt;. Текст ...&quot;, _
-							&quot;/x/. Текст ...&quot;, _
-							&quot;\x\. Текст ...&quot;)
+	aNFNInListList() = Array(&quot;x. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+							&quot;(x). &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+							&quot;[x]. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+							&quot;{x}. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+							&quot;&lt;x&gt;. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+							&quot;/x/. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+							&quot;\x\. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;)
 	
 	&apos; файл настроек BuildFootEndNoteDlg
 	
 	With oBuildFootEndNoteDlg.Model
-		.Title = &quot;Генерация сносок&quot;
-		.lblNSimpleFNInTextTemplate.StringItemList = aNFNInTextList()
-		.lblNFNInTextTemplate.StringItemList = aNFNInTextList()
-		.lblNFNInListTemplate.StringItemList = aNFNInListList()
-		.Height = 100
-		.Width = 270
+		.lblNSimpleFNInTextTemplate.StringItemList	= aNFNInTextList()
+		.lblNFNInTextTemplate.StringItemList 		= aNFNInTextList()
+		.lblNFNInListTemplate.StringItemList		= aNFNInListList()
+		.Height	= 100
+		.Width	= 270
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
@@ -1107,21 +1092,23 @@ End Sub
 &apos;///////////////////////////////////////////////////////////////////////////////////////
 &apos; 		работа контролов диалога преобразования номера сносок
 &apos;///////////////////////////////////////////////////////////////////////////////////////
-&apos; запуск диалога генерации сносок
+&apos; запуск диалога преобразования номеров примечаний в верхнем индексе по шаблону
 Sub StartFootNoteLinkTransDlg()
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oFootNoteLinkTransDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.FootNoteLinkTransDlg )
+
+	&apos; инициализация диалога преобразования номеров примечаний в верхнем индексе по шаблону в зависимости от локали
+	InitFootNoteLinkTransDlg()
 	
 	Dim aList() As String
-	aList() = Array(&quot;... текст (x) ...&quot;, _
-					&quot;... текст [x] ...&quot;, _
-					&quot;... текст {x} ...&quot;, _
-					&quot;... текст &lt;x&gt; ...&quot;, _
-					&quot;... текст /x/ ...&quot;, _
-					&quot;... текст \x\ ...&quot;)
+	aList() = Array(&quot;... &quot; &amp; sBTEND.sText &amp; &quot; (x) ...&quot;, _
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [x] ...&quot;, _
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {x} ...&quot;, _
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; &lt;x&gt; ...&quot;, _
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; /x/ ...&quot;, _
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;)
 
 	With oFootNoteLinkTransDlg.Model
-		.Title	= &quot;Преобразование № примечаний в верхнем индексе по шаблону&quot;
 		.lboxFNLTrans.StringItemList = aList()
 		.Height	= 50
 		.Width	= 238
@@ -1154,15 +1141,14 @@ Sub TransformationFootNote()
 	SaveSettings( getUserPath() &amp; sConstFootNoteLinkTransDlgSettingsSettings, oFootNoteLinkTransDlg )
 
 	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( &quot;Преобразование примечаний:&quot;, ThisComponent.ParagraphCount )
+	oProgressBar.start( sBTEND.sNoteTransforming, ThisComponent.ParagraphCount )
 	
 	&apos; обход всего документа
-	Dim sMessTitle As String : sMessTitle = &quot;Преобразование номеров примечаний в верхнем индексе&quot;
 	Dim lCount As Long : lCount = TextParser( oProgressBar )
 	If lCount() &gt; 0 Then
-		MsgBox &quot;Найдено номеров примечаний в верхнем индексе: &quot; &amp; lCount, 64, sMessTitle
+		MsgBox sBTEND.sFoundNUpNote &amp; &quot; &quot; &amp; lCount, 64, sBTEND.sNUpNoteTransforming
 	Else
-		MsgBox &quot;Не найдено ни одного номера примечаний в верхнем индексе.&quot;, 64, sMessTitle
+		MsgBox sBTEND.sNotFoundNUpNote, 64, sBTEND.sNUpNoteTransforming
 	End If
 	oProgressBar.end
 End Sub

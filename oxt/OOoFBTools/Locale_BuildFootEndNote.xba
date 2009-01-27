@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Locale_BuildFootEndNote" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; //////////////////////////////////////
+&apos; модуль локализации работы со сносками
+&apos; //////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений для работы со сносками
+Type tBuildTootEndNoteData
+	sNoSelectText						As String &apos; Нет ни одного выделенного фрагмента текста для поиска!
+	sProcessAllDoc						As String &apos; Обрабатывать весь документ?
+	sFindInSelected						As String &apos; Поиск в выделенных областях текста
+	sProcessAllDocEnd					As String &apos; Обработан весь документ:
+	sProcessSelectedFragments			As String &apos; Обработано выделенных фрагментов текста:
+	sFootnotesGeneration				As String &apos; Генерация сносок
+	sFootnotesGenerationCount			As String &apos; Сгенерировано сносок:
+	sFootnotesNotGeneration				As String &apos; Сноски не сгенерированы:
+	sNotFoundSelectedTextForTemplate	As String &apos; Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!
+	sNotFoundBookmarkZoneForNoteList	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!
+	sAllListsTextFootNotesInBookEnd		As String &apos; все списки текста сносок - в конце книги
+	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний!
+	sBuildFootNoteComplexVerify			As String &apos;
+	sDocumentIsProcessing				As String &apos; Документ обработан.
+	sInsertBookmarkForNumberNoteZone	As String &apos; Вставка служебной закладки для зоны поиска номера примечаний
+	sInsertedBookmarkForNumberNoteZone	As String &apos; Закладка-шаблон для зоны поиска НОМЕРОВ примечаний ВСТАВЛЕНА.
+	sNotInsertedBookmarkForNumberNoteZone	As String &apos;
+	sInsertBookmarkForListNoteZone		As String &apos; Вставка служебной закладки для списка примечаний
+	sNotFoundSymbol						As String &apos; Не выделено ни одного символа текста. Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА. Начало и конец закладки совпадают.
+	sOnlyOneTextZone					As String &apos; Выделено ... областей текста. Пожалуйста, выделите только 1 список примечаний! Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.
+	sSelected							As String &apos; Выделено
+	sNotInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний НЕ вставлена:
+	sSelectedZoneCoincideExsistBookmark	As String &apos; Выделенная область текста полностью совпадает с уже имеющейся закладкой
+	sSelectedZoneTopBottomOverlapExsistBookmark	As String &apos; Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку
+	sSelectedZoneInsideExsistBookmark	As String &apos; Выделенная область текста находится внутри уже имеющейся закладки
+	sSelectedZonePartlyCoincideExsistBookmark	As String &apos; Выделенная область текста частично совпадает с уже имеющейся закладкой
+	sInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.
+	sDeleteBookmarks					As String &apos; Удаление рабочих закладок
+	sDeleteBookmarksQuestion			As String &apos; Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?
+	sNotFoundNoteBookmark				As String &apos; Не найдено ни одной закладки-пометки зон поиска примечаний!
+	sDeletedSearchingZoneBookmark		As String &apos; Удалено закладок-пометок зон поиска:
+	sNoteNumbers						As String &apos; НОМЕРОВ примечаний:
+	sNoteText							As String &apos; ТЕКСТА примечаний:
+	sText								As String &apos; текст
+	sSText								As String &apos; Текст
+	sNoteTransforming					As String &apos; Преобразование примечаний:
+	sNUpNoteTransforming				As String &apos; Преобразование номеров примечаний в верхнем индексе
+	sFoundNUpNote						As String &apos; Найдено номеров примечаний в верхнем индексе:
+	sNotFoundNUpNote					As String &apos; Не найдено ни одного номера примечаний в верхнем индексе.
+End Type
+
+Public sBTEND As tBuildTootEndNoteData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+Sub InitBuildTootEndNoteMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sBTEND
+			.sNoSelectText				= &quot;Нет ни одного выделенного фрагмента текста для поиска!&quot;
+			.sProcessAllDoc				= &quot;Обрабатывать весь документ?&quot;
+			.sFindInSelected			= &quot;Поиск в выделенных областях текста&quot;
+			.sProcessAllDocEnd			= &quot;Обработан весь документ:&quot;
+			.sProcessSelectedFragments	= &quot;Обработано выделенных фрагментов текста:&quot;
+			.sFootnotesGeneration		= &quot;Генерация сносок&quot;
+			.sFootnotesGenerationCount	= &quot;Сгенерировано сносок:&quot;
+			.sFootnotesNotGeneration	= &quot;Сноски не сгенерированы:&quot;
+			.sNotFoundSelectedTextForTemplate	= &quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;
+			.sNotFoundBookmarkZoneForNoteList	= &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!&quot;
+			.sAllListsTextFootNotesInBookEnd	= &quot;все списки текста сносок - в конце книги&quot;
+			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний!&quot;
+			.sBuildFootNoteComplexVerify		= &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон списков примечаний!&quot; &amp; chr(10) &amp; _
+					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
+					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Совет:&quot; &amp; chr(10) &amp; _
+					&quot;1. Если в главе нет ни одного № примечаний (ошибки OCR), то не ставьте в ее начале закладку для зоны поиска № примечаний.&quot; &amp; chr(10) &amp; _
+					&quot;Например, в книге - 5 глав, номера примечаний есть только в 3-й главе. В конце книги перечислены списки примечаний для глав 1 и 3. Оригинала книги у вас нет.&quot; &amp; chr(10) &amp; _
+					&quot;Значит, нужно поставить закладки для зон поиска № примечаний в начале глав и 1, и 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;2. Если списков с текстом примечаний в тексте меньше, чем глав с № примечаний (ошибки OCR), &quot; &amp; _
+					&quot;то поставьте пустую закладку для зоны поиска списков примечаний:&quot; &amp; chr(10) &amp; _
+					&quot;Например, в книге - 5 глав, № примечаний есть только в 1,3,5 главах. В конце книги перечислены списки примечаний только для глав 1 и 5. Оригинала книги у вас нет.&quot; &amp; _
+					&quot;Значит, нужно после списка примечаний для главы 1 вставть пустой абзац и на нем - закладку для зоны поиска списка примечаний.&quot; &amp; _
+					&quot;Эта закладка будет соответствовать главе 3.&quot; &amp; chr(10)  &amp;chr(10) &amp; _
+					&quot;3. Самый лучший вариант - найти бумажный оригинал книги, и по нему внести в текст все номера примечаний для глав, где они есть, &quot; &amp; _
+					&quot;и соответсвующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
+					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
+			.sDocumentIsProcessing				= &quot;Документ обработан.&quot;
+			.sInsertBookmarkForNumberNoteZone	= &quot;Вставка служебной закладки для зоны поиска номера примечаний&quot;
+			.sInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска НОМЕРОВ примечаний ВСТАВЛЕНА.&quot;
+			.sNotInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска номеров примечаний НЕ ВСТАВЛЕНА:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
+				&quot;Для того, чтобы пометить начало очередной области поиска номера примечаний НЕ НУЖНО выделять текст!&quot; &amp; chr(10) &amp; _
+				&quot;Просто поставьте курсор на начало абзаца каждой главы, в которой есть номера примечаний и запустите этот макрос.&quot; &amp; chr(10) &amp; _
+				&quot;Проделайте эти действия для каждой главы, где есть номера примечаний.&quot; &amp; chr(10)
+			.sInsertBookmarkForListNoteZone		= &quot;Вставка служебной закладки для списка примечаний&quot;
+			.sNotFoundSymbol					= &quot;Не выделено ни одного символа текста.&quot; &amp; chr(10) &amp; _
+												&quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot; &amp; chr(10) &amp; &quot;Начало и конец закладки совпадают.&quot;
+			.sOnlyOneTextZone					= &quot;областей текста.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выделите только 1 список примечаний!&quot; &amp; chr(10) &amp; _
+				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;
+			.sSelected							= &quot;Выделено&quot;
+			.sNotInsertedBookmarkForListNoteZone	= &quot;Закладка-шаблон для СПИСКА примечаний НЕ вставлена:&quot;
+			.sSelectedZoneCoincideExsistBookmark	= &quot;Выделенная область текста полностью совпадает с уже имеющейся закладкой&quot;
+			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку&quot;
+			.sSelectedZoneInsideExsistBookmark		= &quot;Выделенная область текста находится внутри уже имеющейся закладки&quot;
+			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;Выделенная область текста частично совпадает с уже имеющейся закладкой&quot;
+			.sInsertedBookmarkForListNoteZone		= &quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot;
+			.sDeleteBookmarks					= &quot;Удаление рабочих закладок&quot;
+			.sDeleteBookmarksQuestion			= &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?&quot;
+			.sNotFoundNoteBookmark				= &quot;Не найдено ни одной закладки-пометки зон поиска примечаний!&quot;
+			.sDeletedSearchingZoneBookmark		= &quot;Удалено закладок-пометок зон поиска:&quot;
+			.sNoteNumbers						= &quot;НОМЕРОВ примечаний:&quot;
+			.sNoteText							= &quot;ТЕКСТА примечаний:&quot;
+			.sText								= &quot;текст&quot;
+			.sSText								= &quot;Текст&quot;
+			.sNoteTransforming					= &quot;Преобразование примечаний:&quot;
+			.sNUpNoteTransforming				= &quot;Преобразование номеров примечаний в верхнем индексе&quot;
+			.sFoundNUpNote						= &quot;Найдено номеров примечаний в верхнем индексе:&quot;
+			.sNotFoundNUpNote					= &quot;Не найдено ни одного номера примечаний в верхнем индексе.&quot;
+		End With
+	Else
+		With sBTEND
+			.sNoSelectText				= &quot;No found no One selected Text Fragment for Searching!&quot;
+			.sProcessAllDoc				= &quot;Process all Document?&quot;
+			.sFindInSelected			= &quot;Searching in the selected Text Zones&quot;
+			.sProcessAllDocEnd			= &quot;Process all Document:&quot;
+			.sProcessSelectedFragments	= &quot;Process selected Text Fragments:&quot;
+			.sFootnotesGeneration		= &quot;Fottnotes Generation&quot;
+			.sFootnotesGenerationCount	= &quot;Generated Footnotes:&quot;
+			.sFootnotesNotGeneration	= &quot;The Footnotes is not Generated:&quot;
+			.sNotFoundSelectedTextForTemplate	= &quot;Not found not one Text Fragment, satisfactory Note Search Template!&quot;
+			.sNotFoundBookmarkZoneForNoteList	= &quot;Not one marked Bookmark Zone, containing the LIST for Notes!&quot;
+			.sAllListsTextFootNotesInBookEnd	= &quot;all Footnotes Text Lists - in Book End&quot;
+			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Not one marked Bookmark Zone, containing the NUMBERS for Notes!&quot;
+			.sBuildFootNoteComplexVerify		= &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон списков примечаний!&quot; &amp; chr(10) &amp; _
+					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
+					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Совет:&quot; &amp; chr(10) &amp; _
+					&quot;1. Если в главе нет ни одного № примечаний (ошибки OCR), то не ставьте в ее начале закладку для зоны поиска № примечаний.&quot; &amp; chr(10) &amp; _
+					&quot;Например, в книге - 5 глав, номера примечаний есть только в 3-й главе. В конце книги перечислены списки примечаний для глав 1 и 3. Оригинала книги у вас нет.&quot; &amp; chr(10) &amp; _
+					&quot;Значит, нужно поставить закладки для зон поиска № примечаний в начале глав и 1, и 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;2. Если списков с текстом примечаний в тексте меньше, чем глав с № примечаний (ошибки OCR), &quot; &amp; _
+					&quot;то поставьте пустую закладку для зоны поиска списков примечаний:&quot; &amp; chr(10) &amp; _
+					&quot;Например, в книге - 5 глав, № примечаний есть только в 1,3,5 главах. В конце книги перечислены списки примечаний только для глав 1 и 5. Оригинала книги у вас нет.&quot; &amp; _
+					&quot;Значит, нужно после списка примечаний для главы 1 вставть пустой абзац и на нем - закладку для зоны поиска списка примечаний.&quot; &amp; _
+					&quot;Эта закладка будет соответствовать главе 3.&quot; &amp; chr(10)  &amp;chr(10) &amp; _
+					&quot;3. Самый лучший вариант - найти бумажный оригинал книги, и по нему внести в текст все номера примечаний для глав, где они есть, &quot; &amp; _
+					&quot;и соответсвующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
+					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
+			.sDocumentIsProcessing				= &quot;Документ обработан.&quot;
+			.sInsertBookmarkForNumberNoteZone	= &quot;Inserting the Service Bookmark for Number Note Searching Zone&quot;
+			.sInsertedBookmarkForNumberNoteZone	= &quot;Bookmark-Template for searching NUMBERS Notes Zone is INSERTED.&quot;
+			.sNotInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска номеров примечаний НЕ ВСТАВЛЕНА:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
+				&quot;Для того, чтобы пометить начало очередной области поиска номера примечаний НЕ НУЖНО выделять текст!&quot; &amp; chr(10) &amp; _
+				&quot;Просто поставьте курсор на начало абзаца каждой главы, в которой есть номера примечаний и запустите этот макрос.&quot; &amp; chr(10) &amp; _
+				&quot;Проделайте эти действия для каждой главы, где есть номера примечаний.&quot; &amp; chr(10)
+			.sInsertBookmarkForListNoteZone		= &quot;Inserting the Service Bookmark for List Note Zone&quot;
+			.sNotFoundSymbol					= &quot;Not selecten not one Symbol in Text.&quot; &amp; chr(10) &amp; _
+												&quot;Bookmark-Template for LIST Notes is INSERTED.&quot; &amp; chr(10) &amp; &quot;Bookmark Start and End is coincide.&quot;
+			.sOnlyOneTextZone					= &quot;Text Zones.&quot; &amp; chr(10) &amp; &quot;Please, select only 1 Notes List!&quot; &amp; chr(10) &amp; _
+				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;
+			.sSelected							= &quot;Selected&quot;
+			.sNotInsertedBookmarkForListNoteZone	= &quot;Bookmark-Template for LIST Note is Not Inserted:&quot;
+			.sSelectedZoneCoincideExsistBookmark	= &quot;Selected Text Zone in full coincide with already Bookmark Exsist&quot;
+			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;Selected Text Zone is Top and Bottom Overlap already Bookmark Exsist&quot;
+			.sSelectedZoneInsideExsistBookmark		= &quot;Selected Text Zone is inside already Bookmark Exsist&quot;
+			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;Selected Text Zone is partly coincide with already Bookmark Exsist&quot;
+			.sInsertedBookmarkForListNoteZone		= &quot;Bookmark-Template for LIST Notes Zone is INSERTED.&quot;
+			.sDeleteBookmarks					= &quot;Removing workers Bookmarks&quot;
+			.sDeleteBookmarksQuestion			= &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?&quot;
+			.sNotFoundNoteBookmark				= &quot;Не найдено ни одной закладки-пометки зон поиска примечаний!&quot;
+			.sDeletedSearchingZoneBookmark		= &quot;Удалено закладок-пометок зон поиска:&quot;
+			.sNoteNumbers						= &quot;Notes NUMBERS:&quot;
+			.sNoteText							= &quot;Notes TEXTS:&quot;
+			.sText								= &quot;text&quot;
+			.sSText								= &quot;Text&quot;
+			.sNoteTransforming					= &quot;Notes Transforming:&quot;
+			.sNUpNoteTransforming				= &quot;Transforming Numbers Notes in upper Index&quot;
+			.sFoundNUpNote						= &quot;Найдено номеров примечаний в верхнем индексе:&quot;
+			.sNotFoundNUpNote					= &quot;Не найдено ни одного номера примечаний в верхнем индексе.&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога генерации сносок в зависимости от локали
+Sub InitBuildFootEndNoteDlg()
+	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	InitBuildTootEndNoteMessage()
+	
+	With oBuildFootEndNoteDlg.getModel
+		.Title = sBTEND.sFootnotesGeneration
+	End With
+	
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With oBuildFootEndNoteDlg.getModel
+
+		End With
+	Else
+		With oBuildFootEndNoteDlg.getModel
+
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога преобразования номеров примечаний в верхнем индексе по шаблону в зависимости от локали
+Sub InitFootNoteLinkTransDlg()
+	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	InitBuildTootEndNoteMessage()
+	
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With oFootNoteLinkTransDlg.getModel
+			.Title	= &quot;Преобразование № примечаний в верхнем индексе по шаблону&quot;
+		End With
+	Else
+		With oFootNoteLinkTransDlg.getModel
+			.Title	= &quot;Transforming № Notes in upper Index in Template&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
