@@ -48,6 +48,21 @@ Type tInfoDlgData
 	sProfileFB2AuthorSave				As String &apos; Сохранить профиль для автора книги ...
 	sProfilePublisherOpen				As String &apos; Открыть профиль Издательства ...
 	sProfilePublisherSave				As String &apos; Сохранить профиль Издательства ...
+	&apos; Конвертер
+	sFB2ExportProgressBarCreate			As String &apos; Экспортирование в FB2: Создание файла
+	sFB2ExportProgressBarAnalysis		As String &apos; Экспортирование в FB2: Анализ
+	sFB2ExportProgressBarFootnote		As String &apos; Экспортирование в FB2: Сохранение сносок
+	sFB2ExportProgressBarGraphics		As String &apos; Экспортирование в FB2: Сохранение картинок
+	sFB2ExportSaveMessage				As String &apos; Перед экспортом сохраните, пожалуйста, ваш ООо файл.
+	sFB2ExportSaveModified				As String &apos; Документ был изменен. Перед экспортом сохраните, пожалуйста, ваш ООо файл. Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, иначе графика не будет корректно экспортирована (особенность OOoWriter)!
+	sFB2ExportStartValidate				As String &apos; Запущена валидация файла.
+	sFB2ExportEnd						As String &apos; Создание книги в fb2 формате завершено!
+	sFB2ExportReport					As String &apos; Экспортировано Графических Объектов:
+	sFB2ExportReportFromSearcing		As String &apos; найденных в документе.
+	sFB2ExportReportFrom				As String &apos; из
+	sFB2ExportReportGeneratedFB2File	As String &apos; Сгенерированный fb2-файл:
+	sFB2ExportReportStartToPreview		As String &apos; запущен на просмотр.
+	sFB2ExportReportFile				As String &apos; Файл: 
 End Type
 
 &apos; для хранения сообщений для жанров
@@ -340,6 +355,23 @@ Sub InitInfoDlgMessage()
 			.sProfileFB2AuthorSave				= &quot;Сохранить профиль для автора книги ...&quot;
 			.sProfilePublisherOpen				= &quot;Открыть профиль Издательства ...&quot;
 			.sProfilePublisherSave				= &quot;Сохранить профиль Издательства ...&quot;
+			&apos; Конвертер
+			.sFB2ExportProgressBarCreate		= &quot;Экспортирование в FB2: Создание файла&quot;
+			.sFB2ExportProgressBarAnalysis		= &quot;Экспортирование в FB2: Анализ&quot;
+			.sFB2ExportProgressBarFootnote		= &quot;Экспортирование в FB2: Сохранение сносок&quot;
+			.sFB2ExportProgressBarGraphics		= &quot;Экспортирование в FB2: Сохранение картинок&quot;
+			.sFB2ExportSaveMessage				= &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot;
+			.sFB2ExportSaveModified				= &quot;Документ был изменен.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot; &amp; chr(10) &amp; _
+													&quot;Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, &quot; &amp; _
+													&quot;иначе графика не будет корректно экспортирована (особенность OOoWriter)!&quot;
+			.sFB2ExportStartValidate			= &quot;Запущена валидация файла.&quot;
+			.sFB2ExportEnd						= &quot;Создание книги в fb2 формате завершено!&quot;
+			.sFB2ExportReport					= &quot;Экспортировано Графических Объектов:&quot;
+			.sFB2ExportReportFromSearcing		= &quot;найденных в документе.&quot;
+			.sFB2ExportReportFrom				= &quot;из&quot;
+			.sFB2ExportReportGeneratedFB2File	= &quot;Сгенерированный fb2-файл:&quot;
+			.sFB2ExportReportStartToPreview		= &quot;запущен на просмотр.&quot;
+			.sFB2ExportReportFile				= &quot;Файл:&quot;
 		End With
 	Else
 		With sIDD
@@ -383,6 +415,23 @@ Sub InitInfoDlgMessage()
 			.sProfileFB2AuthorSave				= &quot;Save the Book Author Profile ...&quot;
 			.sProfilePublisherOpen				= &quot;Open the Publisher Profile ...&quot;
 			.sProfilePublisherSave				= &quot;Save the Publisher Profile ...&quot;
+			&apos; Converter
+			.sFB2ExportProgressBarCreate		= &quot;Export to FB2: File creating&quot;
+			.sFB2ExportProgressBarAnalysis		= &quot;Export to FB2: Analysis&quot;
+			.sFB2ExportProgressBarFootnote		= &quot;Export to FB2: Save Footnotes&quot;
+			.sFB2ExportProgressBarGraphics		= &quot;Export to FB2: Save Graphics&quot;
+			.sFB2ExportSaveMessage				= &quot;Please, save yuor ООо File before export.&quot;
+			.sFB2ExportSaveModified				= &quot;Document is modified.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot; &amp; chr(10) &amp; _
+													&quot;Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, &quot; &amp; _
+													&quot;иначе графика не будет корректно экспортирована (OOoWriter Feature)!&quot;
+			.sFB2ExportStartValidate			= &quot;Start File Validate.&quot;
+			.sFB2ExportEnd						= &quot;The Book Creating to fb2 is completed!&quot;
+			.sFB2ExportReport					= &quot;Exportation Graphic Objects:&quot;
+			.sFB2ExportReportFromSearcing		= &quot;found in Document.&quot;
+			.sFB2ExportReportFrom				= &quot;from&quot;
+			.sFB2ExportReportGeneratedFB2File	= &quot;Generated fb2-File:&quot;
+			.sFB2ExportReportStartToPreview		= &quot;Start to the Preview.&quot;
+			.sFB2ExportReportFile				= &quot;File:&quot;
 		End With
 	End If
 End Sub

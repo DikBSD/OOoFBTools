@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">`REM  *****  BASIC  *****
 Option Explicit
 
 Public sCurDocFile As String
@@ -81,14 +81,12 @@ Sub ExportToFB21
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL
 	Else
-		MsgBox &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot;, 64, sConvertorName
+		MsgBox sIDD.sFB2ExportSaveMessage, 64, sConvertorName
 		Exit Sub
 	End If
 	
 	If oDoc.isModified() Then
-		MsgBox &quot;Документ был изменен.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot; &amp; chr(10) &amp; _
-				&quot;Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, &quot; &amp; _
-				&quot;иначе графика не будет корректно экспортирована (особенность OOoWriter)!&quot;, 64, sConvertorName
+		MsgBox sIDD.sFB2ExportSaveModified, 64, sConvertorName
 		Exit Sub
 	End If
 	
@@ -113,7 +111,7 @@ Sub ExportToFB21
 		MakeCoverParser()
 	End If
 
-	oProgressBar.start( &quot;Экспортирование в FB2: Анализ&quot;, oDoc.ParagraphCount + 50 )
+	oProgressBar.start( sIDD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
 	oProgressBar.setValue( 0 )
 	
 	&apos; запускаем парсинг всего текста
@@ -140,7 +138,7 @@ Sub ExportToFB21
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
 	If UBound(sFootnoteText()) &lt;&gt; -1 Then
-		oProgressBar.start(&quot;Экспортирование в FB2: Сохранение сносок&quot;, UBound(sFootnoteText())
+		oProgressBar.start( sIDD.sFB2ExportProgressBarFootnote, UBound(sFootnoteText() )
 		oProgressBar.setValue(0)
 		SaveNotes()
 	End If
@@ -148,34 +146,36 @@ Sub ExportToFB21
 	&apos; печатаем коды картинок, если они есть
 	Dim iSI As Integer
 	If UBound(Images()) &lt;&gt; -1 Then
-		oProgressBar.start(&quot;Экспортирование в FB2: Сохранение картинок&quot;, UBound(Images())
+		oProgressBar.start( sIDD.sFB2ExportProgressBarGraphics, UBound(Images() )
 		oProgressBar.setValue(0)
 		iSI = SaveImages()
 	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
 	oTextOutputStream.closeOutput()
-	oProgressBar.end
+	oProgressBar.End
 		
 	&apos; запустить полученный файл на просмотр и валидацию, если нужно
-	Dim sValidateMessage	As String : sValidateMessage	= &quot;Запущена валидация файла.&quot;
-	Dim sEndMessage			As String : sEndMessage			= &quot;Создание книги в fb2 формате завершено!&quot;
-	If iSI &gt; 0 Then sEndMessage = sEndMessage &amp; chr(10) &amp; &quot;Экспортировано Графических Объектов: &quot; &amp; iSI &amp; &quot; из &quot; &amp; UBound(Images())+1 &amp; &quot; найденных в документе.&quot;
+	Dim sEndMessage	As String : sEndMessage	= sIDD.sFB2ExportEnd
+	If iSI &gt; 0 Then
+		sEndMessage = sEndMessage &amp; chr(10) &amp; sIDD.sFB2ExportReport &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; sIDD.sFB2ExportReportFrom &amp; _
+		&quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; sIDD.sFB2ExportReportFromSearcing
+	End If
 	
 	Dim sFB2File As String : sFB2File = oInfoDlg.Model.FilenameTextField.Text
 	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
 	
 	If bValidate And GetOS() = 0 Then
-		sMess = sMess &amp; sValidateMessage &amp; chr(10) &amp; chr(10)
+		sMess = sMess &amp; sIDD.sFB2ExportStartValidate &amp; chr(10) &amp; chr(10)
 		Validate( sFB2File ) &apos;валидация результата
 	End If
 
 	If bFB2Execute Then
 		FileExecute( ConvertToUrl( sFB2File ) )
-		MsgBox sMess &amp; &quot;Сгенерированный fb2-файл:&quot; &amp; chr(10) &amp; _
-				sFB2File &amp; chr(10) &amp; &quot;запущен на просмотр.&quot;, 64, sConvertorName
+		MsgBox sMess &amp; sIDD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
+				sFB2File &amp; chr(10) &amp; sIDD.sFB2ExportReportStartToPreview, 64, sConvertorName
 	Else
-		MsgBox sMess &amp; &quot;Файл: &quot; &amp; sFB2File, 64, sConvertorName
+		MsgBox sMess &amp; sIDD.sFB2ExportReportFile &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
 	End If
 	
 	&apos; удаляем временные файлы
@@ -1080,8 +1080,8 @@ Function MakeSection(sArray As String, sLevel As String, bBody As Boolean) As St
 	MakeSection = sSect
 End Function
 
+&apos; поиск номера(индекса) абзаца из массива sLinksTo, соответствующему текущему элементу из sParaStyleName (если такое соответствие есть)
 Function FindIndexForID( lCurElement As Long, sID As String, bBody As Boolean ) As Long
-	&apos; поиск номера(индекса) абзаца из массива sLinksTo, соответствующему текущему элементу из sParaStyleName (если такое соответствие есть)
 	FindIndexForID = -1
 	If bBody = False Then &apos; ссылки только для основного текста книги, а не для сносок
 		Exit Function
