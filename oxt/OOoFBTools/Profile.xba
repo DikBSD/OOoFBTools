@@ -9,9 +9,9 @@ Sub ReadProfile( sFilename As String, nN As Integer )
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
 
-		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
 		oFS = oSFA.openFileRead ( ConvertToURL (sFilename) )
-		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
 		oTIS.setInputStream (oFS)
 		Do While ( NOT oTIS.isEOF() )
 			sLine = oTIS.readLine()
@@ -34,8 +34,7 @@ End Sub
 &apos;/// Профиль Автора fb2-документа ////
 &apos;/////////////////////////////////////
 Sub ReadUserProfile()
-	If MsgBox( &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
-				&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;, 128 + 32 + 1, sConvertorName) = 2 Then
+	If MsgBox( sIDD.sProfileFB2AuthorQuestionLoad, 128 + 32 + 1, sConvertorName ) = 2 Then
 		Exit Sub
 	End If
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
@@ -89,8 +88,7 @@ End Sub
 
 Sub SaveProfile()
 	&apos; записываем установки
-	If MsgBox( &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
-				&quot;Если вы раньше сохраняли свой профиль, то он будет перезаписан!&quot;, 128 + 32 + 1, sConvertorName) = 2 Then
+	If MsgBox( sIDD.sProfileFB2AuthorQuestionSave, 128 + 32 + 1, sConvertorName ) = 2 Then
 		Exit Sub
 	End If
 	
@@ -120,34 +118,34 @@ End Sub
 &apos;//////////////////////////////
 &apos;/// Профили Авторов Книги ////
 &apos;//////////////////////////////
+&apos; Загрузка Автора Книга из файла профиля этого Автора
 Sub LoadBookAuthorProfile()
-	&apos; Загрузка Автора Книга из файла профиля этого Автора
 	Dim oFileDlg As Object
 	Dim sArg() As String
 	
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
 		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
 	End If
 
-	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
-	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE)
+	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
 	
 	With oFileDlg
 		.initialize(sArg())
-		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
-		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
-		.setTitle(&quot;Открыть профиль автора книги ...&quot;)
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sIDD.sProfileFB2AuthorOpen )
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные и задаем значения контролам профиля автора книги
-		ReadProfile(oFileDlg.Files(0), 0)
+		ReadProfile( oFileDlg.Files(0), 0 )
 	End If
 	oFileDlg.Dispose()
 
 End Sub
 
+&apos; Сохранение Автора Книга в файл профиля этого Автора
 Sub SaveBookAuthorProfile()
-	&apos; Сохранение Автора Книга в файл профиля этого Автора
 	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND _
 		Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
@@ -159,28 +157,28 @@ Sub SaveBookAuthorProfile()
 	Dim sArg() As String
 	Dim sFile As String
 	
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
 		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
 	End If
 
-	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
-	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION )
 	
 	With oFileDlg
 		.initialize(sArg())
-		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
-		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
-		.setTitle(&quot;Сохранить профиль для автора книги ...&quot;)
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sIDD.sProfileFB2AuthorSave )
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные контролов профиля автора книги и сохраняем в файл профиля для этого автора
 		Dim oOS As Object, oFA As Object, oTOS As Object, oLB As Object
 
-		oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+		oFA = CreateUnoService( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oTOS = CreateUnoService( &quot;com.sun.star.io.TextOutputStream&quot; )
 	
-		sFile = ConvertFromUrl(oFileDlg.Files(0))
-		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
+		sFile = ConvertFromUrl( oFileDlg.Files(0) )
+		IF ( InStr(sFile,&quot;.txt&quot;)=0 ) Then
 			sFile = sFile + &quot;.txt&quot;
 		End If
 		
@@ -257,8 +255,8 @@ End Sub
 &apos;////////////////////////////
 &apos;/// Профили Издательств ////
 &apos;////////////////////////////
+&apos; Загрузка данных Издательства из файла профиля этого Издательства
 Sub LoadPublisherProfile()
-	&apos; Загрузка данных Издательства из файла профиля этого Издательства
 	Dim oFileDlg As Object
 	Dim sArg() As String
 	
@@ -273,7 +271,7 @@ Sub LoadPublisherProfile()
 		.initialize(sArg())
 		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
 		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
-		.setTitle(&quot;Открыть профиль автора книги ...&quot;)
+		.setTitle( sIDD.sProfilePublisherOpen )
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные и задаем значения контролам профиля издательства
@@ -283,8 +281,8 @@ Sub LoadPublisherProfile()
 
 End Sub
 
+&apos; Сохранение Автора Книга в файл профиля этого Автора
 Sub SavePublisherProfile()
-	&apos; Сохранение Автора Книга в файл профиля этого Автора
 	If Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; Then
 		MsgBox sIDD.sInfoDlgFillPublisher, 64, sConvertorName
 		Exit Sub
@@ -294,28 +292,28 @@ Sub SavePublisherProfile()
 	Dim sArg() As String
 	Dim sFile As String
 	
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
 		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
 	End If
 
-	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
-	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION )
 	
 	With oFileDlg
 		.initialize(sArg())
-		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
-		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
-		.setTitle(&quot;Сохранить профиль для автора книги ...&quot;)
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sIDD.sProfilePublisherSave )
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные контролов профиля издательства и сохраняем в файл профиля для издательства
 		Dim oOS As Object, oFA As Object, oTOS As Object
 
-		oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+		oFA = CreateUnoService( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oTOS = CreateUnoService( &quot;com.sun.star.io.TextOutputStream&quot; )
 		
-		sFile = ConvertFromUrl(oFileDlg.Files(0))
-		IF (InStr(sFile,&quot;.txt&quot;)=0) Then
+		sFile = ConvertFromUrl( oFileDlg.Files(0) )
+		IF ( InStr(sFile,&quot;.txt&quot;)=0 ) Then
 			sFile = sFile + &quot;.txt&quot;
 		End If
 
@@ -348,8 +346,8 @@ Sub SetPublisherProfile( sCurrentLine )
 	ErrorHandler: &apos; идем дальше
 End Sub
 
+&apos; Очистка всех полей для Бумажной книги
 Sub ClearPaperBookFields()
-	&apos; Очистка всех полей для Бумажной книги
 	oInfoDlg.Model.pubBookNameTextField.Text = &quot;&quot;
 	oInfoDlg.Model.pubISBNTextField.Text = &quot;&quot;
 	oInfoDlg.Model.pubPublisherTextField.Text = &quot;&quot;
