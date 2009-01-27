@@ -3,27 +3,30 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="LoadStylesTemplate" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Sub LoadStylesTemplate
-	&apos; Загрузить шаблон стилей конвертора
+&apos; Загрузить шаблон стилей конвертора
+Sub LoadStylesTemplate()
+	&apos; инициализация сообщений Загрузки Шаблона fb2-стилей в зависимости от локали
+	InitLoadStylesTemplateMessage()
+
 	Dim oDoc, oDesktop, oTemplate, oPathSettings
 	Dim sFile As String, sPath As String, sPathArray() As String
 	Dim i As Integer
 
 	oDoc = ThisComponent
-	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
-	sPathArray = Split(oPathSettings.Template,&quot;;&quot;)
+	oPathSettings = CreateUnoService( &quot;com.sun.star.util.PathSettings&quot; )
+	sPathArray = Split( oPathSettings.Template,&quot;;&quot; )
 	sFile = &quot;fb21_styles.ott&quot;
 	
 	&apos; Ищем папку, хранящую наш шаблон
-	For i = LBound(sPathArray) To UBound(sPathArray)
-		If FileExists(sPathArray(i) &amp; &quot;/&quot; &amp; sFile) Then
+	For i = LBound( sPathArray ) To UBound( sPathArray )
+		If FileExists( sPathArray(i) &amp; &quot;/&quot; &amp; sFile ) Then
 			sPath = sPathArray(i) &amp; &quot;/&quot; &amp; sFile
 			Exit For
 		End If
 	Next i
 	
 	If sPath = &quot;&quot; Then
-		MsgBox &quot;Файл стилей не был добавлен в шаблоны OOo.&quot; &amp; chr(10) &amp; &quot;Добавьте его через меню Файл-&gt;Шаблоны-&gt;Управление...&quot;, 64, sConvertorName
+		MsgBox sLSTD.sTemplateNotFound, 64, sConvertorName
 		Exit Sub
 	End If
 	
