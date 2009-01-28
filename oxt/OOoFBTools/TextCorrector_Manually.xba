@@ -60,7 +60,7 @@ Sub TextDefectFinderStart
 	&apos; файл начтроек Корректора Текста
 	Dim sOCRTCSettingsFilename As String : sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
 	Dim aModeList() As String : aModeList() = Array( sTDFD.sWordHyphenDashMinus, sTDFD.sWordBrokenParagraphCarry, _
-													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingBlank )
+													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingPunctMarksEndPara, sTDFD.sPlaceMissingBlank )
 													
 	With oTDF.Model
 		.Height	= 30
@@ -106,9 +106,12 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
-		Case 3 &apos; Место с недостающим пробелом между словами
+		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;
+			sTDF.sMessage = sTDFD.sSearchMissingPunctMarksEndPara
+		Case 4 &apos; Место с недостающим пробелом между словами
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],.!?…»”\&quot;&quot;:;][:alnum:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
