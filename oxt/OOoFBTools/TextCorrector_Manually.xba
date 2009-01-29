@@ -62,17 +62,21 @@ Sub TextDefectFinderStart
 	Dim aModeList() As String : aModeList() = Array( sTDFD.sWordHyphenDashMinus, sTDFD.sWordBrokenParagraphCarry, _
 													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingPunctMarksEndPara, sTDFD.sPlaceMissingBlank )
 													
+	Dim aPunctList() As String : aPunctList() = Array( &quot;.&quot;, &quot;,&quot;, &quot;!&quot;, &quot;?&quot;, &quot;:&quot;, &quot;;&quot;, &quot;…&quot; )
 	With oTDF.Model
 		.Height	= 30
-		.Width	= 272
+		.Width	= 338
 		.lbTDFMode.StringItemList = aModeList()
+		.lbTDFPunctMarks.StringItemList = aPunctList()
 	End With
 	oTDF.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
+	oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
+	oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadOCRCorrectorSettings( sOCRTCSettingsFilename, nX, nY )
-	oTDF.setPosSize( nX, nY, 30, 272, com.sun.star.awt.PosSize.POS )
+	oTDF.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
 
 	bFindEnd = False
 	
@@ -86,6 +90,31 @@ Sub TextDefectFinderStart
 	&apos; записываем настройки диалога
 	SaveSettings( sOCRTCSettingsFilename, oTDF )
 	oTDF.setVisible( False )
+End Sub
+
+Sub lbTDFModeChange()
+	Select Case oTDF.GetControl( &quot;lbTDFMode&quot; ).SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
+			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteMinus
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
+			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreak
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sProcess
+			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreakAddBlank
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
+			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
+			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertPunctMark
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= True
+		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
+			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
+			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertBlank
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+	End Select
 End Sub
 
 &apos; Поиск по заданному режиму
@@ -229,4 +258,102 @@ Function ReadOCRCorrectorSettings( sOCRTCSettingsFilename As String, nX As Integ
 	End If
 End Function
 
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; 													функции обработки найденного
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+&apos; для обработки найденного - регулярноt выражениt
+Function GetRegWorkerString() As String
+	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			GetRegWorkerString = &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]&quot;
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			GetRegWorkerString = &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			GetRegWorkerString = &quot;[)}\],»”\&quot;&quot;:;]$&quot;
+		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
+			GetRegWorkerString = &quot;$&quot;
+		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
+			GetRegWorkerString = &quot;[)}\],.!?…»”\&quot;&quot;:;]&quot;
+	End Select
+End Function
+
+&apos; обработка найденного
+Sub WorkerOfSearch()
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+
+	Searcher( ThisComponent, GetLeftMostCursor( oSel ), GetRegWorkerString() )
+End Sub
+
+Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
+	If IsNull(oCurs) Or IsNull( oDoc ) Then Exit Sub
+	
+	oCurs.goRight( 0, False )
+	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+	Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
+	With vSearch
+		.SearchString				= sReg
+		.SearchCaseSensitive		= False
+		.SearchRegularExpression	= True
+	End With
+
+	Dim vFound As Variant : vFound = oDoc.findNext( oCurs, vSearch )
+	If IsNull( vFound ) Then Exit Sub
+	If Not IsEmpty( vFound.TextTable ) Then &apos; таблица
+		&apos; обрабатываем ячейки  таблицы
+		Dim oTable			As Object	: oTable		= vFound.TextTable
+		Dim aCellNames()	As String	: aCellNames	= oTable.getCellNames()
+		Dim oCell 			As Object	: oCell			= oTable.getCellByName( aCellNames( 0 ) )
+		If Not IsNull( vFound ) Then &apos; нашли
+			&apos; выделяем найденное и обрабатываем
+			oViewCursor.gotoRange( vFound, False )
+			ProcessingWorker( oViewCursor )
+		End If
+	Else &apos; просто текст, &apos; текстовая врезка или текст сноски
+		&apos; выделяем найденное и обрабатываем
+		oViewCursor.gotoRange( vFound, False )
+		ProcessingWorker( oViewCursor )
+	End if
+End Sub
+
+&apos; Обработчик найденного
+Sub ProcessingWorker( oViewCursor As Object )
+	Dim oLB As Object : oLB = oTDF.getControl( &quot;lbTDFMode&quot; )
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			&apos; удаляем найденный символ
+			_UnoDelete() 
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			&apos; удаляем перенос и символ абзаца
+			_UnoDelete() : _UnoDelete()
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			&apos; снимаем выделение - переход в конец оборванной строки
+			oViewCursor.gotoEndOfLine( False )
+			&apos; удаляем символ абзаца
+			_UnoDelete()
+			&apos; вставляем пробел
+			oViewCursor.setString( &quot; &quot; )
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
+			&apos; снимаем выделение
+			oViewCursor.collapseToStart()
+			&apos; вставляем знак препинания из выпадающего списка
+			oViewCursor.setString( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem )
+			&apos; снимаем выделение - вправо
+			&apos;oViewCursor.collapseToEnd()
+		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+			&apos; вставляем пробел
+			oViewCursor.setString( &quot; &quot; )
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+	End Select
+End Sub
 </script:module>
