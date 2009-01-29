@@ -138,10 +138,10 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;	&apos;&quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;  &apos; 
 			sTDF.sMessage = sTDFD.sSearchMissingPunctMarksEndPara
 		Case 4 &apos; Место с недостающим пробелом между словами
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],.!?…»”\&quot;&quot;:;][:alnum:]+&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alnum:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
 			sTDF.sRegString = &quot;[:alnum:]+&quot;
@@ -158,8 +158,7 @@ Sub FindRegWord( sFind As String, sTitle As String )
 	If Not IsSelTextRange( sTitle ) Then Exit Sub
 		
 	&apos; инициализация позиции курсора
-	Dim ovCurs &apos; видимый курсор
-	ovCurs = oDocControl.getViewCursor()
+	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
 	otxtCurs = ovCurs.Text.createTextCursor() 
 	otxtCurs.gotoRange(ovCurs.getStart(), False)
 
@@ -182,13 +181,13 @@ End Function
 &apos; ищем заданный регекс
 Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
 	If Not IsSelTextRange( sTitle ) Then Exit Sub
-	otxtCurs = ovCurs.Text.createTextCursorByRange(ovCurs)
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
 	&apos; поиск и обработка искомого слова
 	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
-		oDocControl.Select(otxtCurs) &apos; выделяем найденное
+		oDocControl.Select( otxtCurs ) &apos; выделяем найденное
 	Else &apos; конец документа
 		If MsgBox( sTDFD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
-		oDocControl.Select(otxtCurs) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
+		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
 		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
 	End If
 End Sub
@@ -196,25 +195,24 @@ End Sub
 &apos; ////////////////////////////////////////////////////////////////
 &apos; поиск следующего заданного регекса в документе
 Function FindNextInText( sFind ) As Boolean
-	Dim oDesc, Found
-	oDesc = ThisComponent.createSearchDescriptor()
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
 	oDesc.SearchRegularExpression = True
 	oDesc.SearchString = sFind
 	
-	otxtCurs.collapseToEnd  
-	Found = ThisComponent.findNext(otxtCurs.getStart(), oDesc)
+	otxtCurs.collapseToEnd()
+	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
 	
-	if IsNull(Found) Then &apos; конец документа - ничего не нашли
+	if IsNull( Found ) Then &apos; конец документа - ничего не нашли
 		otxtCurs = ThisComponent.Text.createTextCursor() 
-		otxtCurs.gotorange(ThisComponent.Text.getStart(), False)
+		otxtCurs.gotorange( ThisComponent.Text.getStart(), False )
 		FindNextInText = False &apos; конец документа - ничего не нашли
 		Exit Function
 	End If
 
 	otxtCurs = Found.Text.createTextCursor()
-	otxtCurs.gotorange(Found.getStart(), False)
-	otxtCurs.gotorange(Found.getEnd(), True)
-
+	otxtCurs.gotorange( Found.getStart(), False )
+	otxtCurs.gotorange( Found.getEnd(), True )
+	
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
 
@@ -222,7 +220,7 @@ End Function
 Function ReadOCRCorrectorSettings( sOCRTCSettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
 	&apos; Читаем настройки очистки текста и задаем значения контролам формы
 	On Error Resume Next
-	If FileExists(sOCRTCSettingsFilename) Then
+	If FileExists( sOCRTCSettingsFilename ) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
 		
@@ -241,11 +239,11 @@ Function ReadOCRCorrectorSettings( sOCRTCSettingsFilename As String, nX As Integ
 				ElseIf sSetting(0) = &quot;Y&quot; Then
 					nY = sSetting(1)
 				Else
-					Dim oCtrl As Object : oCtrl = oTDF.GetControl(sSetting(0))
+					Dim oCtrl As Object : oCtrl = oTDF.GetControl( sSetting(0) )
 					If Not IsNull( oCtrl ) Then
 						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-							Dim oLB As Object : oLB = oTDF.getControl(sSetting(0))
-							oLB.SelectItemPos(sSetting(1), True)
+							Dim oLB As Object : oLB = oTDF.getControl( sSetting(0) )
+							oLB.SelectItemPos( sSetting(1), True )
 						End If
 					End If
 				End If
@@ -275,7 +273,7 @@ Function GetRegWorkerString() As String
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
 			GetRegWorkerString = &quot;$&quot;
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
-			GetRegWorkerString = &quot;[)}\],.!?…»”\&quot;&quot;:;]&quot;
+			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“]&quot; &amp; &quot;next&quot; &amp; &quot;[)}\],.!?…»”\&quot;&quot;:;]&quot;
 	End Select
 End Function
 
@@ -294,6 +292,21 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 	If IsNull(oCurs) Or IsNull( oDoc ) Then Exit Sub
 	
 	oCurs.goRight( 0, False )
+	
+	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	If oLB.SelectedItemPos = 4 Then
+		Dim aReg() As String : aReg = Split( sReg, &quot;next&quot; )
+		Dim i As Integer
+		For i = 0 To 1
+			If Finder( oDoc, oCurs, aReg(i), i ) Then Exit For &apos; Не обрабатываем недостающий пробел справа от знаков препинания, т.к. нашли слева
+		Next i
+	Else
+		Finder( oDoc, oCurs, sReg, -1 )
+	End If
+End Sub
+
+Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Integer ) As Boolean
+	Finder = False
 	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
 	Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
 	With vSearch
@@ -303,7 +316,7 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 	End With
 
 	Dim vFound As Variant : vFound = oDoc.findNext( oCurs, vSearch )
-	If IsNull( vFound ) Then Exit Sub
+	If IsNull( vFound ) Then Exit Function
 	If Not IsEmpty( vFound.TextTable ) Then &apos; таблица
 		&apos; обрабатываем ячейки  таблицы
 		Dim oTable			As Object	: oTable		= vFound.TextTable
@@ -312,17 +325,19 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 		If Not IsNull( vFound ) Then &apos; нашли
 			&apos; выделяем найденное и обрабатываем
 			oViewCursor.gotoRange( vFound, False )
-			ProcessingWorker( oViewCursor )
+			ProcessingWorker( oViewCursor, iRight )
+			Finder = True
 		End If
 	Else &apos; просто текст, &apos; текстовая врезка или текст сноски
 		&apos; выделяем найденное и обрабатываем
 		oViewCursor.gotoRange( vFound, False )
-		ProcessingWorker( oViewCursor )
+		ProcessingWorker( oViewCursor, iRight )
+		Finder = True
 	End if
-End Sub
+End Function
 
 &apos; Обработчик найденного
-Sub ProcessingWorker( oViewCursor As Object )
+Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 	Dim oLB As Object : oLB = oTDF.getControl( &quot;lbTDFMode&quot; )
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
@@ -348,8 +363,13 @@ Sub ProcessingWorker( oViewCursor As Object )
 			&apos; снимаем выделение - вправо
 			&apos;oViewCursor.collapseToEnd()
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
-			&apos; снимаем выделение - вправо
-			oViewCursor.collapseToEnd()
+			If iRight = 0 Then &apos; вставка пробела СЛЕВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToStart()
+			ElseIf iRight = 1 Then &apos; вставка пробела СПРАВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToEnd()
+			End If
 			&apos; вставляем пробел
 			oViewCursor.setString( &quot; &quot; )
 			&apos; снимаем выделение - вправо
