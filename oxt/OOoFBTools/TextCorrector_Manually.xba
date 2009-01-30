@@ -135,7 +135,7 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;	&apos;&quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;  &apos; 
@@ -269,7 +269,7 @@ Function GetRegWorkerString() As String
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			GetRegWorkerString = &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
-			GetRegWorkerString = &quot;[)}\],»”\&quot;&quot;:;]$&quot;
+			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|[)}\],»”\&quot;&quot;:;]$&quot;
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
 			GetRegWorkerString = &quot;$&quot;
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
