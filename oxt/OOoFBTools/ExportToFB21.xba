@@ -55,7 +55,7 @@ Public bValidate As Boolean
 
 Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 
-Sub ExportToFB21
+Sub ExportToFB21()
 	sConvertorName = &quot;ExportToFB2.1&quot;
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
@@ -78,6 +78,9 @@ Sub ExportToFB21
 	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	Dim oDoc As Object : oDoc = ThisComponent
 
+	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
+	InitInfoDlgMessage()
+	
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL
 	Else
