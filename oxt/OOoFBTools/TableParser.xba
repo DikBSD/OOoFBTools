@@ -46,6 +46,7 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 	On Error GoTo ErrHndlr &apos; в случае очень сложной таблицы (ими богаты html-файлы) при сбое ф-ции работа не прерывается, а просто ята ячейка не экспортируется. Лучше так, чем ничего :-)
 	Dim oCellParEnum, oCellPar, oWordEnum, oWord
 	Dim sRes As String, sFormatPara As String
+	Dim i As Integer
 	oCellParEnum = oCell.createEnumeration()
 	Do While oCellParEnum.hasMoreElements()
 		oCellPar = oCellParEnum.nextElement()
@@ -90,19 +91,25 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 				End If
 			End If
 		Loop
+		
+		&apos; Обработка строк - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
+		Dim aLines() As String
+		aLines() = Split( sFormatPara, chr(10) )
 
 		If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
-			sFormatPara = MakeNumberingNumberPara( oCellPar, sString, sFormatPara )
+			For i = 0 To UBound( aLines() )
+				aLines( i ) = MakeNumberingNumberPara( oCellPar, sString, aLines( i ) )
+			Next i
 		End If
 		
 		&apos; задаем аттрибуты
 		Dim sTagTDH As String, sTagStart As String, sTagEnd As String
 		sTagStart = &quot;&quot;
-		sTagTDH = MakeValignAttrComplex(GetFB2ParagraphAdjust( oCellPar ), sLineTVA, &quot;td&quot;)
+		sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sLineTVA, &quot;td&quot; )
 		&apos; обработка заголовков таблицы
 		If nHeaderRowCount &gt; 0 Then
 			If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-				sTagTDH = MakeValignAttrComplex(GetFB2ParagraphAdjust( oCellPar ), sHeaderTVA, &quot;th&quot;)
+				sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sHeaderTVA, &quot;th&quot; )
 				sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
 				sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
 			Else
@@ -114,9 +121,11 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 			sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
 		End If
 		
-		&apos; для пустого абзаца в ячейке
-		If sFormatPara &lt;&gt; &quot;&quot; Then
-			sRes = sRes &amp; sTagStart &amp; sFormatPara &amp; sTagEnd
+		&apos; для не пустого абзаца в ячейке
+		If UBound( aLines() ) &lt;&gt; -1 Then
+			For i = 0 To UBound( aLines() )
+				sRes = sRes &amp; sTagStart &amp; aLines( i ) &amp; sTagEnd
+			Next i
 		Else &apos; &quot;пустая строка&quot;
 			If nHeaderRowCount &gt; 0 Then
 				If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
