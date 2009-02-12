@@ -505,7 +505,6 @@ End Function
 &apos; -1 - номер примечания в тексте не найден - конец документа
 &apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
 &apos; 1 - вставка закладки для номера прмечания в ТАБЛИЦЕ
-&apos; 2 - номер прмечания в Текстовой ВРЕЗКЕ
 Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
 										sRegFind As String, sConstBookMarkFNNumber As String, _
 										sForLeft As String, sForRight As String ) As Integer
@@ -531,11 +530,10 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 			If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
 				&apos; обрабатываем ячейки  таблицы
 				Dim oTable			As Object	: oTable		= vFound.TextTable
-				Dim sTableName 		As String 	: sTableName	= oTable.getName() &apos; название таблицы
 				Dim oBookMarks		As Object	: oBookMarks	= oDoc.getBookmarks()
 				
 				vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
-				Do While ( ( Not IsEmpty( vFound.TextTable ) ) )&apos;And vFound.TextTable.getName() = sTableName )
+				Do While ( Not IsEmpty( vFound.TextTable ) )
 					&apos; пока не вышли за пределы таблицы или не перешли на другую таблицы
 					If Not IsNull(vFound) Then &apos; нашли
 						&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
@@ -571,9 +569,9 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 				oLCurs.gotoRange( vFound, False )
 				InsertBookmarkToNumberFootNote = 1
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
-				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Просто игнорируем номер для сноски.
-				InsertBookmarkToNumberFootNote = 2
-				Exit Function
+				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Ничего ни делаем - Просто игнорируем номер для сноски.
+				&apos; не вставили эту ветку If в основную If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+				&apos; для оптимизации скорости - здесь реже сработает, чем каждый раз в основной ветке...
 			Else &apos; просто текст
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
 					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
@@ -751,7 +749,6 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 		&apos; -1 - номер примечания в тексте не найден - конец документа
 		&apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
 		&apos; 1 - вставка закладки для номера прмечания в ТАБЛИЦЕ
-		&apos; 2 - номер прмечания в Текстовой ВРЕЗКЕ
 		If nValue = -1 Then
 			&apos; не нашди новый номер сноски ДО блока текста сносок (все ссылки на сноски обработали или их просто нет)
 			ProcessingComplexFootNoteList = lInsNotesCount
