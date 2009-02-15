@@ -364,7 +364,7 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 	
 	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
 	With vSearch
-		.SearchString				= sLeft
+		.SearchString				= sLeft &amp; &quot;[^&quot; &amp; sLeft &amp; sRight &amp; &quot;]+&quot; &amp; sRight
 		.SearchCaseSensitive		= False
 		.SearchRegularExpression	= True
 	End With
@@ -392,73 +392,33 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 						oViewCursor.gotoRange( vFound, False )
 						&apos; ставим закладку - по ней потом найдем этот текст сноски
 						_UnoInsertBookmark( sConstBookMarkSimple )
-						If FindRightTemplate( oDoc, oRCurs, oViewCursor, oBookMarks, sRight ) Then
-							BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1
-						Else Exit Function
-						End If
+						MakeFN( oDoc, vFound, oViewCursor, oBookMarks )
+						BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1
 					End If
 					vFound = oDoc.findNext( oCell.getStart(), vSearch )
 				Loop
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
 				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Просто игнорируем номер для сноски.
 			Else &apos; просто текст
-				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
-					&apos; обработка найденного текста сноски для простого режима генерации сноски
-					&apos; переводим курсор на найденный текст сноски
-					oViewCursor.gotoRange( vFound, False )
-					&apos; ставим закладку - по ней потом найдем этот текст сноски
-					_UnoInsertBookmark( sConstBookMarkSimple )
-					If FindRightTemplate( oDoc, oRCurs, oViewCursor, oBookMarks, sRight ) Then
+				&apos; переводим курсор на найденный текст сноски
+				If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+					If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
+						&apos; обработка найденного текста сноски для простого режима генерации сноски
+						&apos; переводим курсор на найденный текст сноски
+						oViewCursor.gotoRange( vFound, False )
+						&apos; ставим закладку - по ней потом найдем этот текст сноски
+						_UnoInsertBookmark( sConstBookMarkSimple )
+						MakeFN( oDoc, vFound, oViewCursor, oBookMarks )
 						BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1
-					End If
-				End if
+					Else Exit Function
+					End if
+				End If
+				&apos; переводим курсор на найденный текст сноски
+				oViewCursor.gotoRange( vFound, False )
 				vFound = oDoc.findNext( vFound.End, vSearch )
 			End If
 		End If
 	Loop
-End Function
-
-&apos; поиск правой закрывающей скобки по шаблону
-Function FindRightTemplate( oDoc As Object, oRCurs As Object, oViewCursor As Object, oBookMarks As Object, sRight As String )
-	FindRightTemplate = False
-	
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchString				= sRight
-		.SearchCaseSensitive		= False
-		.SearchRegularExpression	= True
-	End With
-	
-	Dim vFound As Variant : vFound = oDoc.findNext( oViewCursor, vSearch )
-	If Not IsNull( vFound ) Then
-		&apos; If Not vFound.hasElements() Then Exit Do
-		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-			If Not IsEmpty( vFound.TextTable ) Then &apos; текст очередной сноски находится в таблице
-				&apos; обрабатываем ячейки  таблицы
-				Dim oTable			As Object	: oTable		= vFound.TextTable
-				Dim aCellNames()	As String	: aCellNames	= oTable.getCellNames()
-				Dim lCellCount		As Long		: lCellCount	= 0
-				Do While lCellCount &lt;= UBound( aCellNames() )
-					Dim oCell As Object	: oCell	= oTable.getCellByName( aCellNames( lCellCount ) )
-					lCellCount = lCellCount+1
-					If Not IsNull( vFound ) Then &apos; нашли
-						&apos; обработка найденного текста сноски для простого режима генерации сноски
-						MakeFN( oDoc, vFound, oViewCursor, oBookMarks )
-						FindRightTemplate = True
-						Exit Function
-					End If
-				Loop
-			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
-				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Просто игнорируем номер для сноски.
-			Else &apos; просто текст
-				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
-					&apos; обработка найденного текста сноски для простого режима генерации сноски
-					MakeFN( oDoc, vFound, oViewCursor, oBookMarks )
-					FindRightTemplate = True
-				End if
-			End If
-		End If
-	End If
 End Function
 
 &apos; генерация сноски
@@ -556,7 +516,7 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 								lInsNotesCount = lInsNotesCount+1
 							End If
 						Else
-							&apos; Сдвигаем верхнюю границу поиска в тексте на конец &amp;quot;пустого&amp;quot; номера примечания
+							&apos; Сдвигаем верхнюю границу поиска в тексте на конец &quot;пустого&quot; номера примечания
 							oViewCursor.collapseToEnd()
 							oLCurs.collapseToEnd()
 						End If
