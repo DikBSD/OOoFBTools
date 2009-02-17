@@ -1151,7 +1151,6 @@ Sub BuildFootNote()
 		&apos; Сложный режим генерации сносок
 		BuildFootNoteComplex()
 	End If
-	
 End Sub
 
 &apos;///////////////////////////////////////////////////////////////////////////////////////
@@ -1346,5 +1345,56 @@ Function GetStringRight( oLB As Object ) As String
 			GetStringRight = &quot;)&quot;
 	End Select
 End Function
+
+&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;/////////////////////////////////////// Тест для сложной генерации сносок ///////////////////////////////////////////////////////////////
+&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; генерация сносок в зависимости от режима (простой или сложный)
+Sub FootNoteTest()
+	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnComplexFootNote&quot; ).State Then &apos; для сложного режима генерации сносок
+		&apos; зона поиска номеров сносок: oLCurs - левая верхняя граница; oRCurs - правая нижняя граница
+		&apos; зона поика текста для заданного номера сноски: закладки с именами производными от sConstBookMarkListNote
+		Dim oDoc		As Object	: oDoc			= ThisComponent
+		Dim oViewCursor As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+		Dim oBookMarks	As Object	: oBookMarks	= oDoc.getBookmarks()
+		Dim oLCurs		As Object	: oLCurs		= oDoc.Text.createTextCursor()
+		oLCurs.gotoStart( False ) &apos; на начало документа
+	
+		&apos; удаляем служебные закладки, если они есть
+		DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNNumber )
+		DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNText )
+	
+		&apos; получаем зоны для обработки сносок
+		Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkListNote )
+		If UBound( aBookMarks() ) = -1 Then
+			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteList, 64, sBTEND.sFootnotesGeneration
+			Exit Sub	
+		End If
+		
+		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
+			&apos; список примечаний - после главы книги
+			
+			
+		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
+			&apos; все списки примечаний - в конце книги		
+			Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
+			&apos;проверка - есть ли хоть одна закладка L-зоны
+			Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+			If UBound( aLBookMarks() ) = -1 Then
+				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sFootnotesGeneration &amp; sMT
+				Exit Sub	
+			End If
+		
+			&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
+			If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
+				MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sFootnotesGeneration &amp; sMT
+				Exit Sub	
+			End If
+		
+		End If
+	End If
+End Sub
+
+&apos;
 
 </script:module>
