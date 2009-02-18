@@ -472,7 +472,7 @@ End Function
 &apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
 &apos; 1 - вставка закладки для номера прмечания в ТАБЛИЦЕ
 Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
-										sRegFind As String, sConstBookMarkFNNumber As String, _
+										sRegFind As String, sConstBookMarkListNote As String, sConstBookMarkFNNumber As String, _
 										sForLeft As String, sForRight As String ) As Integer
 	&apos; sRegFind - строка поиска (с регулярными выражениями)
 	&apos; oLCurs - начало зоны поиска номера очередной сноски
@@ -540,10 +540,10 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 				&apos; для оптимизации скорости - здесь реже сработает, чем каждый раз в основной ветке...
 			Else &apos; просто текст
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
-					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
-					oLCurs.gotoRange( vFound, False )
 					&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
 					oViewCursor.gotoRange( vFound, False )
+					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
+					oLCurs.gotoRange( vFound, False )
 					&apos; ставим закладку - по ней потом найдем этот номер сноски
 					_UnoInsertBookmark( sConstBookMarkFNNumber )
 					InsertBookmarkToNumberFootNote = 0
@@ -565,7 +565,7 @@ End Function
 
 Sub CursorAfterCurrentTable( oCursor )
 	While Not IsEmpty( oCursor.TextTable )
-		oCursor.goDown( 1,False )
+		oCursor.goDown( 1, False )
 	Wend
 End Sub
 
@@ -718,7 +718,8 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 	ProcessingComplexFootNoteList = 0
 	Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
 		Dim nValue As Integer
-		nValue = InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, sConstBookMarkFNNumber, sForLeft, sForRight )
+		nValue = InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, _
+												sConstBookMarkListNote, sConstBookMarkFNNumber, sForLeft, sForRight )
 		&apos; -1 - номер примечания в тексте не найден - конец документа
 		&apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
 		&apos; 1 - вставка закладки для номера прмечания в ТАБЛИЦЕ
@@ -1467,20 +1468,22 @@ Sub TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Ob
 			oLCurs.gotoRange( vFound, False )
 			oLCurs.collapseToEnd()
 			Dim sCurrent As String : sCurrent = vFound.getString()
-			Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 And Not IsNull( vFound ) ) &apos; пока не дошли до списка примечаний для этой зоны поиска
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-				If Not IsNull( vFound ) Then &apos; нашли
-					If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-						If sCurrent = vFound.getString() Then
-							&apos; нашли одинаковые
-							tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
-							Dim j As Long : j = Ubound(vaTestArray()) + 1
-							ReDim Preserve vaTestArray(j)
-							vaTestArray(j) = tsdTest
-						Else
-							sCurrent = vFound.getString()
+			Do While ( Not IsNull( vFound ) ) 
+				If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 Then&apos; пока не дошли до списка примечаний для этой зоны поиска
+					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+					If Not IsNull( vFound ) Then &apos; нашли
+						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+							If sCurrent = vFound.getString() Then
+								&apos; нашли одинаковые
+								tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
+								Dim j As Long : j = Ubound(vaTestArray()) + 1
+								ReDim Preserve vaTestArray(j)
+								vaTestArray(j) = tsdTest
+							Else
+								sCurrent = vFound.getString()
+							End If
+							lCount = lCount+1
 						End If
-						lCount = lCount+1
 					End If
 				End If
 			Loop
