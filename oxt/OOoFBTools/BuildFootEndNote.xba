@@ -484,56 +484,18 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 	If Not IsNull( vFound ) Then &apos; нашли
 		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
 			If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
-				&apos; обрабатываем ячейки  таблицы
-				Dim oTable			As Object	: oTable		= vFound.TextTable
-				Dim oBookMarks		As Object	: oBookMarks	= oDoc.getBookmarks()
-				
-				vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
-				Do While ( Not IsEmpty( vFound.TextTable ) )
-					&apos; пока не вышли за пределы таблицы или не перешли на другую таблицы
-					If Not IsNull(vFound) Then &apos; нашли
-						Dim oTable1 : oTable1 = vFound.TextTable
-						Dim oCell : oCell = vFound.Cell
-						Dim oCT : oCT = oTable1.createCursorByCellName( oCell.Cellname )
-						If oDoc.Text.compareRegionEnds( oCT, oRCurs ) &lt;= 0 Then
-							Exit Function
-						End If
-						&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
-						oViewCursor.gotoRange( vFound, False )
-						&apos; выделяем номер из строки
-						Dim sNumber As String : sNumber = GetNumberFromString( vFound.getString() ) &apos; текст с номером очередной сноски
-
-						Dim oBlockNoteZoneBookMark : oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
-						If IsNumberExistsInList( oDoc, oViewCursor, oBlockNoteZoneBookMark, sForLeft &amp; sNumber &amp; sForRight ) Then
-							&apos; ставим закладку - по ней потом найдем этот номер сноски
-							_UnoInsertBookmark( sConstBookMarkFNNumber )
-							&apos; перевод курсора на начала закладки зоны поиска текста сносок
-							oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
-							If InsertBookmarkToTextForFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark, sForLeft &amp; sNumber &amp; sForRight, sConstBookMarkFNText ) Then
-								&apos; вставка найденного текста примечания вместо найденного по шаблону номера примечания
-								InsertCurrentFootNote( oViewCursor, sConstBookMarkFNNumber )
-								&apos; удаляем служебные сноски, если они есть
-								If oBookMarks.hasByName( sConstBookMarkFNNumber )	Then _UnoDeleteBookMark( sConstBookMarkFNNumber )
-								If oBookMarks.hasByName( sConstBookMarkFNText )		Then _UnoDeleteBookMark( sConstBookMarkFNText )
-								lInsNotesCount = lInsNotesCount+1
-							End If
-						Else
-							&apos; Сдвигаем верхнюю границу поиска в тексте на конец &quot;пустого&quot; номера примечания
-							oViewCursor.collapseToEnd()
-							oLCurs.collapseToEnd()
-						End If
-					End If
-					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-				Loop
-				&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
+				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
 				oViewCursor.gotoRange( vFound, False )
+				CursorAfterCurrentTextTable( oViewCursor )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
-				oLCurs.gotoRange( vFound, False )
+				oLCurs.gotoRange( oViewCursor, False )
+				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 				InsertBookmarkToNumberFootNote = 1
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
 				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Ничего ни делаем - Просто игнорируем номер для сноски.
-				&apos; не вставили эту ветку If в основную If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-				&apos; для оптимизации скорости - здесь реже сработает, чем каждый раз в основной ветке...
+				oViewCursor.gotoRange( vFound, False )
+				oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
+				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			Else &apos; просто текст
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
 					&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
@@ -563,70 +525,8 @@ Sub CursorAfterCurrentTextTable( oCursor )
 	While Not IsEmpty( oCursor.TextTable )
 		oCursor.goDown( 1, False )
 	Wend
+	oCursor.gotoStartOfLine( False )
 End Sub
-
-&apos; Есть ли заданный номер примечания в списке примечаний
-&apos; sRegFind - строка поиска (с регулярными выражениями)
-&apos; oBlockNoteZoneBookMark - закладка - зона поиска
-Function IsNumberExistsInList( oDoc As Object, oViewCursor As Object, oBlockNoteZoneBookMark As Object, sRegFind As String ) As Boolean
-	IsNumberExistsInList = False
-	If IsNull(oViewCursor) Or IsNull(oDoc) Then Exit Function
-	
-	&apos; поиск с регулярными выражениями
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = sRegFind
-	End With
-	
-	&apos; ищем заданный номер сноски в блоке текста сносок
-	Dim vFound As Variant : vFound = oDoc.findNext( oBlockNoteZoneBookMark.getStart(), vSearch )
-	&apos; ищем следующий текст сноски по следующему номеру сноски
-	If Not IsNull(vFound) Then &apos; нашли
-		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; And IsEmpty( vFound.TextFrame ) Then &apos; сноски не обрабатываем
-			If Not IsEmpty( vFound.TextTable ) Then &apos; пропускаем таблицу
-				vFound = RoundTable( oDoc, vSearch, vFound )
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-			Else &apos; текст сноски - в тексте
-				If oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
-				&apos; выделяем найденный номер сноски в блоке текста сносок
-&apos;				oViewCursor.gotoRange( vFound, False )
-				Do While  oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &gt;= 0
-					&apos; мы все еще внутри зоны поиска... ищем следующий номер сноски в списке
-					vSearch.SearchString = GetRegStringNFNInListForNextFind() &apos; для дальнейшего поиска согласно выбранного шаблона поиска номера сноски в списке сносок
-					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-					If Not IsNull(vFound) Then
-						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; Then &apos; сноски не обрабатываем
-							If Not IsEmpty( vFound.TextTable ) Then &apos; текст сноски - в таблице
-								&apos; пропускаем таблицу
-								vFound = RoundTable( oDoc, vSearch, vFound )
-							ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст сноски - в текстовой врезке
-								&apos; не обрабатываем сноски
-								Exit Function
-							Else &apos; текст сноски - в тексте
-								If oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &lt;= 0 Then &apos; вышли за правую границу или прямо на ней
-									IsNumberExistsInList = True
-									Exit Function
-								Else &apos; мы еще на закладке
-									IsNumberExistsInList = True
-									Exit Function
-								End If
-							End If
-						Else &apos; это скорее всего последняя сноска в блоке текста сносок (т.к. нашли очередную в тексте уже существующих сносок в OOo)
-							IsNumberExistsInList = True
-							Exit Function
-						End If
-					Else &apos; это скорее всего последняя сноска в блоке текста сносок (следующей не нашли)
-						IsNumberExistsInList = True
-						Exit Function
-					End If
-				Loop
-			End If
-		End If		
-	Else
-		&apos; два варианта - либо в искомой зоне нет абзацев с нумерацией, либо есть нумерованные списки.
-	End If
-End Function
 
 &apos; вставка закладки на место текста для указанного номера сноски
 &apos; sRegFind - строка поиска (с регулярными выражениями)
@@ -649,8 +549,10 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 	If Not IsNull(vFound) Then &apos; нашли
 		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; And IsEmpty( vFound.TextFrame ) Then &apos; сноски не обрабатываем
 			If Not IsEmpty( vFound.TextTable ) Then &apos; пропускаем таблицу
-				vFound = RoundTable( oDoc, vSearch, vFound )
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
+				oViewCursor.gotoRange( vFound, False )
+				CursorAfterCurrentTextTable( oViewCursor )
+				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			Else &apos; текст сноски - в тексте
 				If oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 				&apos; выделяем найденный номер сноски в блоке текста сносок
@@ -666,8 +568,10 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 					If Not IsNull(vFound) Then
 						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; Then &apos; сноски не обрабатываем
 							If Not IsEmpty( vFound.TextTable ) Then &apos; текст сноски - в таблице
-								&apos; пропускаем таблицу
-								vFound = RoundTable( oDoc, vSearch, vFound )
+								&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
+								oViewCursor.gotoRange( vFound, False )
+								CursorAfterCurrentTextTable( oViewCursor )
+								vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 							ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст сноски - в текстовой врезке
 								&apos; не обрабатываем сноски
 								Exit Function
@@ -745,7 +649,7 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 			&apos; удаляем служебные сноски, если они есть
 			If oBookMarks.hasByName( sConstBookMarkFNNumber )	Then _UnoDeleteBookMark( sConstBookMarkFNNumber )
 			If oBookMarks.hasByName( sConstBookMarkFNText )		Then _UnoDeleteBookMark( sConstBookMarkFNText )
-		Else &apos; номер очередного примечания - в Таблице или во Врезке - ничего не делаем - для Таблицы все уже обработано, а для Врезки - игнорируем
+		Else &apos; номер очередного примечания - в Таблице или во Врезке - ничего не делаем - игнорируем
 		End If
 	Loop
 	ProcessingComplexFootNoteList = lInsNotesCount
