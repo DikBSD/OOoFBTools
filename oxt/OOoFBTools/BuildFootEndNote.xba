@@ -385,26 +385,16 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 		&apos; If Not vFound.hasElements() Then Exit Do
 		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
 			If Not IsEmpty( vFound.TextTable ) Then &apos; текст очередной сноски находится в таблице
-				&apos; обрабатываем ячейки  таблицы
-				Dim oTable			As Object	: oTable		= vFound.TextTable
-				Dim aCellNames()	As String	: aCellNames	= oTable.getCellNames()
-				Dim lCellCount		As Long		: lCellCount	= 0
-				Do While lCellCount &lt;= UBound( aCellNames() )
-					Dim oCell As Object	: oCell	= oTable.getCellByName( aCellNames( lCellCount ) )
-					lCellCount = lCellCount+1
-					If Not IsNull( vFound ) Then &apos; нашли
-						&apos; обработка найденного текста сноски для простого режима генерации сноски
-						&apos; переводим курсор на найденный текст сноски
-						oViewCursor.gotoRange( vFound, False )
-						&apos; ставим закладку - по ней потом найдем этот текст сноски
-						_UnoInsertBookmark( sConstBookMarkSimple )
-						MakeFN( oDoc, vFound, oViewCursor, oBookMarks )
-						BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1
-					End If
-					vFound = oDoc.findNext( oCell.getStart(), vSearch )
-				Loop
+				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
+				oViewCursor.gotoRange( vFound, False )
+				CursorAfterCurrentTextTable( oViewCursor )
+				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
-				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Просто игнорируем номер для сноски.
+				&apos; OOo не позволяет вставлять сноску в текстовую врезку.
+				&apos; перепрыгиваем врезку - не обрабатываем ее
+				oViewCursor.gotoRange( vFound, False )
+				oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
+				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			Else &apos; просто текст
 				&apos; переводим курсор на найденный текст сноски
 				If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
@@ -421,7 +411,7 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 				End If
 				&apos; переводим курсор на найденный текст сноски
 				oViewCursor.gotoRange( vFound, False )
-				vFound = oDoc.findNext( vFound.End, vSearch )
+				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 			End If
 		End If
 	Loop
@@ -502,6 +492,12 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 				Do While ( Not IsEmpty( vFound.TextTable ) )
 					&apos; пока не вышли за пределы таблицы или не перешли на другую таблицы
 					If Not IsNull(vFound) Then &apos; нашли
+						Dim oTable1 : oTable1 = vFound.TextTable
+						Dim oCell : oCell = vFound.Cell
+						Dim oCT : oCT = oTable1.createCursorByCellName( oCell.Cellname )
+						If oDoc.Text.compareRegionEnds( oCT, oRCurs ) &lt;= 0 Then
+							Exit Function
+						End If
 						&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
 						oViewCursor.gotoRange( vFound, False )
 						&apos; выделяем номер из строки
@@ -563,12 +559,11 @@ Function RoundTable( oDoc As Object, vSearch As Variant, vFound As Variant ) As 
 	RoundTable = vFound
 End Function
 
-Sub CursorAfterCurrentTable( oCursor )
+Sub CursorAfterCurrentTextTable( oCursor )
 	While Not IsEmpty( oCursor.TextTable )
 		oCursor.goDown( 1, False )
 	Wend
 End Sub
-
 
 &apos; Есть ли заданный номер примечания в списке примечаний
 &apos; sRegFind - строка поиска (с регулярными выражениями)
