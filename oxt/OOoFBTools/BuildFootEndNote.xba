@@ -512,15 +512,6 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 End Function
 
 &apos; &quot;прыжок&quot; через таблицу
-Function RoundTable( oDoc As Object, vSearch As Variant, vFound As Variant ) As Variant
-	Do While Not IsEmpty( vFound.TextTable )
-		vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-		&apos; на начало абзаца, иначе будет пропущенодин этот результат поиска, а он нужен
-		vFound.gotoStartOfParagraph(False)
-	Loop
-	RoundTable = vFound
-End Function
-
 Sub CursorAfterCurrentTextTable( oCursor )
 	While Not IsEmpty( oCursor.TextTable )
 		oCursor.goDown( 1, False )
@@ -572,6 +563,7 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 								oViewCursor.gotoRange( vFound, False )
 								CursorAfterCurrentTextTable( oViewCursor )
 								vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+								vFound.gotoStartOfParagraph( False )
 							ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст сноски - в текстовой врезке
 								&apos; не обрабатываем сноски
 								Exit Function
@@ -583,7 +575,7 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 									Exit Function
 								Else &apos; мы еще на закладке
 									&apos; идем на начало параграфа
-									vFound.gotoStartOfParagraph(False)
+									vFound.gotoStartOfParagraph( False )
 									&apos; удаляем и вставляем закладку на место найденного текста сноски - по ней потом найдем этот текст для формирования соответствующего текста сноски
 									ExtendSelectTextToEndBookMark( oDoc, oViewCursor, sConstBookMarkFNText, vFound )
 									InsertBookmarkToTextForFootNote = True
