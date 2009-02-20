@@ -689,8 +689,10 @@ Sub BuildFootNoteComplex()
 	Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
 
 	Dim lFindCount As Long : lFindCount = 0
-	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
-		&apos; режим: Блок текста сносок - после каждой главы
+	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Or _
+		oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
+		&apos; режим: 1. Нумерация сквозная; Общий список примечаний - в конце книги. 2. Список текста примечаний - после каждой главы
+		&apos; алгоритм - одинаковый
 		Dim l As Long
 		For l=0 To UBound( aBookMarks() )
 			Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
@@ -984,7 +986,7 @@ Sub StartBuildFootEndNoteDlg()
 		.lblNSimpleFNInTextTemplate.StringItemList	= aNFNInTextList()
 		.lblNFNInTextTemplate.StringItemList 		= aNFNInTextList()
 		.lblNFNInListTemplate.StringItemList		= aNFNInListList()
-		.Height	= 100
+		.Height	= 106
 		.Width	= 270
 	End With
 	
@@ -994,7 +996,7 @@ Sub StartBuildFootEndNoteDlg()
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg, nX, nY )
-	oBuildFootEndNoteDlg.setPosSize( nX, nY, 100, 270, com.sun.star.awt.PosSize.POS )
+	oBuildFootEndNoteDlg.setPosSize( nX, nY, 106, 270, com.sun.star.awt.PosSize.POS )
 	
 	ControlModeEnabled()
 	
@@ -1005,7 +1007,8 @@ Sub SetBuildFootEndNoteDlgSettingDefault
 	&apos; Установка настроек по умолчанию в контролы
 	oBuildFootEndNoteDlg.GetControl( &quot;optbtnSimpleFootNote&quot; ).State = 0
 	oBuildFootEndNoteDlg.GetControl( &quot;optbtnComplexFootNote&quot; ).State = 1
-	oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State = 1
+	oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State = 1
+	oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State = 0
 	oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State = 0
 	Dim oLB As Object
 	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
@@ -1022,6 +1025,7 @@ Sub ControlModeEnabled()
 		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInList&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextInBookEnd&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = True
@@ -1033,6 +1037,7 @@ Sub ControlModeEnabled()
 		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInList&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextInBookEnd&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = False
@@ -1276,22 +1281,34 @@ Sub FootNoteTest()
 			Exit Sub	
 		End If
 		
+		Dim l As Long
 		Dim sRegFind As String : sRegFind = GetRegStringNFNInText()
-		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
-			&apos; режим: список примечаний - после каждой главы
-			Dim l As Long
+		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
+			&apos; режим: Нумерация - сквозная; Общий список примечаний - в конце книги
 			For l=0 To UBound( aBookMarks() )
 				Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
 				TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
 										sConstBookMarkFNNumber, sConstBookMarkFNText, sRegFind )
 				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
 				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
-				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
+				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
+				oLCurs.gotoRange( oRCurs.getEnd(), False )
+				oLCurs.goRight( 1, False )
+			Next l
+		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
+			&apos; режим: список примечаний - после каждой главы
+			For l=0 To UBound( aBookMarks() )
+				oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
+				TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
+										sConstBookMarkFNNumber, sConstBookMarkFNText, sRegFind )
+				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
+				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
+				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				oLCurs.gotoRange( oRCurs.getEnd(), False )
 				oLCurs.goRight( 1, False )
 			Next l
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
-			&apos; все списки примечаний - в конце книги		
+			&apos; Режим: все списки примечаний - в конце книги		
 			Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
 			&apos;проверка - есть ли хоть одна закладка L-зоны
 			Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
@@ -1306,7 +1323,7 @@ Sub FootNoteTest()
 				Exit Sub	
 			End If
 		
-			&apos; получаем L-зоны для поиска номеров сносок
+			&apos; получаем L-зоны для поиска номеров примечаний
 			For l=0 To UBound( aBookMarks() )
 				&apos; левая граница поиска номеров сносок - текстовый курсор на очередной закладке (начало главы и т.д.)
 				Dim oLBMs As Object : oLBMs = oBookMarks.getByName( aLBookMarks(l) ).getAnchor()
