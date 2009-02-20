@@ -19,6 +19,16 @@ Type tTestData
 	lCount As Long
 End Type
 
+Type tTestTable
+	bIsTableExsist 			As Boolean
+	bIsNumberInTableExsist	As Boolean
+End Type
+
+Type tTesrFrame
+	bIsFrameExsist 			As Boolean
+	bIsNumbersInFrameExsist As Boolean
+End Type
+
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos;							UNO функции
 &apos;//////////////////////////////////////////////////////////////////////////////
@@ -493,8 +503,8 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 				InsertBookmarkToNumberFootNote = 1
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
 				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Ничего ни делаем - Просто игнорируем номер для сноски.
-				oViewCursor.gotoRange( vFound, False )
 				oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
+				oLCurs.gotoRange( oViewCursor, False )
 				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			Else &apos; просто текст
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
@@ -1281,32 +1291,35 @@ Sub FootNoteTest()
 			Exit Sub	
 		End If
 		
-		Dim l As Long
+		Dim l As Long, lCountAllNotes As Long
+		Dim vaTestArray() As Variant	&apos; для хранения рез-тов найденного
 		Dim sRegFind As String : sRegFind = GetRegStringNFNInText()
 		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
 			&apos; режим: Нумерация - сквозная; Общий список примечаний - в конце книги
 			For l=0 To UBound( aBookMarks() )
 				Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-				TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
-										sConstBookMarkFNNumber, sConstBookMarkFNText, sRegFind )
+				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, sRegFind, vaTestArray() )
 				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
 				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				oLCurs.gotoRange( oRCurs.getEnd(), False )
 				oLCurs.goRight( 1, False )
+				MsgBox &quot;Обработано номеров примечаний: &quot; &amp; lCountAllNotes &amp; chr(10) &amp; _
+						&quot;Найдено уникальных: &quot; &amp; lCountAllNotes - Ubound( vaTestArray() )-1 &amp; chr(10) &amp; _
+						&quot;Найдено повторяющихся: &quot; &amp; Ubound( vaTestArray() )+1, 64				
 			Next l
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
 			&apos; режим: список примечаний - после каждой главы
 			For l=0 To UBound( aBookMarks() )
 				oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-				TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
-										sConstBookMarkFNNumber, sConstBookMarkFNText, sRegFind )
+				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, sRegFind )
 				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
 				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				oLCurs.gotoRange( oRCurs.getEnd(), False )
 				oLCurs.goRight( 1, False )
 			Next l
+			
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
 			&apos; Режим: все списки примечаний - в конце книги		
 			Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
@@ -1336,8 +1349,7 @@ Sub FootNoteTest()
 				End If
 				&apos; перемещаем курсор в новую зону поиска
 				GoToViewCursorToBookMark( oViewCursor, aLBookMarks(l), False )
-				TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
-										sConstBookMarkFNNumber, sConstBookMarkFNText, sRegFind )
+				TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, sRegFind )
 			Next l
 			oViewCursor.goRight( 1, False )
 		End If
@@ -1345,9 +1357,8 @@ Sub FootNoteTest()
 End Sub
 
 &apos; Тест сложной генерации сносок - перебор по шаблону
-Sub TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oBookMarks As Object, _
-							sConstBookMarkListNote As String, sConstBookMarkFNNumber As String, sConstBookMarkFNText As String, _
-							sRegFind As String )
+Function TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oBookMarks As Object, _
+							sRegFind As String, vaTestArray() As Variant ) As Long
 	&apos; 1. Ищем по шаблону
 	&apos; 2. Считываем значение
 	&apos; 3. Цикл
@@ -1355,8 +1366,9 @@ Sub TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Ob
 	&apos; Если ранее считанное равно новому найденному, то заносим это в структуру, где счетчик числа совпадений увеличиваем на 1
 	&apos; закрыть цикл
 	
-	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Sub
-	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub &apos; вышли за правую границу или прямо на ней
+	TestComplexFootNoteList = 0
+	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Function
+	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 	
 	&apos; поиск с регулярными выражениями
 	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
@@ -1366,118 +1378,54 @@ Sub TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Ob
 	End With
 	
 	&apos; ищем заданный шаблон
-	Dim lCount As Long : lCount = 0
-	Dim tsdTest As tTestData		&apos; для хранения результатов теста
-	Dim vaTestArray() As Variant	&apos; для хранения рез-тов найденного
 	Dim vFound As Variant : vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
 	If Not IsNull( vFound ) Then &apos; нашли
-		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-			&apos; &quot;опускаем&quot; верхнюю границу зоны поиска
-			oLCurs.gotoRange( vFound, False )
-			oLCurs.collapseToEnd()
-			Dim sCurrent As String : sCurrent = vFound.getString()
-			Do While ( Not IsNull( vFound ) ) 
-				If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 Then&apos; пока не дошли до списка примечаний для этой зоны поиска
-					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-					If Not IsNull( vFound ) Then &apos; нашли
-						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-							If sCurrent = vFound.getString() Then
-								&apos; нашли одинаковые
-								tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
-								Dim j As Long : j = Ubound(vaTestArray()) + 1
-								ReDim Preserve vaTestArray(j)
-								vaTestArray(j) = tsdTest
-							Else
-								sCurrent = vFound.getString()
-							End If
-							lCount = lCount+1
-						End If
-					End If
+		Dim lCountAllNotes As Long : lCountAllNotes = 0
+		Dim saNumbersInText()		As String &apos; хранит все номеры примечаний из текста в пределах зоны поиска
+		Dim bIsNumberInTableExsist	As Boolean &apos; флаг - есть ли в таблицах хоть ожин номер примечания в пределах зоны поиска
+		Dim bIsNumbersInFrameExsist	As Boolean &apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска
+		bIsNumberInTableExsist = False : bIsNumbersInFrameExsist = False
+		Do While ( Not IsNull( vFound ) )
+			If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+				If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
+					bIsNumberInTableExsist = True
+					&apos; перепрыгиваем таблицу - не обрабатываем ее
+					oViewCursor.gotoRange( vFound, False )
+					CursorAfterCurrentTextTable( oViewCursor )
+					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
+					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
+					bIsNumbersInFrameExsist = True
+					&apos; перепрыгиваем через врезку - не обрабатываем ее.
+					oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
+					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				Else &apos; просто текст
+					If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
+						oViewCursor.gotoRange( vFound, False )
+						AddNewItemToArray1( saNumbersInText(), vFound.getString() )
+						lCountAllNotes = lCountAllNotes+1
+						vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+					Else
+						Exit Function
+					End if
 				End If
-			Loop
-		End If
+			End If
+		Loop
 	End If
-End Sub
+	
+	&apos; сюда - перебор по массиву найденных номеров и сравнение с считанным
+&apos;	Dim tsdTest As tTestData		&apos; для хранения результатов теста
+&apos;	Dim sCurrent As String : sCurrent = vFound.getString()
+&apos;	If sCurrent = vFound.getString() Then
+&apos;	&apos; нашли одинаковые
+&apos;	tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
+&apos;	Dim j As Long : j = Ubound ( vaTestArray() ) + 1
+&apos;	ReDim Preserve vaTestArray(j)
+&apos;	vaTestArray(j) = tsdTest
+&apos;	Else
+&apos;		sCurrent = vFound.getString()
+&apos;	End If
+	TestComplexFootNoteList = lCountAllNotes
+End Function
 
-
-&apos; Тест сложной генерации сносок - перебор по шаблону
-Sub _TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oBookMarks As Object, _
-							sConstBookMarkListNote As String, sConstBookMarkFNNumber As String, sConstBookMarkFNText As String, _
-							sRegFind As String )
-	&apos; 1. Ищем по шаблону
-	&apos; 2. Считываем значение
-	&apos; 3. Цикл
-	&apos; Ищем по шаблону
-	&apos; Если ранее считанное равно новому найденному, то заносим это в структуру, где счетчик числа совпадений увеличиваем на 1
-	&apos; закрыть цикл
-	
-	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Sub
-	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub &apos; вышли за правую границу или прямо на ней
-	
-	&apos; поиск с регулярными выражениями
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = sRegFind
-	End With
-	
-	&apos; ищем заданный шаблон
-	Dim tsdTest As tTestData		&apos; для хранения результатов теста
-	Dim vaTestArray() As Variant	&apos; для хранения рез-тов найденного
-	Dim vFound As Variant : vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
-	If Not IsNull( vFound ) Then &apos; нашли
-		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-			&apos; &quot;опускаем&quot; верхнюю границу зоны поиска
-			oLCurs.gotoRange( vFound, False )
-			oLCurs.collapseToEnd()
-			&apos; oLCurs вправо на число символов найденного
-&apos;			oLCurs.goRight( Len( vFound.getString() ), False )
-			Dim sCurrent As String : sCurrent = vFound.getString()
-&apos;			If Not IsEmpty( vFound.TextTable ) Then
-				Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
-					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-					If Not IsNull( vFound ) Then &apos; нашли
-						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-							If sCurrent = vFound.getString() Then
-								&apos; нашли одинаковые
-								tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
-								Dim j As Long : j = Ubound(vaTestArray()) + 1
-								ReDim Preserve vaTestArray(j)
-								vaTestArray(j) = tsdTest
-							Else
-								sCurrent = vFound.getString()
-							End If
-						End If
-						&apos; &quot;опускаем&quot; верхнюю границу зоны поиска
-&apos;						oLCurs.gotoRange( vFound, False )
-&apos;						oLCurs.collapseToEnd()
-					End If
-				Loop
-&apos;			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; в текстовой врезке
-				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Ничего ни делаем - Просто игнорируем номер для сноски.
-&apos;			Else &apos; просто текст
-&apos;				Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 And IsEmpty( vFound.TextTable ) And IsEmpty( vFound.TextFrame ) )
-&apos;				&apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
-&apos;					vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
-&apos;					If Not IsNull( vFound ) Then &apos; нашли
-&apos;						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-&apos;							If sCurrent = vFound.getString() Then
-&apos;								&apos; нашли одинаковые
-&apos;								tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
-&apos;								j = Ubound(vaTestArray()) + 1
-&apos;								ReDim Preserve vaTestArray(j)
-&apos;								vaTestArray(j) = tsdTest
-&apos;							Else
-&apos;								sCurrent = vFound.getString()
-&apos;							End If
-&apos;						End If
-&apos;						&apos; &quot;опускаем&quot; верхнюю границу зоны поиска
-&apos;						oLCurs.gotoRange( vFound, False )
-&apos;						oLCurs.collapseToEnd()
-&apos;					End If
-&apos;				Loop
-&apos;			End If
-		End If
-	End If
-End Sub
 </script:module>
