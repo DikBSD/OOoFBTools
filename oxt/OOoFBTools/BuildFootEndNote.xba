@@ -19,16 +19,6 @@ Type tTestData
 	lCount As Long
 End Type
 
-Type tTestTable
-	bIsTableExsist 			As Boolean
-	bIsNumberInTableExsist	As Boolean
-End Type
-
-Type tTesrFrame
-	bIsFrameExsist 			As Boolean
-	bIsNumbersInFrameExsist As Boolean
-End Type
-
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos;							UNO функции
 &apos;//////////////////////////////////////////////////////////////////////////////
@@ -504,7 +494,7 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
 				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Ничего ни делаем - Просто игнорируем номер для сноски.
 				oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
-				oLCurs.gotoRange( oViewCursor, False )
+&apos;				oLCurs.gotoRange( oViewCursor, False )
 				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			Else &apos; просто текст
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
@@ -1278,6 +1268,8 @@ Sub FootNoteTest()
 		Dim oViewCursor As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
 		Dim oBookMarks	As Object	: oBookMarks	= oDoc.getBookmarks()
 		Dim oLCurs		As Object	: oLCurs		= oDoc.Text.createTextCursor()
+		Dim oRCurs		As Object
+		Dim l As Long
 		oLCurs.gotoStart( False ) &apos; на начало документа
 	
 		&apos; удаляем служебные закладки, если они есть
@@ -1291,28 +1283,71 @@ Sub FootNoteTest()
 			Exit Sub	
 		End If
 		
-		Dim l As Long, lCountAllNotes As Long
-		Dim vaTestArray() As Variant	&apos; для хранения рез-тов найденного
 		Dim sRegFind As String : sRegFind = GetRegStringNFNInText()
+		&apos; левая и правая часть регулярного выражения для 1-го поиска номера примечания в списке примечаний
+		Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft()
+		Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
+		
+		Dim vaTestArrayInText()			As Variant	&apos; для хранения рез-тов найденного в Тексте
+		Dim bIsNumbersInTableExsist		As Boolean	&apos; флаг - есть ли в таблицах хоть один номер примечания в пределах зоны поиска
+		Dim bIsNumbersInFrameExsist		As Boolean	&apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска
+		Dim saNumbersInText()			As String	&apos; хранит все номеры примечаний из текста в пределах зоны поиска
+		Dim lCountAllTextNotes			As Long		&apos; число обработанных номеров примечаний в тексте
+		Dim bIsAbsentNumbersInText		As Boolean	&apos; флаг - есть ли среди номеров примечаний в Тексте отсутствующие номера
+		Dim nAbsentNumbersInText()		As Integer	&apos; номера отсутствующих номеров примечаний в Тексте
+		Dim naAbsentTextNumbersInList()	As Integer	&apos; список номеровпримечаний из Текста, отсутствующих в Списке примечаний
+		
+		Dim vaTestArrayInList()			As Variant	&apos; для хранения рез-тов найденного в Списке примечаний
+		Dim bIsNumbersInListTableExsist	As Boolean	&apos; флаг - есть ли в таблицах хоть один номер примечания в пределах зоны поиска списка примечаний
+		Dim bIsNumbersInListFrameExsist	As Boolean	&apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска списка примечаний
+		Dim saNumbersInList()			As String	&apos; хранит все номеры примечаний из списка в пределах зоны поиска списка примечаний
+		Dim lCountAllListNotes			As Long		&apos; число обработанных примечаний в списке примечаний
+		Dim bIsAbsentNumbersInList		As Boolean	&apos; флаг - есть ли среди номеров примечаний в Списке примечаний отсутствующие номера
+		Dim nAbsentNumbersInList()		As Integer	&apos; номера отсутствующих номеров примечаний в Списке
+		Dim naAbsentListNumbersInText()	As Integer	&apos; список номеровпримечаний из Списка примечаний, отсутствующих в Тексте
+		
 		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
 			&apos; режим: Нумерация - сквозная; Общий список примечаний - в конце книги
-			For l=0 To UBound( aBookMarks() )
-				Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, sRegFind, vaTestArray() )
-				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
-				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
-				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
-				oLCurs.gotoRange( oRCurs.getEnd(), False )
-				oLCurs.goRight( 1, False )
-				MsgBox &quot;Обработано номеров примечаний: &quot; &amp; lCountAllNotes &amp; chr(10) &amp; _
-						&quot;Найдено уникальных: &quot; &amp; lCountAllNotes - Ubound( vaTestArray() )-1 &amp; chr(10) &amp; _
-						&quot;Найдено повторяющихся: &quot; &amp; Ubound( vaTestArray() )+1, 64				
-			Next l
+			
+			&apos; сбор информации по номерам примечаний из текста
+			oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
+			lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, _
+																saNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist  )
+			&apos; сбор информации по номерам примечаний из списка примечаний
+			Dim oBookMark As Object : oBookMark	= oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
+			&apos; закладка списка текста примечаний
+			Dim oBlockNoteZoneBookMark : oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
+			&apos; перевод курсора на начала закладки зоны поиска списка примечаний
+			oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
+			lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark.getStart(), oBlockNoteZoneBookMark.getEnd(), _
+																sLeft &amp; &quot;[:digit:]+&quot; &amp; sRight, _
+																saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
+		
+			&apos; тест на наличие одинаковых номеров примечаний в Тексте
+			TestForIdenticalNumbers( saNumbersInText(), vaTestArrayInText() )
+			
+			&apos; тест на наличие одинаковых номеров примечаний в Списке примечаний
+			TestForIdenticalNumbers( saNumbersInList(), vaTestArrayInList() )
+						
+			&apos; тест на наличие отсутствующих номеров примечаний в Тексте
+			TestForAbsentNumbers( saNumbersInText(),  bIsAbsentNumbersInText, nAbsentNumbersInText() )
+			
+			&apos; тест на наличие отсутствующих номеров примечаний в Списке примечаний
+			TestForAbsentNumbers( saNumbersInList(), bIsAbsentNumbersInList, nAbsentNumbersInList() )
+			
+			&apos; какие номера примечаний из текста отсутствуют в списке примечаний, и какие номера примечаний из списка примечаний отсутствуют в тексте
+			TestAbsentTextNumbersInList( saNumbersInText(), saNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+
+			&apos; сгенерировать отчет и запустить его на просмотр
+			MakeReport( lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
+						lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+		
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
 			&apos; режим: список примечаний - после каждой главы
 			For l=0 To UBound( aBookMarks() )
 				oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, sRegFind )
+				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind )
 				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
 				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
@@ -1356,17 +1391,10 @@ Sub FootNoteTest()
 	End If
 End Sub
 
-&apos; Тест сложной генерации сносок - перебор по шаблону
-Function TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oBookMarks As Object, _
-							sRegFind As String, vaTestArray() As Variant ) As Long
-	&apos; 1. Ищем по шаблону
-	&apos; 2. Считываем значение
-	&apos; 3. Цикл
-	&apos; Ищем по шаблону
-	&apos; Если ранее считанное равно новому найденному, то заносим это в структуру, где счетчик числа совпадений увеличиваем на 1
-	&apos; закрыть цикл
-	
-	TestComplexFootNoteList = 0
+&apos; Сбор информации по номерам из Текста для теста сложной генерации сносок - режим: Нумерация - сквозная; Общий список примечаний - в конце книги.
+Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, sRegFind As String, _
+										saNumbers() As String, bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean ) As Long
+	GetDataForTestComplexFootNote = 0
 	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Function
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 	
@@ -1381,14 +1409,11 @@ Function TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs 
 	Dim vFound As Variant : vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
 	If Not IsNull( vFound ) Then &apos; нашли
 		Dim lCountAllNotes As Long : lCountAllNotes = 0
-		Dim saNumbersInText()		As String &apos; хранит все номеры примечаний из текста в пределах зоны поиска
-		Dim bIsNumberInTableExsist	As Boolean &apos; флаг - есть ли в таблицах хоть ожин номер примечания в пределах зоны поиска
-		Dim bIsNumbersInFrameExsist	As Boolean &apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска
-		bIsNumberInTableExsist = False : bIsNumbersInFrameExsist = False
+		bIsNumbersInTableExsist = False : bIsNumbersInFrameExsist = False
 		Do While ( Not IsNull( vFound ) )
 			If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
 				If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
-					bIsNumberInTableExsist = True
+					bIsNumbersInTableExsist = True
 					&apos; перепрыгиваем таблицу - не обрабатываем ее
 					oViewCursor.gotoRange( vFound, False )
 					CursorAfterCurrentTextTable( oViewCursor )
@@ -1402,30 +1427,308 @@ Function TestComplexFootNoteList( oDoc As Object, oViewCursor As Object, oLCurs 
 				Else &apos; просто текст
 					If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
 						oViewCursor.gotoRange( vFound, False )
-						AddNewItemToArray1( saNumbersInText(), vFound.getString() )
+						AddNewItemToArray1( saNumbers(), vFound.getString() )
 						lCountAllNotes = lCountAllNotes+1
 						vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 					Else
 						Exit Function
 					End if
 				End If
+			Else
+				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 			End If
 		Loop
 	End If
-	
-	&apos; сюда - перебор по массиву найденных номеров и сравнение с считанным
-&apos;	Dim tsdTest As tTestData		&apos; для хранения результатов теста
-&apos;	Dim sCurrent As String : sCurrent = vFound.getString()
-&apos;	If sCurrent = vFound.getString() Then
-&apos;	&apos; нашли одинаковые
-&apos;	tsdTest.sFind = sCurrent : tsdTest.lCount = tsdTest.lCount+1
-&apos;	Dim j As Long : j = Ubound ( vaTestArray() ) + 1
-&apos;	ReDim Preserve vaTestArray(j)
-&apos;	vaTestArray(j) = tsdTest
-&apos;	Else
-&apos;		sCurrent = vFound.getString()
-&apos;	End If
-	TestComplexFootNoteList = lCountAllNotes
+	GetDataForTestComplexFootNote = lCountAllNotes
 End Function
+
+&apos; тест на наличие одинаковых номеров примечаний в зоне поиска
+Sub TestForIdenticalNumbers( saNumbers() As String, vaTestArray() As Variant )
+	Dim l As Long, s As String
+	For l=0 To UBound( saNumbers() )
+		s = saNumbers( l )
+		Dim ll As Long
+		For ll=l+1 To UBound( saNumbers() )
+			If s = saNumbers( ll ) Then
+				Dim t As tTestData
+				t.sFind = saNumbers( ll )
+				t.lCount = t.lCount+1
+				&apos; заносим результат в массив
+				Dim i As Long
+				i = Ubound( vaTestArray() ) + 1
+				ReDim Preserve vaTestArray(i)
+				vaTestArray(i) = t
+			End If
+		Next ll
+	Next l
+End Sub
+
+&apos; тест на наличие отсутствующих номеров примечаний в зоне поиска
+Sub TestForAbsentNumbers( saNumbers() As String, bIsAbsentNumbers As Boolean, nAbsentNumbers() As Integer )
+	Dim l As Long
+	&apos; выделяем номера числом из найденного
+	Dim iaSort() As Integer
+	For l=0 To UBound( saNumbers() )
+		AddNewItemToIntArray1( iaSort(), Val( GetNumberFromString( saNumbers(l) ) ) )
+	Next l
+	&apos; сортируем список номеров
+	bubble_sort_int( iaSort(), Ubound( iaSort() )+1 )
+	Dim nMin As Integer, nMax As Integer
+	nMin = iaSort( 0 ) : nMax = iaSort( Ubound( iaSort() ) )
+	&apos; число всех элементов должно быть равно максимальному значению. Если это не так - то каких-то элементов нет
+	If nMax &lt;&gt; UBound( iaSort() ) Then
+		bIsAbsentNumbers = True &apos; каких-то номеров не хватает
+		&apos; перебор по всем элементам
+		Dim nPrev As Integer, nCurrent As Integer : nPrev = iaSort( 0 )
+		For l=1 To UBound( iaSort() )
+			nCurrent = iaSort( l )
+			&apos; если текущий элемент &gt; предыдущего более, чем на 1 - то разница между ними - номера отсутствующих элементов
+			If nCurrent - nPrev &gt; 1 Then
+				Dim i As Integer
+				For i=nPrev+1 To nCurrent-1
+					AddNewItemToIntArray1( nAbsentNumbers(), i )
+				Next i
+				nPrev = nCurrent
+			Else
+				nPrev = nCurrent
+			End If
+		Next l
+	End If
+End Sub
+
+&apos; какие номера примечаний из текста отсутствуют в списке примечаний
+Sub TestAbsentTextNumbersInList( saNumbersInText() As String, saNumbersInList() As String, _
+								naAbsentTextNumbersInList() As Integer, naAbsentTextNumbersInText() As Integer )
+	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
+	Dim l As Long, i As Long
+	Dim iaNumbersInTextSort() As Integer
+	For l=0 To UBound( saNumbersInText() )
+		AddNewItemToIntArray1( iaNumbersInTextSort(), Val( GetNumberFromString( saNumbersInText(l) ) )
+	Next l
+	&apos; сортируем список номеров
+	bubble_sort_int( iaNumbersInTextSort(), Ubound( iaNumbersInTextSort() )+1 )
+	&apos; удаляем одинаковые элементы из массива, если они есть
+	RemoveIdenticalArrayElements_int( iaNumbersInTextSort() )
+	
+	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
+	Dim iaNumbersInListSort() As Integer
+	For l=0 To UBound( saNumbersInList() )
+		AddNewItemToIntArray1( iaNumbersInListSort(), Val( GetNumberFromString( saNumbersInList(l) ) )
+	Next l
+	&apos; сортируем список номеров
+	bubble_sort_int( iaNumbersInListSort(), Ubound( iaNumbersInListSort() )+1 )
+	&apos; удаляем одинаковые элементы из массива, если они есть
+	RemoveIdenticalArrayElements_int( iaNumbersInListSort() )
+	
+	&apos; смотрим, есть каждый номер из iaNumbersInTextSort в iaNumbersInListSort
+	Dim nCurrent As Integer, b As Boolean : b = False
+	For l=0 To UBound( iaNumbersInTextSort() )
+		nCurrent = iaNumbersInTextSort(l)
+		For i=0 To UBound( iaNumbersInListSort() )
+			If nCurrent = iaNumbersInListSort(i) Then
+				b = True
+				Exit For
+			Else
+				b = False
+			End If
+		Next i
+		If Not b Then &apos; нет текущего номера из Текста в Списке
+			AddNewItemToIntArray1( naAbsentTextNumbersInList(), nCurrent )
+		End If
+	Next l
+	
+	&apos; смотрим, есть каждый номер из iaNumbersInTextSort в iaNumbersInTextSort
+	b = False
+	For l=0 To UBound( iaNumbersInListSort() )
+		nCurrent = iaNumbersInListSort(l)
+		For i=0 To UBound( iaNumbersInTextSort() )
+			If nCurrent = iaNumbersInTextSort(i) Then
+				b = True
+				Exit For
+			Else
+				b = False
+			End If
+		Next i
+		If Not b Then &apos; нет текущего номера из Списка в Тексте
+			AddNewItemToIntArray1( naAbsentTextNumbersInText(), nCurrent )
+		End If
+	Next l
+End Sub
+
+&apos; какие номера примечаний из списка примечаний отсутствуют в тексте
+Sub TestAbsentListNumbersInText( saNumbersInText() As String, saNumbersInList() As String, saAbsentNumbers() As String )
+
+End Sub
+
+Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestArrayInText() As Variant, _
+					bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
+					lCountAllListNotes As Long, saNumbersInList() As String, vaTestArrayInList() As Variant, _
+					bIsNumbersInListTableExsist As Boolean, bIsNumbersInListFrameExsist As Boolean, _
+					nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
+					naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer )
+	Dim s As String, l As Long
+	s = &quot;&lt;html&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;meta http-equiv=&quot;&quot;content-type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;body&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=&quot;&quot;#FF0000&quot;&quot;&gt;&lt;h1 ALIGN=CENTER&gt;Результаты работы теста&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;I. Зона поиска - Текст книги:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+
+	If ThisComponent.TextTables.Count = 0 Then
+		s = s &amp; &quot;&lt;p&gt;В Документе нет ни одной Таблицы.&lt;/p&gt;&quot; &amp; chr(10)
+	End If
+	If ThisComponent.TextFrames.Count = 0 Then
+		s = s &amp; &quot;&lt;p&gt;В Документе нет ни одной Текстовой Врезки.&lt;/p&gt;&quot; &amp; chr(10)
+	End If
+	
+	
+	If bIsNumbersInTableExsist Or bIsNumbersInFrameExsist Then
+		s = s &amp; &quot;&lt;h3&gt;ПРЕДУПРЕЖДЕНИЕ!&lt;/h3&gt;&quot; &amp; chr(10)
+		If bIsNumbersInTableExsist Then
+			s = s &amp; &quot;&lt;p&gt;&quot; &amp; &quot;В Тексте есть Таблицы, в которых есть номера примечаний.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;В тесте они игнорировались.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;При генерации сносок они будут проигнорированы!&lt;/p&gt;&quot;
+			s = s &amp; chr(10)
+		End If
+		If bIsNumbersInFrameExsist Then
+			s = s &amp; &quot;&lt;p&gt;&quot; &amp; &quot;В Тексте есть Текстовые Врезки, в которых есть номера примечаний.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;В тесте они игнорировались.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;При генерации сносок они будут проигнорированы!&lt;/p&gt;&quot;
+			s = s &amp; chr(10)
+		End If
+	End If
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;h3&gt;Результат:&lt;/h3&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Обработано номеров примечаний в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Уникальные номеры в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes - Ubound( vaTestArrayInText() )-1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Повторяющиеся номеры в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры из Текста в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentTextNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	If Ubound( vaTestArrayInText() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;Повторяющиеся в Тексте номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Номер примечания&lt;/td&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;td&gt;количество&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( vaTestArrayInText() )
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; vaTestArrayInText(l).sFind &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaTestArrayInText(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+		Next l
+		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	If Ubound( nAbsentNumbersInText() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие в Тексте номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( nAbsentNumbersInText() )
+			s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; nAbsentNumbersInText(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	If Ubound( naAbsentTextNumbersInList() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие номеры примечаний из Текста в Списке:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( naAbsentTextNumbersInList() )
+			s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; naAbsentTextNumbersInList(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	s = s &amp; chr(10)
+	
+	s = s &amp; &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;II. Зона поиска - Список примечаний в конце книги&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	If bIsNumbersInListTableExsist Or bIsNumbersInListFrameExsist Then
+		s = s &amp; &quot;&lt;h3&gt;ПРЕДУПРЕЖДЕНИЕ!&lt;/h3&gt;&quot; &amp; chr(10)
+		If bIsNumbersInListTableExsist Then
+			s = s &amp; &quot;&lt;p&gt;&quot; &amp; &quot;В Списке Примечаний есть Таблицы, в которых есть номера примечаний.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;В тесте они игнорировались.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;При генерации сносок они будут проигнорированы!!!&lt;/p&gt;&quot;
+			s = s &amp; chr(10)
+		End If
+		If bIsNumbersInListFrameExsist Then
+			s = s &amp; &quot;&lt;p&gt;&quot; &amp; &quot;В Списке Примечаний есть Текстовые Врезки, в которых есть номера примечаний.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;В тесте они игнорировались.&quot; &amp; &quot; &quot;
+			s = s &amp; &quot;При генерации сносок они будут проигнорированы!&lt;/p&gt;&quot;
+			s = s &amp; chr(10)
+		End If
+	End If
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;h3&gt;Результат:&lt;/h3&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Обработано примечаний в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Уникальные номеры в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes - Ubound( vaTestArrayInList() )-1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Повторяющиеся номеры в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры из Списка в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentListNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	If Ubound( vaTestArrayInList() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;Повторяющиеся номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Номер примечания&lt;/td&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;td&gt;количество&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( vaTestArrayInList() )
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; vaTestArrayInList(l).sFind &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaTestArrayInList(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+		Next l
+		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	If Ubound( nAbsentNumbersInList() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие в Списке примечаний номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( nAbsentNumbersInList() )
+			s = s &amp; nAbsentNumbersInList(l) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	If Ubound( naAbsentListNumbersInText() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие номеры из Списка примечаний в Тексте:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( naAbsentListNumbersInText() )
+			s = s &amp; naAbsentListNumbersInText(l) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	
+	s = s &amp; &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; &quot;Анализ и Советы&quot; &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;В правильно оформленной книге должно быть следующее:&lt;/p&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;p&gt;1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.&lt;/p&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;p&gt;2. В таблицах результатов Повторяющиеся номеры = 0; Отсутствующие номеры = 0; Отсутствующие номеры из Текста в Списке = 0; Отсутствующие номеры из Списка в Тексте = 0&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;Если это не так, то проанализируйте результаты работы теста и устраните ошибки с номерами примечаний.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;h3&gt;&lt;b&gt;&quot; &amp; &quot;Советы&quot; &amp; &quot;&lt;/b&gt;&lt;/h3&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;1. Если в Тексте или в Списке примечаний есть Текстовые Врезки, то их лучше преобразовать в просто текст. Иначе, если в них есть номеры примечаний, то они будут проигнорированы при генерации сносок!&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;2. Если  в Тексте и (или) в Списке примечаний есть &lt;b&gt;повторяющиеся&lt;/b&gt; номеры, то это может быть:&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;а). Ошибка OCR. Ее просто нужно исправить.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;б). Любая другая информация, найденная по заданному шаблону (год, какое-либо число и т.д.), что не является ошибкой&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;В этом случае временно, на время работы генератора сносок измените скобки вокруг этого номера на что-нибудь другое (фигурные скобки, уголки и т.д.), чтобы после генерации сносок найти это место и вернуть скобки на место&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;в). Автор книги несколько раз ссылается на одно и тоже примечание.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;В этом случае эти номера в Тексте надо исправить на большие уникальные числа, а в Списке примечаний вставить &lt;b&gt;такое же&lt;/b&gt; число одинаковых абзацев-примечаний, но с номерами, которые вы задали вместо одинаковых. Тогда генератор сносок корректно все обработает.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;3. Если  в Тексте и (или) в Списке примечаний есть &lt;b&gt;отсутствующие&lt;/b&gt; номеры, то это может быть:&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;а). Ошибка OCR - пропуск при распознавании текста. Например, ...(1)...  ...(2)... ...(4)... ...(5)..., и т.д. Где-то в Тексте возможно есть и пропущенный номер 3, но он или его скобка неверно распознались. Надо это исправить или вставить недостающие номера и (или) примечания.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;б). По шаблону поиска была найдена другая информация (год, какое-либо число и т.д.), например (2009). И, если последний номер примечания меньше, например (31), то недостающими номерами будут считаться номера все с 32 по 2008. Устранить это можно, применив совет 2б).&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;4. Если  в Тексте и (или) в Списке примечаний есть &lt;b&gt;отсутствующие номеры из Текста в Списке&lt;/b&gt; или &lt;b&gt;отсутствующие номеры из Списка в Тексте&lt;/b&gt;, то это может быть:&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;а). Ошибка OCR - пропуск при распознавании текста, неверно распознан сивол номера примечания и т.д.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;б). В Списке примечаний разные абзацы могли соединиться, что привело к &quot;&quot;исчезновению&quot;&quot; номера примечания. Надо просто разделить эти абзацы.&lt;/p&gt;&quot;
+
+	s = s &amp; &quot;&lt;/body&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/html&gt;&quot;
+	
+	Dim sFile As String
+	sFile = getTempPath() &amp; &quot;/TestComplexFootNote.htm&quot;
+	SaveText( sFile, s, &quot;utf-8&quot; )
+	
+	Dim oSSE As Object
+	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	oSSE.execute( sFile, &quot;&quot;, 0 )
+End Sub
 
 </script:module>

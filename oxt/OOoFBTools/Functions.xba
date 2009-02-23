@@ -26,8 +26,8 @@ Function IsFileEmpty( sFileInput As String ) As Boolean
 	IsFileEmpty = bFileEmpty
 End Function
 
+&apos; Запись массива в файл
 Sub SaveArray( aArray() As String, sFile As String )
-	&apos; Запись массива в файл
 	Dim oOS As Object, oFA As Object, oTOS As Object, i As Integer
 
 	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
@@ -250,6 +250,33 @@ Function IsEvenNumber( lNumber As Long ) As Boolean
 End Function
 
 &apos; /// Работа с массивами ///
+&apos; удаление из массива int чисел всех одинаковых
+Sub RemoveIdenticalArrayElements_int( naArray() As Integer )
+	Dim naTemp() As Integer
+	Dim nCurrent As Integer, nPrev As Integer : nPrev = naArray(0)
+	AddNewItemToIntArray1( naTemp(), nPrev )
+	Dim l As Long
+	For l=1 To UBound( naArray() )
+		nCurrent = naArray(l)
+		If nPrev &lt; nCurrent Then
+			AddNewItemToIntArray1( naTemp(), nCurrent )
+			nPrev = nCurrent
+		Else
+			nPrev = nCurrent
+		End If
+	Next l
+	Redim naArray()
+	For l=0 To UBound( naTemp() )
+ 		AddNewItemToIntArray1( naArray(), naTemp(l) )
+	Next l
+End Sub
+
+Function AddNewItemToIntArray1( nArray() As Integer, nValue As Integer )
+	Dim j As Long
+	j = Ubound(nArray()) + 1
+	ReDim Preserve nArray(j)
+	nArray(j) = nValue
+End Function
 
 Function AddNewItemToArray1( sArray() As String, sValue As String )
 	Dim j As Long
@@ -831,6 +858,20 @@ Function IsFillAllFields() As Boolean
 End Function
 
 &apos; //////////// сортировка //////////////
+&apos; перемена местами двух int массивов одинаковой размерности
+Function swap_arrays_int( aArray1() As Integer, aArray2() As Integer ) As Boolean
+	swap_arrays_int = False
+	If UBound( aArray1() ) &lt;&gt; UBound( aArray1() ) Then Exit Function
+	Dim l As Long
+	Dim nTemp As Integer
+	For l=0 To UBound( aArray1() )
+		nTemp = aArray1(l)
+		aArray1(l) = aArray2(l)
+		aArray2(l) = nTemp
+	Next l
+	swap_arrays_int = True
+End Function
+
 &apos; перемена местами двух итемов в массиве
 Function swap( aArray() As String, nPos1 As Integer, nPos2 As Integer )
 	Dim sTemp As String
@@ -855,6 +896,29 @@ Function bubble_sort( aArray() As String, nSize As Integer )
 	Next i
 End Function
 
+&apos; перемена местами двух итемов в массиве
+Function swap_int( aArray() As Integer, nPos1 As Integer, nPos2 As Integer )
+	Dim nTemp As Integer
+	nTemp = aArray(nPos1)
+	aArray(nPos1) = aArray(nPos2)
+	aArray(nPos2) = nTemp
+End Function
+
+&apos; пузырьковая сортировка
+Function bubble_sort_int( aArray() As Integer, nSize As Integer )
+	Dim i As Integer, j As Integer
+	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
+	&apos; наибольший автоматически оказывается в правильной позиции. 
+	For i=0 To nSize-1
+		j=nSize-1
+		Do
+			If (aArray(j-1) &gt; aArray(j)) Then
+				swap_int(aArray, j-1, j)
+			End If
+		j = j-1
+		Loop While (j&gt;i)
+	Next i
+End Function
 &apos; /// Работа с системой ///
 
 &apos; Версия OOo
@@ -987,7 +1051,7 @@ End Sub
 
 Sub Validate( sFB2File As String )
 	If GetOS() &gt; 0 Then
-&apos;		MsgBox( &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;, 64, &quot;Валидация fb2-файлов&quot; )
+		MsgBox( &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;, 64, &quot;Валидация fb2-файлов&quot; )
 		Exit Sub
 	End If
 	Dim sFB2VBSFile As String, sFB2VBS As String
