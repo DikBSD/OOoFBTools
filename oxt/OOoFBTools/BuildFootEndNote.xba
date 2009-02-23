@@ -1336,7 +1336,7 @@ Sub FootNoteTest()
 			TestForAbsentNumbers( saNumbersInList(), bIsAbsentNumbersInList, nAbsentNumbersInList() )
 			
 			&apos; какие номера примечаний из текста отсутствуют в списке примечаний, и какие номера примечаний из списка примечаний отсутствуют в тексте
-			TestAbsentTextNumbersInList( saNumbersInText(), saNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+			TestAbsentTextOrListNumbersInListOrText( saNumbersInText(), saNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 
 			&apos; сгенерировать отчет и запустить его на просмотр
 			MakeReport( lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
@@ -1431,6 +1431,7 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 						lCountAllNotes = lCountAllNotes+1
 						vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 					Else
+						GetDataForTestComplexFootNote = lCountAllNotes
 						Exit Function
 					End if
 				End If
@@ -1444,6 +1445,7 @@ End Function
 
 &apos; тест на наличие одинаковых номеров примечаний в зоне поиска
 Sub TestForIdenticalNumbers( saNumbers() As String, vaTestArray() As Variant )
+	If UBound( saNumbers() ) = -1 Then Exit Sub
 	Dim l As Long, s As String
 	For l=0 To UBound( saNumbers() )
 		s = saNumbers( l )
@@ -1465,6 +1467,7 @@ End Sub
 
 &apos; тест на наличие отсутствующих номеров примечаний в зоне поиска
 Sub TestForAbsentNumbers( saNumbers() As String, bIsAbsentNumbers As Boolean, nAbsentNumbers() As Integer )
+	If UBound( saNumbers() ) = -1 Then Exit Sub
 	Dim l As Long
 	&apos; выделяем номера числом из найденного
 	Dim iaSort() As Integer
@@ -1497,8 +1500,9 @@ Sub TestForAbsentNumbers( saNumbers() As String, bIsAbsentNumbers As Boolean, nA
 End Sub
 
 &apos; какие номера примечаний из текста отсутствуют в списке примечаний
-Sub TestAbsentTextNumbersInList( saNumbersInText() As String, saNumbersInList() As String, _
-								naAbsentTextNumbersInList() As Integer, naAbsentTextNumbersInText() As Integer )
+Sub TestAbsentTextOrListNumbersInListOrText( saNumbersInText() As String, saNumbersInList() As String, _
+											naAbsentTextNumbersInList() As Integer, naAbsentTextNumbersInText() As Integer )
+	If UBound( saNumbersInText() )=-1 Or UBound( saNumbersInList )=-1 Then Exit Sub
 	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
 	Dim l As Long, i As Long
 	Dim iaNumbersInTextSort() As Integer
@@ -1553,11 +1557,6 @@ Sub TestAbsentTextNumbersInList( saNumbersInText() As String, saNumbersInList() 
 			AddNewItemToIntArray1( naAbsentTextNumbersInText(), nCurrent )
 		End If
 	Next l
-End Sub
-
-&apos; какие номера примечаний из списка примечаний отсутствуют в тексте
-Sub TestAbsentListNumbersInText( saNumbersInText() As String, saNumbersInList() As String, saAbsentNumbers() As String )
-
 End Sub
 
 Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestArrayInText() As Variant, _
