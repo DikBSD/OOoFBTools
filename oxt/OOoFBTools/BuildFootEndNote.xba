@@ -1029,6 +1029,7 @@ Sub ControlModeEnabled()
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = True
+		oBuildFootEndNoteDlg.GetControl(&quot;cmnbtnTest&quot;).Enable = True
 		
 		oBuildFootEndNoteDlg.GetControl(&quot;lblSimpleFN&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = False
@@ -1041,6 +1042,7 @@ Sub ControlModeEnabled()
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = False
 		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = False
+		oBuildFootEndNoteDlg.GetControl(&quot;cmnbtnTest&quot;).Enable = False
 		
 		oBuildFootEndNoteDlg.GetControl(&quot;lblSimpleFN&quot;).Enable = True
 		oBuildFootEndNoteDlg.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = True
@@ -1306,13 +1308,20 @@ Sub FootNoteTest()
 		Dim nAbsentNumbersInList()		As Integer	&apos; номера отсутствующих номеров примечаний в Списке
 		Dim naAbsentListNumbersInText()	As Integer	&apos; список номеровпримечаний из Списка примечаний, отсутствующих в Тексте
 		
+		Dim oProgressBar As Object
+		oProgressBar = ThisComponent.CurrentController.StatusIndicator
+
 		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
 			&apos; режим: Нумерация - сквозная; Общий список примечаний - в конце книги
 			
+			oProgressBar.start( &quot;Сбор данных:&quot;, 2)
+			oProgressBar.setValue( 1 )
+		
 			&apos; сбор информации по номерам примечаний из текста
 			oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
 			lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, _
 																saNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist  )
+			oProgressBar.setValue( 2 )
 			&apos; сбор информации по номерам примечаний из списка примечаний
 			Dim oBookMark As Object : oBookMark	= oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
 			&apos; закладка списка текста примечаний
@@ -1322,29 +1331,40 @@ Sub FootNoteTest()
 			lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark.getStart(), oBlockNoteZoneBookMark.getEnd(), _
 																sLeft &amp; &quot;[:digit:]+&quot; &amp; sRight, _
 																saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
-		
+			
+			oProgressBar.start( &quot;Анализ данных:&quot;, 13)
+			oProgressBar.setValue( 1 )
 			&apos; тест на наличие одинаковых номеров примечаний в Тексте
 			TestForIdenticalNumbers( saNumbersInText(), vaTestArrayInText() )
+			oProgressBar.setValue( 2 )
 			
 			&apos; тест на наличие одинаковых номеров примечаний в Списке примечаний
 			TestForIdenticalNumbers( saNumbersInList(), vaTestArrayInList() )
-						
+			oProgressBar.setValue( 3 )
+			
 			&apos; тест на наличие отсутствующих номеров примечаний в Тексте
 			TestForAbsentNumbers( saNumbersInText(),  bIsAbsentNumbersInText, nAbsentNumbersInText() )
+			oProgressBar.setValue( 4 )
 			
 			&apos; тест на наличие отсутствующих номеров примечаний в Списке примечаний
 			TestForAbsentNumbers( saNumbersInList(), bIsAbsentNumbersInList, nAbsentNumbersInList() )
+			oProgressBar.setValue( 5 )
 			
 			&apos; какие номера примечаний из текста отсутствуют в списке примечаний, и какие номера примечаний из списка примечаний отсутствуют в тексте
-			TestAbsentTextOrListNumbersInListOrText( saNumbersInText(), saNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
-
+			TestAbsentTextOrListNumbersInListOrText( oProgressBar, saNumbersInText(), saNumbersInList(), _
+													naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+			oProgressBar.start( &quot;Генерация и запуск отчета:&quot;, 2)
+			oProgressBar.setValue( 1 )
+			
 			&apos; сгенерировать отчет и запустить его на просмотр
 			MakeReport( lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 						lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
-		
+			oProgressBar.setValue( 2 )
+			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
 			&apos; режим: список примечаний - после каждой главы
+			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
 			For l=0 To UBound( aBookMarks() )
 				oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
 				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind )
@@ -1357,6 +1377,7 @@ Sub FootNoteTest()
 			
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
 			&apos; Режим: все списки примечаний - в конце книги		
+			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
 			Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
 			&apos;проверка - есть ли хоть одна закладка L-зоны
 			Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
@@ -1500,7 +1521,7 @@ Sub TestForAbsentNumbers( saNumbers() As String, bIsAbsentNumbers As Boolean, nA
 End Sub
 
 &apos; какие номера примечаний из текста отсутствуют в списке примечаний
-Sub TestAbsentTextOrListNumbersInListOrText( saNumbersInText() As String, saNumbersInList() As String, _
+Sub TestAbsentTextOrListNumbersInListOrText( oProgressBar As Object, saNumbersInText() As String, saNumbersInList() As String, _
 											naAbsentTextNumbersInList() As Integer, naAbsentTextNumbersInText() As Integer )
 	If UBound( saNumbersInText() )=-1 Or UBound( saNumbersInList )=-1 Then Exit Sub
 	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
@@ -1509,20 +1530,26 @@ Sub TestAbsentTextOrListNumbersInListOrText( saNumbersInText() As String, saNumb
 	For l=0 To UBound( saNumbersInText() )
 		AddNewItemToIntArray1( iaNumbersInTextSort(), Val( GetNumberFromString( saNumbersInText(l) ) )
 	Next l
+	oProgressBar.setValue( 6 )
 	&apos; сортируем список номеров
 	bubble_sort_int( iaNumbersInTextSort(), Ubound( iaNumbersInTextSort() )+1 )
+	oProgressBar.setValue( 7 )
 	&apos; удаляем одинаковые элементы из массива, если они есть
-	RemoveIdenticalArrayElements_int( iaNumbersInTextSort() )
+	iaNumbersInTextSort() = RemoveIdenticalArrayElements_int( iaNumbersInTextSort() )
+	oProgressBar.setValue( 8 )
 	
 	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
 	Dim iaNumbersInListSort() As Integer
 	For l=0 To UBound( saNumbersInList() )
 		AddNewItemToIntArray1( iaNumbersInListSort(), Val( GetNumberFromString( saNumbersInList(l) ) )
 	Next l
+	oProgressBar.setValue( 9 )
 	&apos; сортируем список номеров
 	bubble_sort_int( iaNumbersInListSort(), Ubound( iaNumbersInListSort() )+1 )
+	oProgressBar.setValue( 10 )
 	&apos; удаляем одинаковые элементы из массива, если они есть
-	RemoveIdenticalArrayElements_int( iaNumbersInListSort() )
+	iaNumbersInListSort() = RemoveIdenticalArrayElements_int( iaNumbersInListSort() )
+	oProgressBar.setValue( 11 )
 	
 	&apos; смотрим, есть каждый номер из iaNumbersInTextSort в iaNumbersInListSort
 	Dim nCurrent As Integer, b As Boolean : b = False
@@ -1540,6 +1567,7 @@ Sub TestAbsentTextOrListNumbersInListOrText( saNumbersInText() As String, saNumb
 			AddNewItemToIntArray1( naAbsentTextNumbersInList(), nCurrent )
 		End If
 	Next l
+	oProgressBar.setValue( 12 )
 	
 	&apos; смотрим, есть каждый номер из iaNumbersInTextSort в iaNumbersInTextSort
 	b = False
@@ -1557,6 +1585,7 @@ Sub TestAbsentTextOrListNumbersInListOrText( saNumbersInText() As String, saNumb
 			AddNewItemToIntArray1( naAbsentTextNumbersInText(), nCurrent )
 		End If
 	Next l
+	oProgressBar.setValue( 13 )
 End Sub
 
 Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestArrayInText() As Variant, _
@@ -1600,17 +1629,17 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Обработано номеров примечаний в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Уникальные номеры в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Уникальные номера в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes - Ubound( vaTestArrayInText() )-1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Повторяющиеся номеры в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Повторяющиеся номера в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номера в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры из Текста в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номера из Текста в Списке:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentTextNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	If Ubound( vaTestArrayInText() ) &gt; -1 Then
-		s = s &amp; &quot;&lt;h3&gt;Повторяющиеся в Тексте номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;h3&gt;Повторяющиеся в Тексте номера:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Номер примечания&lt;/td&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;td&gt;количество&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
@@ -1621,7 +1650,7 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	End If
 	If Ubound( nAbsentNumbersInText() ) &gt; -1 Then
-		s = s &amp; &quot;&lt;h3&gt;Отсутствующие в Тексте номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие в Тексте номера:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 		For l=0 To Ubound( nAbsentNumbersInText() )
@@ -1630,7 +1659,7 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	End If
 	If Ubound( naAbsentTextNumbersInList() ) &gt; -1 Then
-		s = s &amp; &quot;&lt;h3&gt;Отсутствующие номеры примечаний из Текста в Списке:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие номера примечаний из Текста в Списке:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 		For l=0 To Ubound( naAbsentTextNumbersInList() )
@@ -1646,7 +1675,7 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 		If bIsNumbersInListTableExsist Then
 			s = s &amp; &quot;&lt;p&gt;&quot; &amp; &quot;В Списке Примечаний есть Таблицы, в которых есть номера примечаний.&quot; &amp; &quot; &quot;
 			s = s &amp; &quot;В тесте они игнорировались.&quot; &amp; &quot; &quot;
-			s = s &amp; &quot;При генерации сносок они будут проигнорированы!!!&lt;/p&gt;&quot;
+			s = s &amp; &quot;При генерации сносок они будут проигнорированы!&lt;/p&gt;&quot;
 			s = s &amp; chr(10)
 		End If
 		If bIsNumbersInListFrameExsist Then
@@ -1660,17 +1689,17 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Обработано примечаний в Списке:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Уникальные номеры в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Уникальные номера в Списке:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes - Ubound( vaTestArrayInList() )-1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Повторяющиеся номеры в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Повторяющиеся номера в Списке:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры в Списке:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номера в Списке:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номеры из Списка в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Отсутствующие номерыаиз Списка в Тексте:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentListNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	If Ubound( vaTestArrayInList() ) &gt; -1 Then
-		s = s &amp; &quot;&lt;h3&gt;Повторяющиеся номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;h3&gt;Повторяющиеся номера:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;Номер примечания&lt;/td&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;td&gt;количество&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
@@ -1681,7 +1710,7 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	End If
 	If Ubound( nAbsentNumbersInList() ) &gt; -1 Then
-		s = s &amp; &quot;&lt;h3&gt;Отсутствующие в Списке примечаний номеры:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие в Списке примечаний номера:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 		For l=0 To Ubound( nAbsentNumbersInList() )
@@ -1690,7 +1719,7 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	End If
 	If Ubound( naAbsentListNumbersInText() ) &gt; -1 Then
-		s = s &amp; &quot;&lt;h3&gt;Отсутствующие номеры из Списка примечаний в Тексте:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;h3&gt;Отсутствующие номера из Списка примечаний в Тексте:&quot; &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 		For l=0 To Ubound( naAbsentListNumbersInText() )
@@ -1699,25 +1728,12 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	End If
 	
-	s = s &amp; &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; &quot;Анализ и Советы&quot; &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; &quot;Анализ результатов работы теста и текста книги&quot; &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;p&gt;В правильно оформленной книге должно быть следующее:&lt;/p&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;p&gt;1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.&lt;/p&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;p&gt;2. В таблицах результатов Повторяющиеся номеры = 0; Отсутствующие номеры = 0; Отсутствующие номеры из Текста в Списке = 0; Отсутствующие номеры из Списка в Тексте = 0&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;Если это не так, то проанализируйте результаты работы теста и устраните ошибки с номерами примечаний.&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;font color=green&gt;&lt;h3&gt;&lt;b&gt;&quot; &amp; &quot;Советы&quot; &amp; &quot;&lt;/b&gt;&lt;/h3&gt;&lt;/font&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;1. Если в Тексте или в Списке примечаний есть Текстовые Врезки, то их лучше преобразовать в просто текст. Иначе, если в них есть номеры примечаний, то они будут проигнорированы при генерации сносок!&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;2. Если  в Тексте и (или) в Списке примечаний есть &lt;b&gt;повторяющиеся&lt;/b&gt; номеры, то это может быть:&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;а). Ошибка OCR. Ее просто нужно исправить.&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;б). Любая другая информация, найденная по заданному шаблону (год, какое-либо число и т.д.), что не является ошибкой&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;В этом случае временно, на время работы генератора сносок измените скобки вокруг этого номера на что-нибудь другое (фигурные скобки, уголки и т.д.), чтобы после генерации сносок найти это место и вернуть скобки на место&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;в). Автор книги несколько раз ссылается на одно и тоже примечание.&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;В этом случае эти номера в Тексте надо исправить на большие уникальные числа, а в Списке примечаний вставить &lt;b&gt;такое же&lt;/b&gt; число одинаковых абзацев-примечаний, но с номерами, которые вы задали вместо одинаковых. Тогда генератор сносок корректно все обработает.&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;3. Если  в Тексте и (или) в Списке примечаний есть &lt;b&gt;отсутствующие&lt;/b&gt; номеры, то это может быть:&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;а). Ошибка OCR - пропуск при распознавании текста. Например, ...(1)...  ...(2)... ...(4)... ...(5)..., и т.д. Где-то в Тексте возможно есть и пропущенный номер 3, но он или его скобка неверно распознались. Надо это исправить или вставить недостающие номера и (или) примечания.&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;б). По шаблону поиска была найдена другая информация (год, какое-либо число и т.д.), например (2009). И, если последний номер примечания меньше, например (31), то недостающими номерами будут считаться номера все с 32 по 2008. Устранить это можно, применив совет 2б).&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;4. Если  в Тексте и (или) в Списке примечаний есть &lt;b&gt;отсутствующие номеры из Текста в Списке&lt;/b&gt; или &lt;b&gt;отсутствующие номеры из Списка в Тексте&lt;/b&gt;, то это может быть:&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;а). Ошибка OCR - пропуск при распознавании текста, неверно распознан сивол номера примечания и т.д.&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;б). В Списке примечаний разные абзацы могли соединиться, что привело к &quot;&quot;исчезновению&quot;&quot; номера примечания. Надо просто разделить эти абзацы.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработаных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;p&gt;Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.&lt;/p&gt;&lt;/font&gt;&quot;
 
 	s = s &amp; &quot;&lt;/body&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/html&gt;&quot;
 	
