@@ -48,6 +48,42 @@ Type tBuildTootEndNoteData
 	sNUpNoteTransforming				As String &apos; Преобразование номеров примечаний в верхнем индексе
 	sFoundNUpNote						As String &apos; Найдено номеров примечаний в верхнем индексе:
 	sNotFoundNUpNote					As String &apos; Не найдено ни одного номера примечаний в верхнем индексе.
+	&apos; для Теста
+	sTestDataGathering					As String &apos; Сбор данных
+	sTestDataAnalysis 					As String &apos; Анализ данных
+	sTestProgressReport 				As String &apos; Генерация и запуск отчета
+	sTestResults		 				As String &apos; Результаты работы теста
+	sTestMode1			 				As String &apos; Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги
+	sTestTextZoneSearch	 				As String &apos; I. Зона поиска - Текст книги
+	sTestListZoneSearch	 				As String &apos; II. Зона поиска - Список примечаний в конце книги
+	sTestNoTablesInDoc	 				As String &apos; В Документе нет ни одной Таблицы.
+	sTestNoFramesInDoc	 				As String &apos; В Документе нет ни одной Текстовой Врезки.
+	sTestWarning		 				As String &apos; ПРЕДУПРЕЖДЕНИЕ!
+	sTestNotesInTablesInText			As String &apos; В Тексте есть Таблицы, в которых есть номера примечаний.
+	sTestNotesInTextFramesInText		As String &apos; В Тексте есть Текстовые Врезки, в которых есть номера примечаний.
+	sTestNotesInTablesInList			As String &apos; В Списке Примечаний есть Таблицы, в которых есть номера примечаний.
+	sTestNotesInListFrames				As String &apos; В Списке есть Текстовые Врезки, в которых есть номера примечаний.
+	sTestIgnoredInTest					As String &apos; В тесте они игнорировались.
+	sTestIgnoredInGenerate				As String &apos; При генерации сносок они будут проигнорированы!
+	sTestResult							As String &apos; Результат
+	sTestProcessedNotesNumbersInText	As String &apos; Обработано номеров примечаний в Тексте
+	sTestProcessedNotesNumbersInList	As String &apos; Обработано примечаний в Списке
+	sTestUniqueNumbersInText			As String &apos; Уникальные номера в Тексте
+	sTestUniqueNumbersInList			As String &apos; Уникальные номера в Списке
+	sTestRepeatingNumbersInText			As String &apos; Повторяющиеся номера в Тексте
+	sTestRepeatingNumbersInList			As String &apos; Повторяющиеся номера в Списке
+	sTestAbsentNumbersInText			As String &apos; Отсутствующие номера в Тексте
+	sTestAbsentNumbersInList			As String &apos; Отсутствующие номера в Списке
+	sTestAbsentNumbersFromTextInList	As String &apos; Отсутствующие номера из Текста в Списке
+	sTestAbsentNumbersFromListInText	As String &apos; Отсутствующие номера из Списка в Тексте
+	sTestNoteNumber						As String &apos; Номер примечания
+	sTestNoteQuantity					As String &apos; количество
+	sTestAnalysisOfResult				As String &apos; Анализ результатов работы теста и текста книги
+	sTestCorrectlyBook					As String &apos; В правильно оформленной книге должно быть следующее
+	sTestCorrectlyBook1					As String &apos; 1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.
+	sTestCorrectlyBook2					As String &apos; 2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработаных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0
+	sTestCorrectlyBook3					As String &apos; Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.
+	sTestCorrectlyBook4					As String &apos; Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.
 End Type
 
 Public sBTEND As tBuildTootEndNoteData
@@ -115,6 +151,42 @@ Sub InitBuildTootEndNoteMessage()
 			.sNUpNoteTransforming				= &quot;Преобразование номеров примечаний в верхнем индексе&quot;
 			.sFoundNUpNote						= &quot;Найдено номеров примечаний в верхнем индексе:&quot;
 			.sNotFoundNUpNote					= &quot;Не найдено ни одного номера примечаний в верхнем индексе.&quot;
+			&apos; Тест
+			.sTestDataGathering					= &quot;Сбор Данных&quot;
+			.sTestDataAnalysis					= &quot;Анализ данных&quot;
+			.sTestProgressReport 				= &quot;Генерация и запуск отчета&quot;
+			.sTestResults		 				= &quot;Результаты работы теста&quot;
+			.sTestMode1			 				= &quot;Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги&quot;
+			.sTestTextZoneSearch	 			= &quot;I. Зона поиска - Текст книги&quot;
+			.sTestListZoneSearch	 			= &quot;II. Зона поиска - Список примечаний в конце книги&quot;
+			.sTestNoTablesInDoc	 				= &quot;В Документе нет ни одной Таблицы.&quot;
+			.sTestNoFramesInDoc	 				= &quot;В Документе нет ни одной Текстовой Врезки.&quot;
+			.sTestWarning		 				= &quot;ПРЕДУПРЕЖДЕНИЕ!&quot;
+			.sTestNotesInTablesInText			= &quot;В Тексте есть Таблицы, в которых есть номера примечаний.&quot;
+			.sTestNotesInTextFramesInText		= &quot;В Тексте есть Текстовые Врезки, в которых есть номера примечаний.&quot;
+			.sTestNotesInTablesInList			= &quot;В Списке Примечаний есть Таблицы, в которых есть номера примечаний.&quot;
+			.sTestNotesInListFrames				= &quot;В Списке есть Текстовые Врезки, в которых есть номера примечаний.&quot;
+			.sTestIgnoredInTest					= &quot;В тесте они игнорировались.&quot;
+			.sTestIgnoredInGenerate				= &quot;При генерации сносок они будут проигнорированы!&quot;
+			.sTestResult						= &quot;Результат&quot;
+			.sTestProcessedNotesNumbersInText	= &quot;Обработано номеров примечаний в Тексте&quot;
+			.sTestProcessedNotesNumbersInList	= &quot;Обработано примечаний в Списке&quot;
+			.sTestUniqueNumbersInText			= &quot;Уникальные номера в Тексте&quot;
+			.sTestUniqueNumbersInList			= &quot;Уникальные номера в Списке&quot;
+			.sTestRepeatingNumbersInText		= &quot;Повторяющиеся номера в Тексте&quot;
+			.sTestRepeatingNumbersInList		= &quot;Повторяющиеся номера в Списке&quot;
+			.sTestAbsentNumbersInText			= &quot;Отсутствующие номера в Тексте&quot;
+			.sTestAbsentNumbersInList			= &quot;Отсутствующие номера в Списке&quot;
+			.sTestAbsentNumbersFromTextInList	= &quot;Отсутствующие номера из Текста в Списке&quot;
+			.sTestAbsentNumbersFromListInText	= &quot;Отсутствующие номера из Списка в Тексте&quot;
+			.sTestNoteNumber					= &quot;Номер примечания&quot;
+			.sTestNoteQuantity					= &quot;Количество&quot;
+			.sTestAnalysisOfResult				= &quot;Анализ результатов работы теста и текста книги&quot;
+			.sTestCorrectlyBook					= &quot;В правильно оформленной книге должно быть следующее&quot;
+			.sTestCorrectlyBook1				= &quot;1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.&quot;
+			.sTestCorrectlyBook2				= &quot;2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработанных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0&quot;
+			.sTestCorrectlyBook3				= &quot;Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.&quot;
+			.sTestCorrectlyBook4				= &quot;Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.&quot;
 		End With
 	Else
 		With sBTEND
@@ -176,6 +248,42 @@ Sub InitBuildTootEndNoteMessage()
 			.sNUpNoteTransforming				= &quot;Transformation of Numbers of Notes to the top Index&quot;
 			.sFoundNUpNote						= &quot;It is found Numbers of Notes in the top Index:&quot;
 			.sNotFoundNUpNote					= &quot;It is not found any Number of Notes in the top Index.&quot;
+			&apos; Test
+			.sTestDataGathering					= &quot;Data gathering&quot;
+			.sTestDataAnalysis					= &quot;The Analysis of Data&quot;
+			.sTestProgressReport 				= &quot;Generation and Start Report&quot;
+			.sTestResults		 				= &quot;Results of Work of the Test&quot;
+			.sTestMode1			 				= &quot;Mode: Numbering of Numbers of Notes in the Text - through; the General List of Notes - in the End of the Book&quot;
+			.sTestTextZoneSearch	 			= &quot;I. A Zone of Search - the Text of the Book&quot;
+			.sTestListZoneSearch	 			= &quot;II. The Zone of Search - the List of Notes in the End of the Book&quot;
+			.sTestNoTablesInDoc	 				= &quot;In the Document there is no Table.&quot;
+			.sTestNoFramesInDoc	 				= &quot;In the Document there is no Text Frame.&quot;
+			.sTestWarning		 				= &quot;WARNING!&quot;
+			.sTestNotesInTablesInText			= &quot;In the Text there are Tables in which there are Numbers of Notes.&quot;
+			.sTestNotesInTextFramesInText		= &quot;In the Text there are Text Frames in which there are Numbers of Notes.&quot;
+			.sTestNotesInTablesInList			= &quot;In the List there are Tables in which there are Numbers of Notes.&quot;
+			.sTestNotesInListFrames				= &quot;In the List there are Text Frames in which there are Numbers of Notes.&quot;
+			.sTestIgnoredInTest					= &quot;In the Test they were ignored.&quot;
+			.sTestIgnoredInGenerate				= &quot;At Generation of Footnotes they will be ignored!&quot;
+			.sTestResult						= &quot;Result&quot;
+			.sTestProcessedNotesNumbersInText	= &quot;It is processed Numbers of Notes in the Text&quot;
+			.sTestProcessedNotesNumbersInList	= &quot;It is processed Numbers of Notes in the List&quot;
+			.sTestUniqueNumbersInText			= &quot;Unique numbers in the Text&quot;
+			.sTestUniqueNumbersInList			= &quot;Unique numbers in the List&quot;
+			.sTestRepeatingNumbersInText		= &quot;Repeating Numbers in the Text&quot;
+			.sTestRepeatingNumbersInList		= &quot;Repeating Numbers in the List&quot;
+			.sTestAbsentNumbersInText			= &quot;Absent Numbers in the Text&quot;
+			.sTestAbsentNumbersInList			= &quot;Absent Numbers in the List&quot;
+			.sTestAbsentNumbersFromTextInList	= &quot;Absent Numbers from the Text in the List&quot;
+			.sTestAbsentNumbersFromListInText	= &quot;Absent Numbers from the List in the Text&quot;
+			.sTestNoteNumber					= &quot;Number of the Note&quot;
+			.sTestNoteQuantity					= &quot;Quantity&quot;
+			.sTestAnalysisOfResult				= &quot;The Analysis of Results of Work of the Test and the Text of the Book&quot;
+			.sTestCorrectlyBook					= &quot;In correctly issued Book there should be a following&quot;
+			.sTestCorrectlyBook1				= &quot;1. The Number of Numbers of Notes from the Text and Numbers from the List of Notes should coincide.&quot;
+			.sTestCorrectlyBook2				= &quot;2. In Tables of Results the Number of processed Numbers of Notes in the Text should be equal to Number of Unique Numbers the Text, and Number of the processed Notes in the List - to Number of Unique Numbers in the List; Repeating Numbers = 0; Absent Numbers = 0; Absent Numbers from the Text in the List = 0; Absent Numbers from the List in the Text = 0&quot;
+			.sTestCorrectlyBook3				= &quot;If it not so Analyse Results of Work of the Test and the Text of the Book, and eliminate mistakes with Numbers of Notes.&quot;
+			.sTestCorrectlyBook4				= &quot;How more in detail to spend the Analysis - see in the Information (Manual) to Package OOoFBTools.&quot;
 		End With
 	End If
 End Sub
@@ -202,6 +310,7 @@ Sub InitBuildFootEndNoteDlg()
 			.cboxDelBookMarks.Label		= &quot;Удалить все закладки-пометки для генерации сносок по завершению работы&quot;
 			.cmnbtnBuild.Label			= &quot;Сгенерировать&quot;
 			.cmnbtnCancel.Label			= &quot;Отмена&quot;
+			.cmnbtnTest					= &quot;Тест&quot;
 		End With
 	Else
 		With oBuildFootEndNoteDlg.getModel
@@ -216,6 +325,7 @@ Sub InitBuildFootEndNoteDlg()
 			.cboxDelBookMarks.Label		= &quot;to remove all Bookmarks-Marks for generation of Footnotes on End of Work&quot;
 			.cmnbtnBuild.Label			= &quot;Generate&quot;
 			.cmnbtnCancel.Label			= &quot;Cancel&quot;
+			.cmnbtnTest					= &quot;Test&quot;
 		End With
 	End If
 End Sub
