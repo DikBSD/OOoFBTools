@@ -342,10 +342,21 @@ Sub TextCorrectorDlgOk()
 
 	If bDelEmptyPar = True Then
 		&apos; Удаляем все множественные пустые абзацы
-		oReplace.SearchString = &quot;^$&quot;
-		oReplace.ReplaceString = &quot;&quot;
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
+		Dim oDoc As Object : oDoc = ThisComponent
+		Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchRegularExpression = True
+			.SearchString = &quot;^$&quot;
+		End With
+		Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
+		Do While Not IsNull( vFound )
+			If Not IsNull( vFound ) Then
+				vFound.setString(&quot;&quot;)
+				&apos; ищем далее
+				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+			End If
+		Loop
+		oProgressBar.setValue( nCur )
 		nCur = nCur+1
 	End If
 	If bBreakLine = True Then
@@ -616,10 +627,10 @@ Sub JoinWordDefisParaInText( oProgressBar As Object )
 					&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, True, oProgressBar, l )
 					&apos; ищем далее
-					vStartFound = oDoc.findNext( vStartFound.End, vSearch)
-					vEndFound = oDoc.findNext( vEndFound.End, vSearch)
-					vL = oDoc.findNext( vL.End, vSearch)
-					vR = oDoc.findNext( vR.End, vSearch)
+					vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+					vEndFound = oDoc.findNext( vEndFound.End, vSearch )
+					vL = oDoc.findNext( vL.End, vSearch )
+					vR = oDoc.findNext( vR.End, vSearch )
 				Else Exit Do
 				End If
 			Else &apos; обходим строки таблицы
@@ -629,10 +640,10 @@ Sub JoinWordDefisParaInText( oProgressBar As Object )
 				vEndFound.gotoEndOfWord(False)
 				vR.gotoNextParagraph(False)
 				vR.gotoEndOfWord(False)
-				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
-				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
-				vL = oDoc.findNext( vL.End, vSearch)
-				vR = oDoc.findNext( vR.End, vSearch)
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
+				vL = oDoc.findNext( vL.End, vSearch )
+				vR = oDoc.findNext( vR.End, vSearch )
 			End If
 		End If
 	Loop
@@ -658,10 +669,10 @@ Sub JoinWordDefisParaInTables( oProgressBar As Object )
 		End With
 	
 		&apos; Начать поиск с начала текстового объекта в ячейке A1 i-й текстовой таблицы.
-		vStartFound = oDoc.findNext( oCell.getText().getStart(), vSearch)
-		vEndFound = oDoc.findNext( oCell.getText().getStart(), vSearch)
-		vL = oDoc.findNext( oCell.getText().getStart(), vSearch)
-		vR = oDoc.findNext( oCell.getText().getStart(), vSearch)
+		vStartFound = oDoc.findNext( oCell.getText().getStart(), vSearch )
+		vEndFound = oDoc.findNext( oCell.getText().getStart(), vSearch )
+		vL = oDoc.findNext( oCell.getText().getStart(), vSearch )
+		vR = oDoc.findNext( oCell.getText().getStart(), vSearch )
 		l = 0
 		Do While Not IsNull(vStartFound)
 			&apos; Если найденный текст не входит в текстовую таблицу, то закончить
@@ -683,10 +694,10 @@ Sub JoinWordDefisParaInTables( oProgressBar As Object )
 				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, oProgressBar, l )
 				&apos; ищем далее
-				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
-				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
-				vL = oDoc.findNext( vL.End, vSearch)
-				vR = oDoc.findNext( vR.End, vSearch)
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
+				vL = oDoc.findNext( vL.End, vSearch )
+				vR = oDoc.findNext( vR.End, vSearch )
 			Else Exit Do
 			End If
 		Loop
@@ -728,19 +739,19 @@ Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
 		End With
 	
 		&apos; Начать поиск с начала текстового объекта
-		vStartFound = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
-		vEndFound = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
-		vL = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
-		vR = oDoc.findNext( oFootNotes.getText().getStart(), vSearch)
+		vStartFound = oDoc.findNext( oFootNotes.getText().getStart(), vSearch )
+		vEndFound = oDoc.findNext( oFootNotes.getText().getStart(), vSearch )
+		vL = oDoc.findNext( oFootNotes.getText().getStart(), vSearch )
+		vR = oDoc.findNext( oFootNotes.getText().getStart(), vSearch )
 		l = 0
-		Do While Not IsNull(vStartFound)
+		Do While Not IsNull( vStartFound )
 			&apos; Если найденный текст не входит в текстовую таблицу, то закончить
 			If IsNull(vStartFound.FootNote) Then
 				Exit Do
 			End If
-			&apos; Если найденный текст не входит в ту же текстовую таблицу - закончить.
+			&apos; Если найденный текст не входит в ту же сноску - закончить.
 			&apos; закомментировал - чтобы обрабатывалось все - и сноски, и врезки
-&apos;			If NOT EqualUnoObjects(oTable, vStartFound.FootNote) Then
+&apos;			If NOT EqualUnoObjects(oFootNotes, vStartFound.FootNote) Then
 &apos;				Exit Do
 &apos;			End If
 			&apos; на начало слова с переносом
@@ -754,10 +765,10 @@ Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
 				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, oProgressBar, l )
 				&apos; ищем далее
-				vStartFound = oDoc.findNext( vStartFound.End, vSearch)
-				vEndFound = oDoc.findNext( vEndFound.End, vSearch)
-				vL = oDoc.findNext( vL.End, vSearch)
-				vR = oDoc.findNext( vR.End, vSearch)
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
+				vL = oDoc.findNext( vL.End, vSearch )
+				vR = oDoc.findNext( vR.End, vSearch )
 			Else Exit Do
 			End If
 		Loop
@@ -782,7 +793,7 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressB
 		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 	Else
 		If bDefisWordDelOnlyPara Then
-			&apos; еще и для слов удаляем только символа абзаца без переноса
+			&apos; еще и для слов удаляем только символ абзаца без переноса
 			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		ElseIf bDefisWordDeAll Then
 			&apos; еще и для слов удаляем и перенос, и символ абзаца
