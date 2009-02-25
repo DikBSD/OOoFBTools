@@ -250,8 +250,8 @@ Function IsEvenNumber( lNumber As Long ) As Boolean
 End Function
 
 &apos; /// Работа с массивами ///
-&apos; удаление из массива int чисел всех одинаковых
-Function RemoveIdenticalArrayElements_int( naArray() As Integer ) As Array
+&apos; удаление из сортированного массива int чисел всех одинаковых
+Function RemoveIdenticalSortArrayElements_int( naArray() As Integer ) As Array
 	If UBound( naArray() ) = -1 Then Exit Function
 	Dim naTemp() As Integer
 	Dim nCurrent As Integer, nPrev As Integer : nPrev = naArray(0)
@@ -270,7 +270,39 @@ Function RemoveIdenticalArrayElements_int( naArray() As Integer ) As Array
 &apos;	For l=0 To UBound( naTemp() )
  &apos;		AddNewItemToIntArray1( naArray(), naTemp(l) )
 &apos;	Next l
-	RemoveIdenticalArrayElements_int = naTemp()
+	RemoveIdenticalSortArrayElements_int = naTemp()
+End Function
+
+&apos; удаление из не сортированного массива int чисел всех одинаковых
+Function RemoveIdenticalNonSortArrayElements_int( naArray() As Integer ) As Array
+	If UBound( naArray() ) = -1 Then Exit Function
+	Dim l As Long, i As Long
+	Dim naTemp() As Integer
+	Dim nCurrent As Integer, b As Boolean : b = False
+	For l=0 To UBound( naArray() )
+		nCurrent = naArray(l)
+		For i=0 To UBound( naArray() )
+			If l &lt;&gt; i Then
+				If nCurrent = naArray(i) Then
+					b = True
+					Exit For
+				Else
+					b = False
+				End If
+			End If
+		Next i
+		If Not b Then &apos; нет текущего номера
+			AddNewItemToIntArray1( naTemp(), nCurrent )
+		End If
+	Next l
+	RemoveIdenticalNonSortArrayElements_int = naTemp()
+End Function
+
+Function AddNewItemToVarArray1( vArray() As Variant, vValue As Variant )
+	Dim j As Long
+	j = Ubound(vArray()) + 1
+	ReDim Preserve vArray(j)
+	vArray(j) = vValue
 End Function
 
 Function AddNewItemToIntArray1( nArray() As Integer, nValue As Integer )

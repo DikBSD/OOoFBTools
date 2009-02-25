@@ -1465,9 +1465,9 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 End Function
 
 &apos; тест на наличие одинаковых номеров примечаний в зоне поиска
-Sub TestForIdenticalNumbers( saNumbers() As String, vaTestArray() As Variant )
+Sub TestForIdenticalNumbers1( saNumbers() As String, vaTestArray() As Variant )
 	If UBound( saNumbers() ) = -1 Then Exit Sub
-	Dim l As Long, s As String
+	Dim l As Long, s As String, b As Boolean : b = False
 	For l=0 To UBound( saNumbers() )
 		s = saNumbers( l )
 		Dim ll As Long
@@ -1476,15 +1476,81 @@ Sub TestForIdenticalNumbers( saNumbers() As String, vaTestArray() As Variant )
 				Dim t As tTestData
 				t.sFind = saNumbers( ll )
 				t.lCount = t.lCount+1
+&apos;				b = True
 				&apos; заносим результат в массив
 				Dim i As Long
 				i = Ubound( vaTestArray() ) + 1
 				ReDim Preserve vaTestArray(i)
 				vaTestArray(i) = t
 			End If
+&apos;			If b = True Then
+&apos;				&apos; заносим результат в массив
+&apos;				Dim i As Long
+&apos;				i = Ubound( vaTestArray() ) + 1
+&apos;				ReDim Preserve vaTestArray(i)
+&apos;				vaTestArray(i) = t
+&apos;			End If
 		Next ll
 	Next l
 End Sub
+
+&apos; тест на наличие одинаковых номеров примечаний в зоне поиска
+Sub TestForIdenticalNumbers( saNumbers() As String, vaTestArray() As Variant )
+	If UBound( saNumbers() ) = -1 Then Exit Sub
+	Dim l As Long, s As String
+	Dim lCount As Long : lCount = 0
+	Dim b As Boolean 
+	For l=0 To UBound( saNumbers() )
+		lCount = 0 : b = False
+		s = saNumbers( l )
+		Dim ll As Long
+		For ll=0 To UBound( saNumbers() )
+			If l &lt;&gt; ll Then
+				If s = saNumbers( ll ) Then
+					b = True
+					lCount = lCount+1
+				End If
+			End If
+		Next ll
+		If b = True Then &apos; нет текущего номера
+			Dim t As tTestData
+			t.sFind = s
+			t.lCount = lCount+1
+			&apos; заносим результат в массив
+			Dim k As Long
+			k = Ubound( vaTestArray() ) + 1
+			ReDim Preserve vaTestArray(k)
+			vaTestArray(k) = t
+		End If
+	Next l
+	&apos; убираем повторяющиеся
+	vaTestArray() = RemoveIdenticalNonSortArrayElements_var( vaTestArray() )
+End Sub
+
+&apos; удаление из не сортированного variant массива всех одинаковых элементов
+Function RemoveIdenticalNonSortArrayElements_var( vaArray() As Variant ) As Array
+	If UBound( vaArray() ) = -1 Then Exit Function
+	Dim l As Long, i As Long
+	Dim vaTemp() As Variant
+	For l=0 To UBound( vaArray() )
+		If Not IsExsistsElement( vaTemp(), vaArray(l) ) Then
+			AddNewItemToVarArray1( vaTemp(), vaArray(l) )
+		End If	
+	Next l
+	RemoveIdenticalNonSortArrayElements_var = vaTemp()
+End Function
+
+Function IsExsistsElement( vaArray() As Variant, v As Variant ) As Boolean
+	IsExsistsElement = False
+	If UBound( vaArray() ) = -1 Then Exit Function
+	Dim l As Long
+	For l=0 To UBound( vaArray() )
+		If v.sFind = vaArray(l).sFind Then
+			IsExsistsElement = True
+			Exit Function
+		End If
+	Next l
+End Function
 
 &apos; тест на наличие отсутствующих номеров примечаний в зоне поиска
 Sub TestForAbsentNumbers( saNumbers() As String, bIsAbsentNumbers As Boolean, nAbsentNumbers() As Integer )
@@ -1535,7 +1601,7 @@ Sub TestAbsentTextOrListNumbersInListOrText( oProgressBar As Object, saNumbersIn
 	bubble_sort_int( iaNumbersInTextSort(), Ubound( iaNumbersInTextSort() )+1 )
 	oProgressBar.setValue( 7 )
 	&apos; удаляем одинаковые элементы из массива, если они есть
-	iaNumbersInTextSort() = RemoveIdenticalArrayElements_int( iaNumbersInTextSort() )
+	iaNumbersInTextSort() = RemoveIdenticalSortArrayElements_int( iaNumbersInTextSort() )
 	oProgressBar.setValue( 8 )
 	
 	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
@@ -1548,7 +1614,7 @@ Sub TestAbsentTextOrListNumbersInListOrText( oProgressBar As Object, saNumbersIn
 	bubble_sort_int( iaNumbersInListSort(), Ubound( iaNumbersInListSort() )+1 )
 	oProgressBar.setValue( 10 )
 	&apos; удаляем одинаковые элементы из массива, если они есть
-	iaNumbersInListSort() = RemoveIdenticalArrayElements_int( iaNumbersInListSort() )
+	iaNumbersInListSort() = RemoveIdenticalSortArrayElements_int( iaNumbersInListSort() )
 	oProgressBar.setValue( 11 )
 	
 	&apos; смотрим, есть каждый номер из iaNumbersInTextSort в iaNumbersInListSort
@@ -1630,7 +1696,13 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes - Ubound( vaTestArrayInText() )-1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	
+	Dim lUnique As Long
+	For l=0 To UBound( vaTestArrayInText() )
+		lUnique = lUnique + vaTestArrayInText(l).lCount
+	Next l
+	lUnique = lCountAllTextNotes - lUnique
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lUnique &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1638,6 +1710,33 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentTextNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	
+	If UBound( saNumbersInText() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( saNumbersInText() )
+			s = s &amp; saNumbersInText(l) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	
+	Dim iaUniqueNumbers() As Integer
+	For l=0 To UBound( saNumbersInText() )
+		AddNewItemToIntArray1( iaUniqueNumbers(), Val( GetNumberFromString( saNumbersInText(l) ) )
+	Next l
+	&apos; удаляем одинаковые элементы из массива, если они есть
+	iaUniqueNumbers() = RemoveIdenticalNonSortArrayElements_int( iaUniqueNumbers() )
+	If UBound( iaUniqueNumbers() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( iaUniqueNumbers() )
+			s = s &amp; iaUniqueNumbers(l) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	
 	If Ubound( vaTestArrayInText() ) &gt; -1 Then
 		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
@@ -1690,7 +1789,12 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes - Ubound( vaTestArrayInList() )-1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	lUnique = 0
+	For l=0 To UBound( vaTestArrayInList() )
+		lUnique = lUnique + vaTestArrayInList(l).lCount
+	Next l
+	lUnique = lCountAllListNotes - lUnique
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lUnique &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1698,6 +1802,33 @@ Sub MakeReport( lCountAllTextNotes As Long, saNumbersInText() As String, vaTestA
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentListNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	
+	If UBound( saNumbersInList() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( saNumbersInList() )
+			s = s &amp; saNumbersInList(l) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	
+	Redim iaUniqueNumbers()
+	For l=0 To UBound( saNumbersInList() )
+		AddNewItemToIntArray1( iaUniqueNumbers(), Val( GetNumberFromString( saNumbersInList(l) ) )
+	Next l
+	&apos; удаляем одинаковые элементы из массива, если они есть
+	iaUniqueNumbers() = RemoveIdenticalNonSortArrayElements_int( iaUniqueNumbers() )
+	If UBound( iaUniqueNumbers() ) &gt; -1 Then
+		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
+		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+		For l=0 To Ubound( iaUniqueNumbers() )
+			s = s &amp; iaUniqueNumbers(l) &amp; &quot;; &quot;
+		Next l
+		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+	End If
+	
 	If Ubound( vaTestArrayInList() ) &gt; -1 Then
 		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)

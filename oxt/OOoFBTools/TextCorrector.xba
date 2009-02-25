@@ -78,6 +78,11 @@ Sub TextCorrector()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
 	cboxBreakLinesInParaEnabled()
+	
+	&apos; защита от невнимательности - ВСЕГДА при запуске диалога опция склейки строк в параграф ОТКЛЮЧЕНА - ее можно при желании включить и запустить корректировку.
+	&apos; это сделано для того, чтобы при очередном запуске корректора и по-забывчивости не отключив эту опцию там, гда она не нужна - не загубить документ
+	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
+	cboxBreakLinesInParaEnabled()
 				
 	oTextCorrectorDlg.execute()
 
@@ -158,10 +163,10 @@ Sub SetCorrectorSettingDefault()
 	&apos; разрывы страниц
 	oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State = 0
 	
-	cboxWordDefisParaEnabled
-	cboxImagesEnabled
-	cboxBreakLineEnabled
-	cboxBreakLinesInParaEnabled
+	cboxWordDefisParaEnabled()
+	cboxImagesEnabled()
+	cboxBreakLineEnabled()
+	cboxBreakLinesInParaEnabled()
 End Sub
 
 Sub CheckAllOptions()
@@ -172,10 +177,10 @@ Sub CheckAllOptions()
 			ctrl(i).State = 1	
 		End If
 	Next i
-	cboxWordDefisParaEnabled
-	cboxImagesEnabled
-	cboxBreakLineEnabled
-	cboxBreakLinesInParaEnabled
+	cboxWordDefisParaEnabled()
+	cboxImagesEnabled()
+	cboxBreakLineEnabled()
+	cboxBreakLinesInParaEnabled()
 End Sub
 
 Sub UnCheckAllOptions()
@@ -186,10 +191,10 @@ Sub UnCheckAllOptions()
 			ctrl(i).State = 0	
 		End If
 	Next i
-	cboxWordDefisParaEnabled
-	cboxImagesEnabled
-	cboxBreakLineEnabled
-	cboxBreakLinesInParaEnabled
+	cboxWordDefisParaEnabled()
+	cboxImagesEnabled()
+	cboxBreakLineEnabled()
+	cboxBreakLinesInParaEnabled()
 End Sub
 
 Sub cboxWordDefisParaEnabled()
