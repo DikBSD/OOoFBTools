@@ -1333,6 +1333,7 @@ Sub FootNoteTest()
 						lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			oProgressBar.setValue( 2 )
+			SaveEndReportText( oTOS )
 			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
 			&apos; режим: список примечаний - после каждой главы
@@ -1407,6 +1408,18 @@ Sub SaveStartReportText( oTOS As Object, sMode as String )
 	s = s &amp; &quot;&lt;body&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;font color=&quot;&quot;#FF0000&quot;&quot;&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestResults &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sMode &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) &amp; chr(10)
+	oTOS.writeString( s )
+End Sub
+
+Sub SaveEndReportText( oTOS As Object )
+	s = &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook &amp; &quot;:&lt;/p&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook2 &amp; &quot;&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook3 &amp; &quot;&lt;/p&gt;&quot;
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook4 &amp; &quot;&lt;/p&gt;&lt;/font&gt;&quot;
+
+	s = s &amp; &quot;&lt;/body&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/html&gt;&quot;
 	oTOS.writeString( s )
 End Sub
 
@@ -1922,16 +1935,6 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 			oTOS.writeString( s )
 		End If
 	End If
-	
-	s = &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook &amp; &quot;:&lt;/p&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook2 &amp; &quot;&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook3 &amp; &quot;&lt;/p&gt;&quot;
-	s = s &amp; &quot;&lt;font color=green&gt;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook4 &amp; &quot;&lt;/p&gt;&lt;/font&gt;&quot;
-
-	s = s &amp; &quot;&lt;/body&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/html&gt;&quot;
-	oTOS.writeString( s )
 End Sub
 
 </script:module>
