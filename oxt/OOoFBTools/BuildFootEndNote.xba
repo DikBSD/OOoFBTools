@@ -1330,6 +1330,7 @@ Sub FootNoteTest()
 								lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			&apos; сгенерировать отчет и запустить его на просмотр
+			SaveStartReportText( oTOS, sBTEND.sTestMode1 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 						lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
@@ -1388,6 +1389,15 @@ Sub FootNoteTest()
 		oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
 		oSSE.execute( sReport, &quot;&quot;, 0 )
 	End If
+End Sub
+
+Sub SaveStartReportText( oTOS As Object, sMode as String )
+	s = &quot;&lt;html&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;meta http-equiv=&quot;&quot;content-type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;body&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=&quot;&quot;#FF0000&quot;&quot;&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestResults &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sMode &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) &amp; chr(10)
+	oTOS.writeString( s )
 End Sub
 
 &apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
@@ -1659,21 +1669,17 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
 				naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer )
 	Dim s As String, l As Long
-	s = &quot;&lt;html&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;meta http-equiv=&quot;&quot;content-type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot;&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;body&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;font color=&quot;&quot;#FF0000&quot;&quot;&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestResults &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestMode1 &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) &amp; chr(10)
-	s = s &amp; &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestTextZoneSearch &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	s = &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestTextZoneSearch &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	oTOS.writeString( s )
 
 	If ThisComponent.TextTables.Count = 0 Then
-		s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNoTablesInDoc &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+		s = &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNoTablesInDoc &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+		oTOS.writeString( s )
 	End If
 	If ThisComponent.TextFrames.Count = 0 Then
-		s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNoFramesInDoc &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+		s = &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNoFramesInDoc &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+		oTOS.writeString( s )
 	End If
-	
-	oTOS.writeString( s )
 	
 	If bIsNumbersInTableExsist Or bIsNumbersInFrameExsist Then
 		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestWarning &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
