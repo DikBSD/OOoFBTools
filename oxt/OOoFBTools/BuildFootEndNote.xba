@@ -1321,50 +1321,14 @@ Sub FootNoteTest()
 		oTOS.setEncoding( &quot;utf-8&quot; )
 	
 		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
-			&apos; режим: Нумерация - сквозная; Общий список примечаний - в конце книги
-			
-			oProgressBar.start( sBTEND.sTestDataGathering &amp; &quot;:&quot;, 2 )
-			oProgressBar.setValue( 1 )
-		
-			&apos; сбор информации по номерам примечаний из текста
+			&apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
 			oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
-			lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, _
-																saNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist  )
-			oProgressBar.setValue( 2 )
-			&apos; сбор информации по номерам примечаний из списка примечаний
-			Dim oBookMark As Object : oBookMark	= oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
 			&apos; закладка списка текста примечаний
-			Dim oBlockNoteZoneBookMark : oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
-			&apos; перевод курсора на начала закладки зоны поиска списка примечаний
-			oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
-			lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark.getStart(), oBlockNoteZoneBookMark.getEnd(), _
-																sLeft &amp; &quot;[:digit:]+&quot; &amp; sRight, _
-																saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
-			
-			oProgressBar.start( sBTEND.sTestDataAnalysis &amp; &quot;:&quot;, 13 )
-			oProgressBar.setValue( 1 )
-			&apos; тест на наличие одинаковых номеров примечаний в Тексте
-			TestForIdenticalNumbers( saNumbersInText(), vaTestArrayInText() )
-			oProgressBar.setValue( 2 )
-			
-			&apos; тест на наличие одинаковых номеров примечаний в Списке примечаний
-			TestForIdenticalNumbers( saNumbersInList(), vaTestArrayInList() )
-			oProgressBar.setValue( 3 )
-			
-			&apos; тест на наличие отсутствующих номеров примечаний в Тексте
-			TestForAbsentNumbers( saNumbersInText(),  bIsAbsentNumbersInText, nAbsentNumbersInText() )
-			oProgressBar.setValue( 4 )
-			
-			&apos; тест на наличие отсутствующих номеров примечаний в Списке примечаний
-			TestForAbsentNumbers( saNumbersInList(), bIsAbsentNumbersInList, nAbsentNumbersInList() )
-			oProgressBar.setValue( 5 )
-			
-			&apos; какие номера примечаний из текста отсутствуют в списке примечаний, и какие номера примечаний из списка примечаний отсутствуют в тексте
-			TestAbsentTextOrListNumbersInListOrText( oProgressBar, saNumbersInText(), saNumbersInList(), _
-													naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
-			oProgressBar.start( sBTEND.sTestProgressReport &amp; &quot;:&quot;, 2 )
-			oProgressBar.setValue( 1 )
-			
+			Dim oBlockNoteZoneBookMark As Object : oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
+			ModeFNTextInBookEnd( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, sLeft, sRight, oBlockNoteZoneBookMark, oTOS, oProgressBar, _
+								lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
+								lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			&apos; сгенерировать отчет и запустить его на просмотр
 			MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 						lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
@@ -1425,6 +1389,56 @@ Sub FootNoteTest()
 		oSSE.execute( sReport, &quot;&quot;, 0 )
 	End If
 End Sub
+
+&apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
+Sub ModeFNTextInBookEnd( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
+						sRegFind As String, sLeft As String, sRight As String, oBlockNoteZoneBookMark As Object, _
+						oTOS As Object, oProgressBar As Object, _
+						lCountAllTextNotes As Long, saNumbersInText() As String, vaTestArrayInText() As Variant, _
+						bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
+						lCountAllListNotes As Long, saNumbersInList() As String, vaTestArrayInList() As Variant, _
+						bIsNumbersInListTableExsist As Boolean, bIsNumbersInListFrameExsist As Boolean, _
+						nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
+						naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer )
+	oProgressBar.start( sBTEND.sTestDataGathering &amp; &quot;:&quot;, 2 )
+	oProgressBar.setValue( 1 )
+		
+	&apos; сбор информации по номерам примечаний из текста
+	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, _
+														saNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist  )
+	oProgressBar.setValue( 2 )
+	&apos; сбор информации по номерам примечаний из списка примечаний
+		&apos; перевод курсора на начала закладки зоны поиска списка примечаний
+	oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
+	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark.getStart(), oBlockNoteZoneBookMark.getEnd(), _
+														sLeft &amp; &quot;[:digit:]+&quot; &amp; sRight, _
+														saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
+			
+	oProgressBar.start( sBTEND.sTestDataAnalysis &amp; &quot;:&quot;, 13 )
+	oProgressBar.setValue( 1 )
+	&apos; тест на наличие одинаковых номеров примечаний в Тексте
+	TestForIdenticalNumbers( saNumbersInText(), vaTestArrayInText() )
+	oProgressBar.setValue( 2 )
+			
+	&apos; тест на наличие одинаковых номеров примечаний в Списке примечаний
+	TestForIdenticalNumbers( saNumbersInList(), vaTestArrayInList() )
+	oProgressBar.setValue( 3 )
+			
+	&apos; тест на наличие отсутствующих номеров примечаний в Тексте
+	TestForAbsentNumbers( saNumbersInText(),  bIsAbsentNumbersInText, nAbsentNumbersInText() )
+	oProgressBar.setValue( 4 )
+	
+	&apos; тест на наличие отсутствующих номеров примечаний в Списке примечаний
+	TestForAbsentNumbers( saNumbersInList(), bIsAbsentNumbersInList, nAbsentNumbersInList() )
+	oProgressBar.setValue( 5 )
+			
+	&apos; какие номера примечаний из текста отсутствуют в списке примечаний, и какие номера примечаний из списка примечаний отсутствуют в тексте
+	TestAbsentTextOrListNumbersInListOrText( oProgressBar, saNumbersInText(), saNumbersInList(), _
+													naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+	oProgressBar.start( sBTEND.sTestProgressReport &amp; &quot;:&quot;, 2 )
+	oProgressBar.setValue( 1 )
+End Sub
+
 
 &apos; Сбор информации по номерам из Текста для теста сложной генерации сносок - режим: Нумерация - сквозная; Общий список примечаний - в конце книги.
 Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, sRegFind As String, _
@@ -1779,6 +1793,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 		End If
 	End If
 	oTOS.writeString( s )
+	
 	s = &quot;&lt;font color=green&gt;&lt;h3&gt;&quot; &amp;sBTEND.sTestResult  &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
