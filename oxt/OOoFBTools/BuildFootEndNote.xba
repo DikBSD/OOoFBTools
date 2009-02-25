@@ -1737,6 +1737,7 @@ Sub TestAbsentTextOrListNumbersInListOrText( oProgressBar As Object, saNumbersIn
 	oProgressBar.setValue( 13 )
 End Sub
 
+&apos; создание отчета о работе Теста генерации сносок
 Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As String, vaTestArrayInText() As Variant, _
 				bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
 				lCountAllListNotes As Long, saNumbersInList() As String, vaTestArrayInList() As Variant, _
@@ -1932,19 +1933,19 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 		End If
 	End If
 	
-	Redim iaUniqueNumbers()
+	Dim iaUniqueNumbersList() As Integer
 	For l=0 To UBound( saNumbersInList() )
-		AddNewItemToIntArray1( iaUniqueNumbers(), Val( GetNumberFromString( saNumbersInList(l) ) )
+		AddNewItemToIntArray1( iaUniqueNumbersList(), Val( GetNumberFromString( saNumbersInList(l) ) )
 	Next l
 	&apos; удаляем одинаковые элементы из массива, если они есть
-	iaUniqueNumbers() = RemoveIdenticalNonSortArrayElements_int( iaUniqueNumbers() )
-	If Not IsNull( iaUniqueNumbers() ) Then
-		If UBound( iaUniqueNumbers() ) &gt; -1  Then
+	iaUniqueNumbersList() = RemoveIdenticalNonSortArrayElements_int( iaUniqueNumbersList() )
+	If Not IsNull( iaUniqueNumbersList() ) Then
+		If UBound( iaUniqueNumbersList() ) &gt; -1  Then
 			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
 			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-			For l=0 To Ubound( iaUniqueNumbers() )
-				s = s &amp; iaUniqueNumbers(l) &amp; &quot;; &quot;
+			For l=0 To Ubound( iaUniqueNumbersList() )
+				s = s &amp; iaUniqueNumbersList(l) &amp; &quot;; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 			oTOS.writeString( s )
