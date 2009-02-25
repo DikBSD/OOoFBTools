@@ -1338,17 +1338,29 @@ Sub FootNoteTest()
 			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
 			&apos; режим: список примечаний - после каждой главы
-			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
+&apos;			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
+			&apos; сгенерировать отчет и запустить его на просмотр
+			SaveStartReportText( oTOS, &quot;!!!!!!!!!! 2 !!!!!!!!!!&quot; )&apos;sBTEND.sTestMode2 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			For l=0 To UBound( aBookMarks() )
 				oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind )
-				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
-				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
+				&apos; закладка списка текста примечаний
+&apos;				oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
+				ModeFNTextInBookEnd( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, sLeft, sRight, oRCurs, oTOS, oProgressBar, _
+									lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
+									lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+									nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+&apos;				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind )
+&apos;				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
+&apos;				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
+				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
+							lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				oLCurs.gotoRange( oRCurs.getEnd(), False )
 				oLCurs.goRight( 1, False )
 			Next l
-			
+			oProgressBar.setValue( 2 )
+			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
 			&apos; Режим: все списки примечаний - в конце книги		
 			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
@@ -1704,14 +1716,18 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	
+	Dim lBound As Long : lBound = -1
 	Dim lUnique As Long
-	For l=0 To UBound( vaTestArrayInText() )
-		lUnique = lUnique + vaTestArrayInText(l).lCount
-	Next l
+	If Not IsNull( vaTestArrayInText() ) Then
+		lBound = UBound( vaTestArrayInText() )
+		For l=0 To lBound
+			lUnique = lUnique + vaTestArrayInText(l).lCount
+		Next l
+	End If
 	lUnique = lCountAllTextNotes - lUnique
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lUnique &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1720,7 +1736,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	
 	oTOS.writeString( s )
 	
-	If UBound( saNumbersInText() ) &gt; -1 Then
+	If  Not IsNull( saNumbersInText() ) And ( UBound( saNumbersInText() ) &gt; -1 ) Then
 		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
 		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
@@ -1748,37 +1764,43 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 		oTOS.writeString( s )
 	End If
 	
-	If Ubound( vaTestArrayInText() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteNumber &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteQuantity &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( vaTestArrayInText() )
-			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; vaTestArrayInText(l).sFind &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaTestArrayInText(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-		Next l
-		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( vaTestArrayInText() ) Then
+		If Ubound( vaTestArrayInText() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteNumber &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteQuantity &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( vaTestArrayInText() )
+				s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; vaTestArrayInText(l).sFind &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaTestArrayInText(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+			Next l
+			s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
-	If Ubound( nAbsentNumbersInText() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( nAbsentNumbersInText() )
-			s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; nAbsentNumbersInText(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( nAbsentNumbersInText() ) Then
+		If Ubound( nAbsentNumbersInText() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( nAbsentNumbersInText() )
+				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; nAbsentNumbersInText(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
-	If Ubound( naAbsentTextNumbersInList() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( naAbsentTextNumbersInList() )
-			s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; naAbsentTextNumbersInList(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( naAbsentTextNumbersInList() ) Then
+		If Ubound( naAbsentTextNumbersInList() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( naAbsentTextNumbersInList() )
+				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; naAbsentTextNumbersInList(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
 
 	s = chr(10)
@@ -1806,13 +1828,17 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	lUnique = 0
-	For l=0 To UBound( vaTestArrayInList() )
-		lUnique = lUnique + vaTestArrayInList(l).lCount
-	Next l
+	lBound = -1
+	If Not IsNull( vaTestArrayInList() ) Then
+		lBound = UBound( vaTestArrayInList() )
+		For l=0 To lBound
+			lUnique = lUnique + vaTestArrayInList(l).lCount
+		Next l
+	End If
 	lUnique = lCountAllListNotes - lUnique
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lUnique &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( vaTestArrayInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1820,15 +1846,17 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	oTOS.writeString( s )
 	
-	If UBound( saNumbersInList() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( saNumbersInList() )
-			s = s &amp; saNumbersInList(l) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( saNumbersInList() ) Then
+		If UBound( saNumbersInList() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( saNumbersInList() )
+				s = s &amp; saNumbersInList(l) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
 	
 	Redim iaUniqueNumbers()
@@ -1837,48 +1865,56 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	Next l
 	&apos; удаляем одинаковые элементы из массива, если они есть
 	iaUniqueNumbers() = RemoveIdenticalNonSortArrayElements_int( iaUniqueNumbers() )
-	If UBound( iaUniqueNumbers() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( iaUniqueNumbers() )
-			s = s &amp; iaUniqueNumbers(l) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( iaUniqueNumbers() ) Then
+		If UBound( iaUniqueNumbers() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/h3&gt;&quot;
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( iaUniqueNumbers() )
+				s = s &amp; iaUniqueNumbers(l) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
 	
-	If Ubound( vaTestArrayInList() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteNumber &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteQuantity &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( vaTestArrayInList() )
-			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; vaTestArrayInList(l).sFind &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaTestArrayInList(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-		Next l
-		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( vaTestArrayInList() ) Then
+		If Ubound( vaTestArrayInList() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteNumber &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;td&gt;&quot; &amp; sBTEND.sTestNoteQuantity &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( vaTestArrayInList() )
+				s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; vaTestArrayInList(l).sFind &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaTestArrayInList(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+			Next l
+			s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
-	If Ubound( nAbsentNumbersInList() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( nAbsentNumbersInList() )
-			s = s &amp; nAbsentNumbersInList(l) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( nAbsentNumbersInList() ) Then
+		If Ubound( nAbsentNumbersInList() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( nAbsentNumbersInList() )
+				s = s &amp; nAbsentNumbersInList(l) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
-	If Ubound( naAbsentListNumbersInText() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( naAbsentListNumbersInText() )
-			s = s &amp; naAbsentListNumbersInText(l) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( naAbsentListNumbersInText() ) Then
+		If Ubound( naAbsentListNumbersInText() ) &gt; -1  Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;:&lt;/h3&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( naAbsentListNumbersInText() )
+				s = s &amp; naAbsentListNumbersInText(l) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
 	
 	s = &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
