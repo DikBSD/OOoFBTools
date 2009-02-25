@@ -1295,7 +1295,6 @@ Sub FootNoteTest()
 		Dim bIsNumbersInFrameExsist		As Boolean	&apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска
 		Dim saNumbersInText()			As String	&apos; хранит все номеры примечаний из текста в пределах зоны поиска
 		Dim lCountAllTextNotes			As Long		&apos; число обработанных номеров примечаний в тексте
-		Dim bIsAbsentNumbersInText		As Boolean	&apos; флаг - есть ли среди номеров примечаний в Тексте отсутствующие номера
 		Dim nAbsentNumbersInText()		As Integer	&apos; номера отсутствующих номеров примечаний в Тексте
 		Dim naAbsentTextNumbersInList()	As Integer	&apos; список номеровпримечаний из Текста, отсутствующих в Списке примечаний
 		
@@ -1304,7 +1303,6 @@ Sub FootNoteTest()
 		Dim bIsNumbersInListFrameExsist	As Boolean	&apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска списка примечаний
 		Dim saNumbersInList()			As String	&apos; хранит все номеры примечаний из списка в пределах зоны поиска списка примечаний
 		Dim lCountAllListNotes			As Long		&apos; число обработанных примечаний в списке примечаний
-		Dim bIsAbsentNumbersInList		As Boolean	&apos; флаг - есть ли среди номеров примечаний в Списке примечаний отсутствующие номера
 		Dim nAbsentNumbersInList()		As Integer	&apos; номера отсутствующих номеров примечаний в Списке
 		Dim naAbsentListNumbersInText()	As Integer	&apos; список номеровпримечаний из Списка примечаний, отсутствующих в Тексте
 		
@@ -1447,11 +1445,11 @@ Sub ModeFNTextInBookEnd( oDoc As Object, oViewCursor As Object, oLCurs As Object
 	oProgressBar.setValue( 3 )
 			
 	&apos; тест на наличие отсутствующих номеров примечаний в Тексте
-	TestForAbsentNumbers( saNumbersInText(),  bIsAbsentNumbersInText, nAbsentNumbersInText() )
+	TestForAbsentNumbers( saNumbersInText(), nAbsentNumbersInText() )
 	oProgressBar.setValue( 4 )
 	
 	&apos; тест на наличие отсутствующих номеров примечаний в Списке примечаний
-	TestForAbsentNumbers( saNumbersInList(), bIsAbsentNumbersInList, nAbsentNumbersInList() )
+	TestForAbsentNumbers( saNumbersInList(), nAbsentNumbersInList() )
 	oProgressBar.setValue( 5 )
 			
 	&apos; какие номера примечаний из текста отсутствуют в списке примечаний, и какие номера примечаний из списка примечаний отсутствуют в тексте
@@ -1573,7 +1571,7 @@ Function IsExsistsElement( vaArray() As Variant, v As Variant ) As Boolean
 End Function
 
 &apos; тест на наличие отсутствующих номеров примечаний в зоне поиска
-Sub TestForAbsentNumbers( saNumbers() As String, bIsAbsentNumbers As Boolean, nAbsentNumbers() As Integer )
+Sub TestForAbsentNumbers( saNumbers() As String, nAbsentNumbers() As Integer )
 	If UBound( saNumbers() ) = -1 Then Exit Sub
 	Dim l As Long
 	&apos; выделяем номера числом из найденного
@@ -1729,9 +1727,13 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	lBound = -1
+	If Not IsNull( nAbsentNumbersInText() ) Then lBound = UBound( nAbsentNumbersInText() )
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentTextNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	lBound = -1
+	If Not IsNull( naAbsentTextNumbersInList() ) Then lBound = UBound(naAbsentTextNumbersInList() )
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	
 	oTOS.writeString( s )
@@ -1840,9 +1842,13 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( nAbsentNumbersInList() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	lBound = -1
+	If Not IsNull( nAbsentNumbersInList() ) Then lBound = UBound(nAbsentNumbersInList() )
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;td&gt;&quot; &amp; Ubound( naAbsentListNumbersInText() )+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	lBound = -1
+	If Not IsNull( naAbsentListNumbersInText() ) Then lBound = UBound(naAbsentListNumbersInText() )
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
 	oTOS.writeString( s )
 	
