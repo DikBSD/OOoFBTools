@@ -19,7 +19,6 @@ Type tBuildTootEndNoteData
 	sFootnotesNotGeneration				As String &apos; Сноски не сгенерированы:
 	sNotFoundSelectedTextForTemplate	As String &apos; Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!
 	sNotFoundBookmarkZoneForNoteList	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!
-	sAllListsTextFootNotesInBookEnd		As String &apos; все списки текста сносок - в конце книги
 	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!
 	sBuildFootNoteComplexVerify			As String &apos;
 	sDocumentIsProcessing				As String &apos; Документ обработан.
@@ -55,6 +54,7 @@ Type tBuildTootEndNoteData
 	sTestResults		 				As String &apos; Результаты работы теста
 	sTestMode1			 				As String &apos; Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги
 	sTestMode2			 				As String &apos; Режим: Список примечаний - после каждой главы книги
+	sTestMode3			 				As String &apos; Режим: Все Списки примечаний - в конце книги
 	sTestTextZoneSearch	 				As String &apos; I. Зона поиска - Текст книги
 	sTestListZoneSearch	 				As String &apos; II. Зона поиска - Список примечаний в конце книги
 	sTestNoTablesInDoc	 				As String &apos; В Документе нет ни одной Таблицы.
@@ -108,9 +108,9 @@ Sub InitBuildTootEndNoteMessage()
 			.sFootnotesNotGeneration	= &quot;Сноски не сгенерированы:&quot;
 			.sNotFoundSelectedTextForTemplate	= &quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;
 			.sNotFoundBookmarkZoneForNoteList	= &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!&quot;
-			.sAllListsTextFootNotesInBookEnd	= &quot;все списки текста сносок - в конце книги&quot;
 			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!&quot;
-			.sBuildFootNoteComplexVerify		= &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон списков примечаний!&quot; &amp; chr(10) &amp; _
+			.sBuildFootNoteComplexVerify		= &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон Списков примечаний!&quot; &amp; chr(10) &amp; _
+					&quot;Т.е. число закладок для Глав книги с НОМЕРАМИ примечаний не соответствует числу закладок для их Списков примечаний.&quot; &amp; _
 					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
 					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					&quot;Совет:&quot; &amp; chr(10) &amp; _
@@ -163,6 +163,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestResults		 				= &quot;Результаты работы теста&quot;
 			.sTestMode1			 				= &quot;Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги&quot;
 			.sTestMode2			 				= &quot;Режим: Список примечаний - после каждой главы книги&quot;
+			.sTestMode3			 				= &quot;Режим: Все Списки примечаний - в конце книги&quot;
 			.sTestTextZoneSearch	 			= &quot;I. Зона поиска - Текст книги&quot;
 			.sTestListZoneSearch	 			= &quot;II. Зона поиска - Список примечаний в конце книги&quot;
 			.sTestNoTablesInDoc	 				= &quot;В Документе нет ни одной Таблицы.&quot;
@@ -210,9 +211,9 @@ Sub InitBuildTootEndNoteMessage()
 			.sFootnotesNotGeneration	= &quot;Footnotes are not generated:&quot;
 			.sNotFoundSelectedTextForTemplate	= &quot;It is not found any Text Fragment, search of notes satisfying to a set Pattern!&quot;
 			.sNotFoundBookmarkZoneForNoteList	= &quot;Is not present any marked Bookmark of the Zone containing the LIST of Notes (Bookmark for the Chapter)!&quot;
-			.sAllListsTextFootNotesInBookEnd	= &quot;all Lists of the Text of Footnotes - in the End of the Book&quot;
 			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Is not Present any marked Bookmark of the Zone containing NUMBERS of Notes!&quot;
 			.sBuildFootNoteComplexVerify		= &quot;The Number of Zones of Search № Notes MISMATCHES Number of Zones of Lists of Notes!&quot; &amp; chr(10) &amp; _
+					&quot;That is the Number of Bookmarks for Chapters of the Book with NUMBERS of Notes mismatches Тumber of Bookmarks for their Lists of Notes.&quot; &amp; _
 					&quot;It will lead to that the Note will appear &quot;&quot;adhered&quot;&quot; not to that Chapter.&quot; &amp; chr(10) &amp; _
 					&quot;Generation of Footnotes is interrupted.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					&quot;Advice:&quot; &amp; chr(10) &amp; _
@@ -265,6 +266,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestResults		 				= &quot;Results of Work of the Test&quot;
 			.sTestMode1			 				= &quot;Mode: Numbering of Numbers of Notes in the Text - through; the General List of Notes - in the End of the Book&quot;
 			.sTestMode2			 				= &quot;Mode: the List of Notes - after each Chapter of the Book&quot;
+			.sTestMode3			 				= &quot;Mode: All Lists of Notes - in the End of the Book&quot;
 			.sTestTextZoneSearch	 			= &quot;I. A Zone of Search - the Text of the Book&quot;
 			.sTestListZoneSearch	 			= &quot;II. The Zone of Search - the List of Notes in the End of the Book&quot;
 			.sTestNoTablesInDoc	 				= &quot;In the Document there is no Table.&quot;

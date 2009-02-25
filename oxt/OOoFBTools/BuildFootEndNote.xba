@@ -689,13 +689,28 @@ Sub BuildFootNoteComplex()
 	Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
 
 	Dim lFindCount As Long : lFindCount = 0
-	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Or _
-		oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
-		&apos; режим: 1. Нумерация сквозная; Общий список примечаний - в конце книги. 2. Список текста примечаний - после каждой главы
-		&apos; алгоритм - одинаковый
+	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State  Then
+		&apos; режим: 1. Нумерация сквозная; Общий список примечаний - в конце книги.
+		Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
+		lFindCount = lFindCount + ProcessingComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(0), _
+																sConstBookMarkFNNumber, sConstBookMarkFNText, sRegStringNFNInText, sLeft, sRight ) 
+		&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
+		GoToViewCursorToBookMark( oViewCursor, aBookMarks(0), False )
+		&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
+		oLCurs.gotoRange( oRCurs.getEnd(), False )
+		oLCurs.goRight( 1, False )
+	ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
+		&apos; режим: 2. Список текста примечаний - после каждой главы
+		&apos;проверка - есть ли хоть одна закладка L-зоны
+		Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+		If UBound( aLBookMarks() ) = -1 Then
+			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode2
+			Exit Sub	
+		End If
+		
 		Dim l As Long
 		For l=0 To UBound( aBookMarks() )
-			Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
+			oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
 			lFindCount = lFindCount + ProcessingComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
 																	sConstBookMarkFNNumber, sConstBookMarkFNText, sRegStringNFNInText, sLeft, sRight ) 
 			&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
@@ -705,18 +720,17 @@ Sub BuildFootNoteComplex()
 			oLCurs.goRight( 1, False )
 		Next l
 	Else
-		&apos; режим: Все блоки текста сносок - в конце книги
-		Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
+		&apos; режим 3: Все блоки текста сносок - в конце книги
 		&apos;проверка - есть ли хоть одна закладка L-зоны
-		Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+		aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
 		If UBound( aLBookMarks() ) = -1 Then
-			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sFootnotesGeneration &amp; sMT
+			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode3
 			Exit Sub	
 		End If
 		
 		&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
 		If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
-			MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sFootnotesGeneration &amp; sMT
+			MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sTestMode3
 			Exit Sub	
 		End If
 		
@@ -1339,6 +1353,15 @@ Sub FootNoteTest()
 				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode2
 				Exit Sub	
 			End If
+			
+			&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
+			If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
+				MsgBox &quot;Число закладок для Глав книги c НОМЕРАМИ примечаницй не совпадает с числом закладок для Списков примечаний!&quot; &amp; chr(10) &amp; chr(10) &amp; _
+						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() ) &amp; chr(10) &amp; _
+						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aBookMarks() ) &amp; chr(10), 64, sBTEND.sTestMode2
+				Exit Sub	
+			End If
+			
 			&apos; сгенерировать отчет и запустить его на просмотр
 			SaveStartReportText( oTOS, sBTEND.sTestMode2 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			SaveZonesCount( oTOS, UBound( aLBookMarks() ), UBound( aBookMarks() ) )
@@ -1364,18 +1387,20 @@ Sub FootNoteTest()
 			SaveEndReportText( oTOS )
 			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
-			&apos; Режим: все списки примечаний - в конце книги		
+			&apos; Тест Режима: все списки примечаний - в конце книги		
 			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
 			&apos;проверка - есть ли хоть одна закладка L-зоны
 			aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
 			If UBound( aLBookMarks() ) = -1 Then
-				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sAllListsTextFootNotesInBookEnd
+				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode3
 				Exit Sub	
 			End If
 		
 			&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
 			If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
-				MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sAllListsTextFootNotesInBookEnd
+				MsgBox &quot;Число закладок для Глав книги c НОМЕРАМИ примечаницй не совпадает с числом закладок для Списков примечаний!&quot; &amp; chr(10) &amp; chr(10) &amp; _
+						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() ) &amp; chr(10) &amp; _
+						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aBookMarks() ) &amp; chr(10), 64, sBTEND.sTestMode3
 				Exit Sub	
 			End If
 		
@@ -1795,15 +1820,17 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	Next l
 	&apos; удаляем одинаковые элементы из массива, если они есть
 	iaUniqueNumbers() = RemoveIdenticalNonSortArrayElements_int( iaUniqueNumbers() )
-	If UBound( iaUniqueNumbers() ) &gt; -1 Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( iaUniqueNumbers() )
-			s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; iaUniqueNumbers(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( iaUniqueNumbers() ) Then
+		If UBound( iaUniqueNumbers() ) &gt; -1 Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( iaUniqueNumbers() )
+				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; iaUniqueNumbers(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 ) &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
 	
 	If Not IsNull( vaTestArrayInText() ) Then
