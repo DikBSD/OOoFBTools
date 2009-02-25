@@ -20,11 +20,11 @@ Type tBuildTootEndNoteData
 	sNotFoundSelectedTextForTemplate	As String &apos; Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!
 	sNotFoundBookmarkZoneForNoteList	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!
 	sAllListsTextFootNotesInBookEnd		As String &apos; все списки текста сносок - в конце книги
-	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний!
+	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!
 	sBuildFootNoteComplexVerify			As String &apos;
 	sDocumentIsProcessing				As String &apos; Документ обработан.
 	sInsertBookmarkForNumberNoteZone	As String &apos; Вставка служебной закладки для зоны поиска номера примечаний
-	sInsertedBookmarkForNumberNoteZone	As String &apos; Закладка-шаблон для зоны поиска НОМЕРОВ примечаний ВСТАВЛЕНА.
+	sInsertedBookmarkForNumberNoteZone	As String &apos; Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.
 	sNotInsertedBookmarkForNumberNoteZone	As String &apos;
 	sInsertBookmarkForListNoteZone		As String &apos; Вставка служебной закладки для списка примечаний
 	sNotFoundSymbol						As String &apos; Не выделено ни одного символа текста. Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА. Начало и конец закладки совпадают.
@@ -54,6 +54,7 @@ Type tBuildTootEndNoteData
 	sTestProgressReport 				As String &apos; Генерация и запуск отчета
 	sTestResults		 				As String &apos; Результаты работы теста
 	sTestMode1			 				As String &apos; Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги
+	sTestMode2			 				As String &apos; Режим: Список примечаний - после каждой главы книги
 	sTestTextZoneSearch	 				As String &apos; I. Зона поиска - Текст книги
 	sTestListZoneSearch	 				As String &apos; II. Зона поиска - Список примечаний в конце книги
 	sTestNoTablesInDoc	 				As String &apos; В Документе нет ни одной Таблицы.
@@ -84,6 +85,10 @@ Type tBuildTootEndNoteData
 	sTestCorrectlyBook2					As String &apos; 2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработаных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0
 	sTestCorrectlyBook3					As String &apos; Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.
 	sTestCorrectlyBook4					As String &apos; Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.
+	sTestBookmarkForStatChapter			As String &apos; Закладки для начала главы
+	sTestBookmarkForListNotes			As String &apos; Закладки для Списка примечаний
+	sTestBookmarkForSearchZones			As String &apos; Число зон поиска примечаний (закладок)
+	sTestZoneSearch	 					As String &apos; Зона поиска
 End Type
 
 Public sBTEND As tBuildTootEndNoteData
@@ -104,7 +109,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sNotFoundSelectedTextForTemplate	= &quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;
 			.sNotFoundBookmarkZoneForNoteList	= &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!&quot;
 			.sAllListsTextFootNotesInBookEnd	= &quot;все списки текста сносок - в конце книги&quot;
-			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний!&quot;
+			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!&quot;
 			.sBuildFootNoteComplexVerify		= &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон списков примечаний!&quot; &amp; chr(10) &amp; _
 					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
 					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
@@ -122,7 +127,7 @@ Sub InitBuildTootEndNoteMessage()
 					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
 			.sDocumentIsProcessing				= &quot;Документ обработан.&quot;
 			.sInsertBookmarkForNumberNoteZone	= &quot;Вставка служебной закладки для зоны поиска номера примечаний&quot;
-			.sInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска НОМЕРОВ примечаний ВСТАВЛЕНА.&quot;
+			.sInsertedBookmarkForNumberNoteZone	= &quot;Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.&quot;
 			.sNotInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска номеров примечаний НЕ ВСТАВЛЕНА:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
 				&quot;Для того, чтобы пометить начало очередной области поиска номера примечаний НЕ НУЖНО выделять текст!&quot; &amp; chr(10) &amp; _
 				&quot;Просто поставьте курсор на начало абзаца каждой главы, в которой есть номера примечаний и запустите этот макрос.&quot; &amp; chr(10) &amp; _
@@ -157,6 +162,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestProgressReport 				= &quot;Генерация и запуск отчета&quot;
 			.sTestResults		 				= &quot;Результаты работы теста&quot;
 			.sTestMode1			 				= &quot;Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги&quot;
+			.sTestMode2			 				= &quot;Режим: Список примечаний - после каждой главы книги&quot;
 			.sTestTextZoneSearch	 			= &quot;I. Зона поиска - Текст книги&quot;
 			.sTestListZoneSearch	 			= &quot;II. Зона поиска - Список примечаний в конце книги&quot;
 			.sTestNoTablesInDoc	 				= &quot;В Документе нет ни одной Таблицы.&quot;
@@ -187,6 +193,10 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestCorrectlyBook2				= &quot;2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработанных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0&quot;
 			.sTestCorrectlyBook3				= &quot;Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.&quot;
 			.sTestCorrectlyBook4				= &quot;Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.&quot;
+			.sTestBookmarkForSearchZones		= &quot;Число зон поиска примечаний (закладок)&quot;
+			.sTestBookmarkForStatChapter		= &quot;Закладки для начала главы&quot;
+			.sTestBookmarkForListNotes			= &quot;Закладки для Списка примечаний&quot;
+			.sTestZoneSearch	 				= &quot;Зона поиска&quot;
 		End With
 	Else
 		With sBTEND
@@ -199,7 +209,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sFootnotesGenerationCount	= &quot;It is generated Footnotes:&quot;
 			.sFootnotesNotGeneration	= &quot;Footnotes are not generated:&quot;
 			.sNotFoundSelectedTextForTemplate	= &quot;It is not found any Text Fragment, search of notes satisfying to a set Pattern!&quot;
-			.sNotFoundBookmarkZoneForNoteList	= &quot;Is not present any marked Bookmark of the Zone containing the LIST of Notes!&quot;
+			.sNotFoundBookmarkZoneForNoteList	= &quot;Is not present any marked Bookmark of the Zone containing the LIST of Notes (Bookmark for the Chapter)!&quot;
 			.sAllListsTextFootNotesInBookEnd	= &quot;all Lists of the Text of Footnotes - in the End of the Book&quot;
 			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Is not Present any marked Bookmark of the Zone containing NUMBERS of Notes!&quot;
 			.sBuildFootNoteComplexVerify		= &quot;The Number of Zones of Search № Notes MISMATCHES Number of Zones of Lists of Notes!&quot; &amp; chr(10) &amp; _
@@ -219,7 +229,7 @@ Sub InitBuildTootEndNoteMessage()
 					&quot;and in the end of the book - on each list of notes - a bookmark of a zone of search of the list of notes.&quot; &amp; chr(10)
 			.sDocumentIsProcessing				= &quot;The Socument is processed.&quot;
 			.sInsertBookmarkForNumberNoteZone	= &quot;Inserting the Service Bookmark for Number Note Searching Zone&quot;
-			.sInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark-Pattern for a Zone of Search of NUMBERS of Notes is inserted.&quot;
+			.sInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark for the Chapter with NUMBERS of Notes is inserted.&quot;
 			.sNotInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark-Pattern for a Zone of Search of Numbers of Notes is not inserted:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
 				&quot;To mark the beginning of the next area of search of Number of Notes it is not necessary to allocate the Text!&quot; &amp; chr(10) &amp; _
 				&quot;Simply put the cursor on the beginning of the paragraph of each chapter in which there are numbers of notes and start this macros.&quot; &amp; chr(10) &amp; _
@@ -254,6 +264,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestProgressReport 				= &quot;Generation and Start Report&quot;
 			.sTestResults		 				= &quot;Results of Work of the Test&quot;
 			.sTestMode1			 				= &quot;Mode: Numbering of Numbers of Notes in the Text - through; the General List of Notes - in the End of the Book&quot;
+			.sTestMode2			 				= &quot;Mode: the List of Notes - after each Chapter of the Book&quot;
 			.sTestTextZoneSearch	 			= &quot;I. A Zone of Search - the Text of the Book&quot;
 			.sTestListZoneSearch	 			= &quot;II. The Zone of Search - the List of Notes in the End of the Book&quot;
 			.sTestNoTablesInDoc	 				= &quot;In the Document there is no Table.&quot;
@@ -284,6 +295,10 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestCorrectlyBook2				= &quot;2. In Tables of Results the Number of processed Numbers of Notes in the Text should be equal to Number of Unique Numbers the Text, and Number of the processed Notes in the List - to Number of Unique Numbers in the List; Repeating Numbers = 0; Absent Numbers = 0; Absent Numbers from the Text in the List = 0; Absent Numbers from the List in the Text = 0&quot;
 			.sTestCorrectlyBook3				= &quot;If it not so Analyse Results of Work of the Test and the Text of the Book, and eliminate mistakes with Numbers of Notes.&quot;
 			.sTestCorrectlyBook4				= &quot;How more in detail to spend the Analysis - see in the Information (Manual) to Package OOoFBTools.&quot;
+			.sTestBookmarkForSearchZones		= &quot;Number of Zones of search of Notes (Bookmarks)&quot;
+			.sTestBookmarkForStatChapter		= &quot;Bookmarks for the Beginning the Chapter&quot;
+			.sTestBookmarkForListNotes			= &quot;Bookmarks for the List of Notes&quot;
+			.sTestZoneSearch	 				= &quot;Zone of Search&quot;
 		End With
 	End If
 End Sub

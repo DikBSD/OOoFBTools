@@ -1274,14 +1274,10 @@ Sub FootNoteTest()
 		Dim l As Long
 		oLCurs.gotoStart( False ) &apos; на начало документа
 	
-		&apos; удаляем служебные закладки, если они есть
-		DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNNumber )
-		DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNText )
-	
 		&apos; получаем зоны для обработки сносок
 		Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkListNote )
 		If UBound( aBookMarks() ) = -1 Then
-			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteList, 64, sBTEND.sFootnotesGeneration
+			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteList, 64, &quot;Test&quot;
 			Exit Sub	
 		End If
 		
@@ -1322,8 +1318,7 @@ Sub FootNoteTest()
 			&apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
 			oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
 			&apos; закладка списка текста примечаний
-			Dim oBlockNoteZoneBookMark As Object : oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
-			ModeFNTextInBookEnd( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, sLeft, sRight, oBlockNoteZoneBookMark, oTOS, oProgressBar, _
+			ModeFNTextInBookEnd( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
 								lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 								lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
@@ -1333,47 +1328,54 @@ Sub FootNoteTest()
 						lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			oProgressBar.setValue( 2 )
+			&apos; завершающая часть отчета
 			SaveEndReportText( oTOS )
 			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
-			&apos; режим: список примечаний - после каждой главы
-&apos;			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
+			&apos; Тест для режима: список примечаний - после каждой главы
+			&apos;проверка - есть ли хоть одна закладка L-зоны
+			Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+			If UBound( aLBookMarks() ) = -1 Then
+				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode2
+				Exit Sub	
+			End If
 			&apos; сгенерировать отчет и запустить его на просмотр
-			SaveStartReportText( oTOS, &quot;!!!!!!!!!! 2 !!!!!!!!!!&quot; )&apos;sBTEND.sTestMode2 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			SaveStartReportText( oTOS, sBTEND.sTestMode2 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			SaveZonesCount( oTOS, UBound( aLBookMarks() ), UBound( aBookMarks() ) )
 			For l=0 To UBound( aBookMarks() )
+				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; - &quot; &amp; l+1 &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
-				&apos; закладка списка текста примечаний
-&apos;				oBlockNoteZoneBookMark = oBookMarks.getByName( sConstBookMarkListNote ).getAnchor()
-				ModeFNTextInBookEnd( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, sLeft, sRight, oRCurs, oTOS, oProgressBar, _
+				ModeFNTextInBookEnd( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
 									lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 									lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 									nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
-&apos;				lCountAllNotes = TestComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind )
-&apos;				&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
-&apos;				GoToViewCursorToBookMark( oViewCursor, aBookMarks(l), False )
 				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaTestArrayInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 							lCountAllListNotes, saNumbersInList(), vaTestArrayInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				oLCurs.gotoRange( oRCurs.getEnd(), False )
 				oLCurs.goRight( 1, False )
+				&apos; очищение всех рабочих массивов для следующего прохода теста
+				RedimAllArrays( saNumbersInText(), vaTestArrayInText(), saNumbersInList(), vaTestArrayInList(), _
+								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			Next l
 			oProgressBar.setValue( 2 )
+			&apos; завершающая часть отчета
+			SaveEndReportText( oTOS )
 			oProgressBar.End
 		ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State Then
 			&apos; Режим: все списки примечаний - в конце книги		
 			MsgBox &quot;Извините, пока не сделано...&quot;, 64 : Exit Sub
-			Dim sMT As String : sMT = &quot;: &quot; &amp; sBTEND.sAllListsTextFootNotesInBookEnd
 			&apos;проверка - есть ли хоть одна закладка L-зоны
-			Dim aLBookMarks() As String : aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+			aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
 			If UBound( aLBookMarks() ) = -1 Then
-				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sFootnotesGeneration &amp; sMT
+				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sAllListsTextFootNotesInBookEnd
 				Exit Sub	
 			End If
 		
 			&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
 			If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
-				MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sFootnotesGeneration &amp; sMT
+				MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sAllListsTextFootNotesInBookEnd
 				Exit Sub	
 			End If
 		
@@ -1412,7 +1414,7 @@ Sub SaveStartReportText( oTOS As Object, sMode as String )
 End Sub
 
 Sub SaveEndReportText( oTOS As Object )
-	s = &quot;&lt;font color=red&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
+	s = &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook &amp; &quot;:&lt;/p&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook2 &amp; &quot;&lt;/p&gt;&quot;
@@ -1423,10 +1425,35 @@ Sub SaveEndReportText( oTOS As Object )
 	oTOS.writeString( s )
 End Sub
 
+Sub SaveZonesCount( oTOS As Object, lCB As Long, lLB As Long  )
+	s = &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestBookmarkForSearchZones &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
+	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForStatChapter &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCB &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForListNotes &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lLB &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10) &amp; chr(10)
+	oTOS.writeString( s )
+End Sub
+
+&apos; очищение всех рабочих массивов для следующего прохода теста
+Sub RedimAllArrays( saNumbersInText() As String, vaTestArrayInText() As Variant, _
+					saNumbersInList() As String, vaTestArrayInList() As Variant, _
+					nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
+					naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer )
+	Redim saNumbersInText()
+	Redim vaTestArrayInText()
+	Redim saNumbersInList()
+	Redim vaTestArrayInList()
+	Redim nAbsentNumbersInText()
+	Redim nAbsentNumbersInList()
+	Redim naAbsentTextNumbersInList()
+	Redim naAbsentListNumbersInText()
+End Sub
+
 &apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
 Sub ModeFNTextInBookEnd( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
-						sRegFind As String, sLeft As String, sRight As String, oBlockNoteZoneBookMark As Object, _
-						oTOS As Object, oProgressBar As Object, _
+						sRegFind As String, sLeft As String, sRight As String, oTOS As Object, oProgressBar As Object, _
 						lCountAllTextNotes As Long, saNumbersInText() As String, vaTestArrayInText() As Variant, _
 						bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
 						lCountAllListNotes As Long, saNumbersInList() As String, vaTestArrayInList() As Variant, _
@@ -1442,8 +1469,8 @@ Sub ModeFNTextInBookEnd( oDoc As Object, oViewCursor As Object, oLCurs As Object
 	oProgressBar.setValue( 2 )
 	&apos; сбор информации по номерам примечаний из списка примечаний
 		&apos; перевод курсора на начала закладки зоны поиска списка примечаний
-	oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
-	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark.getStart(), oBlockNoteZoneBookMark.getEnd(), _
+	oViewCursor.gotoRange( oRCurs.getStart(), False )
+	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oRCurs.getStart(), oRCurs.getEnd(), _
 														sLeft &amp; &quot;[:digit:]+&quot; &amp; sRight, _
 														saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
 			
@@ -1837,7 +1864,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	End If
 	oTOS.writeString( s )
 	
-	s = &quot;&lt;font color=green&gt;&lt;h3&gt;&quot; &amp;sBTEND.sTestResult  &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
+	s = &quot;&lt;font color=green&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestResult &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
