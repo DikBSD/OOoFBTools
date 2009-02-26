@@ -9,6 +9,7 @@ Option Explicit
 
 &apos; для хранения сообщений для работы со сносками
 Type tBuildTootEndNoteData
+	sLBCountNotEqualRBCount				As String &apos; Число закладок для Глав книги c НОМЕРАМИ примечаницй не равно числу закладок для Списков примечаний!
 	sNoSelectText						As String &apos; Нет ни одного выделенного фрагмента текста для поиска!
 	sProcessAllDoc						As String &apos; Обрабатывать весь документ?
 	sFindInSelected						As String &apos; Поиск в выделенных областях текста
@@ -55,8 +56,8 @@ Type tBuildTootEndNoteData
 	sTestMode1			 				As String &apos; Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги
 	sTestMode2			 				As String &apos; Режим: Список примечаний - после каждой главы книги
 	sTestMode3			 				As String &apos; Режим: Все Списки примечаний - в конце книги
-	sTestTextZoneSearch	 				As String &apos; I. Зона поиска - Текст книги
-	sTestListZoneSearch	 				As String &apos; II. Зона поиска - Список примечаний в конце книги
+	sTestBookChapter	 				As String &apos; Глава книги
+	sTestNotesList	 					As String &apos; Список примечаний
 	sTestNoTablesInDoc	 				As String &apos; В Документе нет ни одной Таблицы.
 	sTestNoFramesInDoc	 				As String &apos; В Документе нет ни одной Текстовой Врезки.
 	sTestWarning		 				As String &apos; ПРЕДУПРЕЖДЕНИЕ!
@@ -89,6 +90,13 @@ Type tBuildTootEndNoteData
 	sTestBookmarkForListNotes			As String &apos; Закладки для Списка примечаний
 	sTestBookmarkForSearchZones			As String &apos; Число зон поиска примечаний (закладок)
 	sTestZoneSearch	 					As String &apos; Зона поиска
+	sTestChapterAndNotesList			As String &apos; (Глава и Список ее примечаний)
+	sTestGeneralResume					As String &apos; Основные выводы Теста
+	sTestZones							As String &apos; Зоны
+	sTestNeedyCorrect					As String &apos; требующие ручной корректуры
+	sTestNotNeedyCorrect				As String &apos; не требующие ручной корректуры
+	sTestChapterBookmarkName			As String &apos; Название Закладки для Главы
+	sTestListNotesBookmarkName			As String &apos; Название Закладки для Списка примечаний этой Главы
 End Type
 
 Public sBTEND As tBuildTootEndNoteData
@@ -98,6 +106,7 @@ Public sBTEND As tBuildTootEndNoteData
 Sub InitBuildTootEndNoteMessage()
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With sBTEND
+			.sLBCountNotEqualRBCount	= &quot;Число закладок для Глав книги c НОМЕРАМИ примечаницй не равно числу закладок для Списков примечаний!&quot;
 			.sNoSelectText				= &quot;Нет ни одного выделенного фрагмента текста для поиска!&quot;
 			.sProcessAllDoc				= &quot;Обрабатывать весь документ?&quot;
 			.sFindInSelected			= &quot;Поиск в выделенных областях текста&quot;
@@ -109,7 +118,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sNotFoundSelectedTextForTemplate	= &quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;
 			.sNotFoundBookmarkZoneForNoteList	= &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!&quot;
 			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!&quot;
-			.sBuildFootNoteComplexVerify		= &quot;Число зон поиска № примечаний НЕ СООТВЕТСТВУЕТ числу зон Списков примечаний!&quot; &amp; chr(10) &amp; _
+			.sBuildFootNoteComplexVerify		= sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; _
 					&quot;Т.е. число закладок для Глав книги с НОМЕРАМИ примечаний не соответствует числу закладок для их Списков примечаний.&quot; &amp; _
 					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
 					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
@@ -121,7 +130,7 @@ Sub InitBuildTootEndNoteMessage()
 					&quot;то поставьте пустую закладку для зоны поиска списков примечаний:&quot; &amp; chr(10) &amp; _
 					&quot;Например, в книге - 5 глав, № примечаний есть только в 1,3,5 главах. В конце книги перечислены списки примечаний только для глав 1 и 5. Оригинала книги у вас нет.&quot; &amp; _
 					&quot;Значит, нужно после списка примечаний для главы 1 вставть пустой абзац и на нем - закладку для зоны поиска списка примечаний.&quot; &amp; _
-					&quot;Эта закладка будет соответствовать главе 3.&quot; &amp; chr(10)  &amp;chr(10) &amp; _
+					&quot;Эта закладка будет соответствовать главе 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					&quot;3. Самый лучший вариант - найти бумажный оригинал книги, и по нему внести в текст все номера примечаний для глав, где они есть, &quot; &amp; _
 					&quot;и соответствующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
 					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
@@ -164,8 +173,8 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestMode1			 				= &quot;Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги&quot;
 			.sTestMode2			 				= &quot;Режим: Список примечаний - после каждой главы книги&quot;
 			.sTestMode3			 				= &quot;Режим: Все Списки примечаний - в конце книги&quot;
-			.sTestTextZoneSearch	 			= &quot;I. Зона поиска - Текст книги&quot;
-			.sTestListZoneSearch	 			= &quot;II. Зона поиска - Список примечаний в конце книги&quot;
+			.sTestBookChapter		 			= &quot;Глава книги&quot;
+			.sTestNotesList	 					= &quot;Список примечаний&quot;
 			.sTestNoTablesInDoc	 				= &quot;В Документе нет ни одной Таблицы.&quot;
 			.sTestNoFramesInDoc	 				= &quot;В Документе нет ни одной Текстовой Врезки.&quot;
 			.sTestWarning		 				= &quot;ПРЕДУПРЕЖДЕНИЕ!&quot;
@@ -198,9 +207,17 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestBookmarkForStatChapter		= &quot;Закладки для начала главы&quot;
 			.sTestBookmarkForListNotes			= &quot;Закладки для Списка примечаний&quot;
 			.sTestZoneSearch	 				= &quot;Зона поиска&quot;
+			.sTestChapterAndNotesList			= &quot;(Глава и Список ее примечаний)&quot;
+			.sTestGeneralResume					= &quot;Основные выводы Теста&quot;
+			.sTestZones							= &quot;Зоны&quot;
+			.sTestNeedyCorrect					= &quot;требующие ручной корректуры&quot;
+			.sTestNotNeedyCorrect				= &quot;не требующие ручной корректуры&quot;
+			.sTestChapterBookmarkName			= &quot;Название Закладки для Главы&quot;
+			.sTestListNotesBookmarkName			= &quot;Название Закладки для Списка примечаний этой Главы&quot;
 		End With
 	Else
 		With sBTEND
+			.sLBCountNotEqualRBCount	= &quot;The Number of Bookmarks for the Book Chapter with NUMBERS of Notes is Not Equal the Number of Bookmarks for the Lists of Notes!&quot;
 			.sNoSelectText				= &quot;There is no allocated Fragment of the Text for search!&quot;
 			.sProcessAllDoc				= &quot;Process all Document?&quot;
 			.sFindInSelected			= &quot;Search in the allocated Areas of the Text&quot;
@@ -210,9 +227,9 @@ Sub InitBuildTootEndNoteMessage()
 			.sFootnotesGenerationCount	= &quot;It is generated Footnotes:&quot;
 			.sFootnotesNotGeneration	= &quot;Footnotes are not generated:&quot;
 			.sNotFoundSelectedTextForTemplate	= &quot;It is not found any Text Fragment, search of notes satisfying to a set Pattern!&quot;
-			.sNotFoundBookmarkZoneForNoteList	= &quot;Is not present any marked Bookmark of the Zone containing the LIST of Notes (Bookmark for the Chapter)!&quot;
-			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Is not Present any marked Bookmark of the Zone containing NUMBERS of Notes!&quot;
-			.sBuildFootNoteComplexVerify		= &quot;The Number of Zones of Search № Notes MISMATCHES Number of Zones of Lists of Notes!&quot; &amp; chr(10) &amp; _
+			.sNotFoundBookmarkZoneForNoteList	= &quot;Is not present any marked Bookmark of the Zone containing the LIST of Notes!&quot;
+			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Is not Present any marked Bookmark of the Zone containing NUMBERS of Notes (Bookmark for the Chapter)!&quot;
+			.sBuildFootNoteComplexVerify		= sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; _
 					&quot;That is the Number of Bookmarks for Chapters of the Book with NUMBERS of Notes mismatches Тumber of Bookmarks for their Lists of Notes.&quot; &amp; _
 					&quot;It will lead to that the Note will appear &quot;&quot;adhered&quot;&quot; not to that Chapter.&quot; &amp; chr(10) &amp; _
 					&quot;Generation of Footnotes is interrupted.&quot; &amp; chr(10) &amp; chr(10) &amp; _
@@ -267,8 +284,8 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestMode1			 				= &quot;Mode: Numbering of Numbers of Notes in the Text - through; the General List of Notes - in the End of the Book&quot;
 			.sTestMode2			 				= &quot;Mode: the List of Notes - after each Chapter of the Book&quot;
 			.sTestMode3			 				= &quot;Mode: All Lists of Notes - in the End of the Book&quot;
-			.sTestTextZoneSearch	 			= &quot;I. A Zone of Search - the Text of the Book&quot;
-			.sTestListZoneSearch	 			= &quot;II. The Zone of Search - the List of Notes in the End of the Book&quot;
+			.sTestBookChapter	 				= &quot;the Chapter of the Book&quot;
+			.sTestNotesList	 					= &quot;the List of Notes&quot;
 			.sTestNoTablesInDoc	 				= &quot;In the Document there is no Table.&quot;
 			.sTestNoFramesInDoc	 				= &quot;In the Document there is no Text Frame.&quot;
 			.sTestWarning		 				= &quot;WARNING!&quot;
@@ -301,6 +318,13 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestBookmarkForStatChapter		= &quot;Bookmarks for the Beginning the Chapter&quot;
 			.sTestBookmarkForListNotes			= &quot;Bookmarks for the List of Notes&quot;
 			.sTestZoneSearch	 				= &quot;Zone of Search&quot;
+			.sTestChapterAndNotesList			= &quot;(Chapter and List of its Notes)&quot;
+			.sTestGeneralResume					= &quot;General Resume&quot;
+			.sTestZones							= &quot;Zones&quot;
+			.sTestNeedyCorrect					= &quot;requiring hand to Correct&quot;
+			.sTestNotNeedyCorrect				= &quot;not requiring hand to Correct&quot;
+			.sTestChapterBookmarkName			= &quot;Name for Chapter Bookmark&quot;
+			.sTestListNotesBookmarkName			= &quot;Name for List of FootNotes&quot;
 		End With
 	End If
 End Sub
