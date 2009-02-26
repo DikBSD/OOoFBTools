@@ -882,6 +882,7 @@ Sub InsertFindFootNoteNumberZoneBookMark()
 		MsgBox sBTEND.sNotInsertedBookmarkForNumberNoteZone, 64, sMessTitle
 		Exit Sub
 	Else &apos; проверки
+		
 	End If
 End Sub
 
@@ -896,69 +897,82 @@ Sub InsertFindFootNoteTextListBookMark()
 		Exit Sub
 	Else &apos; теперь можно вставить закладку
 		&apos; проверка, есть ли эта же закладка на этом же месте...
-		Dim oDoc			As Object	: oDoc			= ThisComponent
-		Dim oSels			As Object	: oSels			= ThisComponent.getCurrentSelection()
-		Dim oSel 			As Object	: oSel			= oSels.getByIndex(0)
-		Dim oLCurs			As Object	: oLCurs		= GetLeftMostCursor(oSel)
-		Dim oRCurs			As Object	: oRCurs		= GetRightMostCursor(oSel)
-		Dim oBookMarks		As Object	: oBookMarks	= oDoc.getBookmarks()
-		Dim aBookMarks()	As String	: aBookMarks	= GetFindListNoteZones( oBookMarks, sConstBookMarkListNote ) &apos; список закладок, удовлетворяющих шаблону sConstBookMarkListNote
-
-		Dim bBookMarkInSel As Boolean : bBookMarkInSel = False &apos; флаг - есть ли на выделенном месте закладка, соответствующая шаблону
-
-		If UBound( aBookMarks() ) = -1 Then
+		Dim oDoc				As Object	: oDoc			= ThisComponent
+		Dim oSels				As Object	: oSels			= ThisComponent.getCurrentSelection()
+		Dim oSel 				As Object	: oSel			= oSels.getByIndex(0)
+		Dim oLCurs				As Object	: oLCurs		= GetLeftMostCursor(oSel)
+		Dim oRCurs				As Object	: oRCurs		= GetRightMostCursor(oSel)
+		Dim oBookMarks			As Object	: oBookMarks	= oDoc.getBookmarks()
+		Dim aListBookMarks()	As String	: aListBookMarks= GetFindListNoteZones( oBookMarks, sConstBookMarkListNote )
+		Dim aFNNBookmarks() 	As Object 	: aFNNBookmarks() = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+		Dim oBookMark			As Object, 	oAnchor As Object
+		Dim bBookMarkInSel 		As Boolean : bBookMarkInSel = False &apos; флаг - есть ли на выделенном месте закладка, соответствующая шаблону
+		
+		If UBound( aListBookMarks() ) = -1 Then
 			&apos; Нет ни одной выделенной закладкой области, содержащей список текста сносок. Можно вставлять!
 			bBookMarkInSel = False
-		ElseIf UBound( aBookMarks() ) &gt;= 0 Then &apos; есть одна закладка такая же, но возможно с номером
+			&apos; проверка, нет ли на этом месте закладки для Главы
+			For l=0 To UBound( aFNNBookmarks() )
+				oBookMark	= oBookMarks.getByName( aFNNBookmarks(l) )
+				oAnchor		= oBookMark.getAnchor()
+				If oDoc.Text.compareRegionEnds( oAnchor.getStart(), oLCurs  ) &lt;= 0 And _
+					oDoc.Text.compareRegionEnds( oAnchor.getEnd(), oRCurs ) &gt;= 0 Then
+					bBookMarkInSel = True
+					MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+							sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; sBTEND.sForChapterBookMark &amp; &quot; &quot; &amp; aFNNBookmarks(l), 64, _
+							sBTEND.sInsertBookmarkForListNoteZone
+					Exit Sub
+				End If
+			Next l
+		ElseIf UBound( aListBookMarks() ) &gt;= 0 Then &apos; есть одна закладка такая же, но возможно с номером
 			&apos; сравниваем ее границы с границей выделения
-			For l=0 To UBound( aBookMarks() )
-				Dim oBookMark	As Object : oBookMark	= oBookMarks.getByName( aBookMarks(l) )
-				Dim oAnchor		As Object : oAnchor		= oBookMark.getAnchor()
-				Dim s			As String : s			= oBookMark.Name
-				If InStr( s, sConstBookMarkListNote ) = 1 Then
-					If oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) = 0 And _
-						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) = 0 Then
-						bBookMarkInSel = True
-						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
-								sBTEND.sSelectedZoneCoincideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
-					ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt;= 0 And _
-						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt;= 0 Then
-						bBookMarkInSel = True
-						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
-								sBTEND.sSelectedZoneTopBottomOverlapExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
-					ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &lt;= 0 And _
-						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &gt;= 0 Then
-						bBookMarkInSel = True
-						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
-								sBTEND.sSelectedZoneInsideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
-					ElseIf ( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt; 0 And _
-						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getStart() ) &lt; 0 ) Or _
-						( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getEnd() ) &gt; 0 And _
-						oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt; 0 ) Then
-						bBookMarkInSel = True
-						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
-								sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
-					Else
-						Dim aFNNBookmarks() As Object : aFNNBookmarks() = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
-						If UBound( aFNNBookmarks() ) &gt;= 0 Then
-							oBookMark	= oBookMarks.getByName( aFNNBookmarks(l) )
-							oAnchor		= oBookMark.getAnchor()
-							s		= oBookMark.Name
-							If oDoc.Text.compareRegionEnds( oAnchor.getStart(), oLCurs  ) &lt;= 0 And _
-								oDoc.Text.compareRegionEnds( oAnchor.getEnd(), oRCurs ) &gt;= 0 Then
-								bBookMarkInSel = True
-								MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
-										sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; sBTEND.sForChapterBookMark &amp; &quot; &quot; &amp; s, 64, _
-										sBTEND.sInsertBookmarkForListNoteZone
-							End If
+			For l=0 To UBound( aListBookMarks() )
+				oBookMark	= oBookMarks.getByName( aListBookMarks(l) )
+				oAnchor		= oBookMark.getAnchor()
+				If oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) = 0 And _
+					oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) = 0 Then
+					bBookMarkInSel = True
+					MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+							sBTEND.sSelectedZoneCoincideExsistBookmark &amp; &quot; &quot; &amp; aListBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
+					Exit Sub
+				ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt;= 0 And _
+					oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt;= 0 Then
+					bBookMarkInSel = True
+					MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+							sBTEND.sSelectedZoneTopBottomOverlapExsistBookmark &amp; &quot; &quot; &amp; aListBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
+					Exit Sub
+				ElseIf oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &lt;= 0 And _
+					oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &gt;= 0 Then
+					bBookMarkInSel = True
+					MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+							sBTEND.sSelectedZoneInsideExsistBookmark &amp; &quot; &quot; &amp; aListBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
+					Exit Sub
+				ElseIf ( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getStart() ) &gt; 0 And _
+					oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getStart() ) &lt; 0 ) Or _
+					( oDoc.Text.compareRegionEnds( oLCurs, oAnchor.getEnd() ) &gt; 0 And _
+					oDoc.Text.compareRegionEnds( oRCurs, oAnchor.getEnd() ) &lt; 0 ) Then
+					bBookMarkInSel = True
+					MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+							sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; aListBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
+					Exit Sub
+				Else
+					&apos; проверка, нет ли на этом месте закладки для Главы
+					If UBound( aFNNBookmarks() ) &gt;= 0 Then
+						oBookMark	= oBookMarks.getByName( aFNNBookmarks(l) )
+						oAnchor		= oBookMark.getAnchor()
+						If oDoc.Text.compareRegionEnds( oAnchor.getStart(), oLCurs  ) &lt;= 0 And _
+							oDoc.Text.compareRegionEnds( oAnchor.getEnd(), oRCurs ) &gt;= 0 Then
+							bBookMarkInSel = True
+							MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+									sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; sBTEND.sForChapterBookMark &amp; &quot; &quot; &amp; aFNNBookmarks(l), 64, _
+									sBTEND.sInsertBookmarkForListNoteZone
+							Exit Sub
 						End If
-					&apos;Else &apos;выделение никак ни касается своими границами закладки-шаблона (&quot;пустое&quot; место).
-						&apos;bBookMarkInSel = False не ставим, т.к. оно уже стоит выше, в определении флага,
-						&apos;а здесь это False приведет на очередной иетерации цикла, если закладка не касается выделения,
-						&apos;что предыдущее соответсвие закладки шаблону станет недействительным!!!!!
 					End If
-				Else &apos;выделение не соответствует закладке-шаблону
-					bBookMarkInSel = False
+				&apos;Else &apos;выделение никак ни касается своими границами закладки-шаблона (&quot;пустое&quot; место).
+					&apos;bBookMarkInSel = False не ставим, т.к. оно уже стоит выше, в определении флага,
+					&apos;а здесь это False приведет на очередной иетерации цикла, если закладка не касается выделения,
+					&apos;что предыдущее соответсвие закладки шаблону станет недействительным!!!!!
 				End If
 			Next l
 		End If
