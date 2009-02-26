@@ -9,7 +9,7 @@ Option Explicit
 
 &apos; для хранения сообщений для работы со сносками
 Type tBuildTootEndNoteData
-	sLBCountNotEqualRBCount				As String &apos; Число закладок для Глав книги c НОМЕРАМИ примечаницй не равно числу закладок для Списков примечаний!
+	sLBCountNotEqualRBCount				As String &apos; Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!
 	sNoSelectText						As String &apos; Нет ни одного выделенного фрагмента текста для поиска!
 	sProcessAllDoc						As String &apos; Обрабатывать весь документ?
 	sFindInSelected						As String &apos; Поиск в выделенных областях текста
@@ -27,7 +27,6 @@ Type tBuildTootEndNoteData
 	sInsertedBookmarkForNumberNoteZone	As String &apos; Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.
 	sNotInsertedBookmarkForNumberNoteZone	As String &apos;
 	sInsertBookmarkForListNoteZone		As String &apos; Вставка служебной закладки для списка примечаний
-	sNotFoundSymbol						As String &apos; Не выделено ни одного символа текста. Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА. Начало и конец закладки совпадают.
 	sOnlyOneTextZone					As String &apos; Выделено ... областей текста. Пожалуйста, выделите только 1 список примечаний! Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.
 	sSelected							As String &apos; Выделено
 	sNotInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний НЕ вставлена:
@@ -35,6 +34,7 @@ Type tBuildTootEndNoteData
 	sSelectedZoneTopBottomOverlapExsistBookmark	As String &apos; Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку
 	sSelectedZoneInsideExsistBookmark	As String &apos; Выделенная область текста находится внутри уже имеющейся закладки
 	sSelectedZonePartlyCoincideExsistBookmark	As String &apos; Выделенная область текста частично совпадает с уже имеющейся закладкой
+	sForChapterBookMark					As String &apos; для Главы Книги
 	sInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.
 	sDeleteBookmarks					As String &apos; Удаление рабочих закладок
 	sDeleteBookmarksQuestion			As String &apos; Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?
@@ -106,7 +106,7 @@ Public sBTEND As tBuildTootEndNoteData
 Sub InitBuildTootEndNoteMessage()
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With sBTEND
-			.sLBCountNotEqualRBCount	= &quot;Число закладок для Глав книги c НОМЕРАМИ примечаницй не равно числу закладок для Списков примечаний!&quot;
+			.sLBCountNotEqualRBCount	= &quot;Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!&quot;
 			.sNoSelectText				= &quot;Нет ни одного выделенного фрагмента текста для поиска!&quot;
 			.sProcessAllDoc				= &quot;Обрабатывать весь документ?&quot;
 			.sFindInSelected			= &quot;Поиск в выделенных областях текста&quot;
@@ -142,8 +142,6 @@ Sub InitBuildTootEndNoteMessage()
 				&quot;Просто поставьте курсор на начало абзаца каждой главы, в которой есть номера примечаний и запустите этот макрос.&quot; &amp; chr(10) &amp; _
 				&quot;Проделайте эти действия для каждой главы, где есть номера примечаний.&quot; &amp; chr(10)
 			.sInsertBookmarkForListNoteZone		= &quot;Вставка служебной закладки для списка примечаний&quot;
-			.sNotFoundSymbol					= &quot;Не выделено ни одного символа текста.&quot; &amp; chr(10) &amp; _
-												&quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot; &amp; chr(10) &amp; &quot;Начало и конец закладки совпадают.&quot;
 			.sOnlyOneTextZone					= &quot;областей текста.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выделите только 1 список примечаний!&quot; &amp; chr(10) &amp; _
 				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;
 			.sSelected							= &quot;Выделено&quot;
@@ -152,6 +150,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку&quot;
 			.sSelectedZoneInsideExsistBookmark		= &quot;Выделенная область текста находится внутри уже имеющейся закладки&quot;
 			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;Выделенная область текста частично совпадает с уже имеющейся закладкой&quot;
+			.sForChapterBookMark						= &quot;для Главы Книги&quot;
 			.sInsertedBookmarkForListNoteZone		= &quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot;
 			.sDeleteBookmarks					= &quot;Удаление рабочих закладок&quot;
 			.sDeleteBookmarksQuestion			= &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?&quot;
@@ -253,8 +252,6 @@ Sub InitBuildTootEndNoteMessage()
 				&quot;Simply put the cursor on the beginning of the paragraph of each chapter in which there are numbers of notes and start this macros.&quot; &amp; chr(10) &amp; _
 				&quot;Do these Actions for each Chapter where there are Numbers of Notes.&quot; &amp; chr(10)
 			.sInsertBookmarkForListNoteZone		= &quot;Insert of a service Bookmark for the List of Notes&quot;
-			.sNotFoundSymbol					= &quot;It is not allocated any Symbol of the Text.&quot; &amp; chr(10) &amp; _
-												&quot;The Bookmark-Pattern for the LIST of Notes is inserted.&quot; &amp; chr(10) &amp; &quot;The Beginning and the End of a Bookmark coincide.&quot;
 			.sOnlyOneTextZone					= &quot;Areas of the Text.&quot; &amp; chr(10) &amp; &quot;Please, allocate only 1 List of Notes!&quot; &amp; chr(10) &amp; _
 				&quot;If in Your Document of Lists of Notes a little (for each Chapter...) to put a Bookmark it is necessary FOR EACH List SEPARATELY.&quot;
 			.sSelected							= &quot;Selected&quot;
@@ -263,6 +260,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;The allocated Area of the Text Blocks both from above and from below already available Bookmark&quot;
 			.sSelectedZoneInsideExsistBookmark		= &quot;The allocated Area of the Text is inside already available Bookmark&quot;
 			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;The allocated Area of the Text partially coincides with already available Bookmark&quot;
+			.sForChapterBookMark						= &quot;for the Chapter of Book&quot;
 			.sInsertedBookmarkForListNoteZone		= &quot;The Bookmark-Pattern for the LIST of Notes is INSERTED.&quot;
 			.sDeleteBookmarks					= &quot;Removal of working Bookmarks&quot;
 			.sDeleteBookmarksQuestion			= &quot;You really wish to remove all working Bookmarks for Zones of Search of Numbers and the Text of Notes?&quot;

@@ -881,23 +881,18 @@ Sub InsertFindFootNoteNumberZoneBookMark()
 	ElseIf l &gt;= 1 Then
 		MsgBox sBTEND.sNotInsertedBookmarkForNumberNoteZone, 64, sMessTitle
 		Exit Sub
+	Else &apos; проверки
 	End If
 End Sub
 
-&apos; вставка очередной закладки для зоны поиска текста сносок (списол текста сносок)
+&apos; вставка очередной закладки для зоны поиска текста сносок (список текста сносок)
 Sub InsertFindFootNoteTextListBookMark()
 	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
 	InitBuildTootEndNoteMessage()
 	
 	Dim l As Long : l = GetSelectionCount()
-	If l = 0 Then
-		&apos; Нет ни одной выделенной области текста
-		_UnoInsertBookmark( sConstBookMarkListNote )
-		MsgBox sBTEND.sNotFoundSymbol, 64, sBTEND.sInsertBookmarkForListNoteZone
-		Exit Sub
-	ElseIf l &gt; 1 Then
-		MsgBox sBTEND.sSelected &amp; &quot; &quot; &amp; l &amp; &quot; &quot; &amp; sBTEND.sSelecteOnlyOneTextZone, _
-				64, sBTEND.sInsertBookmarkForListNoteZone
+	If l &gt; 1 Then
+		MsgBox sBTEND.sSelected &amp; &quot; &quot; &amp; l &amp; &quot; &quot; &amp; sBTEND.sSelecteOnlyOneTextZone, 64, sBTEND.sInsertBookmarkForListNoteZone
 		Exit Sub
 	Else &apos; теперь можно вставить закладку
 		&apos; проверка, есть ли эта же закладка на этом же месте...
@@ -943,6 +938,20 @@ Sub InsertFindFootNoteTextListBookMark()
 						bBookMarkInSel = True
 						MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
 								sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; aBookMarks(l), 64, sBTEND.sInsertBookmarkForListNoteZone
+					Else
+						Dim aFNNBookmarks() As Object : aFNNBookmarks() = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+						If UBound( aFNNBookmarks() ) &gt;= 0 Then
+							oBookMark	= oBookMarks.getByName( aFNNBookmarks(l) )
+							oAnchor		= oBookMark.getAnchor()
+							s		= oBookMark.Name
+							If oDoc.Text.compareRegionEnds( oAnchor.getStart(), oLCurs  ) &lt;= 0 And _
+								oDoc.Text.compareRegionEnds( oAnchor.getEnd(), oRCurs ) &gt;= 0 Then
+								bBookMarkInSel = True
+								MsgBox sBTEND.sNotInsertedBookmarkForListNoteZone &amp; chr(10) &amp; _
+										sBTEND.sSelectedZonePartlyCoincideExsistBookmark &amp; &quot; &quot; &amp; sBTEND.sForChapterBookMark &amp; &quot; &quot; &amp; s, 64, _
+										sBTEND.sInsertBookmarkForListNoteZone
+							End If
+						End If
 					&apos;Else &apos;выделение никак ни касается своими границами закладки-шаблона (&quot;пустое&quot; место).
 						&apos;bBookMarkInSel = False не ставим, т.к. оно уже стоит выше, в определении флага,
 						&apos;а здесь это False приведет на очередной иетерации цикла, если закладка не касается выделения,
