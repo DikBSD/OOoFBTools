@@ -23,18 +23,20 @@ Type tBuildTootEndNoteData
 	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!
 	sBuildFootNoteComplexVerify			As String &apos;
 	sDocumentIsProcessing				As String &apos; Документ обработан.
-	sInsertBookmarkForNumberNoteZone	As String &apos; Вставка служебной закладки для зоны поиска номера примечаний
+	sInsertBookmarkForNumberNoteZone	As String &apos; Вставка служебной закладки для Главы книги
 	sInsertedBookmarkForNumberNoteZone	As String &apos; Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.
 	sNotInsertedBookmarkForNumberNoteZone	As String &apos;
 	sInsertBookmarkForListNoteZone		As String &apos; Вставка служебной закладки для списка примечаний
 	sOnlyOneTextZone					As String &apos; Выделено ... областей текста. Пожалуйста, выделите только 1 список примечаний! Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.
 	sSelected							As String &apos; Выделено
 	sNotInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний НЕ вставлена:
+	sNotInsertedBookmarkForTextNoteZone	As String &apos; Закладка-шаблон для Главы Книги НЕ вставлена:
 	sSelectedZoneCoincideExsistBookmark	As String &apos; Выделенная область текста полностью совпадает с уже имеющейся закладкой
 	sSelectedZoneTopBottomOverlapExsistBookmark	As String &apos; Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку
 	sSelectedZoneInsideExsistBookmark	As String &apos; Выделенная область текста находится внутри уже имеющейся закладки
 	sSelectedZonePartlyCoincideExsistBookmark	As String &apos; Выделенная область текста частично совпадает с уже имеющейся закладкой
 	sForChapterBookMark					As String &apos; для Главы Книги
+	sForFootNotesListBookMark			As String &apos; для Списка примечаний
 	sInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.
 	sDeleteBookmarks					As String &apos; Удаление рабочих закладок
 	sDeleteBookmarksQuestion			As String &apos; Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?
@@ -135,7 +137,7 @@ Sub InitBuildTootEndNoteMessage()
 					&quot;и соответствующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
 					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
 			.sDocumentIsProcessing				= &quot;Документ обработан.&quot;
-			.sInsertBookmarkForNumberNoteZone	= &quot;Вставка служебной закладки для зоны поиска номера примечаний&quot;
+			.sInsertBookmarkForNumberNoteZone	= &quot;Вставка служебной закладки для Главы Книги&quot;
 			.sInsertedBookmarkForNumberNoteZone	= &quot;Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.&quot;
 			.sNotInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска номеров примечаний НЕ ВСТАВЛЕНА:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
 				&quot;Для того, чтобы пометить начало очередной области поиска номера примечаний НЕ НУЖНО выделять текст!&quot; &amp; chr(10) &amp; _
@@ -146,11 +148,13 @@ Sub InitBuildTootEndNoteMessage()
 				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;
 			.sSelected							= &quot;Выделено&quot;
 			.sNotInsertedBookmarkForListNoteZone	= &quot;Закладка-шаблон для СПИСКА примечаний НЕ вставлена:&quot;
+			.sNotInsertedBookmarkForTextNoteZone	= &quot;Закладка-шаблон для Главы Книги НЕ вставлена:&quot;
 			.sSelectedZoneCoincideExsistBookmark	= &quot;Выделенная область текста полностью совпадает с уже имеющейся закладкой&quot;
 			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку&quot;
 			.sSelectedZoneInsideExsistBookmark		= &quot;Выделенная область текста находится внутри уже имеющейся закладки&quot;
 			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;Выделенная область текста частично совпадает с уже имеющейся закладкой&quot;
 			.sForChapterBookMark						= &quot;для Главы Книги&quot;
+			.sForFootNotesListBookMark				= &quot;для Списка примечаний&quot;
 			.sInsertedBookmarkForListNoteZone		= &quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot;
 			.sDeleteBookmarks					= &quot;Удаление рабочих закладок&quot;
 			.sDeleteBookmarksQuestion			= &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?&quot;
@@ -200,7 +204,8 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestCorrectlyBook					= &quot;В правильно оформленной книге должно быть следующее&quot;
 			.sTestCorrectlyBook1				= &quot;1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.&quot;
 			.sTestCorrectlyBook2				= &quot;2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработанных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0&quot;
-			.sTestCorrectlyBook3				= &quot;Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.&quot;
+			.sTestCorrectlyBook3				= &quot;Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.&quot; &amp; _
+												&quot;С помощью Навигатора в OpenOffice.org и по названиям закладок из зон, требующих ручной корректировки легко перейти на нужное место книги и найти ошибки в нумерации примечаний.&quot;
 			.sTestCorrectlyBook4				= &quot;Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.&quot;
 			.sTestBookmarkForSearchZones		= &quot;Число зон поиска примечаний (закладок)&quot;
 			.sTestBookmarkForStatChapter		= &quot;Закладки для начала главы&quot;
@@ -209,8 +214,8 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestChapterAndNotesList			= &quot;(Глава и Список ее примечаний)&quot;
 			.sTestGeneralResume					= &quot;Основные выводы Теста&quot;
 			.sTestZones							= &quot;Зоны&quot;
-			.sTestNeedyCorrect					= &quot;требующие ручной корректуры&quot;
-			.sTestNotNeedyCorrect				= &quot;не требующие ручной корректуры&quot;
+			.sTestNeedyCorrect					= &quot;требующие ручной корректировки&quot;
+			.sTestNotNeedyCorrect				= &quot;не требующие ручной корректировки&quot;
 			.sTestChapterBookmarkName			= &quot;Название Закладки для Главы&quot;
 			.sTestListNotesBookmarkName			= &quot;Название Закладки для Списка примечаний этой Главы&quot;
 		End With
@@ -245,7 +250,7 @@ Sub InitBuildTootEndNoteMessage()
 					&quot;and corresponding to these chapters lists of notes! And then - for all chapters where is № Notes - to put in the beginning of the chapter of a bookmark of zones of search № Notes, &quot; &amp; _
 					&quot;and in the end of the book - on each list of notes - a bookmark of a zone of search of the list of notes.&quot; &amp; chr(10)
 			.sDocumentIsProcessing				= &quot;The Socument is processed.&quot;
-			.sInsertBookmarkForNumberNoteZone	= &quot;Inserting the Service Bookmark for Number Note Searching Zone&quot;
+			.sInsertBookmarkForNumberNoteZone	= &quot;Inserting the Service Bookmark for Chapter of the Book&quot;
 			.sInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark for the Chapter with NUMBERS of Notes is inserted.&quot;
 			.sNotInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark-Pattern for a Zone of Search of Numbers of Notes is not inserted:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
 				&quot;To mark the beginning of the next area of search of Number of Notes it is not necessary to allocate the Text!&quot; &amp; chr(10) &amp; _
@@ -256,11 +261,13 @@ Sub InitBuildTootEndNoteMessage()
 				&quot;If in Your Document of Lists of Notes a little (for each Chapter...) to put a Bookmark it is necessary FOR EACH List SEPARATELY.&quot;
 			.sSelected							= &quot;Selected&quot;
 			.sNotInsertedBookmarkForListNoteZone	= &quot;The Bookmark-Pattern for the LIST of notes is NOT inserted:&quot;
+			.sNotInsertedBookmarkForTextNoteZone	= &quot;The Bookmark-Pattern for the Chapter of the Book is NOT inserted:&quot;
 			.sSelectedZoneCoincideExsistBookmark	= &quot;The allocated Area of the Text completely coincides with already available Bookmark&quot;
 			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;The allocated Area of the Text Blocks both from above and from below already available Bookmark&quot;
 			.sSelectedZoneInsideExsistBookmark		= &quot;The allocated Area of the Text is inside already available Bookmark&quot;
 			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;The allocated Area of the Text partially coincides with already available Bookmark&quot;
 			.sForChapterBookMark						= &quot;for the Chapter of Book&quot;
+			.sForFootNotesListBookMark				= &quot;for the List of Notes&quot;
 			.sInsertedBookmarkForListNoteZone		= &quot;The Bookmark-Pattern for the LIST of Notes is INSERTED.&quot;
 			.sDeleteBookmarks					= &quot;Removal of working Bookmarks&quot;
 			.sDeleteBookmarksQuestion			= &quot;You really wish to remove all working Bookmarks for Zones of Search of Numbers and the Text of Notes?&quot;
@@ -310,7 +317,8 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestCorrectlyBook					= &quot;In correctly issued Book there should be a following&quot;
 			.sTestCorrectlyBook1				= &quot;1. The Number of Numbers of Notes from the Text and Numbers from the List of Notes should coincide.&quot;
 			.sTestCorrectlyBook2				= &quot;2. In Tables of Results the Number of processed Numbers of Notes in the Text should be equal to Number of Unique Numbers the Text, and Number of the processed Notes in the List - to Number of Unique Numbers in the List; Repeating Numbers = 0; Absent Numbers = 0; Absent Numbers from the Text in the List = 0; Absent Numbers from the List in the Text = 0&quot;
-			.sTestCorrectlyBook3				= &quot;If it not so Analyse Results of Work of the Test and the Text of the Book, and eliminate mistakes with Numbers of Notes.&quot;
+			.sTestCorrectlyBook3				= &quot;If it not so Analyse Results of Work of the Test and the Text of the Book, and eliminate mistakes with Numbers of Notes.&quot; &amp; _
+												&quot;By means of the Navigator in OpenOffice.org and under names of bookmarks from the zones demanding manual updating it is easy to pass to the necessary place of the book and to find mistakes in numbering notes.&quot;
 			.sTestCorrectlyBook4				= &quot;How more in detail to spend the Analysis - see in the Information (Manual) to Package OOoFBTools.&quot;
 			.sTestBookmarkForSearchZones		= &quot;Number of Zones of search of Notes (Bookmarks)&quot;
 			.sTestBookmarkForStatChapter		= &quot;Bookmarks for the Beginning the Chapter&quot;
@@ -319,8 +327,8 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestChapterAndNotesList			= &quot;(Chapter and List of its Notes)&quot;
 			.sTestGeneralResume					= &quot;General Resume&quot;
 			.sTestZones							= &quot;Zones&quot;
-			.sTestNeedyCorrect					= &quot;requiring hand to Correct&quot;
-			.sTestNotNeedyCorrect				= &quot;not requiring hand to Correct&quot;
+			.sTestNeedyCorrect					= &quot;demanding manual Updating&quot;
+			.sTestNotNeedyCorrect				= &quot;Not demanding manual Updating&quot;
 			.sTestChapterBookmarkName			= &quot;Name for Chapter Bookmark&quot;
 			.sTestListNotesBookmarkName			= &quot;Name for List of FootNotes&quot;
 		End With
