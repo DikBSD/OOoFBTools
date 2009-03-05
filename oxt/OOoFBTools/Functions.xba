@@ -217,6 +217,19 @@ Function SaveText(sFile As String, sText As String, sEncoding As String)
 	oTOS.closeOutput()
 End Function
 
+&apos; Обработка текста на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
+Function DelBreakLineInString( sString As String ) As String
+	Dim aTemp() As String
+	aTemp() = Split( sString, chr(10) )
+	Dim i As Integer : sString = &quot;&quot;
+	If UBound( aTemp() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( aTemp() )
+			sString = sString &amp; aTemp( i ) &amp; &quot; &quot;
+		Next i
+	End If
+	DelBreakLineInString = sString
+End Function
+
 &apos; /// Работа с экраном ///
 
 Function ToScreenCenter(oDlg)

@@ -89,6 +89,8 @@ Sub DocumentParser
 					Else
 						sPara = sPara &amp; InLineAllParser( oSect )
 					End if
+					&apos; Обработка текста - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
+					sPara = DelBreakLineInString( sPara )
 				ElseIf oSect.TextPortionType = &quot;Frame&quot; Then
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
@@ -435,15 +437,8 @@ Function FormatFootnoteText(oSect)
 				End If
 			Wend
 		
-			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
-			Dim aTemp() As String
-			aTemp() = Split( sParagF, chr(10) )
-			Dim i As Integer : sParagF = &quot;&quot;
-			If UBound( aTemp() ) &lt;&gt; -1 Then
-				For i = 0 To UBound( aTemp() )
-					sParagF = sParagF &amp; aTemp( i )
-				Next i
-			End If
+			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
+			sParagF = DelBreakLineInString( sParagF )
 		
 			&apos; парсер стилей сносок
 			If bNotesElements = True Then
