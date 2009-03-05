@@ -434,6 +434,17 @@ Function FormatFootnoteText(oSect)
 					sParagF = sParagF &amp; InLineAllParser( oTextPortionF )
 				End If
 			Wend
+		
+			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
+			Dim aTemp() As String
+			aTemp() = Split( sParagF, chr(10) )
+			Dim i As Integer : sParagF = &quot;&quot;
+			If UBound( aTemp() ) &lt;&gt; -1 Then
+				For i = 0 To UBound( aTemp() )
+					sParagF = sParagF &amp; aTemp( i )
+				Next i
+			End If
+		
 			&apos; парсер стилей сносок
 			If bNotesElements = True Then
 				sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sParagF)
