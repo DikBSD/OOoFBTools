@@ -1144,4 +1144,16 @@ Sub ExportToHTML( sFileToUrl As String )
 	oDoc.storeToURL( sFileToUrl, args() )
 End Sub
 
+Sub ClearParaStyleToBase()
+	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
+	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
+	Dim args2(1) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Template&quot;
+	args2(0).Value = &quot;Базовый&quot;
+	args2(1).Name = &quot;Family&quot;
+	args2(1).Value = 2
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
+End Sub
+
 </script:module>
