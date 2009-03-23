@@ -1150,7 +1150,11 @@ Sub ClearParaStyleToBase()
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
 	Dim args2(1) As New com.sun.star.beans.PropertyValue
 	args2(0).Name = &quot;Template&quot;
-	args2(0).Value = &quot;Базовый&quot;
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		args2(0).Value = &quot;Базовый&quot;
+	Else
+		args2(0).Value = &quot;Default&quot;
+	End If
 	args2(1).Name = &quot;Family&quot;
 	args2(1).Value = 2
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )

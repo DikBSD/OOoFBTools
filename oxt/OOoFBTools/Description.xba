@@ -120,8 +120,20 @@ Sub SaveDescription()
 		SaveEmptyAuthor()
 	End If
 	
-	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.ProgrammUsedField.Text) ) &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
-	oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; oInfoDlg.Model.diDateTextField.Text &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; oInfoDlg.Model.ProgrammUsedField.Text &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
+	If Trim(oInfoDlg.Model.diDateValueField.Text) &lt;&gt; &quot;&quot; Then
+		If Trim(oInfoDlg.Model.diDateTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.diDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		Else
+			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		If Trim(oInfoDlg.Model.diDateTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(oInfoDlg.Model.diDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		Else
+			oTextOutputStream.writeString(&quot;&lt;date/&gt;&quot; &amp; chr(10))
+		End If
+	End If
 	If Trim(oInfoDlg.Model.diURLField.Text) &lt;&gt; &quot;&quot; Then
 		oTextOutputStream.writeString(&quot;&lt;src-url&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.diURLField.Text) ) &amp; &quot;&lt;/src-url&gt;&quot; &amp; chr(10))
 	End If
