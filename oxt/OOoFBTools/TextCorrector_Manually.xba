@@ -48,13 +48,6 @@ Sub TextDefectFinderDlg_windowNormalized(oEv)
 End Sub
 
 Sub TextDefectFinderDlg_disposing(oEv)
-	&apos; сохраняем список запомненных дефисных слов в файл
-	If UBound( asWords() ) &gt; -1 Then
-		If FileExists( getUserPath() &amp; sWordsDefisListFile ) Then
-			Kill getUserPath() &amp; sWordsDefisListFile
-		End If
-		SaveArray( asWords(), getUserPath() &amp; sWordsDefisListFile )
-	End If
 End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -458,6 +451,14 @@ Sub cmdbtnTDFSaveClick()
 		AddNewItemToArray1( asTemp(), sOEF )
 		ReDim asWords() As String
 		asWords() = asTemp()
+		
+		&apos; сохраняем список запомненных дефисных слов в файл
+		If UBound( asWords() ) &gt; -1 Then
+			If FileExists( getUserPath() &amp; sWordsDefisListFile ) Then
+				Kill getUserPath() &amp; sWordsDefisListFile
+			End If
+			SaveArray( asWords(), getUserPath() &amp; sWordsDefisListFile )
+		End If
 	Else
 		MsgBox sTDFD.sNotDefisInSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
 		Exit Sub
