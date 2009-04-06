@@ -20,6 +20,8 @@ Private oDocController As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
 Private oDocControl, otxtCurs &apos; текстовый курсор
+Private Const sWordsDefisListFile As String = &quot;/OOoFBTools/words_defis_list.txt&quot; &apos; файл с запомненными дефисными словами
+Private asWords() As String &apos; массив с &quot;нормальными&quot; дефисными словами
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub TextDefectFinderDlg_windowActivated(oEv)
@@ -46,11 +48,22 @@ Sub TextDefectFinderDlg_windowNormalized(oEv)
 End Sub
 
 Sub TextDefectFinderDlg_disposing(oEv)
+	&apos; сохраняем список запомненных дефисных слов в файл
+	If UBound( asWords() ) &gt; -1 Then
+		If FileExists( getUserPath() &amp; sWordsDefisListFile ) Then
+			Kill getUserPath() &amp; sWordsDefisListFile
+		End If
+		SaveArray( asWords(), getUserPath() &amp; sWordsDefisListFile )
+	End If
 End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога поиска
 Sub TextDefectFinderStart
+	ReDim asWords() As String
+	&apos; считываем из файла дефисные слова, чтобы их потом &quot;пропускать&quot;
+	ReadFileInArray( asWords(), getUserPath() &amp; sWordsDefisListFile )
+
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
 	oTDF = LoadDialog( &quot;OOoFBTools&quot;, &quot;TextDefectFinderDlg&quot; )
 	
@@ -65,9 +78,13 @@ Sub TextDefectFinderStart
 	Dim aPunctList() As String : aPunctList() = Array( &quot;.&quot;, &quot;,&quot;, &quot;!&quot;, &quot;?&quot;, &quot;:&quot;, &quot;;&quot;, &quot;…&quot; )
 	With oTDF.Model
 		.Height	= 30
-		.Width	= 338
+		.Width	= 420
 		.lbTDFMode.StringItemList = aModeList()
 		.lbTDFPunctMarks.StringItemList = aPunctList()
+		.cmdbtnTDFSave.Label = sTDFD.sWordSave
+		.cmdbtnTDFSave.HelpText = sTDFD.sWordSaveHint
+		.cmdbtnTDFEdit.Label = sTDFD.sListWordsEdit
+		.cmdbtnTDFEdit.HelpText = sTDFD.sListWordsEditHint
 	End With
 	oTDF.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
 	oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
@@ -98,22 +115,32 @@ Sub lbTDFModeChange()
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteMinus
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= True
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= True
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreak
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sProcess
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreakAddBlank
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertPunctMark
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= True
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertBlank
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
 	End Select
 End Sub
 
@@ -180,11 +207,17 @@ End Function
 &apos; ////////////////////////////////////////////////////////////////
 &apos; ищем заданный регекс
 Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
+NextWord:
 	If Not IsSelTextRange( sTitle ) Then Exit Sub
 	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
 	&apos; поиск и обработка искомого слова
 	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
 		oDocControl.Select( otxtCurs ) &apos; выделяем найденное
+		&apos; проверяем, не соответствует ли найденное одному из запомненных дефисных слов
+		Dim i As Integer
+		For i=0 To UBound( asWords() )
+			If StrComp( otxtCurs.String, asWords(i) )=0 Then GoTo NextWord		
+		Next i
 	Else &apos; конец документа
 		If MsgBox( sTDFD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
 		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
@@ -376,4 +409,66 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 			oViewCursor.collapseToEnd()
 	End Select
 End Sub
+
+&apos; Запоминаем дефисное слово
+Sub cmdbtnTDFSaveClick()
+	oDocControl = ThisComponent.getCurrentController()
+	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
+	Dim s As String : s = Trim( otxtCurs.String )
+	If s = &quot;&quot; Then
+		MsgBox sTDFD.sNotSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title
+		Exit Sub
+	End If
+	
+	&apos; проверка, не выделено ли пользователем несколько абзацев
+	Dim asPara() As String
+	asPara() = Split( s, chr(10) )
+	If UBound( asPara() ) &gt; 0 Then
+		MsgBox sTDFD.sSelectedMorePara &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title
+		Exit Sub
+	End If
+	
+	&apos; проверка на принадлежность к словам с дефисами, тире, минусами
+	If InStr( s, &quot;-&quot; ) &lt;&gt; 0 Or InStr( s, chr(8209) ) &lt;&gt; 0 Or InStr( s, chr(8211) ) &lt;&gt; 0 Or InStr( s, chr(8212) ) &lt;&gt; 0 Then
+		&apos; проверка, нет ли такого же слова в массиве (зачем нам одинаковые слова?)
+		Dim l As Long
+		For l=0 To UBound( asWords() )
+			If StrComp( s, asWords(l) ) = 0 Then
+				MsgBox sTDFD.sExsistSelectedWordInList &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
+				Exit Sub
+			End If
+		Next l
+		AddNewItemToArray1( asWords(), s )
+
+		&apos; упорядочиваем элементы - признак конца должен быть в конце
+		Dim asTemp() As String
+		Dim sOEF As String : sOEF = &quot;end of file&quot;
+		For l=0 To UBound( asWords() )
+			If Trim( asWords(l) ) &lt;&gt; &quot;&quot; Then
+				If Trim( asWords(l) ) &lt;&gt; chr(10) Then
+					If Trim( asWords(l) ) &lt;&gt; chr(13) Then
+						If InStr( asWords(l), sOEF ) = 0 Then
+							AddNewItemToArray1( asTemp(), asWords(l) )
+						End If
+					End If
+				End If
+			End If
+		Next l
+		AddNewItemToArray1( asTemp(), sOEF )
+		ReDim asWords() As String
+		asWords() = asTemp()
+	Else
+		MsgBox sTDFD.sNotDefisInSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
+		Exit Sub
+	End If
+End Sub
+
+&apos; правка списка дефисных слов
+Sub cmdbtnTDFEditClick()
+	If FileExists( getUserPath() &amp; sWordsDefisListFile ) Then
+		FileExecute( getUserPath() &amp; sWordsDefisListFile )
+	End If	
+End Sub
+
 </script:module>
