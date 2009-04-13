@@ -155,7 +155,7 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;	&apos;&quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;  &apos; 
@@ -286,7 +286,7 @@ End Function
 &apos; 													функции обработки найденного
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-&apos; для обработки найденного - регулярноt выражениt
+&apos; для обработки найденного - регулярное выражение
 Function GetRegWorkerString() As String
 	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
 	Select Case oLB.SelectedItemPos
@@ -295,7 +295,7 @@ Function GetRegWorkerString() As String
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
-			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|[)}\],»”\&quot;&quot;:;]$&quot;
+			GetRegWorkerString = &quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$&quot;
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
 			GetRegWorkerString = &quot;$&quot;
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
