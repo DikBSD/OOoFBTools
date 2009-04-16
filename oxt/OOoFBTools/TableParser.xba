@@ -42,109 +42,6 @@ Sub OOo23TextTableParser( oTable As Object )
 End Sub
 
 &apos; форматирование стилями каждого абзаца ячейки oCell
-Function _FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As Integer ) As String
-	On Error GoTo ErrHndlr &apos; в случае очень сложной таблицы (ими богаты html-файлы) при сбое ф-ции работа не прерывается, а просто ята ячейка не экспортируется. Лучше так, чем ничего :-)
-	Dim oCellParEnum, oCellPar, oWordEnum, oWord
-	Dim sRes As String, sFormatPara As String
-	Dim i As Integer
-	oCellParEnum = oCell.createEnumeration()
-	Do While oCellParEnum.hasMoreElements()
-		oCellPar = oCellParEnum.nextElement()
-		oWordEnum = oCellPar.createEnumeration()
-		sFormatPara = &quot;&quot;
-		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-		Do While oWordEnum.hasMoreElements()
-			oWord = oWordEnum.nextElement()
-			If oWord.TextPortionType = &quot;Frame&quot; Then
-				Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
-				Do While oCEnum.hasMoreElements()
-					Dim sExt As String
-					Dim oContent : oContent = oCEnum.nextElement()
-					If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
-						oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Then
-						&apos; парсер картинок
-						sExt = GetValidateForFB2FileExt( oContent )
-						sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-						MakeGraphic( oContent, False )
-					Else
-						If oContent.ShapeType = &quot;FrameShape&quot; Then
-							If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-								&apos; парсер формул и диаграм
-								sExt = GetValidateForFB2FileExt( oContent )
-								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-								MakeGraphic( oContent, False )
-							End If
-						End If
-					End If
-				Loop
-			Else &apos; oWord.TextPortionType = &quot;Text&quot;
-				sString = sString &amp; oWord.getString()		
-				If oWord.TextPortionType = &quot;Footnote&quot; Or oWord.TextPortionType = &quot;Endnote&quot; Then
-					&apos; парсер сносок
-					sFormatPara = sFormatPara &amp; FootEndNoteParser( oWord )
-				Else
-					If bOnlyOneStyle = True Then
-						sFormatPara = sFormatPara &amp; InLineParser( oWord )
-					Else
-						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
-					End If
-				End If
-			End If
-		Loop
-		
-		&apos; Обработка строк - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
-		Dim aLines() As String
-		aLines() = Split( sFormatPara, chr(10) )
-
-		If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
-			For i = 0 To UBound( aLines() )
-				aLines( i ) = MakeNumberingNumberPara( oCellPar, sString, aLines( i ) )
-			Next i
-		End If
-		
-		&apos; задаем аттрибуты
-		Dim sTagTDH As String, sTagStart As String, sTagEnd As String
-		sTagStart = &quot;&quot;
-		sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sLineTVA, &quot;td&quot; )
-		&apos; обработка заголовков таблицы
-		If nHeaderRowCount &gt; 0 Then
-			If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-				sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sHeaderTVA, &quot;th&quot; )
-				sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-				sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
-			Else
-				sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-				sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
-			End If
-		Else
-			sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-			sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		End If
-		
-		&apos; для не пустого абзаца в ячейке
-		If UBound( aLines() ) &lt;&gt; -1 Then
-			For i = 0 To UBound( aLines() )
-				sRes = sRes &amp; sTagStart &amp; aLines( i ) &amp; sTagEnd
-			Next i
-		Else &apos; &quot;пустая строка&quot;
-			If nHeaderRowCount &gt; 0 Then
-				If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-					sRes = sRes &amp; &quot;&lt;th/&gt;&quot; &amp; chr(10)
-				Else
-					sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
-				End If
-			Else
-				sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
-			End If
-		End If
-		
-	Loop
-ErrHndlr:
-	sRes = Mid( sRes, 1, Len(sRes)-1 )
-	FormatCellPara = sRes
-End Function
-
-&apos; форматирование стилями каждого абзаца ячейки oCell
 Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As Integer ) As String
 	On Error GoTo ErrHndlr &apos; в случае очень сложной таблицы (ими богаты html-файлы) при сбое ф-ции работа не прерывается, а просто эта ячейка не экспортируется. Лучше так, чем ничего :-)
 	
@@ -159,7 +56,7 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		oCellPar = oCellParEnum.nextElement()
 		sFormatPara = &quot;&quot;
 		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-		If oCellPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+&apos;		If oCellPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			oCEnum = oCellPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
@@ -220,7 +117,7 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 					End If
 				End If
 			Loop
-		End If
+&apos;		End If
 
 		&apos; Обработка строк - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
 		Dim aLines() As String

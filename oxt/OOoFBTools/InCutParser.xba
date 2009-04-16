@@ -32,34 +32,61 @@ Sub TextFrameParser( oContent As Object )
 End Sub
 
 &apos; парсер текстовой врезки как таблицы
-Sub TextFrameTableParser( oContent As Object )
-	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String, sTable As String
+Sub TextFrameTableParser( oCont As Object )
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	
+	Dim oParEnum As Object, oPar As Object, oCEnum As Object
+	Dim oSectEnum As Object, oSect As Object, oContent As Object 
+	Dim sFormatPara As String, sTable As String, sExt As String, sString As String
+		
 	Dim nMaxCollCount As Integer &apos; max число столбцов в таблице - из всех таблиц во Врезке
 	Dim TableRows() As tTableRowsInCut &apos; массив, хранящий данные по каждой структуре или параграфу Врезки
-	oParEnum = oContent.createEnumeration()
+	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
-			oWordEnum = oPar.createEnumeration()
 			sFormatPara = &quot;&quot;
-			Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-			Do While oWordEnum.hasMoreElements()
-				oWord = oWordEnum.nextElement()			
-				If oWord.TextPortionType = &quot;Frame&quot; Then
-					Dim sExt As String
-					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+					&apos; парсер графики, привязанной к параграфу
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oContent, False )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; парсер формул и диаграм, привязанной к параграфу
+							sExt = GetValidateForFB2FileExt( oContent )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							MakeGraphic( oContent, False )
+						End If
+					End If
+				End If
+			Loop
+
+			&apos; Символы
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()				
+				If oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
-						Dim oContent : oContent = oCEnum.nextElement()
-						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
-							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Then
-							&apos; графика внутри Текстовой Врезки
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+							&apos; парсер графики, привязанной к символу
 							sExt = GetValidateForFB2FileExt( oContent )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							MakeGraphic( oContent, False )
 						Else
+							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; формулы и диаграммы
+									&apos; парсер диаграм и формул, привязка &quot;символ&quot;
 									sExt = GetValidateForFB2FileExt( oContent )
 									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 									MakeGraphic( oContent, False )
@@ -67,13 +94,17 @@ Sub TextFrameTableParser( oContent As Object )
 							End If
 						End If
 					Loop
-				Else &apos; oWord.TextPortionType = &quot;Text&quot;
-					sString = sString &amp; oWord.getString()
-					&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
-					If bOnlyOneStyle = True Then
-						sFormatPara = sFormatPara &amp; InLineParser( oWord )
+				Else
+					sString = sString &amp; oSect.getString()		
+					If oSect.TextPortionType = &quot;Footnote&quot; Or oSect.TextPortionType = &quot;Endnote&quot; Then
+						&apos; парсер сносок
+						sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
 					Else
-						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+						If bOnlyOneStyle = True Then
+							sFormatPara = sFormatPara &amp; InLineParser( oSect )
+						Else
+							sFormatPara = sFormatPara &amp; InLineAllParser( oSect )
+						End If
 					End If
 				End If
 			Loop
@@ -133,32 +164,59 @@ Sub TextFrameTableParser( oContent As Object )
 End Sub
 
 &apos; парсер текстовой врезки как цитаты
-Sub TextFrameCiteParser( oContent As Object )
-	Dim sCite As String
-	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String
-	oParEnum = oContent.createEnumeration()
+Sub TextFrameCiteParser( oCont As Object )
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	
+	Dim oParEnum As Object, oPar As Object, oCEnum As Object
+	Dim oSectEnum As Object, oSect As Object, oContent As Object 
+	Dim sFormatPara As String, sCite As String, sExt As String, sString As String
+	
+	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
-			oWordEnum = oPar.createEnumeration()
 			sFormatPara = &quot;&quot;
-			Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-			Do While oWordEnum.hasMoreElements()
-				oWord = oWordEnum.nextElement()
-				If oWord.TextPortionType = &quot;Frame&quot; Then
-					Dim sExt As String
-					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+					&apos; парсер графики, привязанной к параграфу
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oContent, False )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; парсер формул и диаграм, привязанной к параграфу
+							sExt = GetValidateForFB2FileExt( oContent )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							MakeGraphic( oContent, False )
+						End If
+					End If
+				End If
+			Loop
+
+			&apos; Символы
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()				
+				If oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
-						Dim oContent : oContent = oCEnum.nextElement()
-						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
-							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Then
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+							&apos; парсер графики, привязанной к символу
 							sExt = GetValidateForFB2FileExt( oContent )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							MakeGraphic( oContent, False )
 						Else
+							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; формулы и диаграммы
+									&apos; парсер диаграм и формул, привязка &quot;символ&quot;
 									sExt = GetValidateForFB2FileExt( oContent )
 									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 									MakeGraphic( oContent, False )
@@ -166,13 +224,17 @@ Sub TextFrameCiteParser( oContent As Object )
 							End If
 						End If
 					Loop
-				Else &apos; oWord.TextPortionType = &quot;Text&quot;
-					sString = sString &amp; oWord.getString()
-					&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
-					If bOnlyOneStyle = True Then
-						sFormatPara = sFormatPara &amp; InLineParser( oWord )
+				Else
+					sString = sString &amp; oSect.getString()		
+					If oSect.TextPortionType = &quot;Footnote&quot; Or oSect.TextPortionType = &quot;Endnote&quot; Then
+						&apos; парсер сносок
+						sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
 					Else
-						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+						If bOnlyOneStyle = True Then
+							sFormatPara = sFormatPara &amp; InLineParser( oSect )
+						Else
+							sFormatPara = sFormatPara &amp; InLineAllParser( oSect )
+						End If
 					End If
 				End If
 			Loop
@@ -200,59 +262,81 @@ Sub TextFrameCiteParser( oContent As Object )
 	Loop
 	&apos; обработка начала и конца строки
 	sCite = MakeStartEndOfText( sCite )
-	AddBodyArray(sCite, &quot;Cite&quot;, False)
+	AddBodyArray( sCite, &quot;Cite&quot;, False )
 End Sub
 
 &apos; парсер текстовой врезки как текста
-Sub TextFrameTextParser( oContent As Object )
-	Dim sText As String
-	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String
-	oParEnum = oContent.createEnumeration()
+Sub TextFrameTextParser( oCont As Object )
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	
+	Dim oParEnum As Object, oPar As Object, oCEnum As Object
+	Dim oSectEnum As Object, oSect As Object, oContent As Object 
+	Dim sFormatPara As String, sText As String, sExt As String, sString As String
+
+	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
-			oWordEnum = oPar.createEnumeration()
 			sFormatPara = &quot;&quot;
-			Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-			Do While oWordEnum.hasMoreElements()
-				oWord = oWordEnum.nextElement()
-				If oWord.TextPortionType = &quot;Frame&quot; Then
-					Dim sExt As String
-					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
-					Do While oCEnum.hasMoreElements()
-						Dim oContent : oContent = oCEnum.nextElement()
-						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
-							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Then
-							&apos; графика внутри Текстовой Врезки - как отдельный тэг
+			sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+					&apos; парсер графики, привязанной к параграфу
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oContent, False )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; парсер формул и диаграм, привязанной к параграфу
 							sExt = GetValidateForFB2FileExt( oContent )
-							If oContent.AnchorType = 1 Then
-								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							Else
-								sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
-							End If
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							MakeGraphic( oContent, False )
+						End If
+					End If
+				End If
+			Loop
+
+			&apos; Символы
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()				
+				If oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
+					Do While oCEnum.hasMoreElements()
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+							&apos; парсер графики, привязанной к символу
+							sExt = GetValidateForFB2FileExt( oContent )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							MakeGraphic( oContent, False )
 						Else
+							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; формулы и диаграммы
+									&apos; парсер диаграм и формул, привязка &quot;символ&quot;
 									sExt = GetValidateForFB2FileExt( oContent )
-									If oContent.AnchorType = 1 Then
-										sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-									Else
-										sText = sText &amp; ImagesTextInCutParser( oContent, sExt ) &amp; chr(10)
-									End If
+									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 									MakeGraphic( oContent, False )
 								End If
 							End If
 						End If
 					Loop
-				Else &apos; oWord.TextPortionType = &quot;Text&quot;
-					sString = sString &amp; oWord.getString()
-					&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;	
-					If bOnlyOneStyle = True Then
-						sFormatPara = sFormatPara &amp; InLineParser( oWord )
+				Else
+					sString = sString &amp; oSect.getString()		
+					If oSect.TextPortionType = &quot;Footnote&quot; Or oSect.TextPortionType = &quot;Endnote&quot; Then
+						&apos; парсер сносок
+						sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
 					Else
-						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+						If bOnlyOneStyle = True Then
+							sFormatPara = sFormatPara &amp; InLineParser( oSect )
+						Else
+							sFormatPara = sFormatPara &amp; InLineAllParser( oSect )
+						End If
 					End If
 				End If
 			Loop
@@ -284,58 +368,79 @@ Sub TextFrameTextParser( oContent As Object )
 	AddBodyArray(sText, &quot;Para&quot;, False)
 End Sub
 
+&apos;////////////////////////////////////////////////////////
 &apos; парсер текстовой врезки как структуры
-Sub TextFrameStructParser( oContent As Object )
-	Dim oParEnum As Object, oPar As Object, oWordEnum As Object, oWord As Object, sFormatPara As String
-	oParEnum = oContent.createEnumeration()
+Sub TextFrameStructParser( oCont As Object )
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	
+	Dim oParEnum As Object, oPar As Object, oCEnum As Object
+	Dim oSectEnum As Object, oSect As Object, oContent As Object 
+	Dim sFormatPara As String, sExt As String, sString As String
+
+	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
-			oWordEnum = oPar.createEnumeration()
 			sFormatPara = &quot;&quot;
-			Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-			Do While oWordEnum.hasMoreElements()
-				oWord = oWordEnum.nextElement()
-				If oWord.TextPortionType = &quot;Frame&quot; Then
-					Dim sExt As String
-					Dim oCEnum : oCEnum = oWord.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
-					Do While oCEnum.hasMoreElements()
-						Dim oContent : oContent = oCEnum.nextElement()
-						If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Or _
-							oContent.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Then
+			sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
+			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+					&apos; парсер графики, привязанной к параграфу
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oContent, False )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; парсер формул и диаграм, привязанной к параграфу
 							sExt = GetValidateForFB2FileExt( oContent )
-							If oContent.AnchorType = 1 Then &apos; картинка, как символ
-								sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							Else
-								&apos; графика внутри Текстовой Врезки - как отдельный тэг
-								AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
-								sPrevStyle = &quot;Image&quot;
-							End If
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							MakeGraphic( oContent, False )
+						End If
+					End If
+				End If
+			Loop
+
+			&apos; Символы
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()				
+				If oSect.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oSect.createContentEnumeration(textGraphService)
+					Do While oCEnum.hasMoreElements()
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+							&apos; парсер графики, привязанной к символу
+							sExt = GetValidateForFB2FileExt( oContent )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							MakeGraphic( oContent, False )
 						Else
+							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; парсер формул и диаграм
+									&apos; парсер диаграм и формул, привязка &quot;символ&quot;
 									sExt = GetValidateForFB2FileExt( oContent )
-									If oContent.AnchorType = 1 Then &apos; картинка, как символ
-										sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-									Else
-										&apos; формулы и диаграмы внутри Текстовой Врезки - как отдельный тэг
-										AddBodyArray( ImagesTextInCutParser( oContent, sExt ), &quot;Image&quot;, False )
-										sPrevStyle = &quot;Image&quot;
-									End If
+									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 									MakeGraphic( oContent, False )
 								End If
 							End If
 						End If
 					Loop
-				Else &apos; oWord.TextPortionType = &quot;Text&quot;
-					sString = sString &amp; oWord.getString()
-					&apos; врезки не поддерживают сносок, поэтому их &quot;не парсим&quot;
-					If bOnlyOneStyle = True Then
-						sFormatPara = sFormatPara &amp; InLineParser( oWord )
+				Else
+					sString = sString &amp; oSect.getString()		
+					If oSect.TextPortionType = &quot;Footnote&quot; Or oSect.TextPortionType = &quot;Endnote&quot; Then
+						&apos; парсер сносок
+						sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
 					Else
-						sFormatPara = sFormatPara &amp; InLineAllParser( oWord )
+						If bOnlyOneStyle = True Then
+							sFormatPara = sFormatPara &amp; InLineParser( oSect )
+						Else
+							sFormatPara = sFormatPara &amp; InLineAllParser( oSect )
+						End If
 					End If
 				End If
 			Loop
@@ -356,6 +461,7 @@ Sub TextFrameStructParser( oContent As Object )
 	Loop
 End Sub
 
+&apos;////////////////////////////////////////////////////////////////////
 &apos; парсер таблиц внутри Текстовой Врезки
 Function OOo23TextTableParserForTextInCut( oTable As Object ) As String
 	Dim nHeaderRowCount As Integer
