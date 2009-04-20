@@ -209,7 +209,7 @@ NextWord:
 		&apos; проверяем, не соответствует ли найденное одному из запомненных дефисных слов
 		Dim i As Integer
 		For i=0 To UBound( asWords() )
-			If StrComp( otxtCurs.String, asWords(i) )=0 Then GoTo NextWord		
+			If StrComp( LCase( otxtCurs.String ), LCase( asWords(i) ) )=0 Then GoTo NextWord		
 		Next i
 	Else &apos; конец документа
 		If MsgBox( sTDFD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
@@ -408,7 +408,7 @@ Sub cmdbtnTDFSaveClick()
 	oDocControl = ThisComponent.getCurrentController()
 	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
 	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
-	Dim s As String : s = Trim( otxtCurs.String )
+	Dim s As String : s = LCase( Trim( otxtCurs.String ) )
 	If s = &quot;&quot; Then
 		MsgBox sTDFD.sNotSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title
 		Exit Sub
@@ -427,7 +427,7 @@ Sub cmdbtnTDFSaveClick()
 		&apos; проверка, нет ли такого же слова в массиве (зачем нам одинаковые слова?)
 		Dim l As Long
 		For l=0 To UBound( asWords() )
-			If StrComp( s, asWords(l) ) = 0 Then
+			If StrComp( s, LCase( asWords(l) ) ) = 0 Then
 				MsgBox sTDFD.sExsistSelectedWordInList &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
 				Exit Sub
 			End If
