@@ -61,6 +61,8 @@ Sub SetFB2AuthorProfile( sCurrentLine )
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diOCRField&quot;
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+		Case &quot;diURLField&quot;
+			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;HistoryTextField&quot;
 			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
 	End Select
@@ -73,8 +75,8 @@ Sub AppendDocAuthorInArray()
 	Dim i As Integer
 	i = Ubound(sDocAuthors(), 1) + 1
 	If i &gt; 0 Then
-		ReDim Preserve sDocAuthors(i, 6)
-	Else Redim sDocAuthors(i, 6)
+		ReDim Preserve sDocAuthors(i, 5)
+	Else Redim sDocAuthors(i, 5)
 	End If
 	sDocAuthors(i, 0) = Trim(oInfoDlg.Model.diFirstField.Text)
 	sDocAuthors(i, 1) = Trim(oInfoDlg.Model.diMiddleField.Text)
@@ -82,7 +84,6 @@ Sub AppendDocAuthorInArray()
 	sDocAuthors(i, 3) = Trim(oInfoDlg.Model.diNicknameField.Text)
 	sDocAuthors(i, 4) = Trim(oInfoDlg.Model.diEmailField.Text)
 	sDocAuthors(i, 5) = Trim(oInfoDlg.Model.diHomepageField.Text)
-	sDocAuthors(i, 6) = Trim(oInfoDlg.Model.HistoryTextField.Text)
 	oInfoDlg.GetControl(&quot;lblDocAutors&quot;).Text = i+1
 End Sub
 
@@ -109,6 +110,7 @@ Sub SaveProfile()
 	oTOS.writeString(&quot;diEmailField=&quot; &amp; oInfoDlg.Model.diEmailField.Text &amp; chr(10))
 	oTOS.writeString(&quot;diHomepageField=&quot; &amp; oInfoDlg.Model.diHomepageField.Text &amp; chr(10))
 	oTOS.writeString(&quot;diOCRField=&quot; &amp; oInfoDlg.Model.diOCRField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diURLField=&quot; &amp; oInfoDlg.Model.diURLField.Text &amp; chr(10))
 	oTOS.writeString(&quot;HistoryTextField=&quot; &amp; oInfoDlg.Model.HistoryTextField.Text &amp; chr(10))
 	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
 	oTOS.closeOutput()
