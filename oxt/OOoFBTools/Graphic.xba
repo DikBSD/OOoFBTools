@@ -101,7 +101,7 @@ End Sub
 &apos; данные графики и ее расширение
 Function GetGraphicExt( ByVal oContent As Object ) As String
 	Dim sExt As String, sFD As tFileData, i As Integer
-	If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+	If oContent.ShapeType = &quot;com.sun.star.drawing.GraphicObjectShape&quot; Then
 		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
@@ -112,11 +112,26 @@ Function GetGraphicExt( ByVal oContent As Object ) As String
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+		End If
+	Else
+		If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
+			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
+				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
+				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+				sExt = sFD.sExt
+			Else
+				&apos; Картинка &quot;встроена&quot; в файл:
+				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+				sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+			End If
+		Else &apos; OLE (Диаграммы) или Formula:
+			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+			sExt = sOLEAs
 		End if
-	Else &apos; OLE (Диаграммы) или Formula:
-		&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
-		sExt = sOLEAs
-	End if
+	End If
+	
 	GetGraphicExt = sExt
 End Function
 
@@ -176,7 +191,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 		Kill GetOOoFBToolsImageURL( sExt )
 	End If
 	
-	If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+	If oContent.ShapeType = &quot;com.sun.star.drawing.GraphicObjectShape&quot; Then
 		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
@@ -192,12 +207,31 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
-		End if
-	Else &apos; OLE (Диаграммы) или Formula:
-		&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
-		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
-		ExportGraphicToFile( oContent, sFileNameURL, sExt )
-	End if
+		End If
+	Else
+		If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
+			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
+				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
+				sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+				&apos; Доделать - преобразование файла в png или jpj (как в настройках), и копирование его в рабочую временную папку
+				If FileExists( sFileNameURL ) Then
+					FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
+				End If
+				sFileNameURL = GetOOoFBToolsImageURL( sExt )
+			Else
+				&apos; Картинка &quot;встроена&quot; в файл:
+				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+				ExportGraphicToFile( oContent, sFileNameURL, sExt )
+			End If
+		Else &apos; OLE (Диаграммы) или Formula:
+			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
+			ExportGraphicToFile( oContent, sFileNameURL, sExt )
+		End If
+	End If
 	
 	&apos; кодирование картинки
 	CodeToBase64( sFileNameURL, sExt )
@@ -219,16 +253,24 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 	Dim args(3) As New com.sun.star.beans.PropertyValue
 	oGP = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)   
 
-	If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+	If oContent.ShapeType = &quot;com.sun.star.drawing.GraphicObjectShape&quot; Then
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			oGraphic = oContent.Graphic
-		End if
-	Else &apos; OLE (Диаграммы) или Formula:
-		&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
-		oGraphic = oContent.ReplacementGraphic
-	End if
+		End If
+	Else
+		If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
+				&apos; Картинка &quot;встроена&quot; в файл:
+				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+				oGraphic = oContent.Graphic
+			End If
+		Else &apos; OLE (Диаграммы) или Formula:
+			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+			oGraphic = oContent.ReplacementGraphic
+		End If
+	End If
 	
 	&apos; для jpg-файлов приводим mime-тип к правильному значению
 	If LCase(sExt) = &quot;jpg&quot; Then
