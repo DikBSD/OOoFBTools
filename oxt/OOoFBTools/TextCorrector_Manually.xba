@@ -161,7 +161,7 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;	&apos;&quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;  &apos; 
 			sTDF.sMessage = sTDFD.sSearchMissingPunctMarksEndPara
 		Case 4 &apos; Место с недостающим пробелом между словами
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alnum:]+&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alpha:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
 			sTDF.sRegString = &quot;[:alnum:]+&quot;
@@ -299,7 +299,7 @@ Function GetRegWorkerString() As String
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
 			GetRegWorkerString = &quot;$&quot;
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
-			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“]&quot; &amp; &quot;next&quot; &amp; &quot;[)}\],.!?…»”\&quot;&quot;:;]&quot;
+			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“)}\],.!?…»”\&quot;&quot;:;]&quot;
 	End Select
 End Function
 
@@ -320,12 +320,30 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 	oCurs.goRight( 0, False )
 	
 	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	
 	If oLB.SelectedItemPos = 4 Then
-		Dim aReg() As String : aReg = Split( sReg, &quot;next&quot; )
 		Dim i As Integer
-		For i = 0 To 1
-			If Finder( oDoc, oCurs, aReg(i), i ) Then Exit For &apos; Не обрабатываем недостающий пробел справа от знаков препинания, т.к. нашли слева
+		&apos; смотрим, какой символ нашли
+		Dim sFindStr		As String : sFindStr	= oDoc.getCurrentController().getViewCursor().GetString()
+		Dim sRegStr()		As String : sRegStr()	= Array( &quot;)&quot;,&quot;}&quot;,&quot;]&quot;,&quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;,&quot;,&quot;.&quot;,&quot;!&quot;,&quot;?&quot;,&quot;…&quot;,&quot;»&quot;,&quot;”&quot;,&quot;&quot;&quot;&quot;,&quot;:&quot;,&quot;;&quot;,&quot;«&quot;,&quot;“&quot; )
+		For i = 0 To UBound( sRegStr() )
+			Dim nPos As Integer : nPos = InStr( sFindStr, sRegStr(i) )
+			If nPos &lt;&gt; 0 Then
+				Dim sChar As String : sChar = sRegStr(i)
+				Exit For
+			End If
 		Next i
+		&apos; слева этот символ или справа
+		Dim sRegLeftStr()	As String	: sRegLeftStr()	= Array( &quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;“&quot; )
+		Dim iRight			As Integer	: iRight		= 1
+		For i = 0 To UBound( sRegLeftStr() )
+			If InStr( sFindStr, sRegLeftStr(i) ) &lt;&gt; 0 Then
+				iRight = 0
+				Exit For
+			End If
+		Next i
+		
+		Finder( oDoc, oCurs, sReg, iRight )
 	Else
 		Finder( oDoc, oCurs, sReg, -1 )
 	End If
