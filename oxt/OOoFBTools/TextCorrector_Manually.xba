@@ -209,9 +209,14 @@ NextWord:
 		&apos; проверяем, не соответствует ли найденное одному из запомненных дефисных слов
 		Dim i As Integer
 		For i=0 To UBound( asWords() )
-			If StrComp( LCase( otxtCurs.String ), LCase( asWords(i) ) )=0 Then GoTo NextWord		
+			If StrComp( LCase( otxtCurs.String ), LCase( asWords(i) ) )=0 Then
+				GoTo NextWord
+			End If
 		Next i
 	Else &apos; конец документа
+		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+		Dim oViewCursor	As Object : oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+		oViewCursor.collapseToEnd()
 		If MsgBox( sTDFD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
 		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
 		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
@@ -450,7 +455,28 @@ Sub cmdbtnTDFSaveClick()
 				Exit Sub
 			End If
 		Next l
-		AddNewItemToArray1( asWords(), s )
+		
+		&apos; добавляем слово в Словарь
+		Dim sStr As String : sStr = &quot;&quot;
+		Dim asLexems() As String
+		If InStr( s, &quot;-&quot; ) &lt;&gt; 0 Then
+			asLexems = Split( s, &quot;-&quot; )
+		ElseIf InStr( s, chr(8209) ) &lt;&gt; 0 Then
+			asLexems = Split( s, chr(8209) )
+		ElseIf InStr( s, chr(8211) ) &lt;&gt; 0 Then
+			asLexems = Split( s, chr(8211) )
+		ElseIf InStr( s, chr(8212) ) &lt;&gt; 0 Then
+			asLexems = Split( s, chr(8212) )
+		End If
+		
+		sStr =  asLexems(0) &amp; &quot;-&quot; &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+		sStr = asLexems(0) &amp; chr(8209) &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+		sStr = asLexems(0) &amp; chr(8211) &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+		sStr = asLexems(0) &amp; chr(8212) &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
 
 		&apos; упорядочиваем элементы - признак конца должен быть в конце
 		Dim asTemp() As String
