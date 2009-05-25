@@ -3,19 +3,27 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="StructureAnalyzer" script:language="StarBasic">REM  *****  BASIC  *****
 
 Private sPStyle As String
+&apos;Private oProgressBar As Object
 
 Sub LevelAnalyzer()
 	&apos; Анализатор корректности фарматирования Уровней
+	Dim oDoc As Object : oDoc = ThisComponent
+	oProgressBar = oDoc.CurrentController.StatusIndicator
+	oProgressBar.start( &quot;Анализ Структуры - Сбор данных:&quot;, oDoc.ParagraphCount + 50 )
+	oProgressBar.setValue( 0 )
 	Dim sResult As String : sResult = LevelParser()
 	If sResult &lt;&gt; &quot;&quot; Then
-		MsgBox sResult &amp; &quot;Исправльте ошибку и протестируйте Документ заново!&quot;, 64, &quot;Анализатор Структуры&quot;
+		MsgBox sResult &amp; &quot;Исправьте ошибку и протестируйте Документ заново!&quot;, 64, &quot;Анализатор Структуры&quot;
 	Else
 		MsgBox &quot;Документ корректно размечен стилями Заголовков ( Уровни )&quot;, 64, &quot;Анализатор Структуры&quot;
 	End If
+	oProgressBar.End
 End Sub
 
 Function LevelParser() As String
 	&apos; Анализатор корректности фарматирования Уровней
+	Dim lCounter As Long : lCounter = 0
+	
 	LevelParser = &quot;&quot;
 	&apos; Установка стилей по умолчанию
 	SetStylesVarsDefault()
@@ -73,23 +81,34 @@ Function LevelParser() As String
 			&apos; Теперь - парсер элементов - по стилям
 			AnalyzerStyleParser( oPar.ParaStyleName, sPara, sParagraphs() )
 		End If
+		lCounter = lCounter + 1
+		oProgressBar.setValue( lCounter )
 	Loop
 	
 	&apos; проверка корректности очередности Уровней
 	Dim l As Long, nL As Integer, nR As Integer, nStep As Integer
+	oProgressBar.start( &quot;Анализ Структуры - Анализ:&quot;, UBound( sParagraphs() )
+	oProgressBar.setValue( 0 )
 	For l = 0 To UBound( sParagraphs() )
 		If l &lt; UBound( sParagraphs() ) Then
 			nL = GetLevelNumber( sParagraphs(l,1) )
 			nR = GetLevelNumber( sParagraphs(l+1,1) )
 			If ( nR-nL &gt; 1 ) Then
-				LevelParser = &quot;Заголовок &quot; &amp; sParagraphs(l+1,0) &amp; chr(10) &amp; _
-				&quot;неверно отформатирован стилем &quot; &amp; sParagraphs(l+1,1) &amp; chr(10) &amp; _
-				&quot;Ожидался стиль &quot; &amp; GetLevel( nL+1 ) &amp; &quot;.&quot; &amp; chr(10) &amp; _
+				Dim s As String : s = sParagraphs(l+1,0)
+				If ( Len( s ) ) &gt; 512 Then
+					s = Mid( sParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
+				End If
+				LevelParser = &quot;Заголовок:&quot; &amp; chr(10) &amp; _
+				&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
+				&quot;неверно отформатирован стилем &apos;&quot; &amp; sParagraphs(l+1,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+				&quot;Ожидался один из следующих стилей: &quot; &amp; chr(10) &amp; _
+				&quot;&apos;&quot; &amp; GetLevel( nL ) &amp; &quot;&apos; или &apos;&quot; &amp; GetLevel( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 				&quot;Fb2-файл получится не валидным!&quot; &amp; chr(10) &amp; chr(10) &amp; _
 				&quot;Дальнейшая проверка прекращена, т.к. остальные Заголовки могут быть отформатированы относительно этого неверного стиля.&quot; &amp; chr(10)
-				Exit For
+				Exit Function
 			End If
 		End If
+		oProgressBar.setValue( l )
 	Next l
 End Function
 
@@ -185,7 +204,6 @@ Function AddParasArray( sPara As String, TextType As String, bLevel As Boolean, 
 			sParagraphs( UBound( sParagraphs ),0 ) = sText &amp; chr(10) &amp; sPara
 		End If
 	End If
-&apos;	oProgressBar.setValue(l)
 End Function
 
 </script:module>
