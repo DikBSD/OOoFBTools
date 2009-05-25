@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="StructureAnalyzer" script:language="StarBasic">REM  *****  BASIC  *****
 
 Private sPStyle As String
-&apos;Private oProgressBar As Object
+Private bExsistLevelPara As Boolean
 
 Sub LevelAnalyzer()
 	&apos; Анализатор корректности фарматирования Уровней
@@ -15,22 +15,25 @@ Sub LevelAnalyzer()
 	If sResult &lt;&gt; &quot;&quot; Then
 		MsgBox sResult &amp; &quot;Исправьте ошибку и протестируйте Документ заново!&quot;, 64, &quot;Анализатор Структуры&quot;
 	Else
-		MsgBox &quot;Документ корректно размечен стилями Заголовков ( Уровни )&quot;, 64, &quot;Анализатор Структуры&quot;
+		If Not bExsistLevelPara Then
+			MsgBox &quot;Документ не содержит ни одного абзаца, размеченного стилями Заголовков ( Уровни )&quot;, 64, &quot;Анализатор Структуры&quot;
+		Else
+			MsgBox &quot;Документ корректно размечен стилями Заголовков ( Уровни )&quot;, 64, &quot;Анализатор Структуры&quot;
+		End If
 	End If
 	oProgressBar.End
 End Sub
 
 Function LevelParser() As String
 	&apos; Анализатор корректности фарматирования Уровней
-	Dim lCounter As Long : lCounter = 0
-	
+	Dim lCounter		As Long : lCounter = 0
+	Dim asParagraphs()	As String &apos; массив абзацев-Уровней
+		
 	LevelParser = &quot;&quot;
 	&apos; Установка стилей по умолчанию
 	SetStylesVarsDefault()
 	&apos; Только теперь загружаем стили из файла в переменные
 	ReadStyles( getUserPath() &amp; sConstStyles, False )
-	
-	Dim sParagraphs() As String &apos; массив абзацев-Уровней
 	
 	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar		As Object &apos;Перебираемый параграф
@@ -51,7 +54,7 @@ Function LevelParser() As String
 				If oContent.ShapeType = &quot;FrameShape&quot; Then
 					If oContent.FrameStyleName = &quot;Frame&quot; Then
 						&apos; Парсер Текстовой Врезки
-						TxtFrameParser( oContent, sParagraphs() )
+						TxtFrameParser( oContent, asParagraphs() )
 					End If
 				End If
 			Loop
@@ -72,14 +75,14 @@ Function LevelParser() As String
 						If oContent.ShapeType = &quot;FrameShape&quot; Then
 							If oContent.FrameStyleName = &quot;Frame&quot; Then
 								&apos; Парсер Текстовой Врезки
-								TxtFrameParser( oContent, sParagraphs() )
+								TxtFrameParser( oContent, asParagraphs() )
 							End If
 						End If
 					Loop
 				End If
 			Loop
 			&apos; Теперь - парсер элементов - по стилям
-			AnalyzerStyleParser( oPar.ParaStyleName, sPara, sParagraphs() )
+			AnalyzerStyleParser( oPar.ParaStyleName, sPara, asParagraphs() )
 		End If
 		lCounter = lCounter + 1
 		oProgressBar.setValue( lCounter )
@@ -87,20 +90,38 @@ Function LevelParser() As String
 	
 	&apos; проверка корректности очередности Уровней
 	Dim l As Long, nL As Integer, nR As Integer, nStep As Integer
-	oProgressBar.start( &quot;Анализ Структуры - Анализ:&quot;, UBound( sParagraphs() )
+	oProgressBar.start( &quot;Анализ Структуры - Анализ:&quot;, UBound( asParagraphs() )
 	oProgressBar.setValue( 0 )
-	For l = 0 To UBound( sParagraphs() )
-		If l &lt; UBound( sParagraphs() ) Then
-			nL = GetLevelNumber( sParagraphs(l,1) )
-			nR = GetLevelNumber( sParagraphs(l+1,1) )
+	bExsistLevelPara = False
+	If UBound( asParagraphs() ) &gt; -1 Then
+		bExsistLevelPara = True
+		If GetLevelNumber( asParagraphs(l,1) ) &gt; 1 Then
+			s = asParagraphs(l,0)
+			If ( Len( s ) ) &gt; 512 Then
+				s = Mid( asParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
+			End If
+			LevelParser = &quot;Самый 1-й Заголовок Книги:&quot; &amp; chr(10) &amp; _
+					&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
+					&quot;неверно отформатирован стилем &apos;&quot; &amp; asParagraphs(l,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+					&quot;Ожидался только один стиль: &apos;&quot; &amp; GetLevel( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Fb2-файл получится не валидным!&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Дальнейшая проверка прекращена, т.к. остальные Заголовки могут быть отформатированы относительно этого неверного стиля.&quot; &amp; chr(10)
+		Exit Function
+		End If
+	End If
+	
+	For l = 0 To UBound( asParagraphs() )
+		If l &lt; UBound( asParagraphs() ) Then
+			nL = GetLevelNumber( asParagraphs(l,1) )
+			nR = GetLevelNumber( asParagraphs(l+1,1) )
 			If ( nR-nL &gt; 1 ) Then
-				Dim s As String : s = sParagraphs(l+1,0)
+				s = asParagraphs(l+1,0)
 				If ( Len( s ) ) &gt; 512 Then
-					s = Mid( sParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
+					s = Mid( asParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
 				End If
 				LevelParser = &quot;Заголовок:&quot; &amp; chr(10) &amp; _
 				&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-				&quot;неверно отформатирован стилем &apos;&quot; &amp; sParagraphs(l+1,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+				&quot;неверно отформатирован стилем &apos;&quot; &amp; asParagraphs(l+1,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
 				&quot;Ожидался один из следующих стилей: &quot; &amp; chr(10) &amp; _
 				&quot;&apos;&quot; &amp; GetLevel( nL ) &amp; &quot;&apos; или &apos;&quot; &amp; GetLevel( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 				&quot;Fb2-файл получится не валидным!&quot; &amp; chr(10) &amp; chr(10) &amp; _
@@ -139,69 +160,69 @@ Function GetLevel( nRang As Integer ) As String
 End Function
 
 &apos; парсер текстовой врезки
-Sub TxtFrameParser( oCont As Object, sParagraphs() As String )
+Sub TxtFrameParser( oCont As Object, asParagraphs() As String )
 	Dim oParEnum As Object : oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		Dim oPar As Object : oPar = oParEnum.nextElement()
 		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
 			Dim sFormatPara As String : sFormatPara = oPar.GetString()
-			AnalyzerStyleParser( oPar.ParaStyleName, sFormatPara, sParagraphs() )
+			AnalyzerStyleParser( oPar.ParaStyleName, sFormatPara, asParagraphs() )
 		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
 			&apos; парсер таблицы
 		End If
 	Loop
 End Sub
 
-Sub AnalyzerStyleParser( sParaStyleName As String, sPara As String, sParagraphs() As String )
+Sub AnalyzerStyleParser( sParaStyleName As String, sPara As String, asParagraphs() As String )
 	&apos; перебор по стилям
 	Select Case sParaStyleName
 		Case sStyleLevel1
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel2
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel3
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel4
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel5
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel6
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel7
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel8
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel9
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 		Case sStyleLevel10
-			AddParasArray( sPara, sParaStyleName, True, sParagraphs() )
+			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 	End Select
 	sPStyle = sParaStyleName
 End Sub
 
-Function AddParasArray( sPara As String, TextType As String, bLevel As Boolean, sParagraphs() As String )
-	Dim l As Long : l = Ubound( sParagraphs(), 1 ) + 1
+Function AddParasArray( sPara As String, TextType As String, bLevel As Boolean, asParagraphs() As String )
+	Dim l As Long : l = Ubound( asParagraphs(), 1 ) + 1
 	&apos; для уровней - проверка на несколько строк
 	If bLevel = False Then 
 		If l &gt; 0 Then
-			ReDim Preserve sParagraphs(l, 1)
-		Else Redim sParagraphs(l, 1)
+			ReDim Preserve asParagraphs(l, 1)
+		Else Redim asParagraphs(l, 1)
 		End If
 	
-		sParagraphs(l,0) = sPara
-		sParagraphs(l,1) = TextType
+		asParagraphs(l,0) = sPara
+		asParagraphs(l,1) = TextType
 	Else
 		If TextType &lt;&gt; sPStyle Then &apos; Разные уровни
 			If l &gt; 0 Then
-				ReDim Preserve sParagraphs(l,1)
-			Else Redim sParagraphs(l,1)
+				ReDim Preserve asParagraphs(l,1)
+			Else Redim asParagraphs(l,1)
 			End If
-			sParagraphs(l,0) = sPara
-			sParagraphs(l,1) = TextType
+			asParagraphs(l,0) = sPara
+			asParagraphs(l,1) = TextType
 		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
 			Dim sText As String
-			sText = sParagraphs( UBound( sParagraphs ),0 )
-			sParagraphs( UBound( sParagraphs ),0 ) = sText &amp; chr(10) &amp; sPara
+			sText = asParagraphs( UBound( asParagraphs ),0 )
+			asParagraphs( UBound( asParagraphs ),0 ) = sText &amp; chr(10) &amp; sPara
 		End If
 	End If
 End Function
