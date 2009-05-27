@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FastExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
+
+Private oFExpDlg As Object
+
+&apos; инициализация и запуск диалога поиска
+Sub FastExportToFB21Start()
+	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	oFExpDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.FastExportToFB21Dlg )
+	With oFExpDlg.Model
+		.Height	= 160
+		.Width	= 350
+		.tfBookName.Text = FindTextOfStyle(sStyleBookTitle, true)
+	End With
+	
+	oFExpDlg.execute()
+End Sub
+
+Sub cmdbtxGetCoverPath_Click()
+	&apos; добавить обложку из файла
+	Dim sCover	As String
+	
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+	
+	Dim oFileDlg	As Object : oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	Dim sArg()		As String : sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter( &quot;Images (.jpeg; .jpg; .png)&quot;, &quot;*.jpeg;*.JPEG;*.jpg;*.JPG;*.png;*.PNG&quot; )
+		.setTitle( &quot;Выбор обложки книги&quot; )
+	End With
+	If oFileDlg.execute() Then
+		Dim sFile As String
+		sCover = ConvertFromUrl( oFileDlg.Files(0) )
+		AddCoverToList( sCover )
+		oFExpDlg.Model.imgctrlCover.ImageURL = oFileDlg.Files(0)
+	End If
+	oFileDlg.Dispose()
+End Sub
+
+Sub imgctrlCover_Init()
+	&apos; просмотр картинки по двойному щелчку мышки на итеме
+	oFExpDlg.Model.imgctrlCover.ImageURL = ConvertToUrl( oFExpDlg.getControl(&quot;lbCovers&quot;).SelectedItem )
+End Sub
+
+Sub AddCoverToList( sCover As String )
+	&apos; добавить обложку к списку
+	Dim i As Integer, aArray() As String, sTitle As String
+	sTitle = &quot;Быстрый экспорт&quot;
+
+	&apos; ищем добавляемую обложку в списке
+	aArray = oFExpDlg.Model.lbCovers.StringItemList
+	For i=0 To UBound(aArray())
+		If aArray(i) = sCover Then
+			MsgBox &quot;Обложка &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sCover &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;уже есть в спике обложек!&quot;, 64, sTitle
+			Exit Sub
+		End If
+	Next i
+	
+	oFExpDlg.getControl(&quot;lbCovers&quot;).AddItem( sCover, oFExpDlg.getControl(&quot;lbCovers&quot;).ItemCount ) &apos; в конец списка
+	oFExpDlg.getControl(&quot;lbCovers&quot;).selectItem( sCover, True)
+End Sub
+
+Sub cmdbtnCoverDelete_Click()
+	&apos; удаление выбранной обложки из списка
+	Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = &quot;Быстрый экспорт&quot;
+	oLB = oFExpDlg.getControl(&quot;lbCovers&quot;)
+	If oLB.ItemCount = 0 Then
+		Exit Sub
+	End If
+	
+	If	MsgBox( &quot;Вы действительно хотите удалить Обложку из списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle ) = 6 Then
+		Dim sItem As String, i As Integer
+		If ( oLB.SelectedItemPos &gt;= 0 ) AND ( oLB.SelectedItemPos &lt; oLB.ItemCount-1 ) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+		If oLB.ItemCount = 0 Then
+			oFExpDlg.Model.imgctrlCover.ImageURL = &quot;&quot;
+		End If
+	End If
+End Sub
+
+Sub cmdbtnCoverSort_Click()
+	&apos; сортировка списка обложек
+	Dim aArray() As String
+	If	MsgBox( &quot;Вы действительно хотите отсортировать список Обложек?&quot;, _
+				32 + 4 + 256, &quot;Быстрый экспорт&quot; ) = 6 Then
+		Dim sItem As String
+		sItem	= oFExpDlg.getControl(&quot;lbCovers&quot;).getSelectedItem
+		aArray	= oFExpDlg.Model.lbCovers.StringItemList
+		bubble_sort( aArray(), Ubound( aArray())+1 )
+		oFExpDlg.Model.lbCovers.StringItemList = aArray
+		oFExpDlg.getControl(&quot;lbCovers&quot;).selectItem( sItem, True )
+	End If
+End Sub
+
+Sub cmdbtnCoverUp_Click()
+	&apos; переместить выбранную обложку вверх по списку
+	Dim aArray() As String, sTitle As String
+	sTitle = &quot;Быстрый экспорт&quot;
+	If oFExpDlg.getControl(&quot;lbCovers&quot;).SelectedItem = &quot;&quot; Then
+		MsgBox &quot;Пожалуйста, выберите Обложку в списке для перемещения ее вверх!&quot;, 64, sTitle
+		Exit Sub
+	End If
+	
+	If oFExpDlg.Model.lbCovers.SelectedItems(0) &gt; 0 Then
+		Dim sItem As String
+		sItem = oFExpDlg.getControl(&quot;lbCovers&quot;).getSelectedItem
+		aArray = oFExpDlg.Model.lbCovers.StringItemList
+		swap( aArray, oFExpDlg.Model.lbCovers.SelectedItems(0)-1, oFExpDlg.Model.lbCovers.SelectedItems(0) )
+		oFExpDlg.Model.lbCovers.StringItemList = aArray
+		oFExpDlg.getControl(&quot;lbCovers&quot;).selectItem( sItem, True )
+	End If
+End Sub
+
+Sub cmdbtnCoverDown_Click()
+	&apos; переместить выбранную обложку вниз по списку
+	Dim aArray() As String, sTitle As String
+	sTitle = &quot;Быстрый экспорт&quot;
+	If oFExpDlg.getControl(&quot;lbCovers&quot;).SelectedItem = &quot;&quot; Then
+		MsgBox &quot;Пожалуйста, выберите Обложку в списке для перемещения ее вниз!&quot;, 64, sTitle
+		Exit Sub
+	End If
+	aArray = oFExpDlg.Model.lbCovers.StringItemList
+	If oFExpDlg.Model.lbCovers.SelectedItems(0) &lt; UBound(aArray()) Then
+		Dim sItem As String
+		sItem = oFExpDlg.getControl(&quot;lbCovers&quot;).getSelectedItem
+		swap( aArray, oFExpDlg.Model.lbCovers.SelectedItems(0), oFExpDlg.Model.lbCovers.SelectedItems(0)+1 )
+		oFExpDlg.Model.lbCovers.StringItemList = aArray
+		oFExpDlg.getControl(&quot;lbCovers&quot;).selectItem(sItem, True)
+	End If
+End Sub
+
+</script:module>
