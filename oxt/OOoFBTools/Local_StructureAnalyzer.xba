@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_StructureAnalyzer" script:language="StarBasic">REM  *****  BASIC  *****
+
+
+&apos; //////////////////////////////////////////////
+&apos; модуль локализации Анализатора Структуры
+&apos; //////////////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений для Анализатора Структуры
+Type tStructureAnalyzerData
+	sStructureAnalyzer			As String &apos; Анализатор Cnhernehs
+	sProgressDataAcceptance		As String &apos; Анализ Структуры - Сбор данных:
+	sProgressAnalysis			As String &apos; Анализ Структуры - Анализ:
+	sCorrectError				As String &apos; Исправьте ошибку и протестируйте Документ заново!
+	sNotOneParaWithLevelSlyle	As String &apos; Документ не содержит ни одного абзаца, размеченного стилями Заголовков
+	sOK							As String &apos; Документ корректно размечен стилями Заголовков
+	s1BookHeader				As String &apos; Самый 1-й Заголовок Книги:
+	sNotCorrectStyleFormat		As String &apos; неверно отформатирован стилем &apos;
+	sOneStyleWasExpectedOnly	As String &apos; Ожидался только один стиль: &apos;
+	sFB2NotValid				As String &apos; Fb2-файл получится не валидным!
+	sHeader						As String &apos; Заголовок:
+	sItWasExpectedOneOfFollowingStyles	As String &apos; Ожидался один из следующих стилей: 
+	sOr							As String &apos; &apos; или &apos;
+	sCheckDiscontinued			As String &apos; Дальнейшая проверка прекращена, т.к. остальные Заголовки могут быть отформатированы относительно этого неверного стиля.
+End Type
+
+Public sSAD As tStructureAnalyzerData
+
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация сообщений Анализатора Структуры
+Sub InitStructureAnalyzeMessage()
+	If getOOoLocal( True ) = &quot;ru&quot; Then
+		With sSAD
+			.sStructureAnalyzer			= &quot;Анализатор Структуры&quot;
+			.sProgressDataAcceptance	= &quot;Анализ Структуры - Сбор данных:&quot;
+			.sProgressAnalysis			= &quot;Анализ Структуры - Анализ:&quot;
+			.sCorrectError				= &quot;Исправьте ошибку и протестируйте Документ заново!&quot;
+			.sNotOneParaWithLevelSlyle	= &quot;Документ не содержит ни одного абзаца, размеченного стилями Заголовков&quot;
+			.sOK						= &quot;Документ корректно размечен стилями Заголовков&quot;
+			.s1BookHeader				= &quot;Самый 1-й Заголовок Книги: &quot;
+			.sNotCorrectStyleFormat		= &quot;неверно отформатирован стилем &apos;&quot;
+			.sOneStyleWasExpectedOnly	= &quot;Ожидался только один стиль: &apos;&quot;
+			.sFB2NotValid				= &quot;Fb2-файл получится не валидным!&quot;
+			.sHeader					= &quot;Заголовок:&quot;
+			.sItWasExpectedOneOfFollowingStyles	= &quot;Ожидался один из следующих стилей: &quot;
+			.sOr				= &quot;&apos; или &apos;&quot;
+			.sCheckDiscontinued	= &quot;Дальнейшая проверка прекращена, т.к. остальные Заголовки могут быть отформатированы относительно этого неверного стиля.&quot;
+		End With
+	Else
+		With sSAD
+			.sStructureAnalyzer			= &quot;Structure Analyser&quot;
+			.sProgressDataAcceptance	= &quot;Structure Analysis - a Data acceptance:&quot;
+			.sProgressAnalysis			= &quot;Structure Analysis - Analysis:&quot;
+			.sCorrectError				= &quot;Correct the mistake and test the Document anew!&quot;
+			.sNotOneParaWithLevelSlyle	= &quot;Document does not contain nor one Paragraph, marked Headings Style&quot;
+			.sOK						= &quot;Document correct mark of Headline Style&quot;
+			.s1BookHeader				= &quot;The most First Headline of the Book: &quot;
+			.sNotCorrectStyleFormat		= &quot;untrue the style is formatted &apos;&quot;
+			.sOneStyleWasExpectedOnly	= &quot;One style was Expected only: &apos;&quot;
+			.sFB2NotValid				= &quot;Fb2-file is got not valid!&quot;
+			.sHeader					= &quot;Header:&quot;
+			.sItWasExpectedOneOfFollowingStyles	= &quot;One of the following styles was Expected: &quot;
+			.sOr				= &quot;&apos; Or &apos;&quot;
+			.sCheckDiscontinued	= &quot;The most Further check discontinued since rest Headings can be formatted comparatively this invalid style.&quot;
+		End With
+	End If
+End Sub
+
+</script:module>

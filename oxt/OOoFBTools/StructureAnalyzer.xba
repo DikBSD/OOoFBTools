@@ -7,18 +7,21 @@ Private bExsistLevelPara As Boolean
 
 Sub LevelAnalyzer()
 	&apos; Анализатор корректности фарматирования Уровней
+	&apos; инициализация Анализатора Структуры
+	InitStructureAnalyzeMessage()
+	
 	Dim oDoc As Object : oDoc = ThisComponent
 	oProgressBar = oDoc.CurrentController.StatusIndicator
-	oProgressBar.start( &quot;Анализ Структуры - Сбор данных:&quot;, oDoc.ParagraphCount + 50 )
+	oProgressBar.start( sSAD.sProgressDataAcceptance, oDoc.ParagraphCount + 50 )
 	oProgressBar.setValue( 0 )
 	Dim sResult As String : sResult = LevelParser()
 	If sResult &lt;&gt; &quot;&quot; Then
-		MsgBox sResult &amp; &quot;Исправьте ошибку и протестируйте Документ заново!&quot;, 64, &quot;Анализатор Структуры&quot;
+		MsgBox sResult &amp; sSAD.sCorrectError, 64, sSAD.sStructureAnalyzer
 	Else
 		If Not bExsistLevelPara Then
-			MsgBox &quot;Документ не содержит ни одного абзаца, размеченного стилями Заголовков ( Уровни )&quot;, 64, &quot;Анализатор Структуры&quot;
+			MsgBox sSAD.sNotOneParaWithLevelSlyle, 64, sSAD.sStructureAnalyzer
 		Else
-			MsgBox &quot;Документ корректно размечен стилями Заголовков ( Уровни )&quot;, 64, &quot;Анализатор Структуры&quot;
+			MsgBox sSAD.sOK, 64, sSAD.sStructureAnalyzer
 		End If
 	End If
 	oProgressBar.End
@@ -90,7 +93,7 @@ Function LevelParser() As String
 	
 	&apos; проверка корректности очередности Уровней
 	Dim l As Long, nL As Integer, nR As Integer, nStep As Integer
-	oProgressBar.start( &quot;Анализ Структуры - Анализ:&quot;, UBound( asParagraphs() )
+	oProgressBar.start( sSAD.sProgressAnalysis, UBound( asParagraphs() )
 	oProgressBar.setValue( 0 )
 	bExsistLevelPara = False
 	If UBound( asParagraphs() ) &gt; -1 Then
@@ -100,12 +103,12 @@ Function LevelParser() As String
 			If ( Len( s ) ) &gt; 512 Then
 				s = Mid( asParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
 			End If
-			LevelParser = &quot;Самый 1-й Заголовок Книги:&quot; &amp; chr(10) &amp; _
+			LevelParser = sSAD.s1BookHeader &amp; chr(10) &amp; _
 					&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-					&quot;неверно отформатирован стилем &apos;&quot; &amp; asParagraphs(l,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
-					&quot;Ожидался только один стиль: &apos;&quot; &amp; GetLevel( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
-					&quot;Fb2-файл получится не валидным!&quot; &amp; chr(10) &amp; chr(10) &amp; _
-					&quot;Дальнейшая проверка прекращена, т.к. остальные Заголовки могут быть отформатированы относительно этого неверного стиля.&quot; &amp; chr(10)
+					sSAD.sNotCorrectStyleFormat &amp; asParagraphs(l,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+					sSAD.sOneStyleWasExpectedOnly &amp; GetLevel( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					sSAD.sFB2NotValid &amp; chr(10) &amp; chr(10) &amp; _
+					sSAD.sCheckDiscontinued &amp; chr(10)
 		Exit Function
 		End If
 	End If
@@ -119,13 +122,13 @@ Function LevelParser() As String
 				If ( Len( s ) ) &gt; 512 Then
 					s = Mid( asParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
 				End If
-				LevelParser = &quot;Заголовок:&quot; &amp; chr(10) &amp; _
+				LevelParser = sSAD.sHeader &amp; chr(10) &amp; _
 				&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-				&quot;неверно отформатирован стилем &apos;&quot; &amp; asParagraphs(l+1,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
-				&quot;Ожидался один из следующих стилей: &quot; &amp; chr(10) &amp; _
+				sSAD.sNotCorrectStyleFormat &amp; asParagraphs(l+1,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+				sSAD.sItWasExpectedOneOfFollowingStyles &amp; chr(10) &amp; _
 				&quot;&apos;&quot; &amp; GetLevel( nL ) &amp; &quot;&apos; или &apos;&quot; &amp; GetLevel( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
-				&quot;Fb2-файл получится не валидным!&quot; &amp; chr(10) &amp; chr(10) &amp; _
-				&quot;Дальнейшая проверка прекращена, т.к. остальные Заголовки могут быть отформатированы относительно этого неверного стиля.&quot; &amp; chr(10)
+				sSAD.sFB2NotValid &amp; chr(10) &amp; chr(10) &amp; _
+				sSAD.sCheckDiscontinued &amp; chr(10)
 				Exit Function
 			End If
 		End If
