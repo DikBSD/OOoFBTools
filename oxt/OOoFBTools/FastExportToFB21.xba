@@ -2,20 +2,181 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="FastExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
 
-Private oFExpDlg As Object
+Private oFExpDlg	As Object
+Const sConstFExpDlg	As String = &quot;/OOoFBTools/fast_export_dialog.txt&quot; &apos; файл настроек основного диалога
+
+Private sBookDateText	As String
+Private sBookDateValue	As String
+
+Private sPaperBookName		As String
+Private sPaperBookPublisher	As String
+Private sPaperBookCity		As String
+Private sPaperBookYear		As String
+Private sPaperBookISBN		As String
+
+Sub FastExportToFB21()
+	&apos; Быстрый экспорт
+	sConvertorName = &quot;ExportToFB2.1&quot;
+	&apos; Установка стилей по умолчанию
+	SetStylesVarsDefault()
+	&apos; Только теперь загружаем стили из файла в переменные
+	ReadStyles( getUserPath() &amp; sConstStyles, False )
+	
+	Dim oFileAccess As Object
+	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	Dim oDoc As Object : oDoc = ThisComponent
+	
+	If oDoc.hasLocation() Then
+		sCurDocFile = oDoc.getURL
+	Else
+		MsgBox &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot;, 64, sConvertorName
+		Exit Sub
+	End If
+	
+	Dim sFB2ExportSaveModified
+	sFB2ExportSaveModified	= &quot;Документ был изменен.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot; &amp; chr(10) &amp; _
+							&quot;Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, &quot; &amp; _
+							&quot;иначе графика не будет корректно экспортирована (особенность OOoWriter)!&quot; &amp; chr(10) &amp; _
+							&quot;Вы все равно хотите экспортировать документ в fb2?&quot;
+	If oDoc.isModified() Then
+		If MsgBox ( sFB2ExportSaveModified, 32 + 1 + 256, sConvertorName ) = 2 Then
+			Exit Sub
+		End If
+	End If
+	
+	&apos; меняем расширение на fb2
+	Dim sFile() As String, i As Integer
+	sFile = Split(sCurDocFile, &quot;.&quot;)
+	If UBound(sFile) &gt; 0 Then
+		For i=0 To UBound(sFile)
+			sFile(UBound(sFile)) = &quot;fb2&quot;
+		Next i
+		sCurDocFile = Join(sFile, &quot;.&quot;)
+	Else &apos; файл без точки расширения
+		sCurDocFile = sCurDocFile &amp; &quot;.fb2&quot;
+	End If
+	
+	If Not FastExportDlgExec() Then
+		Exit Sub
+	End If
+	
+	&apos; 1. если есть в списке диалога еще Обложки - формирукм и тэги и base64-код
+	Dim asItemsList() As String : asItemsList = oFExpDlg.Model.lbCovers.StringItemList
+	For i=0 To UBound( asItemsList() )
+		MakeGraphic( asItemsList(i) )
+	Next i
+	
+	&apos; 2. Только теперь - если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
+	If IsStyleExists( sStyleBookTitle ) And ( ThisComponent.getGraphicObjects().Count &gt; 0 Or ThisComponent.getDrawPage().Count &gt; 0) Then
+		MakeCoverParser()
+	End If
+	
+	oProgressBar.start( &quot;Быстрый экспорт в FB2: Анализ&quot;, oDoc.ParagraphCount + 50 )
+	oProgressBar.setValue( 0 )
+	
+	&apos; запускаем парсинг всего текста
+	DocumentParser()
+	
+	&apos; Создание fb2 файла
+	Dim oOutputStream As Object
+	oOutputStream = oFileAccess.openFileWrite( ConvertToUrl( sCurDocFile ) )
+	oOutputStream.truncate()
+	oTextOutputStream.setOutputStream( oOutputStream )
+	oTextOutputStream.setEncoding( &quot;utf-8&quot; )
+
+	&apos; печатаем данные из &lt;description&gt;
+	SaveDescription( &quot;utf-8&quot;, True )
+	
+	&apos; печатаем данные из &lt;body&gt;
+	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))
+	SaveBody()
+	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+	
+	If UBound(sFootnoteText()) &lt;&gt; -1 Then
+		oProgressBar.start( &quot;Быстрый экспорт в FB2: Сохранение сносок&quot;, UBound(sFootnoteText() )
+		oProgressBar.setValue(0)
+		SaveNotes()
+	End If
+	
+	&apos; печатаем коды картинок, если они есть
+	Dim iSI As Integer
+	If UBound(Images()) &lt;&gt; -1 Then
+		oProgressBar.start( &quot;Быстрый экспорт в FB2: Сохранение картинок&quot;, UBound(Images() )
+		oProgressBar.setValue(0)
+		iSI = SaveImages()
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
+	oTextOutputStream.closeOutput()
+	oProgressBar.End
+	
+	Dim sFB2File As String : sFB2File = ConvertFromUrl( sCurDocFile )
+	Dim sEndMessage	As String : sEndMessage	= &quot;Создание книги в fb2 формате завершено!&quot;
+	If iSI &gt; 0 Then
+		sEndMessage = sEndMessage &amp; chr(10) &amp; &quot;Экспортировано Графических Объектов:&quot; &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; &quot;из&quot; &amp; _
+		&quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; &quot;загруженных и найденных в документе.&quot;
+	End If
+	
+	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
+	
+	MsgBox sMess &amp; &quot;Файл:&quot; &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
+	
+	&apos; удаляем временные файлы
+	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
+		RmDir getOOoFBToolsTempPath()
+	End If
+End Sub
 
 &apos; инициализация и запуск диалога поиска
-Sub FastExportToFB21Start()
+Function FastExportDlgExec() As Boolean
+	&apos; запуск диалога быстрого экспорта
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( &quot;Создание диалога&quot;, 1 )
+	oProgressBar.setValue(1)
+	
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oFExpDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.FastExportToFB21Dlg )
+	oProgressBar.setValue(2)
+	oProgressBar.start( &quot;Инициализация&quot;, ThisComponent.ParagraphCount )
+
+	GenreFB22()&apos; Инициализация жанрами схемы FictionBook 2.2
+	oProgressBar.setValue(3)
+
+	MakeLangList( sLangList() )
+	oProgressBar.setValue(4)
+		
 	With oFExpDlg.Model
+		.Title = &quot;Быстрый экспорт в fb2&quot;
 		.Height	= 160
 		.Width	= 350
-		.tfBookName.Text = FindTextOfStyle(sStyleBookTitle, true)
+		.tfBookName.Text = FindTextOfStyle( sStyleBookTitle, true )
+		.lbLangs.StringItemList		= sLangList()
+		.lbGenres.StringItemList	= sGLN()
 	End With
+	oFExpDlg.getControl( &quot;lbLangs&quot; ).selectItem( getOOoLocal( True ), True )
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadXYFormPos( getUserPath() &amp; sConstFExpDlg, nX, nY )
+	oFExpDlg.setPosSize( nX, nY, 160, 350, com.sun.star.awt.PosSize.POS )
+	oProgressBar.setValue(5)
+	
+	&apos; Задаем настройки в переменные по умолчанию
+	SetDefaultSettingsInVars()
+	oProgressBar.setValue(6)
+	&apos; только теперь считываем настройки из файла в переменные
+	ReadSettings(False)
+	oProgressBar.setValue(7)
+	
+	&apos; читаем и заносим в контролы данные служебных стилей для Description
+	ReadService_Styles(8)
+	
+	bAppendBtn = True
 	
 	oFExpDlg.execute()
-End Sub
+	FastExportDlgExec = bExecute
+End Function
 
 Sub cmdbtxGetCoverPath_Click()
 	&apos; добавить обложку из файла
@@ -145,6 +306,258 @@ Sub cmdbtnCoverDown_Click()
 		oFExpDlg.Model.lbCovers.StringItemList = aArray
 		oFExpDlg.getControl(&quot;lbCovers&quot;).selectItem(sItem, True)
 	End If
+End Sub
+
+Sub cmdbtnFastExportToFB2_Click()
+	&apos; быстрый экспорт
+	&apos; сохраняем настройки формы
+	SaveSettings( getUserPath() &amp; sConstFExpDlg, oFExpDlg )
+	
+	If oFExpDlg.getControl(&quot;lbGenres&quot;).SelectedItem = &quot;&quot; And UBound( sGenres() ) = -1 Then
+		MsgBox &quot;Выберите, пожалуйста, Жанр Книги.&quot;, 64, sConvertorName
+		Exit Sub
+	End If
+	If Trim(oFExpDlg.Model.tfBookName.Text) = &quot;&quot; Then
+		MsgBox &quot;Заполните, пожалуйста, поля Названия Книги&quot;, 64, sConvertorName
+		Exit Sub
+	End If
+	
+	If Not GetBookGenre() Then
+		Exit Sub
+	End If
+	
+	If Trim(oFExpDlg.Model.tiFirst.Text) &lt;&gt; &quot;&quot; OR Trim(oFExpDlg.Model.tiMiddle.Text) &lt;&gt; &quot;&quot; OR Trim(oFExpDlg.Model.tiLast.Text) &lt;&gt; &quot;&quot; Then 
+		GetBookAuthor()
+	End If
+	
+	bExecute = True
+	oFExpDlg.endExecute()
+End Sub
+
+Function GetBookGenre() As Boolean
+	Dim oLB As Object
+	oLB = oFExpDlg.getControl( &quot;lbGenres&quot; )
+	&apos;ищем в массиве нужный жанр
+	Dim sGenre As String : sGenre = GetGenreInList( oLB.SelectedItem )
+	Dim i As Integer
+	If sGenre = &quot;?&quot; Then
+		MsgBox &quot;Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
+		GetBookGenre = False
+		Exit Function
+	End If
+	
+	i = Ubound(sGenres(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sGenres(i, 1)
+	Else Redim sGenres(i, 1)
+	End If
+	sGenres(i, 0) = sGenre
+	sGenres(i, 1) = &quot;100&quot;
+	GetBookGenre = True
+End Function
+
+Sub GetBookAuthor()
+	Dim i As Integer
+	i = Ubound(sAuthors(), 1) + 1
+	If i &gt; 0 Then
+		ReDim Preserve sAuthors(i, 5)
+	Else Redim sAuthors(i, 5)
+	End If
+	sAuthors(i, 0) = Trim(oFExpDlg.Model.tiFirst.Text)
+	sAuthors(i, 1) = Trim(oFExpDlg.Model.tiMiddle.Text)
+	sAuthors(i, 2) = Trim(oFExpDlg.Model.tiLast.Text)
+	sAuthors(i, 3) = &quot;&quot;
+	sAuthors(i, 4) = &quot;&quot;
+	sAuthors(i, 5) = &quot;&quot;
+End Sub
+
+Sub ReadService_Styles( lProgress As Long )
+	Dim oCursor As Object : oCursor = ThisComponent.Text.createTextCursor()
+	oCursor.gotoStart(False)
+	Dim lPara As Long : lPara = lProgress &apos; для статусбара
+	Dim bBookAuthor As Boolean : bBookAuthor	= False
+	Dim bGenre		As Boolean : bGenre			= False
+	Dim bLang		As Boolean : bLang			= False
+	Dim bBookDate	As Boolean : bBookDate		= False
+	Dim bPaperBook	As Boolean : bPaperBook		= False
+	
+	Dim asLang()	As String
+	Dim asArray()	As String
+	Dim asBookDate() 	As String
+	Dim asPBook(4)		As String
+	
+	Do
+		lPara = lPara+1
+		oCursor.gotoEndOfParagraph(True)
+		Select Case oCursor.ParaStyleName
+		Case sStyleBookTitle
+			If bUp = True Then Exit Do
+		Case sStyle_BookAuthor
+			ReadBookAuthorsOrTranslatorsInfo( oCursor, asArray() )
+			If Not bBookAuthor Then
+				oFExpDlg.Model.tiFirst.Text		= asArray(0,0)
+				oFExpDlg.Model.tiMiddle.Text	= asArray(0,1)
+				oFExpDlg.Model.tiLast.Text		= asArray(0,2)
+				bBookAuthor = True
+			End If
+		Case sStyle_Genre	
+			Read_GenreInfo( oCursor, bGenre )
+		Case sStyle_Lang	
+			If ReadSymbolStyle2Info( oCursor, asLang, sStyle_LangBook, sStyle_LangOriginal ) Then
+				If asLang(0,0) &lt;&gt; &quot;&quot; And ( Not bLang ) Then
+					oFExpDlg.GetControl(&quot;lbLangs&quot;).selectItem( asLang(0,0), True )
+					bLang = True
+				End If
+			End If
+		Case sStyle_BookTranslator
+			ReadBookAuthorsOrTranslatorsInfo( oCursor, sTranslators )
+		Case sStyle_BookSeries
+			ReadSequencesInfo( oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber )
+		Case sStyle_PaperBookSeries
+			ReadSequencesInfo( oCursor, sPubSequences, sStyle_Sequence, sStyle_SequenceNumber )
+		Case sStyle_BookDate
+			If ReadSymbolStyle2Info( oCursor, asBookDate(), sStyle_BookDateText, sStyle_BookDateValue ) Then
+				If Not bBookDate Then
+					sBookDateText	= asBookDate(0,0)
+					sBookDateValue	= asBookDate(0,1)
+					bBookDate = True
+				End If
+			End If
+		Case sStyle_PaperBook	
+			If Read_PaperBookInfo( oCursor, asPaperBook() ) Then
+				If Not bPaperBook Then
+					sPaperBookName		= asPBook(0)
+					sPaperBookPublisher	= asPBook(1)
+					sPaperBookCity		= asPBook(2)
+					sPaperBookYear		= asPBook(3)
+					sPaperBookISBN		= asPBook(4)
+					bPaperBook = True
+				End If
+			End If
+		Case sStyle_CustomInfo
+			ReadSymbolStyle2Info( oCursor, sCustomInfos, sStyle_CustomInfoType, sStyle_CustomInfovalue )
+		End Select
+		oProgressBar.setValue( lPara ) &apos; Статусбар
+	Loop While oCursor.gotoNextParagraph( False )
+	oProgressBar.end
+End Sub
+
+&apos; читаем данные для Жанров
+Sub Read_GenreInfo( oCursor, bGenre As Boolean )
+	If oCursor.String = &quot;&quot; Then	&apos;
+		Exit Sub
+	End If
+	
+	Dim oEnum As Object, oSecEnum As Object, oText As Object, oTextPortion As Object
+	
+	Dim sGenreName As String, sGenreMatch As String
+	oEnum = oCursor.createEnumeration
+	While oEnum.hasMoreElements
+		oText = oEnum.nextElement
+		oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.CharStyleName = sStyle_GenreName Then
+				sGenreName = GetGenreInList(oTextPortion.getString())
+				If sGenreName = &quot;&quot; Or sGenreName = &quot;?&quot; Then
+					Exit Sub
+				End If
+				&apos;
+				If sGenreName &lt;&gt; &quot;&quot; And sGenreName &lt;&gt; &quot;?&quot; And ( Not bGenre ) Then
+					Dim i As Integer
+					For i=0 To UBound( sGLC() )
+						If sGenreName = sGLC(i) Then
+							oLB = oFExpDlg.getControl( &quot;lbGenres&quot; ).SelectItemPos( i, True )
+							bGenre = True
+							Exit Sub
+						End If
+					Next i
+				End If
+			End If
+		Wend
+	Wend
+End Sub
+
+&apos; читаем данные для Бумажной Книги
+Function Read_PaperBookInfo( oCursor, asPBook() As String ) As Boolean
+	If oCursor.String = &quot;&quot; Then
+		Read_PaperBookInfo = False
+		Exit Function
+	End If
+	
+	Dim oEnum As Object : oEnum = oCursor.createEnumeration
+	While oEnum.hasMoreElements
+		Dim oText		As Object	: oText = oEnum.nextElement
+		Dim oSecEnum	As Object	: oSecEnum = oText.createEnumeration
+		While oSecEnum.hasMoreElements
+			Dim oTextPortion As Object : oTextPortion = oSecEnum.nextElement	
+			If oTextPortion.TextPortionType &lt;&gt; &quot;Bookmark&quot; And oTextPortion.TextPortionType &lt;&gt; &quot;Footnote&quot; Then
+				If oTextPortion.CharStyleName = sStyle_PaperBookName Then
+					asPBook(0) = asPBook(0) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookPublisher Then
+					asPBook(1) = asPBook(1) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookCity Then
+					asPBook(2) = asPBook(2) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookYear Then
+					asPBook(3) = asPBook(3) &amp; oTextPortion.getString()
+				ElseIf oTextPortion.CharStyleName = sStyle_PaperBookISBN Then
+					asPBook(4) = asPBook(4) &amp; oTextPortion.getString()
+				End If
+			End If
+		Wend
+	Wend
+	Read_PaperBookInfo = True
+End Function
+&apos;/////////////////////////////////////////////////////////
+
+Type tFileData	&apos; для хранения данных файла
+	sFileUrl As String
+	sFile As String
+	sName As String
+	sExt As String
+End Type
+
+&apos; создание картинки из графических объектов
+Sub MakeGraphic( sFilePath As String )
+	If Trim( sFilePath ) = &quot;&quot; Then Exit Sub
+	&apos; заносим тэги обложек в массив
+	Dim sFD		As tFileData	: sFD	= GetFileData( sFilePath )
+	Dim sExt	As String		: sExt	= sFD.sExt
+	&apos; приведение расширения графики к допустимому для fb2-читалок
+	sExt = ValidateFileExt( sExt )
+	&apos; добавляем данные об очередной картинке-обложке в массив
+	Dim i As Integer
+	i = Ubound(Covers()) + 1
+	ReDim Preserve Covers(i)
+	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+	&apos; создание тэгов картинок
+	AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+	
+	SaveCoverToFile( sFilePath, sExt )
+	
+	iImgCurrent = iImgCurrent+1
+	sPrevStyle = &quot;Image&quot;
+End Sub
+
+&apos; сохранение картинки в файл png или jpg
+Sub	SaveCoverToFile( sFilePath As String, sExt As String)
+	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+		MkDir getOOoFBToolsTempPath()
+	End If
+
+	If FileExists( GetOOoFBToolsImageURL( sExt ) ) Then
+		Kill GetOOoFBToolsImageURL( sExt )
+	End If
+	
+	&apos; Картинка находится не внутри файла, а где-то на диске
+	Dim sFileNameURL As String : sFileNameURL = ConvertFromURL( sFilePath )
+	If FileExists( sFileNameURL ) Then
+		FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
+	End If
+	sFileNameURL = GetOOoFBToolsImageURL( sExt )
+	
+	&apos; кодирование картинки
+	CodeToBase64( sFileNameURL, sExt )
 End Sub
 
 </script:module>

@@ -134,7 +134,7 @@ Function InfoDlgExec() As Boolean
 	oProgressBar.setValue(8) &apos; Статусбар
 	
 	&apos; читаем и заносим в контролы данные служебных стилей для Description
-	ReadServiceStyles(8)
+	ReadServiceStyles(9)
 	
 	bAppendBtn = True
 	
@@ -175,6 +175,7 @@ Sub ReadServiceStyles( lProgress As Long )
 			ReadPaperBookInfo( oCursor )
 		Case sStyle_Genre	
 			ReadGenreInfo( oCursor )
+			oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = Ubound(sGenres())+1
 		Case sStyle_CustomInfo
 			ReadCustomInfo( oCursor )
 		Case sStyle_Lang	
@@ -561,11 +562,11 @@ Sub ReadPaperBookInfo( oCursor )
 	Wend
 	If UBound( asPaperBook() ) &lt;&gt; -1 Then
 		With oInfoDlg.Model
-			.pubBookNameTextField.Text = asPaperBook(0)
-			.pubPublisherTextField.Text = asPaperBook(1)
-			.pubCityTextField.Text = asPaperBook(2)
-			.pubYearTextField.Text = asPaperBook(3)
-			.pubISBNTextField.Text = asPaperBook(4)
+			.pubBookNameTextField.Text	= asPaperBook(0)
+			.pubPublisherTextField.Text	= asPaperBook(1)
+			.pubCityTextField.Text	= asPaperBook(2)
+			.pubYearTextField.Text	= asPaperBook(3)
+			.pubISBNTextField.Text	= asPaperBook(4)
 		End With
 	End If
 End Sub
@@ -575,8 +576,8 @@ Sub ReadBookDateInfo( oCursor )
 	Dim asBookDate() As String
 	If ReadSymbolStyle2Info( oCursor, asBookDate(), sStyle_BookDateText, sStyle_BookDateValue ) Then
 		With oInfoDlg.Model
-			.tiDateTextField.Text = asBookDate(0,0)
-			.tiDateValueField.Text = asBookDate(0,1)
+			.tiDateTextField.Text	= asBookDate(0,0)
+			.tiDateValueField.Text	= asBookDate(0,1)
 		End With
 	End If
 End Sub
@@ -640,7 +641,6 @@ Sub ReadGenreInfo( oCursor )
 			sGenres(i, 1) = sGenreMatch
 		End If
 	End If
-	oInfoDlg.GetControl(&quot;lblGenres&quot;).Text = Ubound(sGenres())+1
 End Sub
 
 &apos; Проверка, соответствует ли введеный жанр стандартным

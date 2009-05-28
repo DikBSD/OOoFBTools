@@ -12,7 +12,7 @@ End Type
 
 &apos; //////////////////////////////////////// Графика //////////////////////////////////////////////////////
 &apos; парсер обложек книги
-Sub MakeCoverParser
+Sub MakeCoverParser()
 	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
 	Dim oPar As Object 		&apos;Перебираемый параграф
 	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
@@ -146,7 +146,7 @@ Function ValidateFileExt( sExt As String ) As String
 			sExt = sAnyAs &apos; для остальных форматов, включая векторные
 		End If
 	End If
-	ValidateFileExt = sExt
+	ValidateFileExt = LCase(sExt)
 End Function
 
 &apos; создание картинки из графических объектов
@@ -306,7 +306,7 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 		
 		&apos; генерируем скрипт
 		sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL(getRootStorage( &quot;DikBSD.OOoFBTools&quot; )) &amp; &quot;\win32\base64.exe&quot;&quot; &quot; &amp; _
-				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile
+				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
 		Dim sBatFile As String : sBatFile = getOOoFBToolsTempPath() &amp; &quot;\OOoFBTools-base64.bat&quot;
 		SaveText( sBatFile, sScript, &quot;utf-8&quot; )
 		

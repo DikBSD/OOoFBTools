@@ -128,13 +128,15 @@ Sub ExportToFB21()
 	oTextOutputStream.setOutputStream( oOutputStream )
 
 	Dim oCodeLB As Object : oCodeLB = oInfoDlg.getControl( &quot;Codepage&quot; )
+	Dim sFB2Encoding As String : sFB2Encoding = oCodeLB.SelectedItem
 	oTextOutputStream.setEncoding( oCodeLB.SelectedItem )
 	If bSaveUTF8 And bMarker Then 	&apos; сохранение fb2-файла в UTF-8, т.к. в тексте есть маркерные списки
-		oTextOutputStream.setEncoding( &quot;utf-8&quot; )
+		sFB2Encoding = &quot;utf-8&quot;
 	End If
-
+	oTextOutputStream.setEncoding( sFB2Encoding )
+	
 	&apos; печатаем данные из &lt;description&gt;
-	SaveDescription()
+	SaveDescription( sFB2Encoding, False )
 	
 	&apos; печатаем данные из &lt;body&gt;
 	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))

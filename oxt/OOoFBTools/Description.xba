@@ -8,14 +8,14 @@
 
 Option Explicit
 
-Sub SaveDescription()
+Sub SaveDescription( sFB2Encoding As String, bFastExport As Boolean )
 	Dim i As Integer
-
-	Dim oCodeLB As Object : oCodeLB = oInfoDlg.getControl(&quot;Codepage&quot;)
-	Dim sFB2Encoding As String : sFB2Encoding = Trim( oCodeLB.SelectedItem )
-	If bSaveUTF8 And bMarker Then &apos; сохранение fb2-файла в UTF-8, т.к. в тексте есть маркерные списки
-		sFB2Encoding = &quot;utf-8&quot;
-	End If
+	
+&apos;	Dim oCodeLB As Object : oCodeLB = oDlg.getControl(&quot;Codepage&quot;)
+&apos;	Dim sFB2Encoding As String : sFB2Encoding = Trim( oCodeLB.SelectedItem )
+&apos;	If bSaveUTF8 And bMarker Then &apos; сохранение fb2-файла в UTF-8, т.к. в тексте есть маркерные списки
+&apos;		sFB2Encoding = &quot;utf-8&quot;
+&apos;	End If
 	
 	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; sFB2Encoding &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;FictionBook xmlns=&quot;&quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot; xmlns:l=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot;&gt;&quot;&amp;chr(10))
@@ -49,7 +49,12 @@ Sub SaveDescription()
 		SaveEmptyAuthor()
 	End If
 	
-	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.BookTitleField.Text) ) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
+	If Not bFastExport Then
+		oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.BookTitleField.Text) ) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
+	Else
+		oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; CorrectPara( Trim(oFExpDlg.Model.tfBookName.Text) ) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
+	End If
+	
 	If UBound(sBookAnnotation) &lt;&gt; -1 Then
 		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10)
 		For i = 0 To UBound(sBookAnnotation)
@@ -58,22 +63,42 @@ Sub SaveDescription()
 		oTextOutputStream.writeString(&quot;&lt;/annotation&gt;&quot; &amp; chr(10)
 	End If
 	
-	If Trim(oInfoDlg.Model.KeywordsField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;keywords&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.KeywordsField.Text) ) &amp; &quot;&lt;/keywords&gt;&quot; &amp; chr(10))
-	End If
-	
-	If Trim(oInfoDlg.Model.tiDateValueField.Text) &lt;&gt; &quot;&quot; Then
-		If Trim(oInfoDlg.Model.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
-			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
-		Else
-			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.KeywordsField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;keywords&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.KeywordsField.Text) ) &amp; &quot;&lt;/keywords&gt;&quot; &amp; chr(10))
 		End If
 	Else
-		If Trim(oInfoDlg.Model.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
-			oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;keywords&gt;&quot; &amp; CorrectPara( FindTextOfStyle(sStyle_BookKeywords, true) ) &amp; &quot;&lt;/keywords&gt;&quot; &amp; chr(10))
+	End If
+	
+	&apos; дата написания книги
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.tiDateValueField.Text) &lt;&gt; &quot;&quot; Then
+			If Trim(oInfoDlg.Model.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.tiDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			End If
+		Else
+			If Trim(oInfoDlg.Model.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(oInfoDlg.Model.tiDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			End If
+		End If
+	Else
+		If Trim(sBookDateValue) &lt;&gt; &quot;&quot; Then
+			If Trim(sBookDateText) &lt;&gt; &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(sBookDateValue) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(sBookDateText) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(sBookDateValue) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			End If
+		Else
+			If Trim(sBookDateText) &lt;&gt; &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(sBookDateText) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			End If
 		End If
 	End If
-
+	
+	&apos; обложки
 	Dim s As String
 	If UBound( Covers() ) &gt;= 0 Then
 		s = &quot;&lt;coverpage&gt;&quot; &amp; chr(10)
@@ -84,21 +109,29 @@ Sub SaveDescription()
 		oTextOutputStream.writeString( s )
 	End If
 	
+	&apos; Язык Книги
 	Dim oLB As Object
-	oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
-	oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
+	If Not bFastExport Then
+		oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
+		oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
 	
-	oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
-	If oLB.SelectedItem &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
+		oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
+		If oLB.SelectedItem &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		oLB = oFExpDlg.getControl(&quot;lbLangs&quot;)
+		oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
 	End If
 	
+	&apos; переводчики Книги
 	If UBound(sTranslators) &lt;&gt; -1 Then
 		For i = 0 To UBound(sTranslators)
 			SaveTranslator( sTranslators(i, 0), sTranslators(i, 1), sTranslators(i, 2), sTranslators(i, 3), sTranslators(i, 4), sTranslators(i, 5) )
 		Next i
 	End If
 	
+	&apos; серии Книги
 	If UBound(sSequences) &lt;&gt; -1 Then
 		For i = 0 To UBound(sSequences)
 			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( sSequences(i, 0) )
@@ -109,6 +142,7 @@ Sub SaveDescription()
 			oTextOutputStream.writeString( s )
 		Next i
 	End If
+	
 	oTextOutputStream.writeString(&quot;&lt;/title-info&gt;&quot; &amp; chr(10))
 
 	oTextOutputStream.writeString(&quot;&lt;document-info&gt;&quot; &amp; chr(10))
@@ -120,45 +154,66 @@ Sub SaveDescription()
 		SaveEmptyAuthor()
 	End If
 	
-	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; oInfoDlg.Model.ProgrammUsedField.Text &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
-	If Trim(oInfoDlg.Model.diDateValueField.Text) &lt;&gt; &quot;&quot; Then
-		If Trim(oInfoDlg.Model.diDateTextField.Text) &lt;&gt; &quot;&quot; Then
-			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.diDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;program-used&gt;ExportToFB21&lt;/program-used&gt;&quot; &amp; chr(10))
+	
+	&apos; дата создания fb2-книги
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.diDateValueField.Text) &lt;&gt; &quot;&quot; Then
+			If Trim(oInfoDlg.Model.diDateTextField.Text) &lt;&gt; &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Trim(oInfoDlg.Model.diDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			End If
 		Else
-			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Trim(oInfoDlg.Model.diDateValueField.Text) &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			If Trim(oInfoDlg.Model.diDateTextField.Text) &lt;&gt; &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(oInfoDlg.Model.diDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;date/&gt;&quot; &amp; chr(10))
+			End If
 		End If
 	Else
-		If Trim(oInfoDlg.Model.diDateTextField.Text) &lt;&gt; &quot;&quot; Then
-			oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; Trim(oInfoDlg.Model.diDateTextField.Text) &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
-		Else
-			oTextOutputStream.writeString(&quot;&lt;date/&gt;&quot; &amp; chr(10))
+		Dim sNow As String : sNow = Now
+		oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; _
+										Date &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+	End If
+	
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.diURLField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;src-url&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.diURLField.Text) ) &amp; &quot;&lt;/src-url&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(oInfoDlg.Model.diOCRField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;src-ocr&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.diOCRField.Text) ) &amp; &quot;&lt;/src-ocr&gt;&quot; &amp; chr(10))
 		End If
 	End If
-	If Trim(oInfoDlg.Model.diURLField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;src-url&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.diURLField.Text) ) &amp; &quot;&lt;/src-url&gt;&quot; &amp; chr(10))
+	
+	If Not bFastExport Then
+		oTextOutputStream.writeString(&quot;&lt;id&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.IDField.Text) ) &amp; &quot;&lt;/id&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;version&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.VersionField.Text) ) &amp; &quot;&lt;/version&gt;&quot; &amp; chr(10))
+	Else
+		oTextOutputStream.writeString(&quot;&lt;id&gt;&quot; &amp; GetNewBookID() &amp; &quot;&lt;/id&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;version&gt;1.0&lt;/version&gt;&quot; &amp; chr(10))
 	End If
-	If Trim(oInfoDlg.Model.diOCRField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;src-ocr&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.diOCRField.Text) ) &amp; &quot;&lt;/src-ocr&gt;&quot; &amp; chr(10))
-	End If
-	oTextOutputStream.writeString(&quot;&lt;id&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.IDField.Text) ) &amp; &quot;&lt;/id&gt;&quot; &amp; chr(10))
-	oTextOutputStream.writeString(&quot;&lt;version&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.VersionField.Text) ) &amp; &quot;&lt;/version&gt;&quot; &amp; chr(10))
-	If Trim(oInfoDlg.Model.HistoryTextField.Text) &lt;&gt; &quot;&quot; Then
-		Dim sHistory() As String
-		sHistory = Split(Trim(oInfoDlg.Model.HistoryTextField.Text), chr(10))
-		oTextOutputStream.writeString(&quot;&lt;history&gt;&quot; &amp; chr(10))
-		For i = 0 To UBound(sHistory)
-			Dim sH As String : sH = sHistory(i)
-			If sH = &quot;&quot; Then
-				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
-			Else
-				oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; CorrectPara( sH ) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
-			End If
-		Next i
-		oTextOutputStream.writeString(&quot;&lt;/history&gt;&quot; &amp; chr(10))
+	
+	&apos;история
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.HistoryTextField.Text) &lt;&gt; &quot;&quot; Then
+			Dim sHistory() As String
+			sHistory = Split(Trim(oInfoDlg.Model.HistoryTextField.Text), chr(10))
+			oTextOutputStream.writeString(&quot;&lt;history&gt;&quot; &amp; chr(10))
+			For i = 0 To UBound(sHistory)
+				Dim sH As String : sH = sHistory(i)
+				If sH = &quot;&quot; Then
+					oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+				Else
+					oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; CorrectPara( sH ) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+				End If
+			Next i
+			oTextOutputStream.writeString(&quot;&lt;/history&gt;&quot; &amp; chr(10))
+		End If
 	End If
 	oTextOutputStream.writeString(&quot;&lt;/document-info&gt;&quot; &amp; chr(10))
-	SavePublisher
-	SaveCustomInfo
+	SavePublisher( bFastExport )
+	SaveCustomInfo()
 	oTextOutputStream.writeString(&quot;&lt;/description&gt;&quot;&amp;chr(10))
 
 End Sub
@@ -200,27 +255,55 @@ Sub SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As Strin
 	oTextOutputStream.writeString(&quot;&lt;/translator&gt;&quot;&amp; chr(10))
 End Sub
 
-Sub SavePublisher()
-	If Trim(oInfoDlg.Model.pubBookNameTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND _
-		Trim(oInfoDlg.Model.pubYearTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; AND _
-		Trim(oInfoDlg.Model.pubISBNTextField.Text) = &quot;&quot; AND UBound(sPubSequences) = -1 Then
-		Exit Sub
+Sub SavePublisher( bFastExport As Boolean )
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.pubBookNameTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND _
+			Trim(oInfoDlg.Model.pubYearTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; AND _
+			Trim(oInfoDlg.Model.pubISBNTextField.Text) = &quot;&quot; AND UBound(sPubSequences) = -1 Then
+			Exit Sub
+		End If
+	Else
+		If Trim(asPaperBook(0)) = &quot;&quot; AND Trim(asPaperBook(1)) = &quot;&quot; AND _
+			Trim(asPaperBook(2)) = &quot;&quot; AND Trim(asPaperBook(3)) = &quot;&quot; AND _
+			Trim(asPaperBook(4)) = &quot;&quot; AND UBound(sPubSequences) = -1 Then
+			Exit Sub
+		End If
 	End If
+	
 	oTextOutputStream.writeString(&quot;&lt;publish-info&gt;&quot; &amp; chr(10))
-	If Trim(oInfoDlg.Model.pubBookNameTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;book-name&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubBookNameTextField.Text) ) &amp; &quot;&lt;/book-name&gt;&quot; &amp; chr(10))
-	End If
-	If Trim(oInfoDlg.Model.pubPublisherTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;publisher&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubPublisherTextField.Text) ) &amp; &quot;&lt;/publisher&gt;&quot; &amp; chr(10))
-	End If
-	If Trim(oInfoDlg.Model.pubCityTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;city&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubCityTextField.Text) ) &amp; &quot;&lt;/city&gt;&quot; &amp; chr(10))
-	End If
-	If Trim(oInfoDlg.Model.pubYearTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;year&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubYearTextField.Text) ) &amp; &quot;&lt;/year&gt;&quot; &amp; chr(10))
-	End If
-	If Trim(oInfoDlg.Model.pubISBNTextField.Text) &lt;&gt; &quot;&quot; Then
-		oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubISBNTextField.Text) ) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
+	
+	If Not bFastExport Then
+		If Trim(oInfoDlg.Model.pubBookNameTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;book-name&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubBookNameTextField.Text) ) &amp; &quot;&lt;/book-name&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(oInfoDlg.Model.pubPublisherTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;publisher&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubPublisherTextField.Text) ) &amp; &quot;&lt;/publisher&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(oInfoDlg.Model.pubCityTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;city&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubCityTextField.Text) ) &amp; &quot;&lt;/city&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(oInfoDlg.Model.pubYearTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;year&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubYearTextField.Text) ) &amp; &quot;&lt;/year&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(oInfoDlg.Model.pubISBNTextField.Text) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; CorrectPara( Trim(oInfoDlg.Model.pubISBNTextField.Text) ) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		If Trim(asPaperBook(0)) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;book-name&gt;&quot; &amp; CorrectPara( Trim(asPaperBook(0)) ) &amp; &quot;&lt;/book-name&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(asPaperBook(1)) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;publisher&gt;&quot; &amp; CorrectPara( Trim(asPaperBook(1)) ) &amp; &quot;&lt;/publisher&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(asPaperBook(2)) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;city&gt;&quot; &amp; CorrectPara( Trim(asPaperBook(2)) ) &amp; &quot;&lt;/city&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(asPaperBook(3)) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;year&gt;&quot; &amp; CorrectPara( Trim(asPaperBook(3)) ) &amp; &quot;&lt;/year&gt;&quot; &amp; chr(10))
+		End If
+		If Trim(asPaperBook(4)) &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; CorrectPara( Trim(asPaperBook(4)) ) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
+		End If
 	End If
 	If UBound(sPubSequences) &lt;&gt; -1 Then
 		Dim i As Integer, s As String
