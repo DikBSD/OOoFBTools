@@ -17,30 +17,26 @@ Private sPaperBookISBN		As String
 Sub FastExportToFB21()
 	&apos; Быстрый экспорт
 	sConvertorName = &quot;ExportToFB2.1&quot;
-	&apos; Установка стилей по умолчанию
+	&apos; Установка стилей по умолчанию - В Быстроя экспорте НЕЛЬЗЯ перенызнычать стили (для простоты пользователей)
 	SetStylesVarsDefault()
-	&apos; Только теперь загружаем стили из файла в переменные
-	ReadStyles( getUserPath() &amp; sConstStyles, False )
 	
 	Dim oFileAccess As Object
 	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	Dim oDoc As Object : oDoc = ThisComponent
+
+	&apos; инициализация сообщений формы конвертера в зависимости от локали
+	InitFastExpDlgMessage()
 	
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL
 	Else
-		MsgBox &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot;, 64, sConvertorName
+		MsgBox sIFED.sFB2ExportSaveMessage, 64, sConvertorName
 		Exit Sub
 	End If
-	
-	Dim sFB2ExportSaveModified
-	sFB2ExportSaveModified	= &quot;Документ был изменен.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot; &amp; chr(10) &amp; _
-							&quot;Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, &quot; &amp; _
-							&quot;иначе графика не будет корректно экспортирована (особенность OOoWriter)!&quot; &amp; chr(10) &amp; _
-							&quot;Вы все равно хотите экспортировать документ в fb2?&quot;
+
 	If oDoc.isModified() Then
-		If MsgBox ( sFB2ExportSaveModified, 32 + 1 + 256, sConvertorName ) = 2 Then
+		If MsgBox ( sIFED.sFB2ExportSaveModified, 32 + 1 + 256, sConvertorName ) = 2 Then
 			Exit Sub
 		End If
 	End If
@@ -61,7 +57,7 @@ Sub FastExportToFB21()
 		Exit Sub
 	End If
 	
-	&apos; 1. если есть в списке диалога еще Обложки - формирукм и тэги и base64-код
+	&apos; 1. если есть в списке диалога еще Обложки - формируем и тэги и base64-код
 	Dim asItemsList() As String : asItemsList = oFExpDlg.Model.lbCovers.StringItemList
 	For i=0 To UBound( asItemsList() )
 		MakeGraphic( asItemsList(i) )
@@ -72,7 +68,7 @@ Sub FastExportToFB21()
 		MakeCoverParser()
 	End If
 	
-	oProgressBar.start( &quot;Быстрый экспорт в FB2: Анализ&quot;, oDoc.ParagraphCount + 50 )
+	oProgressBar.start( sIFED.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
 	oProgressBar.setValue( 0 )
 	
 	&apos; запускаем парсинг всего текста
@@ -94,7 +90,7 @@ Sub FastExportToFB21()
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
 	If UBound(sFootnoteText()) &lt;&gt; -1 Then
-		oProgressBar.start( &quot;Быстрый экспорт в FB2: Сохранение сносок&quot;, UBound(sFootnoteText() )
+		oProgressBar.start( sIFED.sFB2ExportProgressBarFootnote, UBound(sFootnoteText() )
 		oProgressBar.setValue(0)
 		SaveNotes()
 	End If
@@ -102,7 +98,7 @@ Sub FastExportToFB21()
 	&apos; печатаем коды картинок, если они есть
 	Dim iSI As Integer
 	If UBound(Images()) &lt;&gt; -1 Then
-		oProgressBar.start( &quot;Быстрый экспорт в FB2: Сохранение картинок&quot;, UBound(Images() )
+		oProgressBar.start( sIFED.sFB2ExportProgressBarGraphics, UBound(Images() )
 		oProgressBar.setValue(0)
 		iSI = SaveImages()
 	End If
@@ -112,34 +108,36 @@ Sub FastExportToFB21()
 	oProgressBar.End
 	
 	Dim sFB2File As String : sFB2File = ConvertFromUrl( sCurDocFile )
-	Dim sEndMessage	As String : sEndMessage	= &quot;Создание книги в fb2 формате завершено!&quot;
+	Dim sEndMessage	As String : sEndMessage	= sIFED.sFB2ExportEnd
 	If iSI &gt; 0 Then
-		sEndMessage = sEndMessage &amp; chr(10) &amp; &quot;Экспортировано Графических Объектов:&quot; &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; &quot;из&quot; &amp; _
-		&quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; &quot;загруженных и найденных в документе.&quot;
+		sEndMessage = sEndMessage &amp; chr(10) &amp; sIFED.sFB2ExportReport &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; sIFED.sFB2ExportReportFrom &amp; _
+		&quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; sIFED.sFB2ExportReportFromSearcing
 	End If
 	
 	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
 	
-	MsgBox sMess &amp; &quot;Файл:&quot; &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
+	MsgBox sMess &amp; sIFED.sFB2ExportReportFile &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
 	
 	&apos; удаляем временные файлы
 	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
 		RmDir getOOoFBToolsTempPath()
 	End If
+	
+	oFExpDlg.Dispose()
 End Sub
 
 &apos; инициализация и запуск диалога поиска
 Function FastExportDlgExec() As Boolean
 	&apos; запуск диалога быстрого экспорта
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( &quot;Создание диалога&quot;, 1 )
+	oProgressBar.start( sIFED.sFastExpDlgCreateDialog, 1 )
 	oProgressBar.setValue(1)
 	
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oFExpDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.FastExportToFB21Dlg )
 	oProgressBar.setValue(2)
-	oProgressBar.start( &quot;Инициализация&quot;, ThisComponent.ParagraphCount )
-
+	oProgressBar.start( sIFED.sFastExpDlgInit, ThisComponent.ParagraphCount )
+	InitFastExpDlg() &apos; инициализация формы конвертера в зависимости от локали
 	GenreFB22()&apos; Инициализация жанрами схемы FictionBook 2.2
 	oProgressBar.setValue(3)
 
@@ -147,7 +145,6 @@ Function FastExportDlgExec() As Boolean
 	oProgressBar.setValue(4)
 		
 	With oFExpDlg.Model
-		.Title = &quot;Быстрый экспорт в fb2&quot;
 		.Height	= 160
 		.Width	= 350
 		.tfBookName.Text = FindTextOfStyle( sStyleBookTitle, true )
@@ -192,7 +189,7 @@ Sub cmdbtxGetCoverPath_Click()
 	With oFileDlg
 		.initialize(sArg())
 		.appendFilter( &quot;Images (.jpeg; .jpg; .png)&quot;, &quot;*.jpeg;*.JPEG;*.jpg;*.JPG;*.png;*.PNG&quot; )
-		.setTitle( &quot;Выбор обложки книги&quot; )
+		.setTitle( sIFED.sFileDlgSelect )
 	End With
 	If oFileDlg.execute() Then
 		Dim sFile As String
@@ -210,15 +207,14 @@ End Sub
 
 Sub AddCoverToList( sCover As String )
 	&apos; добавить обложку к списку
-	Dim i As Integer, aArray() As String, sTitle As String
-	sTitle = &quot;Быстрый экспорт&quot;
+	Dim i As Integer, aArray() As String
 
 	&apos; ищем добавляемую обложку в списке
 	aArray = oFExpDlg.Model.lbCovers.StringItemList
 	For i=0 To UBound(aArray())
 		If aArray(i) = sCover Then
-			MsgBox &quot;Обложка &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sCover &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
-					&quot;уже есть в спике обложек!&quot;, 64, sTitle
+			MsgBox sIFED.sCover  &amp; &quot;&quot;&quot;&quot; &amp; sCover &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					sIFED.sIsExsistInCoversList, 64, sIFED.sTitle
 			Exit Sub
 		End If
 	Next i
@@ -229,15 +225,12 @@ End Sub
 
 Sub cmdbtnCoverDelete_Click()
 	&apos; удаление выбранной обложки из списка
-	Dim oLB As Object, aArray() As String, sTitle As String
-	sTitle = &quot;Быстрый экспорт&quot;
+	Dim oLB As Object, aArray() As String 
 	oLB = oFExpDlg.getControl(&quot;lbCovers&quot;)
-	If oLB.ItemCount = 0 Then
-		Exit Sub
-	End If
+	If oLB.ItemCount = 0 Then Exit Sub
 	
-	If	MsgBox( &quot;Вы действительно хотите удалить Обложку из списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
-				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle ) = 6 Then
+	If	MsgBox( sIFED.sDeleteCoverQuestion &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sIFED.sTitle ) = 6 Then
 		Dim sItem As String, i As Integer
 		If ( oLB.SelectedItemPos &gt;= 0 ) AND ( oLB.SelectedItemPos &lt; oLB.ItemCount-1 ) Then
 			i = oLB.SelectedItemPos+1
@@ -259,9 +252,9 @@ End Sub
 
 Sub cmdbtnCoverSort_Click()
 	&apos; сортировка списка обложек
+	If oFExpDlg.getControl(&quot;lbCovers&quot;).ItemCount &lt; 2 Then Exit Sub
 	Dim aArray() As String
-	If	MsgBox( &quot;Вы действительно хотите отсортировать список Обложек?&quot;, _
-				32 + 4 + 256, &quot;Быстрый экспорт&quot; ) = 6 Then
+	If	MsgBox( sIFED.sSortCoverQuestion, 32 + 4 + 256, sIFED.sTitle ) = 6 Then
 		Dim sItem As String
 		sItem	= oFExpDlg.getControl(&quot;lbCovers&quot;).getSelectedItem
 		aArray	= oFExpDlg.Model.lbCovers.StringItemList
@@ -273,10 +266,9 @@ End Sub
 
 Sub cmdbtnCoverUp_Click()
 	&apos; переместить выбранную обложку вверх по списку
-	Dim aArray() As String, sTitle As String
-	sTitle = &quot;Быстрый экспорт&quot;
+	Dim aArray() As String
 	If oFExpDlg.getControl(&quot;lbCovers&quot;).SelectedItem = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите Обложку в списке для перемещения ее вверх!&quot;, 64, sTitle
+		MsgBox sIFED.sCoverSelectToUp, 64, sIFED.sTitle
 		Exit Sub
 	End If
 	
@@ -292,10 +284,9 @@ End Sub
 
 Sub cmdbtnCoverDown_Click()
 	&apos; переместить выбранную обложку вниз по списку
-	Dim aArray() As String, sTitle As String
-	sTitle = &quot;Быстрый экспорт&quot;
+	Dim aArray() As String
 	If oFExpDlg.getControl(&quot;lbCovers&quot;).SelectedItem = &quot;&quot; Then
-		MsgBox &quot;Пожалуйста, выберите Обложку в списке для перемещения ее вниз!&quot;, 64, sTitle
+		MsgBox sIFED.sCoverSelectToDown, 64, sIFED.sTitle
 		Exit Sub
 	End If
 	aArray = oFExpDlg.Model.lbCovers.StringItemList
@@ -314,11 +305,11 @@ Sub cmdbtnFastExportToFB2_Click()
 	SaveSettings( getUserPath() &amp; sConstFExpDlg, oFExpDlg )
 	
 	If oFExpDlg.getControl(&quot;lbGenres&quot;).SelectedItem = &quot;&quot; And UBound( sGenres() ) = -1 Then
-		MsgBox &quot;Выберите, пожалуйста, Жанр Книги.&quot;, 64, sConvertorName
+		MsgBox sIFED.sFastExpDlgSelectGenre, 64, sConvertorName
 		Exit Sub
 	End If
 	If Trim(oFExpDlg.Model.tfBookName.Text) = &quot;&quot; Then
-		MsgBox &quot;Заполните, пожалуйста, поля Названия Книги&quot;, 64, sConvertorName
+		MsgBox sIFED.sFastExpDlgFillBookTitle, 64, sConvertorName
 		Exit Sub
 	End If
 	
@@ -341,7 +332,7 @@ Function GetBookGenre() As Boolean
 	Dim sGenre As String : sGenre = GetGenreInList( oLB.SelectedItem )
 	Dim i As Integer
 	If sGenre = &quot;?&quot; Then
-		MsgBox &quot;Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!&quot;, 64, sConvertorName
+		MsgBox sIFED.sGenreGroup, 64, sConvertorName
 		GetBookGenre = False
 		Exit Function
 	End If
