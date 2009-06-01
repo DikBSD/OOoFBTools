@@ -914,6 +914,17 @@ Function IsFillAllFields() As Boolean
 	IsFillAllFields = True
 End Function
 
+&apos; Установка итема языкового листбокса - язык системы по-умолчанию
+Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
+	Dim i as Integer
+	For i=0 To UBound( sLangList() )
+		If InStr( sLangList(i), &quot;(&quot; &amp; getOOoLocal( True ) &amp; &quot;)&quot; ) &gt; 0  Then
+			oDlg.getControl( slbLang ).selectItem( sLangList(i), True )
+			Exit For
+		End If
+	Next i
+End Sub
+
 &apos; //////////// сортировка //////////////
 &apos; перемена местами двух int массивов одинаковой размерности
 Function swap_arrays_int( aArray1() As Integer, aArray2() As Integer ) As Boolean

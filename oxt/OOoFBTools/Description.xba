@@ -106,15 +106,15 @@ Sub SaveDescription( sFB2Encoding As String, bFastExport As Boolean )
 	Dim oLB As Object
 	If Not bFastExport Then
 		oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
-		oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; Mid( oLB.SelectedItem, InStr( oLB.SelectedItem, &quot;(&quot; )+1, 2 ) &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
 	
 		oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
 		If oLB.SelectedItem &lt;&gt; &quot;&quot; Then
-			oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
+			oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; Mid( oLB.SelectedItem, InStr( oLB.SelectedItem, &quot;(&quot; )+1, 2 ) &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
 		End If
 	Else
 		oLB = oFExpDlg.getControl(&quot;lbLangs&quot;)
-		oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; oLB.SelectedItem &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; Mid( oLB.SelectedItem, InStr( oLB.SelectedItem, &quot;(&quot; )+1, 2 ) &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
 	End If
 	
 	&apos; переводчики Книги
