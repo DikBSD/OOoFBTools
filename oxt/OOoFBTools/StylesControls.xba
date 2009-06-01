@@ -127,7 +127,7 @@ Sub StylesDlgOk
 		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
 		Exit Sub
 	End If
-	SaveSettings( getUserPath() &amp; sConstStyles, oStylesDlg ) &apos; сохраняем стили в файл
+	SaveCustomStyles( getUserPath() &amp; sConstStyles ) &apos; сохраняем стили в файл
 	
 	bStyleExecute = True
 	oStylesDlg.endExecute()
@@ -136,6 +136,14 @@ End Sub
 Sub StylesDlgCanceled
 	bStyleExecute = False
 	oStylesDlg.endExecute()
+End Sub
+
+Sub ChangeStyles(o)
+	If o.Source.Model.Name		= &quot;optbtnGeneral&quot; Then
+		oStylesDlg.Model.Step	= 1
+	ElseIf o.Source.Model.Name	= &quot;optbtnService&quot; Then
+		oStylesDlg.Model.Step	= 2
+	End If
 End Sub
 
 Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integer, Optional nY As Integer ) As Boolean
@@ -159,7 +167,7 @@ Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integ
 						nY = sSetting(1)
 					Else
 						&apos; Устанавливаем данные стилей в контроды
-						SetSettingsInControlls(sLine, oStylesDlg)
+						SetStylesInControlls( sLine )
 					End If
 				Else
 					&apos; Устанавливаем данные стилей в переменные
@@ -211,21 +219,21 @@ Sub SetGeneralStylesControlsDefault()
 	oStylesDlg.GetControl(&quot;tfCiteAuthor&quot;).Text = sStyleCiteAuthor
 	&apos; Подзаголовок
 	oStylesDlg.GetControl(&quot;tfSubTitle&quot;).Text = sStyleSubTitle
-	&apos; Уровни
-	oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text = sStyleLevel1
-	oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text = sStyleLevel2
-	oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text = sStyleLevel3
-	oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text = sStyleLevel4
-	oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text = sStyleLevel5
-	oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text = sStyleLevel6
-	oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text = sStyleLevel7
-	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text = sStyleLevel8
-	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text = sStyleLevel9
-	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text = sStyleLevel10
+	&apos; Установка в поля стилей Заголовков стилей по-умолчанию, в зависимости от локали
+	oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text	= HeadingToLevelStyle( 1, sStyleLevel1 )
+	oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text	= HeadingToLevelStyle( 2, sStyleLevel2 )
+	oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text	= HeadingToLevelStyle( 3, sStyleLevel3 )
+	oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text	= HeadingToLevelStyle( 4, sStyleLevel4 )
+	oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text	= HeadingToLevelStyle( 5, sStyleLevel5 )
+	oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text	= HeadingToLevelStyle( 6, sStyleLevel6 )
+	oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text	= HeadingToLevelStyle( 7, sStyleLevel7 )
+	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text	= HeadingToLevelStyle( 8, sStyleLevel8 )
+	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text	= HeadingToLevelStyle( 9, sStyleLevel9 )
+	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text	= HeadingToLevelStyle( 10, sStyleLevel10 )
 End Sub
 
 Sub SetServiceStylesControlsDefault()
-	&apos; // Установка &quot;Служебных&quot; стилей по умолчанию в контролы //
+	&apos; // Установка &quot;Служебных&quot; стилей по-умолчанию в контролы //
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	&apos; Анотация Книги
 	oStylesDlg.GetControl(&quot;tf_BookAnnotation&quot;).Text	= sStyle_BookAnnotation
@@ -233,12 +241,12 @@ Sub SetServiceStylesControlsDefault()
 
 	oStylesDlg.GetControl(&quot;tf_BookAuthor&quot;).Text		= sStyle_BookAuthor
 	oStylesDlg.GetControl(&quot;tf_BookTranslator&quot;).Text = sStyle_BookTranslator
-	oStylesDlg.GetControl(&quot;tf_Name&quot;).Text		= sStyle_Name
-	oStylesDlg.GetControl(&quot;tf_Patronymic&quot;).Text	= sStyle_Patronymic
-	oStylesDlg.GetControl(&quot;tf_Family&quot;).Text		= sStyle_Family
-	oStylesDlg.GetControl(&quot;tf_Nick&quot;).Text		= sStyle_Nick
-	oStylesDlg.GetControl(&quot;tf_Email&quot;).Text		= sStyle_Email
-	oStylesDlg.GetControl(&quot;tf_WebSite&quot;).Text	= sStyle_WebSite
+	oStylesDlg.GetControl(&quot;tf_Name&quot;).Text			= sStyle_Name
+	oStylesDlg.GetControl(&quot;tf_Patronymic&quot;).Text		= sStyle_Patronymic
+	oStylesDlg.GetControl(&quot;tf_Family&quot;).Text			= sStyle_Family
+	oStylesDlg.GetControl(&quot;tf_Nick&quot;).Text			= sStyle_Nick
+	oStylesDlg.GetControl(&quot;tf_Email&quot;).Text			= sStyle_Email
+	oStylesDlg.GetControl(&quot;tf_WebSite&quot;).Text		= sStyle_WebSite
 	
 	oStylesDlg.GetControl(&quot;tf_BookSeries&quot;).Text			= sStyle_BookSeries
 	oStylesDlg.GetControl(&quot;tf_PaperBookSeries&quot;).Text	= sStyle_PaperBookSeries
@@ -252,23 +260,164 @@ Sub SetServiceStylesControlsDefault()
 	oStylesDlg.GetControl(&quot;tf_PaperBookYear&quot;).Text		= sStyle_PaperBookYear
 	oStylesDlg.GetControl(&quot;tf_PaperBookISBN&quot;).Text		= sStyle_PaperBookISBN
 	
-	oStylesDlg.GetControl(&quot;tf_BookDate&quot;).Text	= sStyle_BookDate
-	oStylesDlg.GetControl(&quot;tf_DateText&quot;).Text	= sStyle_BookDateText
-	oStylesDlg.GetControl(&quot;tf_DateValue&quot;).Text	= sStyle_BookDateValue
+	oStylesDlg.GetControl(&quot;tf_BookDate&quot;).Text			= sStyle_BookDate
+	oStylesDlg.GetControl(&quot;tf_DateText&quot;).Text			= sStyle_BookDateText
+	oStylesDlg.GetControl(&quot;tf_DateValue&quot;).Text			= sStyle_BookDateValue
 	
 	oStylesDlg.GetControl(&quot;tf_CustomInfo&quot;).Text			= sStyle_CustomInfo
 	oStylesDlg.GetControl(&quot;tf_CustomInfoType&quot;).Text		= sStyle_CustomInfoType
 	oStylesDlg.GetControl(&quot;tf_CustomInfoValue&quot;).Text	= sStyle_CustomInfoValue
 	
-	oStylesDlg.GetControl(&quot;tf_Genre&quot;).Text		= sStyle_Genre
-	oStylesDlg.GetControl(&quot;tf_GenreName&quot;).Text	= sStyle_GenreName
-	oStylesDlg.GetControl(&quot;tf_GenreMatch&quot;).Text	= sStyle_GenreMatch
+	oStylesDlg.GetControl(&quot;tf_Genre&quot;).Text				= sStyle_Genre
+	oStylesDlg.GetControl(&quot;tf_GenreName&quot;).Text			= sStyle_GenreName
+	oStylesDlg.GetControl(&quot;tf_GenreMatch&quot;).Text			= sStyle_GenreMatch
 	
-	oStylesDlg.GetControl(&quot;tf_Lang&quot;).Text			= sStyle_Lang
-	oStylesDlg.GetControl(&quot;tf_LangBook&quot;).Text		= sStyle_LangBook
-	oStylesDlg.GetControl(&quot;tf_LangOriginal&quot;).Text	= sStyle_LangOriginal
+	oStylesDlg.GetControl(&quot;tf_Lang&quot;).Text				= sStyle_Lang
+	oStylesDlg.GetControl(&quot;tf_LangBook&quot;).Text			= sStyle_LangBook
+	oStylesDlg.GetControl(&quot;tf_LangOriginal&quot;).Text		= sStyle_LangOriginal
 End Sub
 
+Sub LoadCustomStylesProfile()
+	&apos; Загрузка названий стилей из файла профиля стилей
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
+		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
+	End If
+
+	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
+	
+	With oFileDlg
+		.initialize( sArg() )
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sSD.sOpenProfile )
+	End With
+	If oFileDlg.execute() Then
+		&apos; Читаем данные и задаем значения контролам профиля стилей
+		ReadStyles( oFileDlg.Files(0), True )
+	End If
+	oFileDlg.Dispose()
+
+End Sub
+
+Sub SaveCustomStylesProfile()
+	&apos; Сохранение названий стилей в файл профиля
+	If IsFillAllFields = False Then
+		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
+		Exit Sub
+	End If
+	
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sFile As String
+	
+	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
+		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
+	End If
+
+	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION )
+	
+	With oFileDlg
+		.initialize( sArg() )
+		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
+		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
+		.setTitle( sSD.sSaveProfile )
+	End With
+	If oFileDlg.execute() Then
+		sFile = ConvertFromUrl( oFileDlg.Files(0) )
+		IF ( InStr(sFile,&quot;.txt&quot;) = 0 ) Then
+			sFile = sFile + &quot;.txt&quot;
+		End If
+		
+		SaveCustomStyles( sFile ) &apos; сохраняем стили в файл
+	End If
+	oFileDlg.Dispose()	
+End Sub
+
+&apos;///////////////////////////////////////////////////////////////////////
+&apos; загрузка стилей по-умолчанию в переменные
+Sub SetStylesVarsDefault()
+	&apos; Установка стилей по умолчанию в переменные
+	&apos; Данные книги
+	sStyleBookTitle	 			= &quot;Book Title&quot;
+	&apos; Анотация
+	sStyleAnnotation	 		= &quot;Annotation&quot;
+	sStyleAnnotationSubTitle	= &quot;Annotation SubTitle&quot;
+	&apos; Эпиграф
+	sStyleEpigraph				= &quot;Epigraph&quot;
+	sStyleEpigraphAuthor		= &quot;Epigraph Author&quot;
+	&apos; Поэма
+	sStylePoemTitle	 			= &quot;Poem Title&quot;
+	sStylePoemSubTitle			= &quot;Poem SubTitle&quot;
+	sStylePoem		 			= &quot;Poem&quot;
+	sStylePoemAuthor 			= &quot;Poem Author&quot;
+	sStylePoemDate	 			= &quot;Poem Date&quot;
+	&apos; Цитата
+	sStyleCite		  	= &quot;Cite&quot;
+	sStyleCiteSubTitle	= &quot;Cite SubTitle&quot;
+	sStyleCiteAuthor  	= &quot;Cite Author&quot;
+	&apos; Подзаголовок
+	sStyleSubTitle	 = &quot;SubTitle&quot;
+	&apos; Заголовки
+	sStyleLevel1	 = &quot;Heading 1&quot;
+	sStyleLevel2 	 = &quot;Heading 2&quot;
+	sStyleLevel3 	 = &quot;Heading 3&quot;
+	sStyleLevel4 	 = &quot;Heading 4&quot;
+	sStyleLevel5 	 = &quot;Heading 5&quot;
+	sStyleLevel6 	 = &quot;Heading 6&quot;
+	sStyleLevel7 	 = &quot;Heading 7&quot;
+	sStyleLevel8 	 = &quot;Heading 8&quot;
+	sStyleLevel9 	 = &quot;Heading 9&quot;
+	sStyleLevel10 	 = &quot;Heading 10&quot;
+	
+	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
+	sStyle_BookAnnotation	= &quot;_Book Annotation&quot;
+	sStyle_BookKeywords		= &quot;_Book Keywords&quot;
+		
+	sStyle_BookAuthor	 	= &quot;#Book Author&quot;
+	sStyle_BookTranslator	= &quot;#Book Translator&quot;
+	sStyle_Name			 	= &quot;#Name&quot;
+	sStyle_Patronymic	 	= &quot;#Patronymic&quot;
+	sStyle_Family		 	= &quot;#Family&quot;
+	sStyle_Nick			 	= &quot;#Nick&quot;
+	sStyle_Email		 	= &quot;#Email&quot;
+	sStyle_WebSite		 	= &quot;#WebSite&quot;
+
+	sStyle_BookDate	 		= &quot;#Book Date&quot;
+	sStyle_BookDateText		= &quot;#Book Date Text&quot;
+	sStyle_BookDateValue	= &quot;#Book Date Value&quot;
+	
+	sStyle_BookSeries	 	= &quot;#Book Series&quot;
+	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
+	sStyle_Sequence		 	= &quot;#Sequence&quot;
+	sStyle_SequenceNumber	= &quot;#Sequence Number&quot;
+	
+	sStyle_PaperBook			= &quot;#PaperBook&quot;
+	sStyle_PaperBookName		= &quot;#PaperBook Name&quot;
+	sStyle_PaperBookPublisher	= &quot;#PaperBook Publisher&quot;
+	sStyle_PaperBookCity		= &quot;#PaperBook City&quot;
+	sStyle_PaperBookYear		= &quot;#PaperBook Year&quot;
+	sStyle_PaperBookISBN		= &quot;#PaperBook ISBN&quot;
+	
+	sStyle_CustomInfo			= &quot;#Custom Info&quot;
+	sStyle_CustomInfoType		= &quot;#Custom Info Type&quot;
+	sStyle_CustomInfoValue		= &quot;#Custom Info Value&quot;
+	
+	sStyle_Genre				= &quot;#Genre&quot;
+	sStyle_GenreName			= &quot;#Genre Name&quot;
+	sStyle_GenreMatch			= &quot;#Genre Match&quot;
+	
+	sStyle_Lang					= &quot;#Lang&quot;
+	sStyle_LangBook				= &quot;#Lang Book&quot;
+	sStyle_LangOriginal			= &quot;#Lang Original&quot;
+
+End Sub
+
+&apos; загрузка стилей в переменные
 Sub SetStylesInVars( sCurrentLine As String )
 	Dim aStyles() As String : aStyles = Split( sCurrentLine, &quot;=&quot; )
 	Select Case aStyles(0)
@@ -303,66 +452,28 @@ Sub SetStylesInVars( sCurrentLine As String )
 			
 		Case &quot;tfSubTitle&quot;
 			sStyleSubTitle = aStyles(1)
+
 		Case &quot;tfLevel1&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel1 = &quot;Heading 1&quot;
-			Else
-				sStyleLevel1 = aStyles(1)
-			End If
+			sStyleLevel1 = aStyles(1)
 		Case &quot;tfLevel2&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel2 = &quot;Heading 2&quot;
-			Else
-				sStyleLevel2 = aStyles(1)
-			End If
+			sStyleLevel2 = aStyles(1)
 		Case &quot;tfLevel3&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel3 = &quot;Heading 3&quot;
-			Else
-				sStyleLevel3 = aStyles(1)
-			End If
+			sStyleLevel3 = aStyles(1)
 		Case &quot;tfLevel4&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel4 = &quot;Heading 4&quot;
-			Else
-				sStyleLevel4 = aStyles(1)
-			End If
+			sStyleLevel4 = aStyles(1)
 		Case &quot;tfLevel5&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel5 = &quot;Heading 5&quot;
-			Else
-				sStyleLevel5 = aStyles(1)
-			End If
+			sStyleLevel5 = aStyles(1)
 		Case &quot;tfLevel6&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel6 = &quot;Heading 6&quot;
-			Else
-				sStyleLevel6 = aStyles(1)
-			End If
+			sStyleLevel6 = aStyles(1)
 		Case &quot;tfLevel7&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel7 = &quot;Heading 7&quot;
-			Else
-				sStyleLevel7 = aStyles(1)
-			End If
+			sStyleLevel7 = aStyles(1)
 		Case &quot;tfLevel8&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel8 = &quot;Heading 8&quot;
-			Else
-				sStyleLevel8 = aStyles(1)
-			End If
+			sStyleLevel8 = aStyles(1)
 		Case &quot;tfLevel9&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel9 = &quot;Heading 9&quot;
-			Else
-				sStyleLevel9 = aStyles(1)
-			End If
+			sStyleLevel9 = aStyles(1)
 		Case &quot;tfLevel10&quot;
-			If Instr(aStyles(1),&quot;Заголовок &quot;) &gt; 0 Then
-				sStyleLevel10 = &quot;Heading 10&quot;
-			Else
-				sStyleLevel10 = aStyles(1)
-			End If
+			sStyleLevel10 = aStyles(1)
+	
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 		Case &quot;tf_BookAnnotation&quot;
 			sStyle_BookAnnotation = aStyles(1)
@@ -438,150 +549,147 @@ Sub SetStylesInVars( sCurrentLine As String )
 	End Select
 End Sub
 
-Sub SetStylesVarsDefault()
-	&apos; Установка стилей по умолчанию в переменные
-	&apos; Данные книги
-	sStyleBookTitle	 			= &quot;Book Title&quot;
-	&apos; Анотация
-	sStyleAnnotation	 		= &quot;Annotation&quot;
-	sStyleAnnotationSubTitle	= &quot;Annotation SubTitle&quot;
-	&apos; Эпиграф
-	sStyleEpigraph				= &quot;Epigraph&quot;
-	sStyleEpigraphAuthor		= &quot;Epigraph Author&quot;
-	&apos; Поэма
-	sStylePoemTitle	 			= &quot;Poem Title&quot;
-	sStylePoemSubTitle			= &quot;Poem SubTitle&quot;
-	sStylePoem		 			= &quot;Poem&quot;
-	sStylePoemAuthor 			= &quot;Poem Author&quot;
-	sStylePoemDate	 			= &quot;Poem Date&quot;
-	&apos; Цитата
-	sStyleCite		  	= &quot;Cite&quot;
-	sStyleCiteSubTitle	= &quot;Cite SubTitle&quot;
-	sStyleCiteAuthor  	= &quot;Cite Author&quot;
-	&apos; Подзаголовок
-	sStyleSubTitle	 = &quot;SubTitle&quot;
-	&apos; Уровни
-	sStyleLevel1	 = &quot;Level 1&quot;
-	sStyleLevel2 	 = &quot;Level 2&quot;
-	sStyleLevel3 	 = &quot;Level 3&quot;
-	sStyleLevel4 	 = &quot;Level 4&quot;
-	sStyleLevel5 	 = &quot;Level 5&quot;
-	sStyleLevel6 	 = &quot;Level 6&quot;
-	sStyleLevel7 	 = &quot;Level 7&quot;
-	sStyleLevel8 	 = &quot;Level 8&quot;
-	sStyleLevel9 	 = &quot;Level 9&quot;
-	sStyleLevel10 	 = &quot;Level 10&quot;
-	
-	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-	sStyle_BookAnnotation	= &quot;_Book Annotation&quot;
-	sStyle_BookKeywords		= &quot;_Book Keywords&quot;
-		
-	sStyle_BookAuthor	 	= &quot;#Book Author&quot;
-	sStyle_BookTranslator	= &quot;#Book Translator&quot;
-	sStyle_Name			 	= &quot;#Name&quot;
-	sStyle_Patronymic	 	= &quot;#Patronymic&quot;
-	sStyle_Family		 	= &quot;#Family&quot;
-	sStyle_Nick			 	= &quot;#Nick&quot;
-	sStyle_Email		 	= &quot;#Email&quot;
-	sStyle_WebSite		 	= &quot;#WebSite&quot;
+&apos; сохранение новых названий стилей в файл стилей
+Sub SaveCustomStyles( sCustomStylesFileName As String )
+	Dim oOS As Object, oFA As Object, oTOS As Object
+	Dim oLB As Object &apos; Для работы с ListBox`ами
 
-	sStyle_BookDate	 		= &quot;#Book Date&quot;
-	sStyle_BookDateText		= &quot;#Book Date Text&quot;
-	sStyle_BookDateValue	= &quot;#Book Date Value&quot;
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	
-	sStyle_BookSeries	 	= &quot;#Book Series&quot;
-	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
-	sStyle_Sequence		 	= &quot;#Sequence&quot;
-	sStyle_SequenceNumber	= &quot;#Sequence Number&quot;
+	oOS = oFA.openFileWrite( sCustomStylesFileName )
+	oOS.truncate()
+	oTOS.setOutputStream( oOS )
+	oTOS.setEncoding( &quot;utf-8&quot; )
 	
-	sStyle_PaperBook			= &quot;#PaperBook&quot;
-	sStyle_PaperBookName		= &quot;#PaperBook Name&quot;
-	sStyle_PaperBookPublisher	= &quot;#PaperBook Publisher&quot;
-	sStyle_PaperBookCity		= &quot;#PaperBook City&quot;
-	sStyle_PaperBookYear		= &quot;#PaperBook Year&quot;
-	sStyle_PaperBookISBN		= &quot;#PaperBook ISBN&quot;
-	
-	sStyle_CustomInfo		= &quot;#Custom Info&quot;
-	sStyle_CustomInfoType	= &quot;#Custom Info Type&quot;
-	sStyle_CustomInfoValue	= &quot;#Custom Info Value&quot;
-	
-	sStyle_Genre		= &quot;#Genre&quot;
-	sStyle_GenreName	= &quot;#Genre Name&quot;
-	sStyle_GenreMatch	= &quot;#Genre Match&quot;
-	
-	sStyle_Lang			= &quot;#Lang&quot;
-	sStyle_LangBook		= &quot;#Lang Book&quot;
-	sStyle_LangOriginal	= &quot;#Lang Original&quot;
-
-End Sub
-
-Sub ChangeStyles(o)
-	If o.Source.Model.Name		= &quot;optbtnGeneral&quot; Then
-		oStylesDlg.Model.Step	= 1
-	ElseIf o.Source.Model.Name	= &quot;optbtnService&quot; Then
-		oStylesDlg.Model.Step	= 2
-	End If
-End Sub
-
-Sub LoadCustomStylesProfile()
-	&apos; Загрузка названий стилей из файла профиля стилей
-	Dim oFileDlg As Object
-	Dim sArg() As String
-	
-	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
-		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
-	End If
-
-	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
-	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
-	
-	With oFileDlg
-		.initialize( sArg() )
-		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
-		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
-		.setTitle( sSD.sOpenProfile )
-	End With
-	If oFileDlg.execute() Then
-		&apos; Читаем данные и задаем значения контролам профиля стилей
-		ReadStyles( oFileDlg.Files(0), True )
-	End If
-	oFileDlg.Dispose()
-
-End Sub
-
-Sub SaveCustomStylesProfile()
-	&apos; Сохранение названий стилей в файл профиля
-	If IsFillAllFields = False Then
-		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
-		Exit Sub
-	End If
-	
-	Dim oFileDlg As Object
-	Dim sArg() As String
-	Dim sFile As String
-	
-	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;) ) Then
-		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
-	End If
-
-	oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
-	sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION )
-	
-	With oFileDlg
-		.initialize( sArg() )
-		.appendFilter( &quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot; )
-		.appendFilter( &quot;All files (.*)&quot;, &quot;*.*&quot; )
-		.setTitle( sSD.sSaveProfile )
-	End With
-	If oFileDlg.execute() Then
-		sFile = ConvertFromUrl( oFileDlg.Files(0) )
-		IF ( InStr(sFile,&quot;.txt&quot;) = 0 ) Then
-			sFile = sFile + &quot;.txt&quot;
+	Dim ctrl As Object, i As Integer
+	ctrl = oStylesDlg.getControls()
+	Dim sStyle As String
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+			Select Case ctrl(i).Model.Name
+				Case &quot;tfLevel1&quot;
+					sStyle = LevelStyleToHeading( 1, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel2&quot;
+					sStyle = LevelStyleToHeading( 2, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel3&quot;
+					sStyle = LevelStyleToHeading( 3, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel4&quot;
+					sStyle = LevelStyleToHeading( 4, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel5&quot;
+					sStyle = LevelStyleToHeading( 5, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel6&quot;
+					sStyle = LevelStyleToHeading( 6, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel7&quot;
+					sStyle = LevelStyleToHeading( 7, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel8&quot;
+					sStyle = LevelStyleToHeading( 8, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel9&quot;
+					sStyle = LevelStyleToHeading( 9, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case &quot;tfLevel10&quot;
+					sStyle = LevelStyleToHeading( 10, Trim( ctrl(i).Model.Text ) )
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
+				Case Else
+					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+			End Select
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
 		End If
-		
-		SaveSettings( sFile, oStylesDlg ) &apos; сохраняем стили в файл
-	End If
-	oFileDlg.Dispose()	
+	Next i
+	oTOS.writeString(&quot;X=&quot; &amp; oStylesDlg.PosSize.X &amp; chr(10))
+	oTOS.writeString(&quot;Y=&quot; &amp; oStylesDlg.PosSize.Y &amp; chr(10))
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+	oTOS.closeOutput()
 End Sub
+
+Sub SetStylesInControlls( sCurrentLine As String )
+	On Error Resume Next &apos;Goto ErrorHandler
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+	Dim sSetting() As String : sSetting = Split(sCurrentLine, &quot;=&quot;)
+	Dim sStyle As String
+	
+	If oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
+		Select Case sSetting(0)
+			Case &quot;tfLevel1&quot;
+				sStyle = HeadingToLevelStyle( 1, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel2&quot;
+				sStyle = HeadingToLevelStyle( 2, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel3&quot;
+				sStyle = HeadingToLevelStyle( 3, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel4&quot;
+				sStyle = HeadingToLevelStyle( 4, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel5&quot;
+				sStyle = HeadingToLevelStyle( 5, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel6&quot;
+				sStyle = HeadingToLevelStyle( 6, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel7&quot;
+				sStyle = HeadingToLevelStyle( 7, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel8&quot;
+				sStyle = HeadingToLevelStyle( 8, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel9&quot;
+				sStyle = HeadingToLevelStyle( 9, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case &quot;tfLevel10&quot;
+				sStyle = HeadingToLevelStyle( 10, Trim( sSetting(1) ) )
+				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
+			Case Else
+				oStylesDlg.GetControl(sSetting(0)).Text = sSetting(1)
+		End Select
+	ElseIf oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+		oStylesDlg.GetControl(sSetting(0)).State = sSetting(1)
+	ElseIf oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
+		oStylesDlg.GetControl(sSetting(0)).Text = sSetting(1)
+	ElseIf oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+		oStylesDlg.GetControl(sSetting(0)).State = sSetting(1)
+	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+		oLB = oStylesDlg.getControl(sSetting(0))
+		oLB.SelectItemPos(sSetting(1), True)
+	End If
+	&apos;Exit Sub
+	&apos;ErrorHandler: &apos; идем дальше
+End Sub
+
+&apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
+Function LevelStyleToHeading( nLevel As Integer, sStyleFromProfile As String )
+	Dim sLevel As String : sLevel = &quot;Заголовок&quot;
+	If Instr( sStyleFromProfile, sLevel &amp; &quot; &quot; ) &gt; 0 Then
+		LevelStyleToHeading = &quot;Heading &quot; &amp; nLevel
+	Else
+		LevelStyleToHeading = sStyleFromProfile
+	End If
+End Function
+
+&apos; переименование &quot;стандартный&quot; для OOo Heading стилей в Заголовки в зависимости от локали
+Function HeadingToLevelStyle( nLevel As Integer, sStyleFromProfile As String )
+	Dim sLevel As String : sLevel = &quot;Заголовок&quot;
+	If Instr( sStyleFromProfile, &quot;Heading &quot; ) &gt; 0 Then
+		HeadingToLevelStyle = sLevel &amp; &quot; &quot; &amp; nLevel
+	Else
+		HeadingToLevelStyle = sStyleFromProfile
+	End If
+End Function
 
 </script:module>
