@@ -9,6 +9,8 @@ Option Explicit
 
 &apos; для хранения сообщений для диалога Пользовательских Стилей
 Type tStylesDlgData
+	sCreateDialog	As String &apos; Создание диалога ...
+	sStylesLoad		As String &apos; Загрузка стилей ...
 	sOpenProfile 	As String &apos; Открыть профиль стилей ...
 	sSaveProfile 	As String &apos; Сохранить профиль стилей ...
 	sFillAllFields	As String &apos; Заполните, пожалуйста, все поля!
@@ -19,9 +21,6 @@ Public sSD As tStylesDlgData
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация диалога Пользовательских Стилей в зависимости от локали
 Sub InitStylesDlg()
-	&apos; инициализация сообщений диалога Пользовательских Стилей в зависимости от локали
-	InitStylesDlgMessage()
-	
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With oStylesDlg.getModel
 			.Title	= &quot;Определение пользовательских стилей&quot;
@@ -203,12 +202,16 @@ End Sub
 Sub InitStylesDlgMessage()
 	If getOOoLocal( True ) = &quot;ru&quot; Then
 		With sSD
-			.sOpenProfile		= &quot;Открыть профиль стилей ...&quot;
-			.sSaveProfile		= &quot;Сохранить профиль стилей ...&quot;
-			.sFillAllFields	 	= &quot;Заполните, пожалуйста, все поля!&quot;
+			.sCreateDialog	= &quot;Создание диалога ...&quot;
+			.sStylesLoad	= &quot;Загрузка стилей ...&quot;
+			.sOpenProfile	= &quot;Открыть профиль стилей ...&quot;
+			.sSaveProfile	= &quot;Сохранить профиль стилей ...&quot;
+			.sFillAllFields	= &quot;Заполните, пожалуйста, все поля!&quot;
 		End With
 	Else
 		With sSD
+			.sCreateDialog	= &quot;Creating the Dialog ...&quot;
+			.sStylesLoad	= &quot;Loading the Styles...&quot;
 			.sOpenProfile	= &quot;Open the Styles File ...&quot;
 			.sSaveProfile	= &quot;Save the Styles File ...&quot;
 			.sFillAllFields	= &quot;Please, fill all Fields!&quot;

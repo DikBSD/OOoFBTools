@@ -77,10 +77,18 @@ Public sStyle_LangBook As String
 Public sStyle_LangOriginal As String
 
 Function SetUserStyles() As Boolean
+	&apos; инициализация сообщений диалога Пользовательских Стилей в зависимости от локали
+	InitStylesDlgMessage()
+	
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sSD.sCreateDialog, 1 )
+	oProgressBar.setValue(1)
+	
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oStylesDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.StylesDlg)
 	
 	&apos; инициализация диалога Пользовательских Стилей в зависимости от локали
+	oProgressBar.start( sSD.sStylesLoad, 4 )
 	InitStylesDlg()
 
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
@@ -96,9 +104,12 @@ Function SetUserStyles() As Boolean
 
 	&apos; инициализация Пользовательских Стилей по-умолчанию в зависимости от локали
 	SetDefaultStylesLocalInVars()
+	oProgressBar.setValue(1)
 	&apos; Задаем название стилей в контролы по умолчанию
 	SetGeneralStylesControlsDefault()
+	oProgressBar.setValue(2)
 	SetServiceStylesControlsDefault()
+	oProgressBar.setValue(3)
 	&apos; Только теперь считывание стилей из файла
 	Dim nX As Integer, nY As Integer
 	ReadStyles( getUserPath() &amp; sConstStyles, True, nX, nY )
@@ -115,7 +126,9 @@ Function SetUserStyles() As Boolean
 		oStylesDlg.Model.Step = 2
 	End If
 	
+	oProgressBar.setValue(4)
 	oStylesDlg.execute()
+	oProgressBar.end
 	
 	SetUserStyles = bStyleExecute
 End Function
