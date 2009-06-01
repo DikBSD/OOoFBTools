@@ -88,22 +88,21 @@ Function SetUserStyles() As Boolean
 	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых полей нет,
 	&apos; то при работе конвертора может произойти либо ошибка, либо экспорт выделенных новыми стилями абзацев
 	&apos; будет сделан, как просто абзацы (&lt;p&gt;......&lt;/p&gt;), а при запуске формы Стилей новые поля будут пустыми, что не верно.
-	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetStylesVarsDefault,
+	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetDefaultStylesLocalInVars(),
 	&apos; SetGeneralStylesControlsDefault, SetServiceStylesControlsDefault),
 	&apos; а потом - считываем из файла значения (ReadStyles).
 	&apos; Для тех новых полей, которых еще нет в файле styles.txt значения будут по умолчанию, а для остальных - считаны из файла.
 	&apos; Когда же User запустит форму и пересохранит ВСЕ стили, то вне переменные и контролы будут иметь значения из файла!
-	
-	&apos; Установка стилей по умолчанию
-	SetStylesVarsDefault
+
+	&apos; инициализация Пользовательских Стилей по-умолчанию в зависимости от локали
+	SetDefaultStylesLocalInVars()
 	&apos; Задаем название стилей в контролы по умолчанию
-	SetGeneralStylesControlsDefault
-	SetServiceStylesControlsDefault
+	SetGeneralStylesControlsDefault()
+	SetServiceStylesControlsDefault()
 	&apos; Только теперь считывание стилей из файла
 	Dim nX As Integer, nY As Integer
 	ReadStyles( getUserPath() &amp; sConstStyles, True, nX, nY )
 	oStylesDlg.setPosSize( nX, nY, 260, 425, com.sun.star.awt.PosSize.POS )
-
 	
 	With oStylesDlg.Model
 		.Height	= 260
@@ -121,7 +120,7 @@ Function SetUserStyles() As Boolean
 	SetUserStyles = bStyleExecute
 End Function
 
-Sub StylesDlgOk
+Sub StylesDlgOk()
 	&apos; Принятие стилей
 	If IsFillAllFields = False Then
 		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
@@ -133,7 +132,7 @@ Sub StylesDlgOk
 	oStylesDlg.endExecute()
 End Sub
 
-Sub StylesDlgCanceled
+Sub StylesDlgCanceled()
 	bStyleExecute = False
 	oStylesDlg.endExecute()
 End Sub
@@ -146,8 +145,22 @@ Sub ChangeStyles(o)
 	End If
 End Sub
 
+&apos; // Установка стилей по умолчанию в контролы //
+Sub SetStylesControlsDefault()
+	&apos; инициализация Пользовательских Стилей по-умолчанию в зависимости от локали
+	SetDefaultStylesLocalInVars()
+	
+	If oStylesDlg.Model.Step = 1 Then
+		&apos; Установка Основных стилей по умолчанию в контролы
+		SetGeneralStylesControlsDefault()
+	Else	
+		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
+		SetServiceStylesControlsDefault()
+	End If
+End Sub
+
+&apos; Читаем стили и задаем значения контролам формы стилей
 Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integer, Optional nY As Integer ) As Boolean
-	&apos; Читаем стили и задаем значения контролам формы стилей
 	If FileExists(sFile) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
@@ -182,23 +195,8 @@ Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integ
 	End If
 End Function
 
-Sub SetStylesControlsDefault()
-	&apos; // Установка стилей по умолчанию в контролы //
-	
-	&apos; Установка стилей по умолчанию в переменные
-	SetStylesVarsDefault
-	
-	If oStylesDlg.Model.Step = 1 Then
-		&apos; Установка Основных стилей по умолчанию в контролы
-		SetGeneralStylesControlsDefault
-	Else	
-		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-		SetServiceStylesControlsDefault
-	End If
-End Sub
-
+&apos; // Установка Основных стилей по умолчанию в контролы //
 Sub SetGeneralStylesControlsDefault()
-	&apos; // Установка Основных стилей по умолчанию в контролы //
 	&apos; Данные книги
 	oStylesDlg.GetControl(&quot;tfBookTitle&quot;).Text = sStyleBookTitle
 	&apos; Анотация
@@ -232,8 +230,8 @@ Sub SetGeneralStylesControlsDefault()
 	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text	= HeadingToLevelStyle( 10, sStyleLevel10 )
 End Sub
 
+&apos; // Установка &quot;Служебных&quot; стилей по-умолчанию в контролы //
 Sub SetServiceStylesControlsDefault()
-	&apos; // Установка &quot;Служебных&quot; стилей по-умолчанию в контролы //
 	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 	&apos; Анотация Книги
 	oStylesDlg.GetControl(&quot;tf_BookAnnotation&quot;).Text	= sStyle_BookAnnotation
@@ -277,8 +275,8 @@ Sub SetServiceStylesControlsDefault()
 	oStylesDlg.GetControl(&quot;tf_LangOriginal&quot;).Text		= sStyle_LangOriginal
 End Sub
 
+&apos; Загрузка названий стилей из файла профиля стилей
 Sub LoadCustomStylesProfile()
-	&apos; Загрузка названий стилей из файла профиля стилей
 	Dim oFileDlg As Object
 	Dim sArg() As String
 	
@@ -303,8 +301,8 @@ Sub LoadCustomStylesProfile()
 
 End Sub
 
+&apos; Сохранение названий стилей в файл профиля
 Sub SaveCustomStylesProfile()
-	&apos; Сохранение названий стилей в файл профиля
 	If IsFillAllFields = False Then
 		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
 		Exit Sub
@@ -339,84 +337,6 @@ Sub SaveCustomStylesProfile()
 End Sub
 
 &apos;///////////////////////////////////////////////////////////////////////
-&apos; загрузка стилей по-умолчанию в переменные
-Sub SetStylesVarsDefault()
-	&apos; Установка стилей по умолчанию в переменные
-	&apos; Данные книги
-	sStyleBookTitle	 			= &quot;Book Title&quot;
-	&apos; Анотация
-	sStyleAnnotation	 		= &quot;Annotation&quot;
-	sStyleAnnotationSubTitle	= &quot;Annotation SubTitle&quot;
-	&apos; Эпиграф
-	sStyleEpigraph				= &quot;Epigraph&quot;
-	sStyleEpigraphAuthor		= &quot;Epigraph Author&quot;
-	&apos; Поэма
-	sStylePoemTitle	 			= &quot;Poem Title&quot;
-	sStylePoemSubTitle			= &quot;Poem SubTitle&quot;
-	sStylePoem		 			= &quot;Poem&quot;
-	sStylePoemAuthor 			= &quot;Poem Author&quot;
-	sStylePoemDate	 			= &quot;Poem Date&quot;
-	&apos; Цитата
-	sStyleCite		  	= &quot;Cite&quot;
-	sStyleCiteSubTitle	= &quot;Cite SubTitle&quot;
-	sStyleCiteAuthor  	= &quot;Cite Author&quot;
-	&apos; Подзаголовок
-	sStyleSubTitle	 = &quot;SubTitle&quot;
-	&apos; Заголовки
-	sStyleLevel1	 = &quot;Heading 1&quot;
-	sStyleLevel2 	 = &quot;Heading 2&quot;
-	sStyleLevel3 	 = &quot;Heading 3&quot;
-	sStyleLevel4 	 = &quot;Heading 4&quot;
-	sStyleLevel5 	 = &quot;Heading 5&quot;
-	sStyleLevel6 	 = &quot;Heading 6&quot;
-	sStyleLevel7 	 = &quot;Heading 7&quot;
-	sStyleLevel8 	 = &quot;Heading 8&quot;
-	sStyleLevel9 	 = &quot;Heading 9&quot;
-	sStyleLevel10 	 = &quot;Heading 10&quot;
-	
-	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-	sStyle_BookAnnotation	= &quot;_Book Annotation&quot;
-	sStyle_BookKeywords		= &quot;_Book Keywords&quot;
-		
-	sStyle_BookAuthor	 	= &quot;#Book Author&quot;
-	sStyle_BookTranslator	= &quot;#Book Translator&quot;
-	sStyle_Name			 	= &quot;#Name&quot;
-	sStyle_Patronymic	 	= &quot;#Patronymic&quot;
-	sStyle_Family		 	= &quot;#Family&quot;
-	sStyle_Nick			 	= &quot;#Nick&quot;
-	sStyle_Email		 	= &quot;#Email&quot;
-	sStyle_WebSite		 	= &quot;#WebSite&quot;
-
-	sStyle_BookDate	 		= &quot;#Book Date&quot;
-	sStyle_BookDateText		= &quot;#Book Date Text&quot;
-	sStyle_BookDateValue	= &quot;#Book Date Value&quot;
-	
-	sStyle_BookSeries	 	= &quot;#Book Series&quot;
-	sStyle_PaperBookSeries	= &quot;#PaperBook Series&quot;
-	sStyle_Sequence		 	= &quot;#Sequence&quot;
-	sStyle_SequenceNumber	= &quot;#Sequence Number&quot;
-	
-	sStyle_PaperBook			= &quot;#PaperBook&quot;
-	sStyle_PaperBookName		= &quot;#PaperBook Name&quot;
-	sStyle_PaperBookPublisher	= &quot;#PaperBook Publisher&quot;
-	sStyle_PaperBookCity		= &quot;#PaperBook City&quot;
-	sStyle_PaperBookYear		= &quot;#PaperBook Year&quot;
-	sStyle_PaperBookISBN		= &quot;#PaperBook ISBN&quot;
-	
-	sStyle_CustomInfo			= &quot;#Custom Info&quot;
-	sStyle_CustomInfoType		= &quot;#Custom Info Type&quot;
-	sStyle_CustomInfoValue		= &quot;#Custom Info Value&quot;
-	
-	sStyle_Genre				= &quot;#Genre&quot;
-	sStyle_GenreName			= &quot;#Genre Name&quot;
-	sStyle_GenreMatch			= &quot;#Genre Match&quot;
-	
-	sStyle_Lang					= &quot;#Lang&quot;
-	sStyle_LangBook				= &quot;#Lang Book&quot;
-	sStyle_LangOriginal			= &quot;#Lang Original&quot;
-
-End Sub
-
 &apos; загрузка стилей в переменные
 Sub SetStylesInVars( sCurrentLine As String )
 	Dim aStyles() As String : aStyles = Split( sCurrentLine, &quot;=&quot; )
@@ -674,8 +594,7 @@ End Sub
 
 &apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
 Function LevelStyleToHeading( nLevel As Integer, sStyleFromProfile As String )
-	Dim sLevel As String : sLevel = &quot;Заголовок&quot;
-	If Instr( sStyleFromProfile, sLevel &amp; &quot; &quot; ) &gt; 0 Then
+	If Instr( sStyleFromProfile, GetLocalHeadingStyleName() &amp; &quot; &quot; ) &gt; 0 Then
 		LevelStyleToHeading = &quot;Heading &quot; &amp; nLevel
 	Else
 		LevelStyleToHeading = sStyleFromProfile
@@ -684,9 +603,8 @@ End Function
 
 &apos; переименование &quot;стандартный&quot; для OOo Heading стилей в Заголовки в зависимости от локали
 Function HeadingToLevelStyle( nLevel As Integer, sStyleFromProfile As String )
-	Dim sLevel As String : sLevel = &quot;Заголовок&quot;
 	If Instr( sStyleFromProfile, &quot;Heading &quot; ) &gt; 0 Then
-		HeadingToLevelStyle = sLevel &amp; &quot; &quot; &amp; nLevel
+		HeadingToLevelStyle = GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; nLevel
 	Else
 		HeadingToLevelStyle = sStyleFromProfile
 	End If

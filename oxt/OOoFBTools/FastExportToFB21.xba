@@ -17,8 +17,10 @@ Private sPaperBookISBN		As String
 Sub FastExportToFB21()
 	&apos; Быстрый экспорт
 	sConvertorName = &quot;ExportToFB2.1&quot;
-	&apos; Установка стилей по умолчанию - В Быстроя экспорте НЕЛЬЗЯ перенызнычать стили (для простоты пользователей)
-	SetStylesVarsDefault()
+	&apos; Установка стилей по умолчанию в зависимости от локали - В Быстроя экспорте НЕЛЬЗЯ переназнычать стили (для простоты пользователей)
+	SetDefaultStylesLocalInVars()
+	&apos; преобразуем названия стилей Заголовков из локализованных в Heading, который OOo &quot;понимает&quot;
+	RenameLocalHeadingsToHeadings()
 	
 	Dim oFileAccess As Object
 	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
@@ -550,6 +552,20 @@ Sub	SaveCoverToFile( sFilePath As String, sExt As String)
 	
 	&apos; кодирование картинки
 	CodeToBase64( sFileNameURL, sExt )
+End Sub
+
+&apos; преобразуем названия стилей Заголовков из локализованных в Heading, который OOo &quot;понимает&quot;
+Sub RenameLocalHeadingsToHeadings()
+	sStyleLevel1	= LevelStyleToHeading( 1, sStyleLevel1 )
+	sStyleLevel2	= LevelStyleToHeading( 2, sStyleLevel2 )
+	sStyleLevel3	= LevelStyleToHeading( 3, sStyleLevel3 )
+	sStyleLevel4	= LevelStyleToHeading( 4, sStyleLevel4 )
+	sStyleLevel5	= LevelStyleToHeading( 5, sStyleLevel5 )
+	sStyleLevel6	= LevelStyleToHeading( 6, sStyleLevel6 )
+	sStyleLevel7	= LevelStyleToHeading( 7, sStyleLevel7 )
+	sStyleLevel8	= LevelStyleToHeading( 8, sStyleLevel8 )
+	sStyleLevel9	= LevelStyleToHeading( 9, sStyleLevel9 )
+	sStyleLevel10	= LevelStyleToHeading( 10, sStyleLevel10 )
 End Sub
 
 </script:module>
