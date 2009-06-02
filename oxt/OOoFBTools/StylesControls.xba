@@ -96,14 +96,14 @@ Function SetUserStyles() As Boolean
 	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых полей нет,
 	&apos; то при работе конвертора может произойти либо ошибка, либо экспорт выделенных новыми стилями абзацев
 	&apos; будет сделан, как просто абзацы (&lt;p&gt;......&lt;/p&gt;), а при запуске формы Стилей новые поля будут пустыми, что не верно.
-	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetDefaultStylesLocalInVars(),
+	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetDefaultStylesInVars(),
 	&apos; SetGeneralStylesControlsDefault, SetServiceStylesControlsDefault),
 	&apos; а потом - считываем из файла значения (ReadStyles).
 	&apos; Для тех новых полей, которых еще нет в файле styles.txt значения будут по умолчанию, а для остальных - считаны из файла.
 	&apos; Когда же User запустит форму и пересохранит ВСЕ стили, то вне переменные и контролы будут иметь значения из файла!
 
-	&apos; инициализация Пользовательских Стилей по-умолчанию в зависимости от локали
-	SetDefaultStylesLocalInVars()
+	&apos; загрузка стилей по-умолчанию в переменные
+	SetDefaultStylesInVars()
 	oProgressBar.setValue(1)
 	&apos; Задаем название стилей в контролы по умолчанию
 	SetGeneralStylesControlsDefault()
@@ -139,7 +139,7 @@ Sub StylesDlgOk()
 		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
 		Exit Sub
 	End If
-	SaveCustomStyles( getUserPath() &amp; sConstStyles ) &apos; сохраняем стили в файл
+	SaveSettings( getUserPath() &amp; sConstStyles, oStylesDlg ) &apos; сохраняем стили в файл
 	
 	bStyleExecute = True
 	oStylesDlg.endExecute()
@@ -160,8 +160,8 @@ End Sub
 
 &apos; // Установка стилей по умолчанию в контролы //
 Sub SetStylesControlsDefault()
-	&apos; инициализация Пользовательских Стилей по-умолчанию в зависимости от локали
-	SetDefaultStylesLocalInVars()
+	&apos; загрузка стилей по-умолчанию в переменные
+	SetDefaultStylesInVars()
 	
 	If oStylesDlg.Model.Step = 1 Then
 		&apos; Установка Основных стилей по умолчанию в контролы
@@ -193,7 +193,7 @@ Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integ
 						nY = sSetting(1)
 					Else
 						&apos; Устанавливаем данные стилей в контроды
-						SetStylesInControlls( sLine )
+						SetSettingsInControlls( sLine, oStylesDlg )
 					End If
 				Else
 					&apos; Устанавливаем данные стилей в переменные
@@ -231,16 +231,16 @@ Sub SetGeneralStylesControlsDefault()
 	&apos; Подзаголовок
 	oStylesDlg.GetControl(&quot;tfSubTitle&quot;).Text = sStyleSubTitle
 	&apos; Установка в поля стилей Заголовков стилей по-умолчанию, в зависимости от локали
-	oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text	= HeadingToLevelStyle( 1, sStyleLevel1 )
-	oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text	= HeadingToLevelStyle( 2, sStyleLevel2 )
-	oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text	= HeadingToLevelStyle( 3, sStyleLevel3 )
-	oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text	= HeadingToLevelStyle( 4, sStyleLevel4 )
-	oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text	= HeadingToLevelStyle( 5, sStyleLevel5 )
-	oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text	= HeadingToLevelStyle( 6, sStyleLevel6 )
-	oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text	= HeadingToLevelStyle( 7, sStyleLevel7 )
-	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text	= HeadingToLevelStyle( 8, sStyleLevel8 )
-	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text	= HeadingToLevelStyle( 9, sStyleLevel9 )
-	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text	= HeadingToLevelStyle( 10, sStyleLevel10 )
+	oStylesDlg.GetControl(&quot;tfLevel1&quot;).Text	= sStyleLevel1
+	oStylesDlg.GetControl(&quot;tfLevel2&quot;).Text	= sStyleLevel2
+	oStylesDlg.GetControl(&quot;tfLevel3&quot;).Text	= sStyleLevel3
+	oStylesDlg.GetControl(&quot;tfLevel4&quot;).Text	= sStyleLevel4
+	oStylesDlg.GetControl(&quot;tfLevel5&quot;).Text	= sStyleLevel5
+	oStylesDlg.GetControl(&quot;tfLevel6&quot;).Text	= sStyleLevel6
+	oStylesDlg.GetControl(&quot;tfLevel7&quot;).Text	= sStyleLevel7
+	oStylesDlg.GetControl(&quot;tfLevel8&quot;).Text	= sStyleLevel8
+	oStylesDlg.GetControl(&quot;tfLevel9&quot;).Text	= sStyleLevel9
+	oStylesDlg.GetControl(&quot;tfLevel10&quot;).Text	= sStyleLevel10
 End Sub
 
 &apos; // Установка &quot;Служебных&quot; стилей по-умолчанию в контролы //
@@ -387,25 +387,25 @@ Sub SetStylesInVars( sCurrentLine As String )
 			sStyleSubTitle = aStyles(1)
 
 		Case &quot;tfLevel1&quot;
-			sStyleLevel1 = aStyles(1)
+			sStyleLevel1 = LevelStyleToHeading( 1, aStyles(1) )
 		Case &quot;tfLevel2&quot;
-			sStyleLevel2 = aStyles(1)
+			sStyleLevel2 = LevelStyleToHeading( 2, aStyles(1) )
 		Case &quot;tfLevel3&quot;
-			sStyleLevel3 = aStyles(1)
+			sStyleLevel3 = LevelStyleToHeading( 3, aStyles(1) )
 		Case &quot;tfLevel4&quot;
-			sStyleLevel4 = aStyles(1)
+			sStyleLevel4 = LevelStyleToHeading( 4, aStyles(1) )
 		Case &quot;tfLevel5&quot;
-			sStyleLevel5 = aStyles(1)
+			sStyleLevel5 = LevelStyleToHeading( 5, aStyles(1) )
 		Case &quot;tfLevel6&quot;
-			sStyleLevel6 = aStyles(1)
+			sStyleLevel6 = LevelStyleToHeading( 6, aStyles(1) )
 		Case &quot;tfLevel7&quot;
-			sStyleLevel7 = aStyles(1)
+			sStyleLevel7 = LevelStyleToHeading( 7, aStyles(1) )
 		Case &quot;tfLevel8&quot;
-			sStyleLevel8 = aStyles(1)
+			sStyleLevel8 = LevelStyleToHeading( 8, aStyles(1) )
 		Case &quot;tfLevel9&quot;
-			sStyleLevel9 = aStyles(1)
+			sStyleLevel9 = LevelStyleToHeading( 9, aStyles(1) )
 		Case &quot;tfLevel10&quot;
-			sStyleLevel10 = aStyles(1)
+			sStyleLevel10 = LevelStyleToHeading( 10, aStyles(1) )
 	
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 		Case &quot;tf_BookAnnotation&quot;
@@ -482,129 +482,6 @@ Sub SetStylesInVars( sCurrentLine As String )
 	End Select
 End Sub
 
-&apos; сохранение новых названий стилей в файл стилей
-Sub SaveCustomStyles( sCustomStylesFileName As String )
-	Dim oOS As Object, oFA As Object, oTOS As Object
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-
-	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	
-	oOS = oFA.openFileWrite( sCustomStylesFileName )
-	oOS.truncate()
-	oTOS.setOutputStream( oOS )
-	oTOS.setEncoding( &quot;utf-8&quot; )
-	
-	Dim ctrl As Object, i As Integer
-	ctrl = oStylesDlg.getControls()
-	Dim sStyle As String
-	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			Select Case ctrl(i).Model.Name
-				Case &quot;tfLevel1&quot;
-					sStyle = LevelStyleToHeading( 1, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel2&quot;
-					sStyle = LevelStyleToHeading( 2, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel3&quot;
-					sStyle = LevelStyleToHeading( 3, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel4&quot;
-					sStyle = LevelStyleToHeading( 4, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel5&quot;
-					sStyle = LevelStyleToHeading( 5, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel6&quot;
-					sStyle = LevelStyleToHeading( 6, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel7&quot;
-					sStyle = LevelStyleToHeading( 7, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel8&quot;
-					sStyle = LevelStyleToHeading( 8, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel9&quot;
-					sStyle = LevelStyleToHeading( 9, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case &quot;tfLevel10&quot;
-					sStyle = LevelStyleToHeading( 10, Trim( ctrl(i).Model.Text ) )
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; sStyle &amp; chr(10))
-				Case Else
-					oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-			End Select
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
-		End If
-	Next i
-	oTOS.writeString(&quot;X=&quot; &amp; oStylesDlg.PosSize.X &amp; chr(10))
-	oTOS.writeString(&quot;Y=&quot; &amp; oStylesDlg.PosSize.Y &amp; chr(10))
-	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
-	oTOS.closeOutput()
-End Sub
-
-Sub SetStylesInControlls( sCurrentLine As String )
-	On Error Resume Next &apos;Goto ErrorHandler
-	Dim oLB As Object &apos; Для работы с ListBox`ами
-	Dim sSetting() As String : sSetting = Split(sCurrentLine, &quot;=&quot;)
-	Dim sStyle As String
-	
-	If oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-		Select Case sSetting(0)
-			Case &quot;tfLevel1&quot;
-				sStyle = HeadingToLevelStyle( 1, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel2&quot;
-				sStyle = HeadingToLevelStyle( 2, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel3&quot;
-				sStyle = HeadingToLevelStyle( 3, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel4&quot;
-				sStyle = HeadingToLevelStyle( 4, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel5&quot;
-				sStyle = HeadingToLevelStyle( 5, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel6&quot;
-				sStyle = HeadingToLevelStyle( 6, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel7&quot;
-				sStyle = HeadingToLevelStyle( 7, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel8&quot;
-				sStyle = HeadingToLevelStyle( 8, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel9&quot;
-				sStyle = HeadingToLevelStyle( 9, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case &quot;tfLevel10&quot;
-				sStyle = HeadingToLevelStyle( 10, Trim( sSetting(1) ) )
-				oStylesDlg.GetControl(sSetting(0)).Text = sStyle
-			Case Else
-				oStylesDlg.GetControl(sSetting(0)).Text = sSetting(1)
-		End Select
-	ElseIf oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
-		oStylesDlg.GetControl(sSetting(0)).State = sSetting(1)
-	ElseIf oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoComboBoxControl&quot; Then
-		oStylesDlg.GetControl(sSetting(0)).Text = sSetting(1)
-	ElseIf oStylesDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-		oStylesDlg.GetControl(sSetting(0)).State = sSetting(1)
-	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-		oLB = oStylesDlg.getControl(sSetting(0))
-		oLB.SelectItemPos(sSetting(1), True)
-	End If
-	&apos;Exit Sub
-	&apos;ErrorHandler: &apos; идем дальше
-End Sub
-
 &apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
 Function LevelStyleToHeading( nLevel As Integer, sStyleFromProfile As String )
 	If Instr( sStyleFromProfile, GetLocalHeadingStyleName() &amp; &quot; &quot; ) &gt; 0 Then
@@ -614,7 +491,7 @@ Function LevelStyleToHeading( nLevel As Integer, sStyleFromProfile As String )
 	End If
 End Function
 
-&apos; переименование &quot;стандартный&quot; для OOo Heading стилей в Заголовки в зависимости от локали
+&apos; переименование &quot;стандартных&quot; для OOo Heading стилей в Заголовки в зависимости от локали
 Function HeadingToLevelStyle( nLevel As Integer, sStyleFromProfile As String )
 	If Instr( sStyleFromProfile, &quot;Heading &quot; ) &gt; 0 Then
 		HeadingToLevelStyle = GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; nLevel
