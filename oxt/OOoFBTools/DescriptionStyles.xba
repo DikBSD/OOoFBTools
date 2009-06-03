@@ -53,7 +53,8 @@ On Error GoTo Errorhandler
 	SetParagraphStyle = True
 	Exit Function
 Errorhandler:
-	MsgBox sDSD.sGenreParaStyle &amp; &quot;: &quot; &amp; sParaStyle &amp; chr(10) &amp; sDSD.sNotExistsUserParaStyleList, 64, sDSD.sDescriptionStyle
+	MsgBox sDSD.sGenreParaStyle &amp; &quot;: &quot; &amp; sParaStyle &amp; chr(10) &amp; sDSD.sNotExistsUserParaStyleList &amp; chr(10) &amp; _
+			sDSD.sLoadStylesInDoc, 64, sDSD.sDescriptionStyle
 	SetParagraphStyle = False
 End Function
 
@@ -82,7 +83,8 @@ On Error GoTo Errorhandler
 		Exit Function
 	End If
 Errorhandler:
-	MsgBox sDSD.sGenreSymbolStyle &amp; &quot;: &quot; &amp; sStyle &amp; chr(10) &amp; sDSD.sNotExistsUserSymbolStyleList, 64, sDSD.sDescriptionStyle
+	MsgBox sDSD.sGenreSymbolStyle &amp; &quot;: &quot; &amp; sStyle &amp; chr(10) &amp; sDSD.sNotExistsUserSymbolStyleList &amp; chr(10) &amp; _
+			sDSD.sLoadStylesInDoc, 64, sDSD.sDescriptionStyle
 	SetSymbolStyle = False
 End Function
 
@@ -295,7 +297,7 @@ Sub ViewDescLangDlg()
 		.lbLangBook.StringItemList		= sLangList()
 		.lbLangOriginal.StringItemList	= sLangList()
 	End With
-	oDLDlg.getControl( &quot;lbLangBook&quot;).selectItem(&quot;ru&quot;, True )
+	SetBookLangOOoDefaultLocal( oDLDlg, &quot;lbLangBook&quot; )
 	oDLDlg.getControl( &quot;lbLangOriginal&quot; ).AddItem( &quot; &quot;, 0 )
 	
 	&apos; считаем положение диалога из файла настроек
@@ -312,7 +314,7 @@ Sub InsertDescLang()
 	SaveSettings( getUserPath() &amp; sConstDescLang, oDLDlg )
 	&apos; загрузка стилей по-умолчанию в переменные
 	SetDefaultStylesInVars()&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesInVars()
+	&apos; читаем стили из файла и заносим их в переменные
 	ReadStyles( getUserPath() &amp; sConstStyles, False )
 
 	Dim sLangBook As String, sLangOriginal As String, sLangPara As String

@@ -5,6 +5,8 @@
 Private sPStyle As String
 Private bExsistLevelPara As Boolean
 
+Private sStyle_Level(10) As String
+
 Sub LevelAnalyzer()
 	&apos; Анализатор корректности фарматирования Уровней
 	&apos; инициализация Анализатора Структуры
@@ -14,14 +16,29 @@ Sub LevelAnalyzer()
 	oProgressBar = oDoc.CurrentController.StatusIndicator
 	oProgressBar.start( sSAD.sProgressDataAcceptance, oDoc.ParagraphCount + 50 )
 	oProgressBar.setValue( 0 )
+	
+	&apos; загрузка стилей по-умолчанию в переменные
+	SetDefaultStylesInVars()
+	&apos; Только теперь загружаем стили из файла в переменные
+	ReadStyles( getUserPath() &amp; sConstStyles, False )
+	
+	ReadOnlyHeadersStyles( getUserPath() &amp; sConstStyles, sStyle_Level() )
+	
+	Dim i As Integer
+	Dim sLevelsList As String
+	For i=1 To 10
+		sLevelsList = sLevelsList &amp; sStyle_Level(i) &amp; &quot;; &quot;
+	Next i
+	Dim sList As String : sList = sSAD.sLevelsList &amp; chr(10) &amp; sLevelsList &amp; chr(10) &amp; chr(10)
+	
 	Dim sResult As String : sResult = LevelParser()
 	If sResult &lt;&gt; &quot;&quot; Then
-		MsgBox sResult &amp; sSAD.sCorrectError, 64, sSAD.sStructureAnalyzer
+		MsgBox sList &amp; sResult &amp; sSAD.sCorrectError, 64, sSAD.sStructureAnalyzer
 	Else
 		If Not bExsistLevelPara Then
-			MsgBox sSAD.sNotOneParaWithLevelSlyle, 64, sSAD.sStructureAnalyzer
+			MsgBox sList &amp; sSAD.sNotOneParaWithLevelSlyle, 64, sSAD.sStructureAnalyzer
 		Else
-			MsgBox sSAD.sOK, 64, sSAD.sStructureAnalyzer
+			MsgBox sList &amp; sSAD.sOK, 64, sSAD.sStructureAnalyzer
 		End If
 	End If
 	oProgressBar.End
@@ -31,12 +48,7 @@ Function LevelParser() As String
 	&apos; Анализатор корректности фарматирования Уровней
 	Dim lCounter		As Long : lCounter = 0
 	Dim asParagraphs()	As String &apos; массив абзацев-Уровней
-		
 	LevelParser = &quot;&quot;
-	&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesInVars()
-	&apos; Только теперь загружаем стили из файла в переменные
-	ReadStyles( getUserPath() &amp; sConstStyles, False )
 	
 	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar		As Object &apos;Перебираемый параграф
@@ -103,10 +115,11 @@ Function LevelParser() As String
 			If ( Len( s ) ) &gt; 512 Then
 				s = Mid( asParagraphs(l+1,0), 1, 512 ) &amp; &quot; ...&quot;
 			End If
+			nL = GetLevelNumber( asParagraphs(l,1) )
 			LevelParser = sSAD.s1BookHeader &amp; chr(10) &amp; _
 					&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-					sSAD.sNotCorrectStyleFormat &amp; asParagraphs(l,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
-					sSAD.sOneStyleWasExpectedOnly &amp; GetLevel( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					sSAD.sNotCorrectStyleFormat &amp; sStyle_Level( nL ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+					sSAD.sOneStyleWasExpectedOnly &amp; sStyle_Level( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					sSAD.sFB2NotValid &amp; chr(10) &amp; chr(10) &amp; _
 					sSAD.sCheckDiscontinued &amp; chr(10)
 		Exit Function
@@ -124,9 +137,9 @@ Function LevelParser() As String
 				End If
 				LevelParser = sSAD.sHeader &amp; chr(10) &amp; _
 				&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-				sSAD.sNotCorrectStyleFormat &amp; asParagraphs(l+1,1) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+				sSAD.sNotCorrectStyleFormat &amp; sStyle_Level( nR ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
 				sSAD.sItWasExpectedOneOfRangeStyles &amp; chr(10) &amp; _
-				&quot;&apos;&quot; &amp; GetLevel( 1 ) &amp; &quot;&apos; ... &apos;&quot; &amp; GetLevel( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+				&quot;&apos;&quot; &amp; sStyle_Level( 1 ) &amp; &quot;&apos; ... &apos;&quot; &amp; sStyle_Level( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 				sSAD.sFB2NotValid &amp; chr(10) &amp; chr(10) &amp; _
 				sSAD.sCheckDiscontinued &amp; chr(10)
 				Exit Function
@@ -134,32 +147,6 @@ Function LevelParser() As String
 		End If
 		oProgressBar.setValue( l )
 	Next l
-End Function
-
-Function GetLevel( nRang As Integer ) As String
-	&apos; Возвращает Уровень, соответствующий его номеру
-	Select Case nRang
-		Case 1
-			GetLevel = sStyleLevel1
-		Case 2
-			GetLevel = sStyleLevel2
-		Case 3
-			GetLevel = sStyleLevel3
-		Case 4
-			GetLevel = sStyleLevel4
-		Case 5
-			GetLevel = sStyleLevel5
-		Case 6
-			GetLevel = sStyleLevel6
-		Case 7
-			GetLevel = sStyleLevel7
-		Case 8
-			GetLevel = sStyleLevel8
-		Case 9
-			GetLevel = sStyleLevel9
-		Case 10
-			GetLevel = sStyleLevel10
-	End Select
 End Function
 
 &apos; парсер текстовой врезки
@@ -178,53 +165,24 @@ End Sub
 
 Sub AnalyzerStyleParser( sParaStyleName As String, sPara As String, asParagraphs() As String )
 	&apos; перебор по стилям
-	Select Case sParaStyleName
-		Case sStyleLevel1
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel2
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel3
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel4
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel5
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel6
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel7
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel8
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel9
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case sStyleLevel10
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-			
-		Case &quot;Heading 1 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 2 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 3 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 4 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 5 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 6 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 7 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 8 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 9 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-		Case &quot;Heading 10 (user)&quot;
-			AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-	End Select
+	If sParaStyleName=sStyleLevel1 Or sParaStyleName=sStyleLevel2 Or sParaStyleName=sStyleLevel3 Or sParaStyleName=sStyleLevel4 Or _
+		 sParaStyleName=sStyleLevel5 Or sParaStyleName=sStyleLevel6 Or sParaStyleName=sStyleLevel7 Or sParaStyleName=sStyleLevel8 Or _
+		  sParaStyleName=sStyleLevel9 Or sParaStyleName=sStyleLevel10 Then
+		  AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
+	Else
+		&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях ?
+		If IsHeadingUserStyle( sParaStyleName ) Then
+			&apos; это - стиль Заголовка Heading X (user)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, sStyle_Level() ) Then
+				AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
+			End If
+		End If
+	End If
 	sPStyle = sParaStyleName
 End Sub
 
-Function AddParasArray( sPara As String, TextType As String, bLevel As Boolean, asParagraphs() As String )
+Sub AddParasArray( sPara As String, TextType As String, bLevel As Boolean, asParagraphs() As String )
 	Dim l As Long : l = Ubound( asParagraphs(), 1 ) + 1
 	&apos; для уровней - проверка на несколько строк
 	If bLevel = False Then 
@@ -249,6 +207,96 @@ Function AddParasArray( sPara As String, TextType As String, bLevel As Boolean, 
 			asParagraphs( UBound( asParagraphs ),0 ) = sText &amp; chr(10) &amp; sPara
 		End If
 	End If
+End Sub
+
+
+&apos;///////////////////////////////////////////////////////////
+&apos; Читаем только стили Заголовоков 
+Function ReadOnlyHeadersStyles( sFile As String, sSL() ) As Boolean
+	If FileExists(sFile) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFile) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные стилей в переменные
+				Dim aStyles() As String : aStyles = Split( sLine, &quot;=&quot; )
+				Select Case aStyles(0)
+					Case &quot;tfLevel1&quot;
+						sSL(1) = aStyles(1)
+					Case &quot;tfLevel2&quot;
+						sSL(2) = aStyles(1)
+					Case &quot;tfLevel3&quot;
+						sSL(3) = aStyles(1)
+					Case &quot;tfLevel4&quot;
+						sSL(4) = aStyles(1)
+					Case &quot;tfLevel5&quot;
+						sSL(5) = aStyles(1)
+					Case &quot;tfLevel6&quot;
+						sSL(6) = aStyles(1)
+					Case &quot;tfLevel7&quot;
+						sSL(7) = aStyles(1)
+					Case &quot;tfLevel8&quot;
+						sSL(8) = aStyles(1)
+					Case &quot;tfLevel9&quot;
+						sSL(9) = aStyles(1)
+					Case &quot;tfLevel10&quot;
+						sSL(10) = aStyles(1)
+				End Select
+			End If
+		Loop
+		oTIS.closeInput()
+		ReadOnlyHeadersStyles = True
+	Else
+		&apos; стили еще не переопределялись - файла нет - ставим по-умолчанию
+		sSL(1) = sStyleLevel1
+		sSL(2) = sStyleLevel2
+		sSL(3) = sStyleLevel3
+		sSL(4) = sStyleLevel4
+		sSL(5) = sStyleLevel5
+		sSL(6) = sStyleLevel6
+		sSL(7) = sStyleLevel7
+		sSL(8) = sStyleLevel8
+		sSL(9) = sStyleLevel8
+		sSL(10) = sStyleLevel10
+		ReadOnlyHeadersStyles = False
+	End If
+End Function
+
+&apos; соответствует ли проверяемый стиль Заголовка стилем Heading X (user)
+Function IsHeadingUserStyle( sStyle As String ) As Boolean
+	Dim i As Integer
+	For i=1 To 10
+		If sStyle = ( &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot; ) Then
+			IsHeadingUserStyle = True
+			Exit Function
+		End If
+	Next i
+	IsHeadingUserStyle = False
+End Function
+
+&apos; переопределял ли User стили Level к Heading ( при парсинге стиль отображается, как Heading X (user) )
+Function IsLevelRedefiedToHeading( sStyle As String, sSL() As String ) As Boolean
+	Dim nPos As Integer : nPos = InStr( sStyle, &quot; (user)&quot; )
+	Dim sH As String : sH = Mid( sStyle, 1, nPos-1 )
+	Dim i As Integer
+	For i=1 To 10
+		If sH = sSL(i) Then
+			IsLevelRedefiedToHeading = True
+			Exit Function
+		End If
+	Next i
+	IsLevelRedefiedToHeading = False
+End Function
+
+&apos; название переопределенного Заголовка по &quot;его&quot; Heading
+Function GetRedefiedLevel( nRang As Integer, sSL() As String ) As String
+	GetRedefiedLevel = sSL( nRang )
 End Function
 
 </script:module>

@@ -344,7 +344,7 @@ Sub SaveCustomStylesProfile()
 			sFile = sFile + &quot;.txt&quot;
 		End If
 		
-		SaveCustomStyles( sFile ) &apos; сохраняем стили в файл
+		SaveSettings( sFile, oStylesDlg ) &apos; сохраняем стили в файл
 	End If
 	oFileDlg.Dispose()	
 End Sub
@@ -484,11 +484,33 @@ End Sub
 
 &apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
 Function LevelStyleToHeading( nLevel As Integer, sStyleFromProfile As String )
-	If Instr( sStyleFromProfile, GetLocalHeadingStyleName() &amp; &quot; &quot; ) &gt; 0 Then
-		LevelStyleToHeading = &quot;Heading &quot; &amp; nLevel
-	Else
-		LevelStyleToHeading = sStyleFromProfile
-	End If
+	Dim sOOoLocalHeadings() As String
+	sOOoLocalHeadings = GetOOoLocalHeadingsArray()
+	Dim i As Integer, j As Integer
+	&apos; перебор всех возможных названий Заголовка для разных языков -
+	&apos; на случай, если на OOo одной локали используются стандартные стили Заголовка другой локали
+	For j=LBound( sOOoLocalHeadings() ) To UBound( sOOoLocalHeadings() )
+		For i=1 To 10
+			If sStyleFromProfile = ( sOOoLocalHeadings(j) &amp; &quot; &quot; &amp; i ) Then
+				LevelStyleToHeading = &quot;Heading &quot; &amp; nLevel
+				Exit Function
+			End If
+		Next i
+	Next j
+	LevelStyleToHeading = sStyleFromProfile
+End Function
+
+&apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
+Function LevelStyleToHeading1( nLevel As Integer, sStyleFromProfile As String )
+	Dim i As Integer
+	Dim s as String : s = GetLocalHeadingStyleName() &amp; &quot; &quot;
+	For i=1 To 10
+		If sStyleFromProfile = ( s &amp; i ) Then
+			LevelStyleToHeading = &quot;Heading &quot; &amp; nLevel
+			Exit Function
+		End If
+	Next i
+	LevelStyleToHeading = sStyleFromProfile
 End Function
 
 &apos; переименование &quot;стандартных&quot; для OOo Heading стилей в Заголовки в зависимости от локали
