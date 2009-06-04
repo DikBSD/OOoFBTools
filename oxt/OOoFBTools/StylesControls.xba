@@ -496,10 +496,15 @@ End Sub
 
 &apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
 Function LocalHeadingStyleToOOoHeading( nLevel As Integer, sStyleFromProfile As String )
-	Dim i As Integer
-	Dim s as String : s = GetLocalHeadingStyleName() &amp; &quot; &quot;
+	LocalHeadingStyleToOOoHeading = sStyleFromProfile
+	&apos; смотрим, переопределял ли User стили Level именно к Heading ( Heading X (user) при парсинге )
+	If Not IsLevelRedefiedToHeading( sStyleFromProfile, asRealStyleLevel() ) Then
+		&apos; не переопределял
+		Exit Function
+	End If
+	Dim i As Integer, s As String : s = GetLocalHeadingStyleName()
 	For i=1 To 10
-		If sStyleFromProfile = ( s &amp; i ) Then
+		If sStyleFromProfile = ( s &amp; &quot; &quot; &amp; i ) Then
 			LocalHeadingStyleToOOoHeading = &quot;Heading &quot; &amp; nLevel
 			Exit Function
 		End If

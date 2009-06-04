@@ -175,99 +175,44 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
 		End If
 	Else
-		Select Case sParaStyleName
-			Case sStyleBookTitle
-				AddBodyArray(sPara, sParaStyleName, False)
-				If lBATIndex = -1 Then
-					lBATIndex = UBound(sBodyParagraphs())
-				End If
-				
-			Case sStylePoemTitle
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStylePoemSubTitle
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStylePoem
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStylePoemAuthor
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStylePoemDate
-				AddBodyArray(sPara, sParaStyleName, False)
-				
-			Case sStyleEpigraph
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStyleEpigraphAuthor
-				AddBodyArray(sPara, sParaStyleName, False)
-				
-			Case sStyleCite
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStyleCiteSubTitle
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStyleCiteAuthor
-				AddBodyArray(sPara, sParaStyleName, False)
-				
-			Case sStyleAnnotation
-				AddBodyArray(sPara, sParaStyleName, False)
-			Case sStyleAnnotationSubTitle
-				AddBodyArray(sPara, sParaStyleName, False)
-					
-			Case sStyleSubTitle
-				AddBodyArray(sPara, sParaStyleName, False)
-				
-			Case sStyleLevel1
+		If sParaStyleName = sStyleBookTitle Then
+			AddBodyArray(sPara, sParaStyleName, False)
+			If lBATIndex = -1 Then
+				lBATIndex = UBound(sBodyParagraphs())
+			End If
+		ElseIf sParaStyleName = sStylePoemTitle Or sParaStyleName = sStylePoemSubTitle Or sParaStyleName = sStylePoem Or _
+				sParaStyleName = sStylePoemAuthor Or sParaStyleName = sStylePoemDate Or _
+				sParaStyleName = sStyleEpigraph Or sParaStyleName = sStyleEpigraphAuthor Or _
+				sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
+				sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
+				sParaStyleName = sStyleSubTitle Then
+					AddBodyArray(sPara, sParaStyleName, False)
+		ElseIf sParaStyleName = sStyleLevel1 Or sParaStyleName = sStyleLevel2 Or sParaStyleName = sStyleLevel3 Or _
+				sParaStyleName = sStyleLevel4 Or sParaStyleName = sStyleLevel5 Or sParaStyleName = sStyleLevel6 Or _
+				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
+				sParaStyleName = sStyleLevel10 Then
 				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel2
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel3
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel4
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel5
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel6
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel7
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel8
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel9
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case sStyleLevel10
-				AddBodyArray(sPara, sParaStyleName, True)
-				
-			Case &quot;Heading 1 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 2 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 3 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 4 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 5 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 6 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 7 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 8 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 9 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			Case &quot;Heading 10 (user)&quot;
-				AddBodyArray(sPara, sParaStyleName, True)
-			
-			Case sStyle_BookAnnotation
-				AddBookAnnotation(sPara)
-			Case Else &apos; что-то другое или просто параграф
-				&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
-				&apos; они не должны быть в основном тексте книги  в fb2 файле.
-				If sParaStyleName &lt;&gt; sStyle_BookAuthor AND sParaStyleName &lt;&gt; sStyle_BookTranslator AND _
-					sParaStyleName &lt;&gt; sStyle_BookSeries AND sParaStyleName &lt;&gt; sStyle_PaperBook AND _
-					sParaStyleName &lt;&gt; sStyle_PaperBookSeries AND sParaStyleName &lt;&gt; sStyle_BookKeywords AND _
-					sParaStyleName &lt;&gt; sStyle_BookDate AND sParaStyleName &lt;&gt; sStyle_CustomInfo AND _
-					sParaStyleName &lt;&gt; sStyle_Genre And sParaStyleName &lt;&gt; sStyle_Lang Then
-					AddBodyArray(sPara, &quot;Para&quot;, False)
-				End If
-		End Select
+		ElseIf IsHeadingUserStyle( sParaStyleName ) Then
+			&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях - стиль Заголовка Heading X (user)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				AddBodyArray(sPara, Mid( sParaStyleName, 1, InStr( sParaStyleName, &quot; (user)&quot; )-1 ), True)
+			Else
+				AddBodyArray(sPara, &quot;Para&quot;, False)
+			End If
+		ElseIf sParaStyleName = sStyle_BookAnnotation Then
+			AddBookAnnotation(sPara)
+		Else &apos; что-то другое или просто параграф
+			&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
+			&apos; они не должны быть в основном тексте книги  в fb2 файле.
+			If sParaStyleName &lt;&gt; sStyle_BookAuthor AND sParaStyleName &lt;&gt; sStyle_BookTranslator AND _
+				sParaStyleName &lt;&gt; sStyle_BookSeries AND sParaStyleName &lt;&gt; sStyle_PaperBook AND _
+				sParaStyleName &lt;&gt; sStyle_PaperBookSeries AND sParaStyleName &lt;&gt; sStyle_BookKeywords AND _
+				sParaStyleName &lt;&gt; sStyle_BookDate AND sParaStyleName &lt;&gt; sStyle_CustomInfo AND _
+				sParaStyleName &lt;&gt; sStyle_Genre And sParaStyleName &lt;&gt; sStyle_Lang Then
+				AddBodyArray(sPara, &quot;Para&quot;, False)
+			End If
+		End If
 	End If
 	sPrevStyle = sParaStyleName
 End Sub
@@ -580,84 +525,31 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 			sParaType = &quot;&quot;
 		End If
 	Else
-		Select Case sParaStyleName
-			Case sStylePoemTitle
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStylePoemSubTitle
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStylePoem
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStylePoemAuthor
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStylePoemDate
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-				
-			Case sStyleEpigraph
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStyleEpigraphAuthor
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-				
-			Case sStyleCite
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStyleCiteSubTitle
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStyleCiteAuthor
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-				
-			Case sStyleAnnotation
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-			Case sStyleAnnotationSubTitle
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-					
-			Case sStyleSubTitle
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-				
-			Case sStyleLevel1
+		If sParaStyleName = sStylePoemTitle Or sParaStyleName = sStylePoemSubTitle Or sParaStyleName = sStylePoem Or _
+			sParaStyleName = sStylePoemAuthor Or sParaStyleName = sStylePoemDate Or _
+			sParaStyleName = sStyleEpigraph Or sParaStyleName = sStyleEpigraphAuthor Or _
+			sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
+			sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
+			sParaStyleName = sStyleSubTitle Then
+			AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+		ElseIf sParaStyleName = sStyleLevel1 Or sParaStyleName = sStyleLevel2 Or sParaStyleName = sStyleLevel3 Or _
+				sParaStyleName = sStyleLevel4 Or sParaStyleName = sStyleLevel5 Or sParaStyleName = sStyleLevel6 Or _
+				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
+				sParaStyleName = sStyleLevel10 Then
+			AddNotesArray(sTextArray, sParaStyleName, sPara, True)
+		ElseIf IsHeadingUserStyle( sParaStyleName ) Then
+			&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях - стиль Заголовка Heading X (user)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
 				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel2
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel3
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel4
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel5
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel6
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel7
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel8
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel9
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case sStyleLevel10
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			
-			Case &quot;Heading 1 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 2 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 3 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 4 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 5 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 6 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 7 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 8 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 9 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Case &quot;Heading 10 (user)&quot;
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-				
-			Case Else &apos; что-то другое или просто параграф
-				AddNotesArray(sTextArray, sParaStyleName, sPara, False)
+			Else
+				AddNotesArray(sTextArray, &quot;Para&quot;, sPara, False)
 				sParaType = &quot;Para&quot;
-		End Select
+			End If
+		Else	&apos; что-то другое или просто параграф
+			AddNotesArray(sTextArray, &quot;Para&quot;, sPara, False)
+			sParaType = &quot;Para&quot;
+		End If
 	End If
 	sNotesPrevStyle = sParaStyleName
 	FootnoteStyleParser = sParaType

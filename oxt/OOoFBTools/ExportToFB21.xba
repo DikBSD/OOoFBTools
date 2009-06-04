@@ -203,52 +203,21 @@ End Function
 
 Function IsLevel(sStyle As String) As Boolean
 	&apos; Если аргумент sStyle - это Уровень, то возвращается True, иначе - False
-	Select Case sStyle
-			Case sStyleLevel1
+	If sStyle = sStyleLevel1 Or sStyle = sStyleLevel2 Or sStyle = sStyleLevel3 Or sStyle = sStyleLevel4 Or sStyle = sStyleLevel5 Or _
+		 sStyle = sStyleLevel6 Or sStyle = sStyleLevel7 Or sStyle = sStyleLevel8 Or sStyle = sStyleLevel9 Or sStyle = sStyleLevel10 Then
+		 IsLevel = True
+	Else
+		&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях ?
+		If IsHeadingUserStyle( sStyle ) Then
+			&apos; это - стиль Заголовка Heading X (user)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sStyle, asRealStyleLevel() ) Then
 				IsLevel = True
-			Case sStyleLevel2
-				IsLevel = True
-			Case sStyleLevel3
-				IsLevel = True
-			Case sStyleLevel4
-				IsLevel = True
-			Case sStyleLevel5
-				IsLevel = True
-			Case sStyleLevel6
-				IsLevel = True
-			Case sStyleLevel7
-				IsLevel = True
-			Case sStyleLevel8
-				IsLevel = True
-			Case sStyleLevel9
-				IsLevel = True
-			Case sStyleLevel10
-				IsLevel = True
-				
-			Case &quot;Heading 1 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 2 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 3 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 4 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 5 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 6 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 7 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 8 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 9 (user)&quot;
-				IsLevel = True
-			Case &quot;Heading 10 (user)&quot;
-				IsLevel = True
-				
-			Case Else &apos; это не Уровень
-				IsLevel = False
-		End Select
+			End If
+		Else &apos; это не Уровень
+			IsLevel = False
+		End If
+	End If
 End Function
 
 Function IndexOf1Section(sArray As String) As Long
@@ -328,25 +297,55 @@ Function GetLevelNumber(Level As String) As Integer
 			GetLevelNumber = 10
 			
 		Case &quot;Heading 1 (user)&quot;
-			GetLevelNumber = 1
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 1
+			End If
 		Case &quot;Heading 2 (user)&quot;
-			GetLevelNumber = 2
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 2
+			End If
 		Case &quot;Heading 3 (user)&quot;
-			GetLevelNumber = 3
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 3
+			End If
 		Case &quot;Heading 4 (user)&quot;
-			GetLevelNumber = 4
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 4
+			End If
 		Case &quot;Heading 5 (user)&quot;
-			GetLevelNumber = 5
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 5
+			End If
 		Case &quot;Heading 6 (user)&quot;
-			GetLevelNumber = 6
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 6
+			End If
 		Case &quot;Heading 7 (user)&quot;
-			GetLevelNumber = 7
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 7
+			End If
 		Case &quot;Heading 8 (user)&quot;
-			GetLevelNumber = 8
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 8
+			End If
 		Case &quot;Heading 9 (user)&quot;
-			GetLevelNumber = 9
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 9
+			End If
 		Case &quot;Heading 10 (user)&quot;
-			GetLevelNumber = 10
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( Level, asRealStyleLevel() ) Then
+				GetLevelNumber = 10
+			End If
 	End Select
 End Function
 
@@ -428,35 +427,65 @@ Function SaveElements(sArray() As String, sParaStyleName As String, sPara As Str
 			SaveFBCorrectText(sStr, True)
 			
 		Case &quot;Heading 1 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 2 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 3 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 4 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 5 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 6 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 7 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 8 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 9 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;Heading 10 (user)&quot;
-			sStr = MakeSection(sArray, sParaStyleName, bBody)
-			SaveFBCorrectText(sStr, True)
+			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
+				sStr = MakeSection(sArray, sParaStyleName, bBody)
+				SaveFBCorrectText(sStr, True)
+			End If
 		Case &quot;&quot; &apos; &lt;empty-line/&gt;
 			If bDelEL = False Then
 				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
