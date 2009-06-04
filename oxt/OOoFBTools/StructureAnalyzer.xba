@@ -5,7 +5,7 @@
 Private sPStyle As String
 Private bExsistLevelPara As Boolean
 
-Private sStyle_Level(10) As String
+Private asRealStyleLevel(10) As String &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 
 Sub LevelAnalyzer()
 	&apos; Анализатор корректности фарматирования Уровней
@@ -22,12 +22,10 @@ Sub LevelAnalyzer()
 	&apos; Только теперь загружаем стили из файла в переменные
 	ReadStyles( getUserPath() &amp; sConstStyles, False )
 	
-	ReadOnlyHeadersStyles( getUserPath() &amp; sConstStyles, sStyle_Level() )
-	
 	Dim i As Integer
 	Dim sLevelsList As String
 	For i=1 To 10
-		sLevelsList = sLevelsList &amp; sStyle_Level(i) &amp; &quot;; &quot;
+		sLevelsList = sLevelsList &amp; asRealStyleLevel(i) &amp; &quot;; &quot;
 	Next i
 	Dim sList As String : sList = sSAD.sLevelsList &amp; chr(10) &amp; sLevelsList &amp; chr(10) &amp; chr(10)
 	
@@ -118,8 +116,8 @@ Function LevelParser() As String
 			nL = GetLevelNumber( asParagraphs(l,1) )
 			LevelParser = sSAD.s1BookHeader &amp; chr(10) &amp; _
 					&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-					sSAD.sNotCorrectStyleFormat &amp; sStyle_Level( nL ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
-					sSAD.sOneStyleWasExpectedOnly &amp; sStyle_Level( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					sSAD.sNotCorrectStyleFormat &amp; asRealStyleLevel( nL ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+					sSAD.sOneStyleWasExpectedOnly &amp; asRealStyleLevel( 1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					sSAD.sFB2NotValid &amp; chr(10) &amp; chr(10) &amp; _
 					sSAD.sCheckDiscontinued &amp; chr(10)
 		Exit Function
@@ -137,9 +135,9 @@ Function LevelParser() As String
 				End If
 				LevelParser = sSAD.sHeader &amp; chr(10) &amp; _
 				&quot;&apos;&quot; &amp; s &amp; &quot;&apos;&quot; &amp; chr(10) &amp; chr(10) &amp;_
-				sSAD.sNotCorrectStyleFormat &amp; sStyle_Level( nR ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
+				sSAD.sNotCorrectStyleFormat &amp; asRealStyleLevel( nR ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; _
 				sSAD.sItWasExpectedOneOfRangeStyles &amp; chr(10) &amp; _
-				&quot;&apos;&quot; &amp; sStyle_Level( 1 ) &amp; &quot;&apos; ... &apos;&quot; &amp; sStyle_Level( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+				&quot;&apos;&quot; &amp; asRealStyleLevel( 1 ) &amp; &quot;&apos; ... &apos;&quot; &amp; asRealStyleLevel( nL+1 ) &amp; &quot;&apos;.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 				sSAD.sFB2NotValid &amp; chr(10) &amp; chr(10) &amp; _
 				sSAD.sCheckDiscontinued &amp; chr(10)
 				Exit Function
@@ -174,7 +172,7 @@ Sub AnalyzerStyleParser( sParaStyleName As String, sPara As String, asParagraphs
 		If IsHeadingUserStyle( sParaStyleName ) Then
 			&apos; это - стиль Заголовка Heading X (user)
 			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
-			If IsLevelRedefiedToHeading( sParaStyleName, sStyle_Level() ) Then
+			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
 				AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
 			End If
 		End If
@@ -211,63 +209,6 @@ End Sub
 
 
 &apos;///////////////////////////////////////////////////////////
-&apos; Читаем только стили Заголовоков 
-Function ReadOnlyHeadersStyles( sFile As String, sSL() ) As Boolean
-	If FileExists(sFile) Then
-		Dim sLine As String
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-
-		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL (sFile) )
-		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
-		oTIS.setInputStream (oFS)
-		Do While ( NOT oTIS.isEOF() )
-			sLine = oTIS.readLine()
-			If sLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные стилей в переменные
-				Dim aStyles() As String : aStyles = Split( sLine, &quot;=&quot; )
-				Select Case aStyles(0)
-					Case &quot;tfLevel1&quot;
-						sSL(1) = aStyles(1)
-					Case &quot;tfLevel2&quot;
-						sSL(2) = aStyles(1)
-					Case &quot;tfLevel3&quot;
-						sSL(3) = aStyles(1)
-					Case &quot;tfLevel4&quot;
-						sSL(4) = aStyles(1)
-					Case &quot;tfLevel5&quot;
-						sSL(5) = aStyles(1)
-					Case &quot;tfLevel6&quot;
-						sSL(6) = aStyles(1)
-					Case &quot;tfLevel7&quot;
-						sSL(7) = aStyles(1)
-					Case &quot;tfLevel8&quot;
-						sSL(8) = aStyles(1)
-					Case &quot;tfLevel9&quot;
-						sSL(9) = aStyles(1)
-					Case &quot;tfLevel10&quot;
-						sSL(10) = aStyles(1)
-				End Select
-			End If
-		Loop
-		oTIS.closeInput()
-		ReadOnlyHeadersStyles = True
-	Else
-		&apos; стили еще не переопределялись - файла нет - ставим по-умолчанию
-		sSL(1) = sStyleLevel1
-		sSL(2) = sStyleLevel2
-		sSL(3) = sStyleLevel3
-		sSL(4) = sStyleLevel4
-		sSL(5) = sStyleLevel5
-		sSL(6) = sStyleLevel6
-		sSL(7) = sStyleLevel7
-		sSL(8) = sStyleLevel8
-		sSL(9) = sStyleLevel8
-		sSL(10) = sStyleLevel10
-		ReadOnlyHeadersStyles = False
-	End If
-End Function
-
 &apos; соответствует ли проверяемый стиль Заголовка стилем Heading X (user)
 Function IsHeadingUserStyle( sStyle As String ) As Boolean
 	Dim i As Integer
