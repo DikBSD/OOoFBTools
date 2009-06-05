@@ -918,7 +918,7 @@ End Function
 Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
 	Dim i as Integer
 	For i=0 To UBound( sLangList() )
-		If InStr( sLangList(i), &quot;(&quot; &amp; getOOoLocal( True ) &amp; &quot;)&quot; ) &gt; 0  Then
+		If InStr( sLangList(i), &quot;(&quot; &amp; getOOoLocal() &amp; &quot;)&quot; ) &gt; 0  Then
 			oDlg.getControl( slbLang ).selectItem( sLangList(i), True )
 			Exit For
 		End If
@@ -1098,19 +1098,15 @@ Function getMyVersion( sOXTName As String ) As String
 End Function
 
 &apos; Возвращает локаль ( например ru-RU, если bShort=False или ru, если bShort=True )
-Function getOOoLocal( bShort As Boolean ) As String
-	Dim nodeArgs(0) As New com.sun.star.beans.PropertyValue
-	nodeArgs(0).Name = &quot;nodepath&quot;
-	nodeArgs(0).Value = &quot;/org.openoffice.Office.Linguistic/General&quot;
-	nodeArgs(0).State = com.sun.star.beans.PropertyState.DEFAULT_VALUE
-	nodeArgs(0).Handle = -1
-	Dim Provider	As Object	: Provider = createUnoService(&quot;com.sun.star.comp.configuration.ConfigurationProvider&quot;)
-	Dim oSet		As Object	: oSet = Provider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;, nodeArgs())
-	If bShort Then
-		getOOoLocal = LCase( Left( Trim( oSet.DefaultLocale ), 2 ) )
-	Else
-		getOOoLocal = OOLangue.DefaultLocale
-	End If
+Function getOOoLocal() As String
+	Dim sProvider As String	: sProvider	= &quot;com.sun.star.configuration.ConfigurationProvider&quot;
+	Dim sAccess As String	: sAccess	= &quot;com.sun.star.configuration.ConfigurationAccess&quot;
+	Dim oConfigProvider : oConfigProvider = createUnoService( sProvider )
+	Dim oParm(0) As New com.sun.star.beans.PropertyValue
+	oParm(0).Name	= &quot;nodepath&quot;
+	oParm(0).Value	= &quot;/org.openoffice.Setup/L10N&quot;
+	Dim oSet : oSet	= oConfigProvider.createInstanceWithArguments( sAccess, oParm() )
+	getOOoLocal	= LCase( Left( Trim( oSet.getByName(&quot;ooLocale&quot;) ), 2 ) )
 End Function
 
 &apos; Запустить указанный файл
@@ -1179,7 +1175,7 @@ Sub ClearParaStyleToBase()
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
 	Dim args2(1) As New com.sun.star.beans.PropertyValue
 	args2(0).Name = &quot;Template&quot;
-	If getOOoLocal( True ) = &quot;ru&quot; Then
+	If getOOoLocal() = &quot;ru&quot; Then
 		args2(0).Value = &quot;Базовый&quot;
 	Else
 		args2(0).Value = &quot;Default&quot;
