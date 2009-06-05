@@ -178,7 +178,7 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 		If sParaStyleName = sStyleBookTitle Then
 			AddBodyArray(sPara, sParaStyleName, False)
 			If lBATIndex = -1 Then
-				lBATIndex = UBound(sBodyParagraphs())
+				lBATIndex = UBound( sBodyParagraphs() )
 			End If
 		ElseIf sParaStyleName = sStylePoemTitle Or sParaStyleName = sStylePoemSubTitle Or sParaStyleName = sStylePoem Or _
 				sParaStyleName = sStylePoemAuthor Or sParaStyleName = sStylePoemDate Or _
@@ -186,22 +186,14 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 				sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
 				sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
 				sParaStyleName = sStyleSubTitle Then
-					AddBodyArray(sPara, sParaStyleName, False)
+					AddBodyArray( sPara, sParaStyleName, False )
 		ElseIf sParaStyleName = sStyleLevel1 Or sParaStyleName = sStyleLevel2 Or sParaStyleName = sStyleLevel3 Or _
 				sParaStyleName = sStyleLevel4 Or sParaStyleName = sStyleLevel5 Or sParaStyleName = sStyleLevel6 Or _
 				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
 				sParaStyleName = sStyleLevel10 Then
-				AddBodyArray(sPara, sParaStyleName, True)
-		ElseIf IsHeadingUserStyle( sParaStyleName ) Then
-			&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях - стиль Заголовка Heading X (user)
-			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
-			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
-				AddBodyArray(sPara, Mid( sParaStyleName, 1, InStr( sParaStyleName, &quot; (user)&quot; )-1 ), True)
-			Else
-				AddBodyArray(sPara, &quot;Para&quot;, False)
-			End If
+					AddBodyArray( sPara, sParaStyleName, True )
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
-			AddBookAnnotation(sPara)
+			AddBookAnnotation( sPara )
 		Else &apos; что-то другое или просто параграф
 			&apos; Отлов &quot;служебных&quot; стилей, применяемых для формирования раздела &lt;Description&gt; -
 			&apos; они не должны быть в основном тексте книги  в fb2 файле.
@@ -210,7 +202,7 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 				sParaStyleName &lt;&gt; sStyle_PaperBookSeries AND sParaStyleName &lt;&gt; sStyle_BookKeywords AND _
 				sParaStyleName &lt;&gt; sStyle_BookDate AND sParaStyleName &lt;&gt; sStyle_CustomInfo AND _
 				sParaStyleName &lt;&gt; sStyle_Genre And sParaStyleName &lt;&gt; sStyle_Lang Then
-				AddBodyArray(sPara, &quot;Para&quot;, False)
+					AddBodyArray( sPara, &quot;Para&quot;, False )
 			End If
 		End If
 	End If
@@ -537,15 +529,6 @@ Function FootnoteStyleParser(sTextArray As String, sParaStyleName As String, sPa
 				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
 				sParaStyleName = sStyleLevel10 Then
 			AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-		ElseIf IsHeadingUserStyle( sParaStyleName ) Then
-			&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях - стиль Заголовка Heading X (user)
-			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
-			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
-				AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-			Else
-				AddNotesArray(sTextArray, &quot;Para&quot;, sPara, False)
-				sParaType = &quot;Para&quot;
-			End If
 		Else	&apos; что-то другое или просто параграф
 			AddNotesArray(sTextArray, &quot;Para&quot;, sPara, False)
 			sParaType = &quot;Para&quot;

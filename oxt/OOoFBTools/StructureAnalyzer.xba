@@ -163,19 +163,11 @@ End Sub
 
 Sub AnalyzerStyleParser( sParaStyleName As String, sPara As String, asParagraphs() As String )
 	&apos; перебор по стилям
-	If sParaStyleName=sStyleLevel1 Or sParaStyleName=sStyleLevel2 Or sParaStyleName=sStyleLevel3 Or sParaStyleName=sStyleLevel4 Or _
-		 sParaStyleName=sStyleLevel5 Or sParaStyleName=sStyleLevel6 Or sParaStyleName=sStyleLevel7 Or sParaStyleName=sStyleLevel8 Or _
-		  sParaStyleName=sStyleLevel9 Or sParaStyleName=sStyleLevel10 Then
+	If sParaStyleName=sStyleLevel1 Or sParaStyleName=sStyleLevel2 Or sParaStyleName=sStyleLevel3 Or _
+		sParaStyleName=sStyleLevel4 Or sParaStyleName=sStyleLevel5 Or sParaStyleName=sStyleLevel6 Or _
+		sParaStyleName=sStyleLevel7 Or sParaStyleName=sStyleLevel8 Or sParaStyleName=sStyleLevel9 Or _
+		sParaStyleName=sStyleLevel10 Then
 		  AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-	Else
-		&apos; Стандартный стиль Заголовка Heading, переопределенный в Пользовательских стилях ?
-		If IsHeadingUserStyle( sParaStyleName ) Then
-			&apos; это - стиль Заголовка Heading X (user)
-			&apos; смотрим, переопределял ли User стили Level к Heading ( Heading X (user) )
-			If IsLevelRedefiedToHeading( sParaStyleName, asRealStyleLevel() ) Then
-				AddParasArray( sPara, sParaStyleName, True, asParagraphs() )
-			End If
-		End If
 	End If
 	sPStyle = sParaStyleName
 End Sub
@@ -206,38 +198,5 @@ Sub AddParasArray( sPara As String, TextType As String, bLevel As Boolean, asPar
 		End If
 	End If
 End Sub
-
-
-&apos;///////////////////////////////////////////////////////////
-&apos; соответствует ли проверяемый стиль Заголовка стилем Heading X (user)
-Function IsHeadingUserStyle( sStyle As String ) As Boolean
-	Dim i As Integer
-	For i=1 To 10
-		If sStyle = ( &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot; ) Then
-			IsHeadingUserStyle = True
-			Exit Function
-		End If
-	Next i
-	IsHeadingUserStyle = False
-End Function
-
-&apos; переопределял ли User локальные стили Заголовков именно к Heading ( при парсинге стиль отображается, как Heading X (user) )
-Function IsLevelRedefiedToHeading( sStyle As String, sSL() As String ) As Boolean
-	Dim nPos As Integer : nPos = InStr( sStyle, &quot; (user)&quot; )
-	Dim sH As String : sH = Mid( sStyle, 1, nPos-1 )
-	Dim i As Integer
-	For i=1 To 10
-		If sH = sSL(i) Then
-			IsLevelRedefiedToHeading = True
-			Exit Function
-		End If
-	Next i
-	IsLevelRedefiedToHeading = False
-End Function
-
-&apos; название переопределенного Заголовка по &quot;его&quot; Heading
-Function GetRedefiedLevel( nRang As Integer, sSL() As String ) As String
-	GetRedefiedLevel = sSL( nRang )
-End Function
 
 </script:module>

@@ -388,34 +388,34 @@ Sub SetStylesInVars( sCurrentLine As String )
 			sStyleSubTitle = aStyles(1)
 
 		Case &quot;tfLevel1&quot;
-			sStyleLevel1 = LocalHeadingStyleToOOoHeading( 1, aStyles(1) )
+			sStyleLevel1 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 1 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel2&quot;
-			sStyleLevel2 = LocalHeadingStyleToOOoHeading( 2, aStyles(1) )
+			sStyleLevel2 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 2 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel3&quot;
-			sStyleLevel3 = LocalHeadingStyleToOOoHeading( 3, aStyles(1) )
+			sStyleLevel3 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 3 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel4&quot;
-			sStyleLevel4 = LocalHeadingStyleToOOoHeading( 4, aStyles(1) )
+			sStyleLevel4 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 4 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel5&quot;
-			sStyleLevel5 = LocalHeadingStyleToOOoHeading( 5, aStyles(1) )
+			sStyleLevel5 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 5 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel6&quot;
-			sStyleLevel6 = LocalHeadingStyleToOOoHeading( 6, aStyles(1) )
+			sStyleLevel6 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 6 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel7&quot;
-			sStyleLevel7 = LocalHeadingStyleToOOoHeading( 7, aStyles(1) )
+			sStyleLevel7 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 7 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel8&quot;
-			sStyleLevel8 = LocalHeadingStyleToOOoHeading( 8, aStyles(1) )
+			sStyleLevel8 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 8 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel9&quot;
-			sStyleLevel9 = LocalHeadingStyleToOOoHeading( 9, aStyles(1) )
+			sStyleLevel9 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 9 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 		Case &quot;tfLevel10&quot;
-			sStyleLevel10 = LocalHeadingStyleToOOoHeading( 10, aStyles(1) )
+			sStyleLevel10 = RenameRedefiedLevelsStylesToOOoHeadingIsNeed( aStyles(1) )
 			asRealStyleLevel( 10 ) = aStyles(1) &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 	
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
@@ -493,24 +493,45 @@ Sub SetStylesInVars( sCurrentLine As String )
 	End Select
 End Sub
 
-
+&apos; /////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
-Function LocalHeadingStyleToOOoHeading( nLevel As Integer, sStyleFromProfile As String )
-	LocalHeadingStyleToOOoHeading = sStyleFromProfile
-	&apos; смотрим, переопределял ли User стили Level именно к Heading ( Heading X (user) при парсинге )
-	If Not IsLevelRedefiedToHeading( sStyleFromProfile, asRealStyleLevel() ) Then
-		&apos; не переопределял
-		Exit Function
-	End If
-	Dim i As Integer, s As String : s = GetLocalHeadingStyleName()
+&apos; если стиль Level переопределен в локальный Заголовок (OOo &quot;видит&quot; его, как Heading), то в переменную - Heading
+&apos; если стиль Level переопределен в Heading (OOo &quot;видит&quot; его, как Heading X (user)), то в переменную - Heading X (user)
+&apos; если стиль Level не переопределен, то ничего не делаем с переменной стиля
+Function RenameRedefiedLevelsStylesToOOoHeadingIsNeed( sStyleFromProfile As String )
+	Dim i As Integer
+	Dim sLocalHeadingStyleName As String : sLocalHeadingStyleName = GetLocalHeadingStyleName()
 	For i=1 To 10
-		If sStyleFromProfile = ( s &amp; &quot; &quot; &amp; i ) Then
-			LocalHeadingStyleToOOoHeading = &quot;Heading &quot; &amp; nLevel
+		If sStyleFromProfile = ( sLocalHeadingStyleName &amp; &quot; &quot; &amp; i ) Then
+			&apos; смотрим, sStyleFromText - локальный Заголовок X? Если да, то в переменную заносим - Heading X
+			RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i
+			Exit Function
+		ElseIf sStyleFromProfile = ( &quot;Heading &quot; &amp; i ) Then
+			&apos; смотрим, sStyleFromText - это переопределенный стиль Level именно к Heading?
+			RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot;
 			Exit Function
 		End If
 	Next i
-	LocalHeadingStyleToOOoHeading = sStyleFromProfile
+	RenameRedefiedLevelsStylesToOOoHeadingIsNeed = sStyleFromProfile
 End Function
+
+&apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
+&apos;Function LocalHeadingStyleToOOoHeading( nLevel As Integer, sStyleFromProfile As String )
+&apos;	LocalHeadingStyleToOOoHeading = sStyleFromProfile
+&apos;	&apos; смотрим, переопределял ли User стили Level именно к Heading ( Heading X (user) при парсинге )
+&apos;	If Not IsLevelRedefiedToHeading( sStyleFromProfile, asRealStyleLevel() ) Then
+&apos;		&apos; не переопределял
+&apos;		Exit Function
+&apos;	End If
+&apos;	Dim i As Integer, s As String : s = GetLocalHeadingStyleName()
+&apos;	For i=1 To 10
+&apos;		If sStyleFromProfile = ( s &amp; &quot; &quot; &amp; i ) Then
+&apos;			LocalHeadingStyleToOOoHeading = &quot;Heading &quot; &amp; nLevel
+&apos;			Exit Function
+&apos;		End If
+&apos;	Next i
+&apos;	LocalHeadingStyleToOOoHeading = sStyleFromProfile
+&apos;End Function
 
 &apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
 &apos;Function LocalHeadingStyleToOOoHeading( nLevel As Integer, sStyleFromProfile As String )
@@ -531,12 +552,38 @@ End Function
 &apos;End Function
 
 &apos; переименование &quot;стандартных&quot; для OOo Heading стилей в Заголовки в зависимости от локали
-Function HeadingToLevelStyle( nLevel As Integer, sStyleFromProfile As String )
-	If Instr( sStyleFromProfile, &quot;Heading &quot; ) &gt; 0 Then
-		HeadingToLevelStyle = GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; nLevel
-	Else
-		HeadingToLevelStyle = sStyleFromProfile
-	End If
-End Function
+&apos;Function HeadingToLevelStyle( nLevel As Integer, sStyleFromProfile As String )
+&apos;	If Instr( sStyleFromProfile, &quot;Heading &quot; ) &gt; 0 Then
+&apos;		HeadingToLevelStyle = GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; nLevel
+&apos;	Else
+&apos;		HeadingToLevelStyle = sStyleFromProfile
+&apos;	End If
+&apos;End Function
+
+&apos; соответствует ли проверяемый стиль Заголовка стилем Heading X (user)
+&apos;Function IsHeadingUserStyle( sStyle As String ) As Boolean
+&apos;	Dim i As Integer
+&apos;	For i=1 To 10
+&apos;		If sStyle = ( &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot; ) Then
+&apos;			IsHeadingUserStyle = True
+&apos;			Exit Function
+&apos;		End If
+&apos;	Next i
+&apos;	IsHeadingUserStyle = False
+&apos;End Function
+
+&apos; переопределял ли User стили Level X именно к Heading X ( при парсинге стиль отображается, как Heading X (user) )
+&apos;Function IsLevelRedefiedToHeading( sStyle As String, sSL() As String ) As Boolean
+&apos;	Dim nPos As Integer : nPos = InStr( sStyle, &quot; (user)&quot; )
+&apos;	Dim sH As String : sH = Mid( sStyle, 1, nPos-1 )
+&apos;	Dim i As Integer
+&apos;	For i=1 To 10
+&apos;		If sH = sSL(i) Then
+&apos;			IsLevelRedefiedToHeading = True
+&apos;			Exit Function
+&apos;		End If
+&apos;	Next i
+&apos;	IsLevelRedefiedToHeading = False
+&apos;End Function
 
 </script:module>
