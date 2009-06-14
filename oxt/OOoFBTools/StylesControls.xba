@@ -501,17 +501,19 @@ End Sub
 Function RenameRedefiedLevelsStylesToOOoHeadingIsNeed( sStyleFromProfile As String )
 	Dim i As Integer
 	Dim sLocalHeadingStyleName As String : sLocalHeadingStyleName = GetLocalHeadingStyleName()
-	For i=1 To 10
-		If sStyleFromProfile = ( sLocalHeadingStyleName &amp; &quot; &quot; &amp; i ) Then
-			&apos; смотрим, sStyleFromText - локальный Заголовок X? Если да, то в переменную заносим - Heading X
-			RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i
-			Exit Function
-		ElseIf sStyleFromProfile = ( &quot;Heading &quot; &amp; i ) Then
-			&apos; смотрим, sStyleFromText - это переопределенный стиль Level именно к Heading?
-			RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot;
-			Exit Function
-		End If
-	Next i
+	If getOOoLocal() &lt;&gt; &quot;en&quot;
+		For i=1 To 10
+			If sStyleFromProfile = ( sLocalHeadingStyleName &amp; &quot; &quot; &amp; i ) Then
+				&apos; смотрим, sStyleFromText - локальный Заголовок X? Если да, то в переменную заносим - Heading X
+				RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i
+				Exit Function
+			ElseIf sStyleFromProfile = ( &quot;Heading &quot; &amp; i ) Then
+				&apos; смотрим, sStyleFromText - это переопределенный стиль Level именно к Heading?
+				RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot;
+				Exit Function
+			End If
+		Next i
+	End if
 	RenameRedefiedLevelsStylesToOOoHeadingIsNeed = sStyleFromProfile
 End Function
 
