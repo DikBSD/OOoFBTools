@@ -7,12 +7,15 @@ Option Explicit
 Sub LoadStylesTemplate()
 	&apos; инициализация сообщений Загрузки Шаблона fb2-стилей в зависимости от локали
 	InitLoadStylesTemplateMessage()
-
-	Dim oDoc, oDesktop, oTemplate, oPathSettings
+	Dim oDoc : oDoc = ThisComponent
+	oProgressBar = oDoc.CurrentController.StatusIndicator
+	oProgressBar.start( sLSTD.sProgressTitle, 4 )
+	oProgressBar.setValue( 0 )
+	
+	Dim oDesktop, oTemplate, oPathSettings
 	Dim sFile As String, sPath As String, sPathArray() As String
 	Dim i As Integer
 
-	oDoc = ThisComponent
 	oPathSettings = CreateUnoService( &quot;com.sun.star.util.PathSettings&quot; )
 	sPathArray = Split( oPathSettings.Template,&quot;;&quot; )
 	sFile = &quot;fb21_styles.ott&quot;
@@ -29,6 +32,7 @@ Sub LoadStylesTemplate()
 		MsgBox sLSTD.sTemplateNotFound, 64, sConvertorName
 		Exit Sub
 	End If
+	oProgressBar.setValue( 1 )
 	
 	&apos;Загрузка шаблона в переменную
 	oDesktop = createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
@@ -38,18 +42,22 @@ Sub LoadStylesTemplate()
 	aArgs(1).Name	= &quot;Hidden&quot;
    	aArgs(1).Value	= True
 	oTemplate = oDesktop.loadComponentFromURL( sPath, &quot;_blank&quot;, 0, aArgs() )
-		
+	oProgressBar.setValue( 2 )
+	
 	&apos; Загрузка и переименовывание стилей для докуменета из шаблона
     aArgs(0).Name	= &quot;OverwriteStyles&quot;
     aArgs(0).Value	= True
     aArgs(1).Name	= &quot;&quot;
     aArgs(1).Value	= &quot;&quot;
     oDoc.stylefamilies.loadStylesFromURL( sPath, aArgs() )
+	oProgressBar.setValue( 3 )
 	
 	&apos; привязываем наш документ к шаблону
     oDoc.DocumentInfo.Template			= oTemplate.DocumentInfo.Title
     oDoc.DocumentInfo.TemplateFileName	= sPath
        
     oTemplate.Close( false )
+    oProgressBar.setValue( 4 )
+    oProgressBar.End
 End Sub
 </script:module>

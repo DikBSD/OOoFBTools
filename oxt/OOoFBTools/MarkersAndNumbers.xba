@@ -18,7 +18,13 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
 			Dim sNumber As String
 			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
-			If sFormatPara &lt;&gt; &quot;&quot; Then sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
+			If sFormatPara &lt;&gt; &quot;&quot; Then
+				If sNumber &lt;&gt; &quot;&quot; Then
+					sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
+				Else
+					sFormatPara = sFormatPara
+				End If
+			End If
 			MakeNumberingNumberPara = sFormatPara	
 		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If n = 1 Then &apos; GraphicBitman
