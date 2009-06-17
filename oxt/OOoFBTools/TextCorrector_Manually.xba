@@ -70,7 +70,7 @@ Sub TextDefectFinderStart()
 													
 	Dim aPunctList() As String : aPunctList() = Array( &quot;.&quot;, &quot;,&quot;, &quot;!&quot;, &quot;?&quot;, &quot;:&quot;, &quot;;&quot;, &quot;…&quot; )
 	With oTDF.Model
-		.Height	= 30
+		.Height	= 42
 		.Width	= 420
 		.lbTDFMode.StringItemList = aModeList()
 		.lbTDFPunctMarks.StringItemList = aPunctList()
@@ -107,33 +107,38 @@ Sub lbTDFModeChange()
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteMinus
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= True
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= True
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= True
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreak
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sProcess
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreakAddBlank
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
 		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertPunctMark
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= True
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
 		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertBlank
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable	= False
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
 	End Select
 End Sub
 
@@ -517,6 +522,11 @@ Sub cmdbtnTDFEditClick()
 	Else
 		MsgBox sTDFD.sWordDefisFileNotExists, 64, oTDF.Title	
 	End If	
+End Sub
+
+&apos; вставка пробелов слева и справа от дефиса...
+Sub cmdbtnTDFInsertSpaceClick()
+
 End Sub
 
 </script:module>
