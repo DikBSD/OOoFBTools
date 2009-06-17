@@ -179,8 +179,9 @@ Sub FindRegWord( sFind As String, sTitle As String )
 		
 	&apos; инициализация позиции курсора
 	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
+	ovCurs.goLeft( 2, False ) &apos; назад для захвата и вторго дефиса (например: Кое-ко-го)
 	otxtCurs = ovCurs.Text.createTextCursor() 
-	otxtCurs.gotoRange(ovCurs.getStart(), False)
+	otxtCurs.gotoRange( ovCurs.getStart(), False )
 
 	&apos; ищем заданное регулярное выражение
 	FindRegInText( ovCurs, sFind, sTitle )
@@ -243,7 +244,7 @@ Function FindNextInText( sFind ) As Boolean
 	otxtCurs = Found.Text.createTextCursor()
 	otxtCurs.gotorange( Found.getStart(), False )
 	otxtCurs.gotorange( Found.getEnd(), True )
-	
+
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
 

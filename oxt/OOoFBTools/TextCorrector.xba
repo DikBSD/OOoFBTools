@@ -514,11 +514,11 @@ Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
 	vSearch.SearchRegularExpression = True
 	vSearch.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
 	&apos; Находим первый идентификатор
-	vStartFound = oDoc.findFirst(vSearch)
+	vStartFound = oDoc.findFirst( vSearch )
 	l = 0
 	Do While Not IsNull(vStartFound)
 		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
-		vEndFound = oDoc.findNext( vStartFound.End, vSearch)
+		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
 		If IsNull(vEndFound) Then
 			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
 			vEndFound = oDoc.Text.createTextCursor()
@@ -729,10 +729,10 @@ End Sub
 Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
-	Dim oDoc As Object, oFootNotes As Object
-	Dim nFootnoteCount As Integer, i As Integer, l As Long
-	oDoc = ThisComponent
-	nFootnoteCount = ThisComponent.getFootNotes().getCount() 
+	Dim oFootNotes As Object
+	Dim i As Integer, l As Long
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim nFootnoteCount As Integer : nFootnoteCount = ThisComponent.getFootNotes().getCount() 
 	For i=0 To nFootnoteCount-1
 		&apos; Получить i-ю сноску
 		oFootNotes = oDoc.getFootNotes().getByIndex(i)
@@ -786,9 +786,9 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressB
 	&apos; Алгоритм: если это слово с дефисом, то удаляем разрыв; иначе - удаляем и &quot;-&quot;, и разрыв
 	On Error GoTo ErrorHandler
 	
-	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
+	If IsNull( oLCurs ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
 	If bText Then &apos; толька для текста (не для сносок, таблиц и врезок)
-		If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
+		If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
 	End If
 	vL.gotoRange(vR, True)
 	
@@ -808,8 +808,8 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressB
 	End If
 	
 	&apos; &quot;подтягиваем&quot; позиции курсора для обработки слов к позиции курсора для сравнения слов (для согласования поиска)
-	oLCurs.gotoRange(vL, False)
-	oRCurs.gotoRange(vR, False)
+	oLCurs.gotoRange( vL, False )
+	oRCurs.gotoRange( vR, False )
 	
 	ErrorHandler:
 End Sub
@@ -832,9 +832,9 @@ Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCu
 		l = l + 1
 		oProgressBar.setValue(l)
 		If bText Then &apos; толька для текста (не для сносок, таблиц и врезок)
-			If oDoc.Text.compareRegionEnds(vFound, oRCurs) &lt;= 0 Then Exit Sub
+			If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &lt;= 0 Then Exit Sub
 		End If
-		vFound.setString(sReplSymbol)
+		vFound.setString( sReplSymbol )
 		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
 &apos;	Loop
 	End If
@@ -896,8 +896,8 @@ Function IsHyphen( sWord As String ) As Boolean
 	
 	&apos; 6. обработка слов &quot;из-xxx&quot;
 	If sLeft = &quot;из&quot; And ( sRight = &quot;за&quot; Or sRight = &quot;под&quot; ) Then 
-			IsHyphen = True &apos; Слово с дефисом
-			Exit Function
+		IsHyphen = True &apos; Слово с дефисом
+		Exit Function
 	End If
 	
 	&apos; 7. обработка слов &quot;xxx-таки&quot;
