@@ -103,6 +103,8 @@ Sub TextDefectFinderStart()
 End Sub
 
 Sub lbTDFModeChange()
+	oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label	= sTDFD.sInsertSpace
+	oTDF.Model.cmdbtnTDFInsertSpace.HelpText = sTDFD.sInsertSpaceAroundHint
 	Select Case oTDF.GetControl( &quot;lbTDFMode&quot; ).SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
@@ -354,13 +356,13 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 			End If
 		Next i
 		
-		Finder( oDoc, oCurs, sReg, iRight )
+		Finder( oDoc, oCurs, sReg, iRight, True )
 	Else
-		Finder( oDoc, oCurs, sReg, -1 )
+		Finder( oDoc, oCurs, sReg, -1, True )
 	End If
 End Sub
 
-Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Integer ) As Boolean
+Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Integer, bWorker As Boolean ) As Boolean
 	Finder = False
 	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
 	Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
@@ -380,13 +382,21 @@ Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Inte
 		If Not IsNull( vFound ) Then &apos; нашли
 			&apos; выделяем найденное и обрабатываем
 			oViewCursor.gotoRange( vFound, False )
-			ProcessingWorker( oViewCursor, iRight )
+			If bWorker Then
+				ProcessingWorker( oViewCursor, iRight )
+			Else
+				InsertionSpaceAroundDash( oViewCursor )
+			End If
 			Finder = True
 		End If
 	Else &apos; просто текст, &apos; текстовая врезка или текст сноски
 		&apos; выделяем найденное и обрабатываем
 		oViewCursor.gotoRange( vFound, False )
-		ProcessingWorker( oViewCursor, iRight )
+		If bWorker Then
+			ProcessingWorker( oViewCursor, iRight )
+		Else
+			InsertionSpaceAroundDash( oViewCursor )
+		End If
 		Finder = True
 	End if
 End Function
@@ -526,7 +536,20 @@ End Sub
 
 &apos; вставка пробелов слева и справа от дефиса...
 Sub cmdbtnTDFInsertSpaceClick()
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
 
+	Dim oCurs As Object : oCurs = GetLeftMostCursor( oSel ) : oCurs.goRight( 0, False )
+	Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, False )
+End Sub
+
+&apos; обработчик - вставка пробелов слева и справа от дефиса...
+Sub InsertionSpaceAroundDash( oViewCursor As Object )
+	Dim s As String : s = oViewCursor.getString()
+	oViewCursor.setString( &quot; &quot; &amp; s &amp; &quot; &quot; )
 End Sub
 
 </script:module>
