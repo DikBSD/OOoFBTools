@@ -178,15 +178,32 @@ Function GetRegString( oLB As Object ) As tFindData
 End Function
 
 &apos; ////////////////////////////////////////////////////////////////
+&apos; число символов влево до дефиса, тире или минуса, если они есть
+Function GetLesfSymCountToDash( ovCurs As Object ) As Integer
+	Dim otxtCurs As Object : otxtCurs = ovCurs.Text.createTextCursor()
+	otxtCurs.gotoRange( ovCurs.getEnd(), False )
+	otxtCurs.gotoEndOfWord( False )
+	otxtCurs.gotoStartOfWord( True ) : otxtCurs.goLeft( 1, True ) &apos; для захвата дефиса..., если он есть
+	Dim s As String : s = otxtCurs.getString()
+	If InStr( s, &quot;-&quot; ) = 1 Or InStr( s, chr(8209) ) = 1 Or InStr( s, chr(8211) ) = 1 Or InStr( s, chr(8212) ) = 1 Then
+		GetLesfSymCountToDash = Len( s ) - 1
+		Exit Function
+	End if
+	GetLesfSymCountToDash = -1
+End Function
+
 &apos; Поиск регулярного выражения в тексте
 Sub FindRegWord( sFind As String, sTitle As String )
 	oDocControl = ThisComponent.getCurrentController()
 	&apos; проверка, является ли объект, где производится поиск - текстом
 	If Not IsSelTextRange( sTitle ) Then Exit Sub
-		
+
 	&apos; инициализация позиции курсора
 	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
-	ovCurs.goLeft( 2, False ) &apos; назад для захвата и вторго дефиса (например: Кое-ко-го)
+	Dim nPos : nPos = GetLesfSymCountToDash( ovCurs )
+	If nPos &lt;&gt; -1 Then
+		ovCurs.goLeft( nPos, False ) &apos; назад для захвата и вторго дефиса (например: Кое-ко-го)
+	End If
 	otxtCurs = ovCurs.Text.createTextCursor() 
 	otxtCurs.gotoRange( ovCurs.getStart(), False )
 
@@ -407,7 +424,11 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			&apos; удаляем найденный символ
-			_UnoDelete() 
+			_UnoDelete()
+			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
+			Dim otxtCurs As Object : otxtCurs = oViewCursor.Text.createTextCursor()
+			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
+			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			&apos; удаляем перенос и символ абзаца
 			_UnoDelete() : _UnoDelete()
