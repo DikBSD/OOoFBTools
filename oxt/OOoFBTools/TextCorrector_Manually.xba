@@ -66,8 +66,8 @@ Sub TextDefectFinderStart()
 	&apos; файл начтроек Корректора Текста
 	Dim sOCRTCSettingsFilename As String : sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
 	Dim aModeList() As String : aModeList() = Array( sTDFD.sWordHyphenDashMinus, sTDFD.sWordBrokenParagraphCarry, _
-													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingPunctMarksEndPara, sTDFD.sPlaceMissingBlank )
-													
+													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingBlank )
+											
 	Dim aPunctList() As String : aPunctList() = Array( &quot;.&quot;, &quot;,&quot;, &quot;!&quot;, &quot;?&quot;, &quot;:&quot;, &quot;;&quot;, &quot;…&quot; )
 	With oTDF.Model
 		.Height	= 42
@@ -105,10 +105,13 @@ End Sub
 Sub lbTDFModeChange()
 	oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label	= sTDFD.sInsertSpace
 	oTDF.Model.cmdbtnTDFInsertSpace.HelpText = sTDFD.sInsertSpaceAroundHint
+	oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label = sTDFD.sInsert
+	oTDF.Model.cmdbtnTDFInsertSymbol.HelpText = sTDFD.sWorkerHintInsertPunctMark
 	Select Case oTDF.GetControl( &quot;lbTDFMode&quot; ).SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteMinus
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
 			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
@@ -116,6 +119,7 @@ Sub lbTDFModeChange()
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreak
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
 			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
@@ -123,20 +127,15 @@ Sub lbTDFModeChange()
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sProcess
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreakAddBlank
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
-			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
-			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertPunctMark
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= True
 			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertBlank
+			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
 			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
@@ -164,10 +163,7 @@ Function GetRegString( oLB As Object ) As tFindData
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
-		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+$&quot;	&apos;&quot;\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$&quot;  &apos; 
-			sTDF.sMessage = sTDFD.sSearchMissingPunctMarksEndPara
-		Case 4 &apos; Место с недостающим пробелом между словами
+		Case 3 &apos; Место с недостающим пробелом между словами
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alpha:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
@@ -330,9 +326,7 @@ Function GetRegWorkerString() As String
 			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
 			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$&quot;
-		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
-			GetRegWorkerString = &quot;$&quot;
-		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
 			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“)}\],.!?…»”\&quot;&quot;:;]&quot;
 	End Select
 End Function
@@ -355,7 +349,7 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 	
 	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
 	
-	If oLB.SelectedItemPos = 4 Then
+	If oLB.SelectedItemPos = 3 Then &apos; Место с недостающим пробелом между словами (вероятно)
 		Dim i As Integer
 		&apos; смотрим, какой символ нашли
 		Dim sFindStr		As String : sFindStr	= oDoc.getCurrentController().getViewCursor().GetString()
@@ -377,13 +371,13 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 			End If
 		Next i
 		
-		Finder( oDoc, oCurs, sReg, iRight, True )
+		Finder( oDoc, oCurs, sReg, iRight, &quot;other&quot; )
 	Else
-		Finder( oDoc, oCurs, sReg, -1, True )
+		Finder( oDoc, oCurs, sReg, -1, &quot;other&quot; )
 	End If
 End Sub
 
-Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Integer, bWorker As Boolean ) As Boolean
+Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Integer, sWorker As String ) As Boolean
 	Finder = False
 	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
 	Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
@@ -413,10 +407,12 @@ Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Inte
 	Else &apos; просто текст, &apos; текстовая врезка или текст сноски
 		&apos; выделяем найденное и обрабатываем
 		oViewCursor.gotoRange( vFound, False )
-		If bWorker Then
+		If sWorker = &quot;other&quot; Then &apos; для разный инструментов
 			ProcessingWorker( oViewCursor, iRight )
-		Else
+		ElseIf sWorker = &quot;dash&quot; Then &apos; для Слово с дефисом, тире или минусом (вставка пробелов слева и справа от дефиса...)
 			InsertionSpaceAroundDash( oViewCursor )
+		ElseIf sWorker = &quot;break&quot; Then &apos; для Обрыв предложения на знаках препинания, кавычках и скобках
+			InsertionSymbol( oViewCursor )
 		End If
 		Finder = True
 	End if
@@ -445,14 +441,7 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 			oViewCursor.setString( &quot; &quot; )
 			&apos; снимаем выделение - вправо
 			oViewCursor.collapseToEnd()
-		Case 3 &apos; Место с недостающим знаком препинания в конце абзаца (вероятно)
-			&apos; снимаем выделение
-			oViewCursor.collapseToStart()
-			&apos; вставляем знак препинания из выпадающего списка
-			oViewCursor.setString( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem )
-			&apos; снимаем выделение - вправо
-			&apos;oViewCursor.collapseToEnd()
-		Case 4 &apos; Место с недостающим пробелом между словами (вероятно)
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
 			If iRight = 0 Then &apos; вставка пробела СЛЕВА от найденного
 				&apos; снимаем выделение - вправо
 				oViewCursor.collapseToStart()
@@ -568,13 +557,36 @@ Sub cmdbtnTDFInsertSpaceClick()
 	If oSel.getString() = &quot;&quot; Then Exit Sub
 
 	Dim oCurs As Object : oCurs = GetLeftMostCursor( oSel ) : oCurs.goRight( 0, False )
-	Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, False )
+	Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, &quot;dash&quot; )
 End Sub
 
 &apos; обработчик - вставка пробелов слева и справа от дефиса...
 Sub InsertionSpaceAroundDash( oViewCursor As Object )
 	Dim s As String : s = oViewCursor.getString()
 	oViewCursor.setString( &quot; &quot; &amp; s &amp; &quot; &quot; )
+	oViewCursor.collapseToEnd()
 End Sub
+
+&apos; вставка недостающего знака препинания в конце предложения
+Sub cmdbtnTDFInsertSymbolClick()
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+
+	Dim oCurs As Object : oCurs = GetLeftMostCursor( oSel ) : oCurs.goRight( 0, False )
+	Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, &quot;break&quot; )
+End Sub
+
+&apos; обработка найденного для вставки недостающего знака препинания в конце предложения
+Sub InsertionSymbol( oViewCursor As Objec )
+	&apos; снимаем выделение
+	oViewCursor.collapseToEnd()
+	&apos; вставляем знак препинания из выпадающего списка
+	oViewCursor.setString( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem )
+	oViewCursor.collapseToEnd()
+End Sub
+
 
 </script:module>
