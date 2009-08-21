@@ -57,7 +57,7 @@ Sub SaveBody()
 	
 End Sub
 
-Function MakeBody( sArray As String, bBody As Boolean )
+Sub MakeBody( sArray As String, bBody As Boolean )
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
 	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
@@ -130,39 +130,99 @@ Function MakeBody( sArray As String, bBody As Boolean )
 				End If
 				While lCurrentElement &lt; lNextIndex
 					&apos;печатаем все абзацы между секциями (саму следующую секцию не включаем)
-					If N = 0 Then &apos; смежные уровни
-						If sArray(lCurrentElement,1)=&quot;Para&quot; OR sArray(lCurrentElement,1)=sStylePoemTitle OR _
-							sArray(lCurrentElement,1)=sStylePoem OR sArray(lCurrentElement,1)=sStyleCite OR _
-							sArray(lCurrentElement,1)=sStyleSubTitle OR sArray(lCurrentElement,1)=&quot;Image&quot; OR _
-							sArray(lCurrentElement,1)=&quot;Table&quot; OR sArray(lCurrentElement,1)=&quot;&quot; _
-							Or sArray(lCurrentElement,1)=sStyleCiteSubTitle _
-							Or sArray(lCurrentElement,1)=sStyleCiteAuthor _
-							Or sArray(lCurrentElement,1)=sStylePoemSubTitle _
-							Or sArray(lCurrentElement,1)=sStylePoemAuthor _
-							Then
-							If bTextSmSection = False Then
-								oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
-								bTextSmSection = True
+					Dim NN As Integer : NN = IsAdjacentCurrentLevelsOfNextLevel( sArray(), lCurrentElement )
+					&apos;NN: например, если Level 1 и 2 - NN=1, 1 и 3 - NN=0, 3 и 1 - NN=-1, 2 и 2 - NN=2
+					If NN = 1 Then &apos; смежные уровни
+						If N = 0 Then &apos; смежные уровни
+							&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+							Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+						End If
+					ElseIf NN = 0 Then &apos; не смежные уровни
+						If Not IsLevel( sArray( lCurrentElement,1 ) ) Then &apos; текущий элемент - не Level
+							If N = 0 Then
+								&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+								Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+							ElseIf N &lt; 0 Then &apos; не смежные уровни, а между ними - текст, цитаты...
+								If lCurrentElement &gt; IndexOf1Section( sArray() ) Then
+									&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+									Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+								End If
+								&apos; печать нужного числа открывающих &lt;section&gt;
+								SaveNOpenSection( sArray(), lCurrentElement )
 							End If
+						Else  &apos; текущий элемент - Level
+							&apos; печать нужного числа открывающих &lt;section&gt;
+							SaveNOpenSection( sArray(), lCurrentElement )
+						End If
+					ElseIf NN = -1 Then &apos; не смежные уровни с большего на меньший
+						If IsAdjacentCurrentLevelsOfPrevLevel( sArray(), lCurrentElement ) &lt;&gt; 1 Then
+							&apos; для несмедных уровней
+							&apos; печать нужного числа открывающих &lt;section&gt;
+							SaveNOpenSection( sArray(), lCurrentElement )
 						End If
 					End If
+
 					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
 					If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
 				Wend
 	
 				&apos; закрываем секции, взависимости от смежности уровней
 				If N = 0 Then &apos; смежные уровни
-					If bTextSmSection = true Then &apos; между ними есть текст. требующий взятие его в &lt;section&gt; &lt;/section&gt;
+					If bTextSmSection = True Then &apos; между ними есть текст. требующий взятие его в &lt;section&gt; &lt;/section&gt;
 						SaveCloseSection(1)
 						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
 					End If
 				Else &apos; не смежные уровни
-					SaveCloseSection(N)
-					bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					If bTextSmSection = True Then &apos; между ними есть текст. требующий взятие его в &lt;section&gt; &lt;/section&gt;
+						SaveCloseSection(1)
+						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					Else
+						SaveCloseSection(N)
+						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					End If
 				End If
 				
 			Wend
 		End If
+	End If
+End Sub
+
+Sub Save1OpenSectionForCandidate( sArray() As String, lCurrentElement As Long, bTextSmSection As Boolean )
+	&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+	If IsCandidateToSections( sArray(), lCurrentElement ) Then
+		If bTextSmSection = False Then
+			oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+			bTextSmSection = True
+		End If
+	End If
+End Sub
+
+Sub SaveNOpenSection( sArray() As String, lCurrentElement As Long )
+	&apos; печать нужного числа открывающих &lt;section&gt;
+	If lCurrentElement &gt; IndexOf1Section( sArray() ) Then
+		Dim NOpen As Integer, i As Integer
+		NOpen = GetCountOpenSection( sArray(), lCurrentElement, _
+									GetIndexOfPrevLevel( sArray(), lCurrentElement ), IndexOfEndSection( sArray() ) )
+		If NOpen &gt; 0 Then
+			For i=0 To NOpen-1
+				oTextOutputStream.writeString( &quot;&lt;section&gt;&quot; &amp; chr(10) )
+			Next i
+		End If
+	End If
+End Sub
+
+Function IsCandidateToSections( sArray() As String, lCurrentElement As Long )
+	&apos; возможные кандидаты на обрамление &lt;sections&gt;...&lt;/sections&gt;
+	IsCandidateToSections = False
+	If sArray(lCurrentElement,1)=&quot;Para&quot; OR sArray(lCurrentElement,1)=sStylePoemTitle OR _
+		sArray(lCurrentElement,1)=sStylePoem OR sArray(lCurrentElement,1)=sStyleCite OR _
+		sArray(lCurrentElement,1)=sStyleSubTitle OR sArray(lCurrentElement,1)=&quot;Image&quot; OR _
+		sArray(lCurrentElement,1)=&quot;Table&quot; OR sArray(lCurrentElement,1)=&quot;&quot; _
+		Or sArray(lCurrentElement,1)=sStyleCiteSubTitle _
+		Or sArray(lCurrentElement,1)=sStyleCiteAuthor _
+		Or sArray(lCurrentElement,1)=sStylePoemSubTitle _
+		Or sArray(lCurrentElement,1)=sStylePoemAuthor Then
+			IsCandidateToSections = True
 	End If
 End Function
 
