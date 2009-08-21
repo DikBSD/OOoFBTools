@@ -10,6 +10,17 @@ Public bMarker As Boolean &apos; флаг - если в книге есть ма
 Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
 	&apos; sStringPara - текст абзаца без тэгов форматирования
 	&apos; sFormatPara - текст абзаца с тэгами форматирования
+	If OOoWriterVersion() &lt; &quot;3.1&quot; Then
+		MakeNumberingNumberPara = MakeNumberingNumberParaLess31( oPar, sStringPara, sFormatPara )
+	Else
+		MakeNumberingNumberPara = MakeNumberingNumberPara31( oPar, sFormatPara )
+	End If
+End Function
+
+&apos; Обработка нумерованных и маркированных списков для &lt; OOo3.1
+Function MakeNumberingNumberParaLess31( oPar, sStringPara, sFormatPara ) As String	
+	&apos; sStringPara - текст абзаца без тэгов форматирования
+	&apos; sFormatPara - текст абзаца с тэгами форматирования
 	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
 		Dim oRN, oRNI
 		oRN = oPar.NumberingRules
@@ -25,16 +36,48 @@ Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String
 					sFormatPara = sFormatPara
 				End If
 			End If
-			MakeNumberingNumberPara = sFormatPara	
+			MakeNumberingNumberParaLess31 = sFormatPara	
 		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If n = 1 Then &apos; GraphicBitman
 				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
 				Dim sMarkerPara As String : sMarkerPara = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot; &quot; &amp; sFormatPara
 				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
-				MakeNumberingNumberPara = sMarkerPara
+				MakeNumberingNumberParaLess31 = sMarkerPara
 &apos;				MakeNumberingNumberPara = &quot;• &quot; &amp; sFormatPara &apos; маркеры-картинки заменяем на •
 			Else &apos; BulletChar
-				MakeNumberingNumberPara = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
+				MakeNumberingNumberParaLess31 = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
+			End If
+			bMarker = True
+		End If
+	End If
+End Function
+
+&apos; Обработка нумерованных и маркированных списков для &gt;= OOo3.1
+Function MakeNumberingNumberPara31( oPar, sFormatPara ) As String	
+	&apos; sFormatPara - текст абзаца с тэгами форматирования
+	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
+		Dim oRN, oRNI
+		oRN = oPar.NumberingRules
+		oRNI = oRN.getByIndex(0)
+		Dim n As Integer : n = IsMarker( oPar )
+		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
+			Dim sNumber As String : sNumber = oPar.ListLabelString
+			If sFormatPara &lt;&gt; &quot;&quot; Then
+				If sNumber &lt;&gt; &quot;&quot; Then
+					sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
+				Else
+					sFormatPara = sFormatPara
+				End If
+			End If
+			MakeNumberingNumberPara31 = sFormatPara	
+		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
+			If n = 1 Then &apos; GraphicBitman
+				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
+				Dim sMarkerPara As String : sMarkerPara = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot; &quot; &amp; sFormatPara
+				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
+				MakeNumberingNumberPara31 = sMarkerPara
+			Else &apos; BulletChar
+				MakeNumberingNumberPara31 = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
 			End If
 			bMarker = True
 		End If
