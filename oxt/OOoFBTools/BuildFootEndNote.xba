@@ -56,7 +56,7 @@ sub _UnoCopy()
 end sub
 
 sub _UnoPaste()
-	&apos; вставить из буыера текст
+	&apos; вставить из буфера текст
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
 	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Paste&quot;, &quot;&quot;, 0, Array())
@@ -271,7 +271,7 @@ Function CreateSelectedTextIterator( oDoc As Object, sPrompt As String, sMessTit
 	Dim oRCurs &apos;Курсор правой границы текущего выделения
 		
 	If Not IsAnythingSelected(ThisComponent) Then
-		If MsgBox( sBTEND.sNoSelectText &amp; chr(10) &amp; sPrompt, 1 + 32 + 256, sMessTitle ) = 1 Then
+		If MsgBox( sPrompt, 1 + 32 + 256, sMessTitle ) = 1 Then
 			oLCurs = oDoc.getText().createTextCursor()
 			oLCurs.gotoStart( False )
 			oRCurs = oDoc.getText().createTextCursor()
@@ -344,7 +344,7 @@ End Function
 &apos; простая генерация сносок
 Sub BuildFootNoteSimple()
 	Dim oCurs() As Object, l As Long
-	If Not CreateSelectedTextIterator( ThisComponent, sBTEND.sProcessAllDoc, _
+	If Not CreateSelectedTextIterator( ThisComponent, sBTEND.sNoSelectText &amp; chr(10) &amp; sBTEND.sProcessAllDoc, _
 										sBTEND.sFindInSelected, oCurs() ) Then Exit Sub
 	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
 	

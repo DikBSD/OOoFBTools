@@ -3,57 +3,57 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Private sCurDocFile As String
-Private oTextOutputStream As Object
-Private sBookAnnotation() As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
-Private sBodyParagraphs() As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
-Private sLinksTo() As String		&apos; массив ссылок КУДА и их ID
-Private sConvertorName As String	&apos; название конвертора
+Public sCurDocFile As String
+Public oTextOutputStream As Object
+Public sBookAnnotation() As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
+Public sBodyParagraphs() As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
+Public sLinksTo() As String		&apos; массив ссылок КУДА и их ID
+Public sConvertorName As String	&apos; название конвертора
 
 &apos; для аннотации
-Private bMergeAnnotationSubTitle As Boolean
+Public bMergeAnnotationSubTitle As Boolean
 &apos; оформление подзаголовков
-Private bMergeSubTitle As Boolean
+Public bMergeSubTitle As Boolean
 &apos; оформление авторов эпиграфов
-Private bMergeEpigraphAuthors As Boolean
+Public bMergeEpigraphAuthors As Boolean
 &apos; оформление заголовков стихов
-Private bMergePoemTitle As Boolean
+Public bMergePoemTitle As Boolean
 &apos; оформление авторов стихов
-Private bMergePoemAuthors As Boolean
+Public bMergePoemAuthors As Boolean
 &apos; оформление подзаголовков поэм
-Private bMergePoemSubTitle As Boolean
+Public bMergePoemSubTitle As Boolean
 &apos; оформление авторов цитат
-Private bMergeCiteAuthors As Boolean
+Public bMergeCiteAuthors As Boolean
 &apos; оформление подзаголовков цитат
-Private bMergeCiteSubTitle As Boolean
+Public bMergeCiteSubTitle As Boolean
 &apos; удаление пустых строк
-Private bDelEL As Boolean
+Public bDelEL As Boolean
 &apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
-Private bCorrectPara As Boolean
+Public bCorrectPara As Boolean
 &apos; обработка ссылок внутри документа
-Private bDocLinks As Boolean
-Private bSaveImageTitle As Boolean &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
-Private bExportGraphics As Boolean &apos; экспорт Графики
-Private sGifAs As String &apos; формат преоьбразования для gif
-Private sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
-Private sAnyAs As String &apos; формат преоьбразования для остальных форматов
-Private sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
+Public bDocLinks As Boolean
+Public bSaveImageTitle As Boolean &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
+Public bExportGraphics As Boolean &apos; экспорт Графики
+Public sGifAs As String &apos; формат преоьбразования для gif
+Public sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
+Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
+Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
 &apos; &quot;Служебная область&quot; для &quot;служебных стилей&quot; (по умолчанию - верх документа)
-Private bUp As Boolean
+Public bUp As Boolean
 &apos; экспорт форматирования стилями слов
-Private bOnlyOneStyle As Boolean
+Public bOnlyOneStyle As Boolean
 &apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
-Private bSaveUTF8 As Boolean
+Public bSaveUTF8 As Boolean
 
 &apos; Чистка fb2 кода
-Private bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
-Private bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
+Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
+Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
 &apos; запустить сгенерированный fb2-файл на просмотр
-Private bFB2Execute As Boolean
+Public bFB2Execute As Boolean
 &apos; валидация
-Private bValidate As Boolean
+Public bValidate As Boolean
 
-Private lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
+Public lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 
 Sub ExportToFB21()
 	sConvertorName = &quot;ExportToFB2.1&quot;
