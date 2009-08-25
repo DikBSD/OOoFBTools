@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_ChangeLang" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; //////////////////////////////////////////////////////////////////////////////
+&apos; модуль локализации изменения языка символов с русского на английский и обратно
+&apos; //////////////////////////////////////////////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений модуля локализации изменения языка символов с русского на английский и обратно
+Type tChangeLangData
+	sMessTitle			As String &apos; Изменение языка символов
+	sNotTableFrameFN	As String &apos; Таблицы, Текстовые Врезки и Сноски пока не обрабатываются!
+	sSelectText			As String &apos; Пожалуйста, выделите нужный фрагмент документа.
+	sSelectSeveral		As String &apos; Выделено несколько фрагментов текста!
+	sSelectOnlyOne		As String &apos; Пожалуйста, выделите только один фрагмент.
+End Type
+
+Public sCLD As tChangeLangData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация сообщений модуля локализации изменения языка символов с русского на английский и обратно
+Sub InitChangeLangMessage()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With sCLD
+			.sMessTitle			= &quot;Изменение языка символов&quot;
+			.sNotTableFrameFN	= &quot;Таблицы, Текстовые Врезки и Сноски пока не обрабатываются!&quot;
+			.sSelectText		= &quot;Пожалуйста, выделите нужный фрагмент документа.&quot;
+			.sSelectSeveral		= &quot;Выделено несколько фрагментов текста!&quot;
+			.sSelectOnlyOne		= &quot;Пожалуйста, выделите только один фрагмент.&quot;
+		End With
+	Else
+		With sCLD
+			.sMessTitle			= &quot;Change the Language Symbol&quot;
+			.sNotTableFrameFN	= &quot;The Tables, Text Frames and Footnotes until they are processed!&quot;
+			.sSelectText		= &quot;Please, select the necessary Fragment of the Document.&quot;
+			.sSelectSeveral		= &quot;Several Fragments of the Text are Chosen!&quot;
+			.sSelectOnlyOne		= &quot;Please, select only One Fragment.&quot;
+		End With
+	End If
+End Sub
+
+</script:module>

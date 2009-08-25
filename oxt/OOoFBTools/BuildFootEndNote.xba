@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="BuildFootEndNote" script:language="StarBasic">REM  *****  BASIC  *****
+
+Option Explicit
+
 Const sConstBookMarkSimple		As String	= &quot;_ooo_ocr_tc_foot_note_simple_dikbsd_&quot;		&apos; временная закладка
 Const sConstBookMarkNZoneNote	As String	= &quot;_ooo_ocr_tc_foot_note_number_zone_dikbsd_&quot;	&apos; закладка - зона поиска номера сноски
 Const sConstBookMarkListNote	As String	= &quot;_ooo_ocr_tc_foot_note_list_zone_dikbsd_&quot;		&apos; закладка - зона поиска списка текста сносок
@@ -30,273 +33,6 @@ Type tTestDataFlags
 	sLBookmark							As String &apos; название закладки для Главы книги
 	sRBookMark							As String &apos; название закладки для Списка примечаний этой главы
 End Type
-
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos;							UNO функции
-&apos;//////////////////////////////////////////////////////////////////////////////
-sub _UnoDelete()
-	&apos; удаление выделенного текста
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:Delete&quot;, &quot;&quot;, 0, Array())
-end sub
-
-sub _UnoCut()
-	&apos; вырезать выделенный текст в буфер
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:Cut&quot;, &quot;&quot;, 0, Array())
-end sub
-
-sub _UnoCopy()
-	&apos; копировать выделенный текст в буфер
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:Copy&quot;, &quot;&quot;, 0, Array())
-end sub
-
-sub _UnoPaste()
-	&apos; вставить из буфера текст
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:Paste&quot;, &quot;&quot;, 0, Array())
-end sub
-
-sub _UnoInsertFootnote()
-	&apos; вставить сноску
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:InsertFootnote&quot;, &quot;&quot;, 0, Array())
-end sub
-
-sub _UnoSwBackspace()
-	&apos; Backspace
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:SwBackspace&quot;, &quot;&quot;, 0, Array())
-end sub
-
-Sub _UnoInsertBookmark( sBookMark As String )
-	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
-	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(0) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;Bookmark&quot;
-	args1(0).Value = sBookMark
-	dispatcher.executeDispatch(document, &quot;.uno:InsertBookmark&quot;, &quot;&quot;, 0, args1())
-End Sub
-
-Sub _UnoDeleteBookMark( sBookMark As String )
-	Dim document   As Object
-	Dim dispatcher As Object
-	document   = ThisComponent.CurrentController.Frame
-	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(0) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;Bookmark&quot;
-	args1(0).Value = sBookMark
-	dispatcher.executeDispatch(document, &quot;.uno:DeleteBookmark&quot;, &quot;&quot;, 0, args1())
-End Sub
-
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; 			Функции по работе с закладками
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; Вставить текст в место закладки.
-&apos; возвращает: True - если вставили текст в место закладки. False - если нет такой закладки
-Function InsertTextToBookMark( sBookMarkName As String, sText As String ) As Boolean
-	Dim oBookMarks : oBookMarks = ThisComponent.getBookmarks()
-	If oBookMarks.hasByName( sBookMarkName ) Then &apos; есть ли такая закладка?
-		Dim oBookMark : oBookMark = oBookMarks.getByName( sBookMarkName )
-		oBookMark.getAnchor.setString( sText )
-		InsertTextToBookMark = True
-	Else
-		InsertTextToBookMark = False
-	End If
-End Function
-
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos; переместить видимый курсор на закладку: bSel=True - выделить текст закладки, bSel=False - не выделять текст закладки
-&apos; возвращает: True - если перешли на закладку. False - если нет такой закладки
-Function GoToViewCursorToBookMark( oViewCursor As Object, sBookMarkName As String, bSel As Boolean ) As Boolean
-	Dim oBookMarks : oBookMarks = ThisComponent.getBookmarks()
-	If oBookMarks.hasByName( sBookMarkName ) Then &apos; есть ли такая закладка?
-		Dim oBookMark : oBookMark = oBookMarks.getByName(sBookMarkName).getAnchor()
-		If Not bSel Then &apos; просто перейти на начало закладки
-			oViewCursor.gotoRange(oBookMark.getStart(), False)
-		Else &apos; выделить текст закладки
-			oViewCursor.gotoRange(oBookMark, False) &apos; выделить закладку
-&apos;			oViewCursor.gotoRange(oBookMark.getStart(), False)	&apos; то же самое,
-&apos;			oViewCursor.gotoRange(oBookMark.getEnd(), True)		&apos; только используя 2 строки
-		End If
-		GoToViewCursorToBookMark = True
-	Else
-		GoToViewCursorToBookMark = False
-	End If
-End Function
-
-&apos; расширить выделение до начала закладки (если курсор правее конца закладки), или начала закладки (если курсор левее начала закладки)
-Function ExtendSelectTextToBookMark( oViewCursor As Object, sBookMarkName As String )
-	ExtendSelectTextToBookMark = False
-	Dim oBookMarks : oBookMarks = ThisComponent.getBookmarks()
-	If oBookMarks.hasByName( sBookMarkName ) Then &apos; есть ли такая закладка?
-		Dim oBookMark : oBookMark = oBookMarks.getByName(sBookMarkName).getAnchor()
-		oViewCursor.gotoRange(oBookMark, True) &apos; расширить выделение до начала закладки (если курсор правее конца закладки), или начала закладки (если курсор левее начала закладки)
-		ExtendSelectTextToBookMark = True
-	End If
-End Function
-
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; возвращает массив с названиями зон поиска - помеченных закладками списка текста сносок (не по порядку их добавления. а по индексу их массива закладок)
-Function GetFindListNoteZones( oBookMarks As Object, sConstBookMarkListNote As String ) As Array
-	Dim l As Long
-	Dim aBookMarks() As String
-	For l=0 To oBookMarks.getCount()-1
-		Dim b : b = oBookMarks.getByIndex( l )
-		Dim s As String : s = b.Name
-		If InStr( s, sConstBookMarkListNote ) = 1 Then
-			AddNewItemToArray1( aBookMarks(), s )
-		End If
-	Next l
-	GetFindListNoteZones = aBookMarks()
-End Function
-
-&apos; //////////////////////////////////////////////////////////////////////////
-&apos; удаление всех закладок, соответствующих шаблону sBookMarkTemplate
-Function DeleteAllBookMarkWithTemplate( oBookMarks As Object, sBookMarkTemplate As String ) As Integer
-	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkTemplate )
-	Dim l As Long
-	For l=0 To UBound( aBookMarks() )
-		_UnoDeleteBookMark( aBookMarks(l) )
-		DeleteAllBookMarkWithTemplate = DeleteAllBookMarkWithTemplate+1
-	Next l
-End Function
-
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; расширение курсора от закладки 1 до конца закладки 2
-Sub ExtendSelectTextToEndBookMark( oDoc As Object, oViewCursor As Object, sBookMarkStartName As String, oBookMarkEnd As Object )
-	&apos; возвращаемся к закладке - началу текста сноски
-	Dim b : b = oDoc.getBookmarks().getByName( sBookMarkStartName ).getAnchor()
-	&apos; курсор - на начала закладки (текста сноски)
-	oViewCursor.gotoRange(b.getStart(), False)
-	&apos; расширяем выделение курсора до конца зоны поиска - блока текста сносок
-	oViewCursor.gotoRange(oBookMarkEnd.getEnd(), True)
-	&apos; удаляем и вставляем закладку на место найденного текста сноски - по ней потом найдем этот текст для формирования соответствующего текста сноски
-	_UnoDeleteBookMark( sBookMarkStartName )
-	_UnoInsertBookmark( sBookMarkStartName )
-End Sub
-
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; 			Функции по работе с выделенным текстом
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; есть ли выделение курсором. True - есть
-Function IsSelection( oSel As Object ) As Boolean
-	Dim oCursor : oCursor = ThisComponent.Text.CreateTextCursorByRange( oSel )
-	If oCursor.IsCollapsed() Then &apos; ничего не выделено
-		IsSelection = False
-	Else
-		IsSelection = True
-	End If
-End Function
-
-&apos; //////////////////////////////////////////////////////////////////////////
-&apos; сколько выделено областей текста
-Function GetSelectionCount() As Long
-	Dim lCount As Long : lCount = 0
-	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
-	If Not IsNull(oSels) Then
-		Dim lSelCount As Long : lSelCount = oSels.getCount()
-		Dim l As Long
-		For l = 0 To lSelCount - 1
-			Dim oSel As Object : oSel = oSels.getByIndex(l)
-			If IsSelection( oSel ) Then lCount = lCount+1
-		Next l
-	End If
-	GetSelectionCount = lCount
-End Function
-
-&apos; ///////////////////////////////////////////////////////////////////
-&apos; возвращает &quot;реальную&quot; левую границу курсора (и для случая, если конец курсора находится раньше начала)
-&apos; основано на коде Andrew Pitonyak
-Function GetLeftMostCursor( oSel As Object ) As Object
-	Dim oRange, oCursor
-	If oSel.getText().compareRegionStarts( oSel.getEnd(), oSel ) &gt;= 0 Then
-		oRange = oSel.getEnd()
-	Else
-		oRange = oSel.getStart()
-	End If
-	oCursor = oSel.getText().CreateTextCursorByRange( oRange )
-	oCursor.goRight( 0, False )
-	GetLeftMostCursor = oCursor
-End Function
-
-&apos; ///////////////////////////////////////////////////////////////////
-&apos; возвращает &quot;реальную&quot; правую границу курсора (и для случая, если конец курсора находится раньше начала)
-&apos; основано на коде Andrew Pitonyak
-Function GetRightMostCursor( oSel As Object ) As Object
-	Dim oRange, oCursor
-	If oSel.getText().compareRegionStarts( oSel.getEnd(), oSel ) &gt;= 0 Then
-		oRange = oSel.getStart()
-	Else
-		oRange = oSel.getEnd()
-	End If
-	oCursor = oSel.getText().CreateTextCursorByRange( oRange )
-	oCursor.goLeft( 0, False )
-	GetRightMostCursor = oCursor
-End Function
-
-&apos; ///////////////////////////////////////////////////////////////////
-&apos; Находится ли курсор внутри выделенной области?
-&apos; основано на коде Andrew Pitonyak
-Function IsAnythingSelected( oDoc As Object ) As Boolean
-	IsAnythingSelected = False
-	
-	If IsNull( oDoc )		Then Exit Function
-	Dim oSels : oSels = oDoc.getCurrentSelection() &apos;все выделения в тексте
-	If IsNull( oSels )		Then Exit Function
-	If oSels.getCount() = 0 Then Exit Function
-	If oSels.getCount() &gt; 1 Then
-		IsAnythingSelected = True
-	Else
-		Dim oSel	As Object : oSel	= oSels.getByIndex( 0 ) &apos;текущее выделение в тексте
-		Dim oCursor As Object : oCursor = oSel.getText().CreateTextCursorByRange( oSel ) &apos;временный курсор
-		If Not oCursor.IsCollapsed() Then IsAnythingSelected = True
-	End If
-End Function
-
-&apos; ////////////////////////////////////////////////////////////////////////
-&apos; Создать курсоры, охватывающие выбранные текстовые области.
-&apos; основано на коде Andrew Pitonyak
-Function CreateSelectedTextIterator( oDoc As Object, sPrompt As String, sMessTitle As String, oCurs() ) As Boolean
-	CreateSelectedTextIterator = True
-	
-	Dim oLCurs &apos;Курсор левой границы текущего выделения
-	Dim oRCurs &apos;Курсор правой границы текущего выделения
-		
-	If Not IsAnythingSelected(ThisComponent) Then
-		If MsgBox( sPrompt, 1 + 32 + 256, sMessTitle ) = 1 Then
-			oLCurs = oDoc.getText().createTextCursor()
-			oLCurs.gotoStart( False )
-			oRCurs = oDoc.getText().createTextCursor()
-			oRCurs.gotoEnd( False )
-			oCurs = DimArray( 0, 1 )
-			oCurs( 0, 0 ) = oLCurs
-			oCurs( 0, 1 ) = oRCurs
-		Else
-			oCurs = DimArray()
-			CreateSelectedTextIterator = False
-		End If
-	Else
-		Dim oSels		As Object	: oSels		= ThisComponent.getCurrentSelection() &apos; все выделения текста
-		Dim lSelCount	As Long		: lSelCount = oSels.getCount() &apos;число выделенной области текста
-		oCurs = DimArray( lSelCount - 1, 1 )
-		Dim l As Long
-		For l = 0 To lSelCount - 1
-			Dim oSel As Object : oSel = oSels.getByIndex( l ) &apos; текущее выделение
-			oLCurs = GetLeftMostCursor( oSel )
-			oRCurs = GetRightMostCursor( oSel )
-			oCurs( l, 0 ) = oLCurs
-			oCurs( l, 1 ) = oRCurs
-		Next l
-	End If
-End Function
 
 &apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos;				Функции алгоритма простой генерации сносок
@@ -523,14 +259,6 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 	End If
 End Function
 
-&apos; &quot;прыжок&quot; через таблицу
-Sub CursorAfterCurrentTextTable( oCursor )
-	While Not IsEmpty( oCursor.TextTable )
-		oCursor.goDown( 1, False )
-	Wend
-	oCursor.gotoStartOfLine( False )
-End Sub
-
 &apos; вставка закладки на место текста для указанного номера сноски
 &apos; sRegFind - строка поиска (с регулярными выражениями)
 &apos; oBlockNoteZoneBookMark - закладка - зона поиска
@@ -619,8 +347,11 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 									sConstBookMarkListNote As String, sConstBookMarkFNNumber As String, sConstBookMarkFNText As String, _
 									sRegStringNFNInText As String, sForLeft As String, sForRight As String ) As Long
 	ProcessingComplexFootNoteList = 0
+	Dim oBookMark	As Object, oBlockNoteZoneBookMark As Object
+	Dim sNumber		As String
+	Dim nValue		As Integer
+
 	Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
-		Dim nValue As Integer
 		nValue = InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, _
 												sConstBookMarkListNote, sConstBookMarkFNNumber, sForLeft, sForRight )
 		&apos; -1 - номер примечания в тексте не найден - конец документа
@@ -631,12 +362,12 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 			ProcessingComplexFootNoteList = lInsNotesCount
 			Exit Function
 		ElseIf nValue = 0 Then &apos; номер очередного примечания - в тексте
-			Dim oBookMark As Object	: oBookMark	= oBookMarks.getByName( sConstBookMarkFNNumber ).getAnchor()
+			 oBookMark	= oBookMarks.getByName( sConstBookMarkFNNumber ).getAnchor()
 			&apos; выделяем номер из строки
-			Dim sNumber As String : sNumber = GetNumberFromString( oBookMark.getString() ) &apos; текст с номером очередной сноски
+			sNumber = GetNumberFromString( oBookMark.getString() ) &apos; текст с номером очередной сноски
 
 			&apos; ищем текст для сноски этого номера в блоке текста сносок
-			Dim oBlockNoteZoneBookMark : oBlockNoteZoneBookMark = oBookMarks.getByName(sConstBookMarkListNote).getAnchor()
+			oBlockNoteZoneBookMark = oBookMarks.getByName(sConstBookMarkListNote).getAnchor()
 			&apos; перевод курсора на начала закладки зоны поиска текста сносок
 			oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
 			If InsertBookmarkToTextForFootNote( oDoc, oViewCursor, oBlockNoteZoneBookMark, sForLeft &amp; sNumber &amp; sForRight, sConstBookMarkFNText ) Then
@@ -701,9 +432,12 @@ Sub BuildFootNoteComplex()
 	Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
 	Dim aLBookMarks() As String &apos; закладки для Глав книги
 	Dim lFindCount As Long : lFindCount = 0
+	Dim oRCurs As Object, oLBMs As Object
+	Dim l As Long
+	
 	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State  Then
 		&apos; режим: 1. Нумерация сквозная; Общий список примечаний - в конце книги.
-		Dim oRCurs As Object : oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
+		oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
 		lFindCount = lFindCount + ProcessingComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(0), _
 																sConstBookMarkFNNumber, sConstBookMarkFNText, sRegStringNFNInText, sLeft, sRight ) 
 		&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста сносок ( после закладки sConstBookMarkListNote )
@@ -719,8 +453,7 @@ Sub BuildFootNoteComplex()
 			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode2
 			Exit Sub	
 		End If
-		
-		Dim l As Long
+
 		For l=0 To UBound( aBookMarks() )
 			oRCurs = oBookMarks.getByName( aBookMarks(l) ).getAnchor()
 			lFindCount = lFindCount + ProcessingComplexFootNoteList( oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(l), _
@@ -749,7 +482,7 @@ Sub BuildFootNoteComplex()
 		&apos; получаем L-зоны для поиска номеров сносок
 		For l=0 To UBound( aBookMarks() )
 			&apos; левая граница поиска номеров сносок - текстовый курсор на очередной закладке (начало главы и т.д.)
-			Dim oLBMs As Object : oLBMs = oBookMarks.getByName( aLBookMarks(l) ).getAnchor()
+			oLBMs = oBookMarks.getByName( aLBookMarks(l) ).getAnchor()
 			oLCurs.gotoRange( oLBMs, False )
 			&apos; правая граница - следующая левая граница или начало 1-й закладки списка сносок
 			If l &lt; UBound( aBookMarks() ) Then
@@ -1285,8 +1018,8 @@ Function CellParaParser( oCell As Object, sLeft as String, sRight as String ) As
 	Dim lFindCount As Long : lFindCount = 0
 	Dim oCellParEnum : oCellParEnum = oCell.createEnumeration()
 	Do While oCellParEnum.hasMoreElements()
-		Dim oCellPar : oCellPar = oCellParEnum.nextElement()
-		Dim oWordEnum : oWordEnum = oCellPar.createEnumeration()
+		Dim oCellPar	: oCellPar	= oCellParEnum.nextElement()
+		Dim oWordEnum	: oWordEnum	= oCellPar.createEnumeration()
 		Do While oWordEnum.hasMoreElements()
 			Dim oWord : oWord = oWordEnum.nextElement()
 			If oWord.TextPortionType = &quot;Text&quot; Then
@@ -1552,6 +1285,7 @@ Sub FootNoteTest()
 End Sub
 
 Sub SaveStartReportText( oTOS As Object, sMode as String )
+	Dim s As String
 	s = &quot;&lt;html&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;meta http-equiv=&quot;&quot;content-type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;body&gt;&quot; &amp; chr(10)
@@ -1561,6 +1295,7 @@ Sub SaveStartReportText( oTOS As Object, sMode as String )
 End Sub
 
 Sub SaveEndReportText( oTOS As Object )
+	Dim s As String
 	s = &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook &amp; &quot;:&lt;/p&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
@@ -1573,6 +1308,7 @@ Sub SaveEndReportText( oTOS As Object )
 End Sub
 
 Sub SaveZonesCount( oTOS As Object, lCB As Long, lLB As Long  )
+	Dim s As String
 	s = &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestBookmarkForSearchZones &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForStatChapter &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1586,7 +1322,7 @@ End Sub
 &apos; печать финальных таблиц - какие зоны требуют вмешательства, а какие - не требуют
 Sub SaveTablesFinalReport( oTOS As Object, vaZoneFlagsArray() As Variant )
 	Dim alOk() As Long, alErr() As Long
-	Dim l As Long
+	Dim l As Long, s As String
 	s = &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestGeneralResume &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
 	oTOS.writeString( s )
 	For l=0 To UBound( vaZoneFlagsArray() )
@@ -1822,7 +1558,6 @@ Sub TestForAbsentNumbers( saNumbers() As String, nAbsentNumbers() As Integer )
 	nMin = iaSort( 0 ) : nMax = iaSort( Ubound( iaSort() ) )
 	&apos; число всех элементов должно быть равно максимальному значению. Если это не так - то каких-то элементов нет
 	If nMax &lt;&gt; UBound( iaSort() ) Then
-		bIsAbsentNumbers = True &apos; каких-то номеров не хватает
 		&apos; перебор по всем элементам
 		Dim nPrev As Integer, nCurrent As Integer : nPrev = iaSort( 0 )
 		For l=1 To UBound( iaSort() )
@@ -2193,8 +1928,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	End If
 	
 	&apos; заносим результат в массив
-	Dim k As Long
-	k = Ubound( vaZoneFlagsArray() ) + 1
+	Dim k As Long : k = Ubound( vaZoneFlagsArray() ) + 1
 	ReDim Preserve vaZoneFlagsArray(k)
 	vaZoneFlagsArray(k) = t
 End Sub
