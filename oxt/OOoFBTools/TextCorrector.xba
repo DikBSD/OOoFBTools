@@ -20,6 +20,7 @@ Private bDelEmptyPar As Boolean
 Private bBreakLinesInPara As Boolean
 Private bBreakLinesInParaStartSpace As Boolean
 Private bBreakLinesInParaEndSymbols As Boolean
+Private bBreakLinesInFPara			As Boolean
 
 Private bDelMP As Boolean &apos; удаление мягкие переносы
 Private bWordDefisPara As Boolean
@@ -50,7 +51,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 242
+		.Height = 264
 		.Width  = 318
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -105,6 +106,7 @@ Sub SaveCorrectorSettings()
 	bBreakLinesInPara = oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State
 	bBreakLinesInParaStartSpace = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
 	bBreakLinesInParaEndSymbols = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
+	bBreakLinesInFPara			= oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).State
 	
 	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
@@ -142,6 +144,7 @@ Sub SetCorrectorSettingDefault()
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
 	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State = 0
+	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).State			= 0
 	
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 0
@@ -235,9 +238,11 @@ Sub cboxBreakLinesInParaEnabled()
 	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 1 Then
 		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = True
 		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = True
+		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).Enable			 = True
 	Else
 		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = False
 		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = False
+		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).Enable			 = False
 	End If
 End Sub
 
@@ -265,7 +270,7 @@ Sub TextCorrectorDlgOk()
 	&apos; Принятие параметров чистки текста
 	oTextCorrectorDlg.endExecute()
 	
-	SaveCorrectorSettings &apos; сохранение настроек чистки текста
+	SaveCorrectorSettings() &apos; сохранение настроек чистки текста
 
 	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	
@@ -338,6 +343,8 @@ Sub TextCorrectorDlgOk()
 			JoinBreakLinesInParaStartSpace( oProgressBar )
 		ElseIf bBreakLinesInParaEndSymbols = True Then
 			JoinBreakLinesInParaEndSymbols( oProgressBar )
+		ElseIf bBreakLinesInFPara = True Then
+			JoinBreakLinesInEmptyPara( oProgressBar )
 		End If
 	End If
 
@@ -502,10 +509,10 @@ Sub DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 End Sub
 
 &apos; /////////////////////////////////////////////////////////////////////////
+&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
+&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
 Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
-	&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
-	&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
-	&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant
 	Dim oDoc As Object, l As Long
 	oDoc = ThisComponent
@@ -534,10 +541,10 @@ Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
 	Loop
 End Sub
 
+&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
+&apos; Идентификатор строки &quot;одного абзаца&quot; - 1 или несколько пробелов в конце строки.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
 Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
-	&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
-	&apos; Идентификатор строки &quot;одного абзаца&quot; - 1 или несколько пробелов в конце строки.
-	&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
 	Dim vStartSearch, vEndSearch &apos;Open и Close descriptors
 	Dim vStartFound, vEndFound &apos;Open и Close find objects
 	Dim oDoc As Object, l As Long
@@ -568,6 +575,44 @@ Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
 			vStartFound.gotoStartOfParagraph(False)
 			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch )
+		End If
+	Loop
+End Sub
+
+&apos; склейка разорваных строк абзаца знаком абзаца в один абзац.
+&apos; Идентификатор каждого &quot;нового абзаца&quot; - пустой абзац.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+Sub JoinBreakLinesInEmptyPara()
+	Dim vStartFound As Variant, vEndFound As Variant
+	Dim oDoc As Object, l As Long : l = 0
+	oDoc = ThisComponent
+	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+
+	&apos; Находим верхнюю границу области
+	Dim vSearch As Variant
+	vSearch = oDoc.createSearchDescriptor()
+	vSearch.SearchRegularExpression = True
+	vSearch.SearchString = &quot;^$&quot;
+&apos;	vStartFound = oDoc.findFirst( vSearch )
+	&apos; верхняя граница - на самый верх документа
+	vStartFound = oDoc.getText().createTextCursor()
+	vStartFound.gotoStart( False )	
+	
+	&apos; поиск и обработка следующих областей, удовлетворяющих условию поиска
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
+		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
+		If IsNull(vEndFound) Then
+			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			Exit Do
+		Else
+			vEndFound.gotoPreviousParagraph(False)
+			vEndFound.gotoPreviousParagraph(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 		End If
 	Loop
 End Sub
