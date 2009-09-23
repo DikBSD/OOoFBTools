@@ -551,19 +551,28 @@ Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
 End Sub
 
 &apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
-&apos; Идентификатор строки &quot;одного абзаца&quot; - 1 или несколько пробелов в конце строки.
+&apos; Идентификатор строки &quot;одного абзаца&quot; - символы окончания предложения (.!?…»”\&quot;&quot;:;) в конце строки.
 &apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
 Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
 	Dim vStartSearch, vEndSearch &apos;Open и Close descriptors
 	Dim vStartFound, vEndFound &apos;Open и Close find objects
 	Dim oDoc As Object, l As Long
 	oDoc = ThisComponent
+	
+	&apos; Удаляем все конечные пробелы, иначе результат будет неверным
+	oDoc = ThisComponent
+	oReplace = oDoc.createReplaceDescriptor
+	oReplace.SearchRegularExpression = True
+	oReplace.SearchString = &quot; {1,}$&quot;
+	oReplace.ReplaceString = &quot;&quot;
+	oDoc.ReplaceAll(oReplace)
+	
 	&apos; Создать дескрипторы для документа, в котором возможен поиск.
 	vStartSearch = oDoc.createSearchDescriptor()
 	vEndSearch = oDoc.createSearchDescriptor()
 
-	vStartSearch.SearchRegularExpression = True
-	vEndSearch.SearchRegularExpression = True
+	vStartSearch.SearchRegularExpression	= True
+	vEndSearch.SearchRegularExpression		= True
 	
 	&apos; Задать текст, который нужно искать, и др.
 	vStartSearch.SearchString = &quot;$&quot;&apos;( если поиск по пробелам в конце абзаца - &quot;[:space:]+$&quot; - этот вариант не всегда встречается и не все разорванные строки &quot;видит&quot;)
