@@ -78,6 +78,7 @@ Sub TextDefectFinderStart()
 		.cmdbtnTDFSave.HelpText = sTDFD.sWordSaveHint
 		.cmdbtnTDFEdit.Label = sTDFD.sListWordsEdit
 		.cmdbtnTDFEdit.HelpText = sTDFD.sListWordsEditHint
+		.chBoxFindNext.Label = sTDFD.sFindNext
 	End With
 	oTDF.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
 	oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
@@ -403,6 +404,7 @@ Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Inte
 				InsertionSpaceAroundDash( oViewCursor )
 			End If
 			Finder = True
+			If oTDF.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then TDFFind()
 		End If
 	Else &apos; просто текст, &apos; текстовая врезка или текст сноски
 		&apos; выделяем найденное и обрабатываем
@@ -415,6 +417,7 @@ Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Inte
 			InsertionSymbol( oViewCursor )
 		End If
 		Finder = True
+		If oTDF.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then TDFFind()
 	End if
 End Function
 
