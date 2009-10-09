@@ -16,7 +16,6 @@ Type tFindData
 End Type
 
 Private oTDF As Object
-Private oDocController As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
 Private oDocControl, otxtCurs &apos; текстовый курсор
@@ -25,7 +24,7 @@ Private asWords() As String &apos; массив с &quot;нормальными&
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub TextDefectFinderDlg_windowActivated(oEv)
-	oDocController = ThisComponent.getCurrentController()
+	oDocControl = ThisComponent.getCurrentController()
 End Sub
 
 Sub TextDefectFinderDlg_windowDeactivated(oEv)
@@ -78,7 +77,6 @@ Sub TextDefectFinderStart()
 		.cmdbtnTDFSave.HelpText = sTDFD.sWordSaveHint
 		.cmdbtnTDFEdit.Label = sTDFD.sListWordsEdit
 		.cmdbtnTDFEdit.HelpText = sTDFD.sListWordsEditHint
-		.chBoxFindNext.Label = sTDFD.sFindNext
 	End With
 	oTDF.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
 	oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )

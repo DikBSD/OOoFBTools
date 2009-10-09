@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_FindUpIndex" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; //////////////////////////////////////
+&apos; модуль локализации работы со сносками
+&apos; //////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений для работы со сносками
+Type tFindUpIndexData
+	sToContinueSearch	As String &apos; Достигнут конец документа. Следущее слово не найдено. Продолжить поиск с начала?
+	sImpossibleToFind	As String &apos; Невозможно найти слово в выделенном объекте.
+	sText				As String &apos; текст
+End Type
+
+Public sFUID As tFindUpIndexData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+Sub InitFindUpIndexDataMessage()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With sFUID
+			.sToContinueSearch	= &quot;Достигнут конец документа.&quot; &amp; chr(10) &amp; &quot;Следущее слово не найдено.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+			.sImpossibleToFind	= &quot;Невозможно найти слово в выделенном объекте.&quot;
+			.sText				= &quot;текст&quot;
+		End With
+	Else
+		With sFUID
+			.sToContinueSearch	= &quot;The end of the document is reached. &quot; &amp; chr (10) &amp; &quot;Next the word is not found.&quot; &amp; chr (10) &amp; chr (10) &amp; _
+			.sImpossibleToFind	= &quot;It is impossible to find a Word in the allocated Object.&quot;
+			.sText				= &quot;the text&quot;
+		End With
+	End If
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация диалога преобразования номеров примечаний в верхнем индексе по шаблону в зависимости от локали
+Sub InitFindUpIndexDlg()
+	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	InitFindUpIndexDataMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; Then
+		With oFUI.getModel
+			.Title	= &quot;Интерактивное преобразование № примечаний в верхнем индексе по шаблону&quot;
+			.lblPatternTransformationNumberNotes.Label	= &quot;Шаблон для преобразования&quot;
+			.cmdBtnFind.Label	= &quot;Найти&quot;
+			.cmdBtnWork.Label	= &quot;Преобразовать&quot;
+			.chBoxFindNext		= &quot;&quot;
+		End With
+	Else
+		With oFUI.getModel
+			.Title	= &quot;Interactive Transformation № Notes in the top Index on a Pattern&quot;
+			.lblPatternTransformationNumberNotes.Label	= &quot;the Pattern for Transformation&quot;
+			.cmdBtnFind.Label	= &quot;Find&quot;
+			.cmdBtnWork.Label	= &quot;Transform&quot;
+			.chBoxFindNext		= &quot;&quot;
+		End With
+	End If
+End Sub
+
+</script:module>

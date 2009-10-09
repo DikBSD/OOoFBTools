@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FindUpIndex" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ////////////////////////////////////////////////////////////////
+&apos; модуль инструментов:
+&apos; Поиск символов в верхнем индексе и преобразование их по шаблону
+&apos; ////////////////////////////////////////////////////////////////
+Option Explicit
+
+Private oFUI As Object
+Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
+
+Private oDocControl, otxtCurs &apos; текстовый курсор
+
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub FindUpIndexDlg_windowActivated(oEv)
+	oDocControl = ThisComponent.getCurrentController()
+End Sub
+
+Sub FindUpIndexDlg_windowDeactivated(oEv)
+End Sub
+
+Sub FindUpIndexDlg_windowOpened(oEv)
+End Sub
+
+Sub FindUpIndexDlg_windowClosing(oEv)
+	bFindEnd = True
+End Sub
+
+Sub FindUpIndexDlg_windowClosed(oEv)
+End Sub
+
+Sub FindUpIndexDlg_windowMinimized(oEv)
+End Sub
+
+Sub FindUpIndexDlg_windowNormalized(oEv)
+End Sub
+
+Sub FindUpIndexDlg_disposing(oEv)
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация и запуск диалога поиска
+Sub FindUpIndexFinderStart()
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
+	oFUI = LoadDialog( &quot;OOoFBTools&quot;, &quot;FindUpIndexDlg&quot; )
+	
+	&apos; инициализация диалога Поиска символов верхнего индекса в зависимости от локали
+	InitFindUpIndexDlg()
+	
+	&apos; файл начтроек Корректора Текста
+	Dim sFUISettingsFilename As String : sFUISettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/up_index_finder.txt&quot;
+	
+	Dim aList() As String
+	aList() = Array(&quot;... &quot; &amp; sFUID.sText &amp; &quot; (x) ...&quot;, _
+					&quot;... &quot; &amp; sFUID.sText &amp; &quot; [x] ...&quot;, _
+					&quot;... &quot; &amp; sFUID.sText &amp; &quot; {x} ...&quot;, _
+					&quot;... &quot; &amp; sFUID.sText &amp; &quot; &lt;x&gt; ...&quot;, _
+					&quot;... &quot; &amp; sFUID.sText &amp; &quot; /x/ ...&quot;, _
+					&quot;... &quot; &amp; sFUID.sText &amp; &quot; \x\ ...&quot;)
+
+	With oFUI.Model
+		.Height	= 34
+		.Width	= 344
+		.lboxFNLTrans.StringItemList = aList()
+	End With
+	oFUI.getControl( &quot;lboxFNLTrans&quot; ).SelectItemPos( 2, True )
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadFUISettings( sFUISettingsFilename, nX, nY )
+	oFUI.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
+
+	bFindEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;FindUpIndexDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oFUI.addTopWindowListener( oList )
+
+	oFUI.setVisible( True )  
+	While Not bFindEnd
+		Wait 200     
+	Wend
+	&apos; записываем настройки диалога
+	SaveSettings( sFUISettingsFilename, oFUI )
+	oFUI.setVisible( False )
+End Sub
+
+Function ReadFUISettings( sFUISettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
+	&apos; Читаем настройки и задаем значения контролам формы
+	On Error Resume Next
+	If FileExists( sFUISettingsFilename ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFUISettingsFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные OCR корректора текста
+				Dim sSetting() As String
+				sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					Dim oCtrl As Object : oCtrl = oFUI.GetControl( sSetting(0) )
+					If Not IsNull( oCtrl ) Then
+						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+							Dim oLB As Object : oLB = oFUI.getControl( sSetting(0) )
+							oLB.SelectItemPos( sSetting(1), True )
+						End If
+					End If
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		ReadFUISettings = True
+	Else
+		ReadFUISettings = False
+	End If
+End Function
+
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; Поиск по заданному режиму
+Sub FUIFind()
+	FindRegWord( &quot;[:digit:]+&quot;, &quot;sTDF.sMessage&quot; )
+End Sub
+
+&apos; Поиск регулярного выражения в тексте
+Sub FindRegWord( sFind As String, sTitle As String )
+	oDocControl = ThisComponent.getCurrentController()
+	&apos; проверка, является ли объект, где производится поиск - текстом
+	If Not IsSelTextRange( oDocControl, sTitle ) Then Exit Sub
+
+	&apos; инициализация позиции курсора
+	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
+	
+	otxtCurs = ovCurs.Text.createTextCursor() 
+	otxtCurs.gotoRange( ovCurs.getStart(), False )
+
+	&apos; ищем заданное регулярное выражение
+	FindRegInText( ovCurs, sFind, sTitle )
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; ищем заданный регекс
+Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
+NextWord:
+	If Not IsSelTextRange( oDocControl, sTitle ) Then Exit Sub
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
+	&apos; поиск и обработка искомого слова
+	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
+		oDocControl.Select( otxtCurs ) &apos; выделяем найденное
+		&apos; проверяем, не соответствует ли найденное одному из запомненных дефисных слов
+		Dim i As Integer
+		For i=0 To UBound( asWords() )
+			If StrComp( LCase( otxtCurs.String ), LCase( asWords(i) ) )=0 Then
+				GoTo NextWord
+			End If
+		Next i
+	Else &apos; конец документа
+		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+		Dim oViewCursor	As Object : oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+		oViewCursor.collapseToEnd()
+		If MsgBox( sFUID.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
+		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
+		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
+	End If
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; поиск следующего заданного регекса в документе
+Function FindNextInText( sFind ) As Boolean
+	&apos; задаем поиск верхнего индекса
+	Dim SrchAttributes(2) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
+	SrchAttributes(0).Value	= True
+	SrchAttributes(1).Name	= &quot;CharEscapementHeight&quot;
+	SrchAttributes(1).Value	= 58
+	SrchAttributes(2).Name	= &quot;CharEscapement&quot;
+	SrchAttributes(2).Value	= 101
+  
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
+	oDesc.SearchRegularExpression = True
+	oDesc.SetSearchAttributes(SrchAttributes())
+	oDesc.SearchString = sFind
+	
+	otxtCurs.collapseToEnd()
+	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
+	
+	if IsNull( Found ) Then &apos; конец документа - ничего не нашли
+		otxtCurs = ThisComponent.Text.createTextCursor() 
+		otxtCurs.gotorange( ThisComponent.Text.getStart(), False )
+		FindNextInText = False &apos; конец документа - ничего не нашли
+		Exit Function
+	End If
+
+	otxtCurs = Found.Text.createTextCursor()
+	otxtCurs.gotorange( Found.getStart(), False )
+	otxtCurs.gotorange( Found.getEnd(), True )
+
+	FindNextInText = True &apos; нашли искомое регулярное выражение
+End Function
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; проверка, является ли объект, где производится поиск - текстом
+Function IsSelTextRange( oDocControl As Object, sTitle As String ) As Boolean
+	If oDocControl.getSelection().supportsService(&quot;com.sun.star.text.TextRanges&quot;) Then
+		IsSelTextRange = True
+	Else &apos; защита от поиска в выделенных врезках, ячейках таблицы, картинках...
+		IsSelTextRange = False
+		MsgBox sFUID.sImpossibleToFind, 64, sTitle
+	End If 
+End Function
+
+
+
+Sub UpImdexTransformToTemplate()
+	&apos; преобразование символов в верхнем индексе по шаблону
+	Dim nCharEscapementHeight As Integer : nCharEscapementHeight = 0
+	Dim oLB		As Object : oLB		= oFUI.getControl( &quot;lboxFNLTrans&quot; )
+	Dim sLeft	As String : sLeft	= GetStringLeft( oLB )
+	Dim sRight	As String : sRight	= GetStringRight( oLB )
+	
+	
+End Sub
+
+</script:module>
