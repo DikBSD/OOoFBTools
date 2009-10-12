@@ -59,12 +59,23 @@ Sub FindUpIndexFinderStart()
 					&quot;... &quot; &amp; sFUID.sText &amp; &quot; /x/ ...&quot;, _
 					&quot;... &quot; &amp; sFUID.sText &amp; &quot; \x\ ...&quot;)
 
+	Dim aNFNInListList() As String
+	aNFNInListList() = Array(&quot;x. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
+							&quot;(x). &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
+							&quot;[x]. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
+							&quot;{x}. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
+							&quot;&lt;x&gt;. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
+							&quot;/x/. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
+							&quot;\x\. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;)
+
 	With oFUI.Model
-		.Height	= 34
-		.Width	= 344
+		.Height	= 49
+		.Width	= 367
 		.lboxFNLTrans.StringItemList = aList()
+		.lboxFNInListTrans.StringItemList = aNFNInListList()
 	End With
 	oFUI.getControl( &quot;lboxFNLTrans&quot; ).SelectItemPos( 2, True )
+	oFUI.getControl( &quot;lboxFNInListTrans&quot; ).SelectItemPos( 0, True )
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
@@ -85,54 +96,11 @@ Sub FindUpIndexFinderStart()
 	oFUI.setVisible( False )
 End Sub
 
-Function ReadFUISettings( sFUISettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
-	&apos; Читаем настройки и задаем значения контролам формы
-	On Error Resume Next
-	If FileExists( sFUISettingsFilename ) Then
-		Dim sLine As String
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-		
-		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL (sFUISettingsFilename) )
-		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
-		oTIS.setInputStream (oFS)
-		Do While ( NOT oTIS.isEOF() )
-			sLine = oTIS.readLine()
-			If sLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные OCR корректора текста
-				Dim sSetting() As String
-				sSetting = Split(sLine, &quot;=&quot;)
-				If sSetting(0) = &quot;X&quot; Then
-					nX = sSetting(1)
-				ElseIf sSetting(0) = &quot;Y&quot; Then
-					nY = sSetting(1)
-				Else
-					Dim oCtrl As Object : oCtrl = oFUI.GetControl( sSetting(0) )
-					If Not IsNull( oCtrl ) Then
-						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-							Dim oLB As Object : oLB = oFUI.getControl( sSetting(0) )
-							oLB.SelectItemPos( sSetting(1), True )
-						End If
-					End If
-				End If
-			End If
-		Loop
-		oTIS.closeInput()
-		ReadFUISettings = True
-	Else
-		ReadFUISettings = False
-	End If
-End Function
-
-
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; Поиск по заданному режиму
 Sub FUIFind()
-	FindRegWord( &quot;[:digit:]+&quot;, &quot;sTDF.sMessage&quot; )
-End Sub
-
-&apos; Поиск регулярного выражения в тексте
-Sub FindRegWord( sFind As String, sTitle As String )
+	Dim sFind	As String : sFind	= &quot;[:digit:]+&quot;
+	Dim sTitle	As String : sTitle	=  sFUID.sTitle
 	oDocControl = ThisComponent.getCurrentController()
 	&apos; проверка, является ли объект, где производится поиск - текстом
 	If Not IsSelTextRange( oDocControl, sTitle ) Then Exit Sub
@@ -219,15 +187,120 @@ Function IsSelTextRange( oDocControl As Object, sTitle As String ) As Boolean
 End Function
 
 
-
-Sub UpImdexTransformToTemplate()
-	&apos; преобразование символов в верхнем индексе по шаблону
-	Dim nCharEscapementHeight As Integer : nCharEscapementHeight = 0
+&apos; ////////////////////////////////////////////////////////////////
+&apos; преобразование цифр в верхнем индексе по шаблону для сносок
+Sub UpIndexTransformToFootNoteTemplate()
+	&apos; проверка на выделение
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+	
+	Dim oViewCursor	As Object	: oViewCursor	= oDocControl.getViewCursor()
+	&apos; проверка - выделение - цифра(ы) верхнего индекса?
+	If oViewCursor.CharEscapementHeight &lt;&gt; 58 And oViewCursor.CharEscapement &lt;&gt; 101 Then Exit Sub
+	
 	Dim oLB		As Object : oLB		= oFUI.getControl( &quot;lboxFNLTrans&quot; )
 	Dim sLeft	As String : sLeft	= GetStringLeft( oLB )
 	Dim sRight	As String : sRight	= GetStringRight( oLB )
+	Dim sText	As String : sText	= oViewCursor.getString()
 	
+	oViewCursor.CharEscapementHeight	= 0
+	oViewCursor.CharEscapement			= 0
+	oViewCursor.setString( sLeft &amp; sText &amp; sRight )
 	
+	&apos; снимаем выделение - вправо
+	oViewCursor.collapseToEnd()
+	&apos; продолжение поиска, если включена опция
+	If oFUI.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then FUIFind()
 End Sub
+
+&apos; преобразование цифр в верхнем индексе по шаблону для номеров сносок в списке
+Sub UpIndexTransformToFootNoteListTemplate()
+	&apos; проверка на выделение
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+	
+	Dim oViewCursor	As Object	: oViewCursor	= oDocControl.getViewCursor()
+	&apos; проверка - выделение - цифра(ы) верхнего индекса?
+	If oViewCursor.CharEscapementHeight &lt;&gt; 58 And oViewCursor.CharEscapement &lt;&gt; 101 Then Exit Sub
+	
+	Dim oLB		As Object : oLB		= oFUI.getControl( &quot;lboxFNInListTrans&quot; )
+	Dim sRight	As String : sRight	= GetStringNFNInListForRight( oLB )
+	Dim sText	As String : sText	= oViewCursor.getString()
+	
+	oViewCursor.CharEscapementHeight	= 0
+	oViewCursor.CharEscapement			= 0
+	oViewCursor.setString( sText &amp; sRight )
+	
+	&apos; снимаем выделение - вправо
+	oViewCursor.collapseToEnd()
+	&apos; продолжение поиска, если включена опция
+	If oFUI.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then FUIFind()
+End Sub
+
+&apos; символы справа от номера сноски в тексте
+Function GetStringNFNInListForRight( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x. Текст ...
+			GetStringNFNInListForRight = &quot;.&quot;
+		Case 1 &apos; (x). Текст ...
+			GetStringNFNInListForRight = &quot;).&quot;
+		Case 2 &apos; [x]. Текст ...
+			GetStringNFNInListForRight = &quot;].&quot;
+		Case 3 &apos; {x}. Текст ...
+			GetStringNFNInListForRight = &quot;}.&quot;
+		Case 4 &apos; &lt;x&gt;. Текст ...
+			GetStringNFNInListForRight = &quot;&gt;.&quot;
+		Case 5 &apos; /x/. Текст ...
+			GetStringNFNInListForRight = &quot;/.&quot;
+		Case 6 &apos; \x\. Текст ...
+			GetStringNFNInListForRight = &quot;\.&quot;
+		Case Else
+			GetStringNFNInListForRight = &quot;.&quot;
+	End Select
+End Function
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; Читаем настройки и задаем значения контролам формы
+Function ReadFUISettings( sFUISettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
+	On Error Resume Next
+	If FileExists( sFUISettingsFilename ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFUISettingsFilename) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные OCR корректора текста
+				Dim sSetting() As String
+				sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					Dim oCtrl As Object : oCtrl = oFUI.GetControl( sSetting(0) )
+					If Not IsNull( oCtrl ) Then
+						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+							Dim oLB As Object : oLB = oFUI.getControl( sSetting(0) )
+							oLB.SelectItemPos( sSetting(1), True )
+						End If
+					End If
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		ReadFUISettings = True
+	Else
+		ReadFUISettings = False
+	End If
+End Function
 
 </script:module>

@@ -399,7 +399,8 @@ Sub InsertCurrentFootNote( oViewCursor As Object, sConstBookMarkFNNumber As Stri
 	&apos; очистить стиль - на случай верхнего регистра и т.д.
 	ClearParaStyle()
 	&apos; удалить выделенный номер сноски, вставить очередную сноску, вставить текст сноски и удаляем последний пустой абзац
-	_UnoDelete() : _UnoInsertFootnote() : _UnoPaste() : _UnoSwBackspace()
+	_UnoDelete() : _UnoInsertFootnote() : _UnoPaste() : 
+	If oViewCursor.isAtStartOfLine() Then _UnoSwBackspace()
 	&apos; переводим курсор в зону поиска очередного номера сноски
 	GoToViewCursorToBookMark( oViewCursor, sConstBookMarkFNNumber, True )
 End Sub
@@ -428,8 +429,9 @@ Sub BuildFootNoteComplex()
 	
 	Dim sRegStringNFNInText As String : sRegStringNFNInText = GetRegStringNFNInText()
 	&apos; левая и правая часть регулярного выражения для 1-го поиска номера сноски в списке сносок
-	Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft()
-	Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
+	Dim oLB		As Object : oLB		= oBuildFootEndNoteDlg.getControl( &quot;lblNFNInListTemplate&quot; )
+	Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft( oLB )
+	Dim sRight	As String : sRight	= GetRegStringNFNInListForRight( oLB )
 	Dim aLBookMarks() As String &apos; закладки для Глав книги
 	Dim lFindCount As Long : lFindCount = 0
 	Dim oRCurs As Object, oLBMs As Object
@@ -552,8 +554,7 @@ Function GetRegStringNFNInListForNextFind() As String
 	End Select
 End Function
 
-Function GetRegStringNFNInListForLeft() As String
-	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInListTemplate&quot; )
+Function GetRegStringNFNInListForLeft( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; x. Текст ...
 			GetRegStringNFNInListForLeft = &quot;^&quot;
@@ -574,8 +575,7 @@ Function GetRegStringNFNInListForLeft() As String
 	End Select
 End Function
 
-Function GetRegStringNFNInListForRight() As String
-	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInListTemplate&quot; )
+Function GetRegStringNFNInListForRight( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; x. Текст ...
 			GetRegStringNFNInListForRight = &quot;\.&quot;
@@ -1115,8 +1115,9 @@ Sub FootNoteTest()
 		
 		Dim sRegFind As String : sRegFind = GetRegStringNFNInText()
 		&apos; левая и правая часть регулярного выражения для 1-го поиска номера примечания в списке примечаний
-		Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft()
-		Dim sRight	As String : sRight	= GetRegStringNFNInListForRight()
+		Dim oLB		As Object : oLB		= oBuildFootEndNoteDlg.getControl( &quot;lblNFNInListTemplate&quot; )
+		Dim sLeft	As String : sLeft	= GetRegStringNFNInListForLeft( oLB )
+		Dim sRight	As String : sRight	= GetRegStringNFNInListForRight( oLB )
 		
 		Dim vaZoneFlagsArray()			As Variant	&apos; хранить данные-флаги по всем зонам поиска
 		
