@@ -1294,6 +1294,10 @@ End Function
 Function GetSelectionCount() As Long
 	Dim lCount As Long : lCount = 0
 	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If oSels.ImplementationName &lt;&gt; &quot;SwXTextRanges&quot; Then
+		GetSelectionCount = -1 &apos; выделен не Текст!
+		Exit Function
+	End If
 	If Not IsNull(oSels) Then
 		Dim lSelCount As Long : lSelCount = oSels.getCount()
 		Dim l As Long
@@ -1344,7 +1348,9 @@ Function IsAnythingSelected( oDoc As Object ) As Boolean
 	If IsNull( oDoc )		Then Exit Function
 	Dim oSels : oSels = oDoc.getCurrentSelection() &apos;все выделения в тексте
 	If IsNull( oSels )		Then Exit Function
+	If oSels.ImplementationName &lt;&gt; &quot;SwXTextRanges&quot; Then Exit Function &apos; только для выделений Текста!
 	If oSels.getCount() = 0 Then Exit Function
+	
 	If oSels.getCount() &gt; 1 Then
 		IsAnythingSelected = True
 	Else

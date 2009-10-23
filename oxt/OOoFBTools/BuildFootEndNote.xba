@@ -79,11 +79,15 @@ End Function
 
 &apos; простая генерация сносок
 Sub BuildFootNoteSimple()
-	Dim oCurs() As Object, l As Long
+	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
+	If lSel = -1 Then
+		MsgBox &quot;Можно выделять только текст!&quot;, 64, sBTEND.sFootnotesGeneration
+		Exit Sub
+	End If
+	
+	Dim oCurs() As Object, l As Integer
 	If Not CreateSelectedTextIterator( ThisComponent, sBTEND.sNoSelectText &amp; chr(10) &amp; sBTEND.sProcessAllDoc, _
 										sBTEND.sFindInSelected, oCurs() ) Then Exit Sub
-	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
-	
 	&apos; левая и правая часть регулярного выражения для поиска текста сноски
 	Dim oLB		As Object : oLB		= oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
 	Dim sLeft	As String : sLeft	= GetRegStringForLeft( oLB )
@@ -605,7 +609,10 @@ Sub InsertFindFootNoteNumberZoneBookMark()
 	InitBuildTootEndNoteMessage()
 	
 	Dim l As Long : l = GetSelectionCount()
-	If l &gt;= 1 Then
+	If l =-1 Then &apos; только для выделений Текста!
+		MsgBox sBTEND.sNotSelectedText, 64, sBTEND.sInsertBookmarkForNumberNoteZone
+		Exit Sub
+	ElseIf l &gt;= 1 Then
 		MsgBox sBTEND.sNotInsertedBookmarkForNumberNoteZone, 64, sBTEND.sInsertBookmarkForNumberNoteZone
 		Exit Sub
 	Else &apos; теперь можно вставить закладку
@@ -679,7 +686,10 @@ Sub InsertFindFootNoteTextListBookMark()
 	InitBuildTootEndNoteMessage()
 	
 	Dim l As Long : l = GetSelectionCount()
-	If l &gt; 1 Then
+	If l =-1 Then &apos; только для выделений Текста!
+		MsgBox sBTEND.sNotSelectedText, 64, sBTEND.sInsertBookmarkForListNoteZone
+		Exit Sub
+	ElseIf l &gt; 1 Then
 		MsgBox sBTEND.sSelected &amp; &quot; &quot; &amp; l &amp; &quot; &quot; &amp; sBTEND.sSelecteOnlyOneTextZone, 64, sBTEND.sInsertBookmarkForListNoteZone
 		Exit Sub
 	Else &apos; теперь можно вставить закладку

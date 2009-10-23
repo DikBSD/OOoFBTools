@@ -11,14 +11,12 @@ Sub ChangeLang()
 	
 	Dim oViewCursor As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
 	On Local Error GoTo PrintErrMessage
-	If Not IsEmpty( oViewCursor.TextTable ) Or Not IsEmpty( oViewCursor.TextFrame ) Or _
-		oViewCursor.ParaStyleName = &quot;Footnote&quot; Or oViewCursor.ParaStyleName = &quot;Endnote&quot; Then
-		MsgBox sCLD.sNotTableFrameFN + chr(10) + sCLD.sSelectText, 64, sCLD.sMessTitle
-		Exit Sub
-	End If
 	
 	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделенных фрагментов текста
-	If lSel = 0 Then
+	If lSel =-1 Then &apos; только для выделений Текста!
+		MsgBox sCLD.sNotSelectedText, 64, sCLD.sMessTitle
+		Exit Sub
+	ElseIf lSel = 0 Then
 		MsgBox sCLD.sSelectText, 64, sCLD.sMessTitle
 		Exit Sub
 	End If
@@ -26,7 +24,13 @@ Sub ChangeLang()
 		MsgBox sCLD.sSelectSeveral + chr(10) + sCLD.sSelectOnlyOne, 64, sCLD.sMessTitle
 		Exit Sub
 	End If
-		
+	
+	If Not IsEmpty( oViewCursor.TextTable ) Or Not IsEmpty( oViewCursor.TextFrame ) Or _
+		oViewCursor.ParaStyleName = &quot;Footnote&quot; Or oViewCursor.ParaStyleName = &quot;Endnote&quot; Then
+		MsgBox sCLD.sNotTableFrameFN + chr(10) + sCLD.sSelectText, 64, sCLD.sMessTitle
+		Exit Sub
+	End If
+	
 	Dim oCurs() As Object
 	If Not CreateSelectedTextIterator( ThisComponent, &quot;&quot;, &quot;&quot;, oCurs() ) Then Exit Sub
 
