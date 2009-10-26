@@ -1127,14 +1127,14 @@ End Sub
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos;							UNO функции
 &apos;//////////////////////////////////////////////////////////////////////////////
-sub _UnoDelete()
+Sub _UnoDelete()
 	&apos; удаление выделенного текста
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
 	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Delete&quot;, &quot;&quot;, 0, Array())
-end sub
+End Sub
 
-sub _UnoCut()
+Sub _UnoCut()
 	&apos; вырезать выделенный текст в буфер
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
 	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
@@ -1153,21 +1153,30 @@ sub _UnoPaste()
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
 	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Paste&quot;, &quot;&quot;, 0, Array())
-end sub
+End Sub
 
-sub _UnoInsertFootnote()
+Sub _UnoInsertFootnote()
 	&apos; вставить сноску
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
 	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:InsertFootnote&quot;, &quot;&quot;, 0, Array())
-end sub
+End Sub
 
-sub _UnoSwBackspace()
+Sub _UnoSwBackspace()
 	&apos; Backspace
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
 	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:SwBackspace&quot;, &quot;&quot;, 0, Array())
-end sub
+End Sub
+
+Sub _UnoInsertText( sText As String )
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Text&quot;
+	args1(0).Value = sText
+	dispatcher.executeDispatch(document, &quot;.uno:InsertText&quot;, &quot;&quot;, 0, args1())
+End Sub
 
 Sub _UnoInsertBookmark( sBookMark As String )
 	Dim document   As Object : document   = ThisComponent.CurrentController.Frame

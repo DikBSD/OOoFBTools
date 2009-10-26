@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Numbering" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ///////////////////////////////////////////////////////////////////
+&apos; модуль инструментов:
+&apos; Переименовывание веделенных абзацев, начиная с заданного значения
+&apos; ///////////////////////////////////////////////////////////////////
+Option Explicit
+
+Private oRN As Object
+&apos; файл настроек
+Public Const sNSettingsFilename As String = &quot;/OOoFBTools/numbering.txt&quot;
+Private nIndex As Integer &apos; начальный номер абзаца
+
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация и запуск диалога перенумерации
+Sub NumberingrStart()
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
+	oRN = CreateUnoDialog( DialogLibraries.OOoFBTools.NumberingDlg )
+	
+	&apos; инициализация диалога перенумерации абзацев
+	InitNumberingDlg()
+
+	With oRN.Model
+		.Height	= 34
+		.Width	= 207
+	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getUserPath() &amp; sNSettingsFilename, oRN, nX, nY )
+	oRN.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
+
+	oRN.execute()
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub Numbering()
+	&apos; Принятие параметров чистки текста
+	nIndex = oRN.GetControl( &quot;nfNumber&quot; ).Value
+	oRN.endExecute()
+	&apos; записываем настройки диалога
+	SaveSettings( getUserPath() &amp; sNSettingsFilename, oRN )
+	&apos; запуск алгоритма нумерации выделенных абзацев
+	SelectedTextParser()
+End Sub
+
+Sub SelectedTextParser()
+	On Local Error GoTo PrintErrMessage
+	Dim l As Long : l = GetSelectionCount()
+	If l =-1 Then &apos; только для выделений Текста!
+		MsgBox sND.sNotSelectedText, 64, sND.sTitle
+		Exit Sub
+	End If
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim oCurs() As Object
+	If Not CreateSelectedTextIterator( oDoc, sND.sNoSelectText &amp; chr(10) &amp; sND.sProcessAllDoc, _
+										sND.sTitle, oCurs() ) Then Exit Sub
+	Dim i As Integer
+	For i = LBound( oCurs() ) To UBound( oCurs() )
+		NumberingSelectedPara( oDoc, oCurs(i, 0), oCurs(i, 1) )
+	Next i
+	
+	MsgBox sND.sEndMessage, 64, sND.sTitle
+	Exit Sub
+PrintErrMessage:
+	MsgBox sND.sNotTableFrameFN + chr(10) + sND.sSelectText, 64, sND.sTitle
+End Sub
+
+Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
+
+	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
+	&apos; Таблицы, Врезки и сноски не обрабатываем
+	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
+				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable )Then
+		Exit Sub
+	End If
+	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+
+	If oRN.GetControl( &quot;chBoxThroughNumbering&quot; ).State = 0 Then
+		&apos; сквозная нумерация всех выделенных абзацев
+		nIndex = oRN.GetControl( &quot;nfNumber&quot; ).Value
+	End If
+	
+	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
+	Dim oPar		As Object &apos;Перебираемый параграф
+	Dim oViewCursor	As Object
+	
+	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt;= 0
+		oParEnum = oLCurs.createEnumeration()
+		Do While oParEnum.hasMoreElements()
+			oPar = oParEnum.nextElement()
+			If oLCurs.NumberingIsNumber = True Then
+				&apos; убираем нумерацию списка для этого абзаца
+				oLCurs.NumberingIsNumber = False
+			End If	
+			&apos; задаем &quot;сквозную&quot; нумерацию
+			oPar.NumberingStyleName = &quot;&quot;
+			oViewCursor = oDoc.getCurrentController().getViewCursor()
+			oViewCursor.gotoRange(oPar, False)
+			oViewCursor.collapseToStart()
+			_UnoInsertText( Str( nIndex ) + &quot;. &quot; )
+		Loop
+		oLCurs.gotoNextParagraph(False)
+		nIndex = nIndex+1
+	Loop
+End Sub
+
+</script:module>
