@@ -7,7 +7,7 @@
 &apos; ///////////////////////////////////////////////////////////////////
 Option Explicit
 
-Private oRN As Object
+Public oRN As Object
 &apos; файл настроек
 Public Const sNSettingsFilename As String = &quot;/OOoFBTools/numbering.txt&quot;
 Private nIndex As Integer &apos; начальный номер абзаца
@@ -15,12 +15,12 @@ Private nIndex As Integer &apos; начальный номер абзаца
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога перенумерации
 Sub NumberingStart()
-	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
+	DialogLibraries.LoadLibrary( &quot;Tools&quot; )   
 	oRN = CreateUnoDialog( DialogLibraries.OOoFBTools.NumberingDlg )
 	
 	&apos; инициализация диалога перенумерации абзацев
 	InitNumberingDlg()
-
+	
 	With oRN.Model
 		.Height	= 34
 		.Width	= 207
@@ -99,7 +99,7 @@ Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
 			oViewCursor = oDoc.getCurrentController().getViewCursor()
 			oViewCursor.gotoRange(oPar, False)
 			oViewCursor.collapseToStart()
-			_UnoInsertText( Str( nIndex ) + &quot;. &quot; )
+			_UnoInsertText( LTrim( Str( nIndex ) ) + &quot;. &quot; )
 		Loop
 		oLCurs.gotoNextParagraph(False)
 		nIndex = nIndex+1
