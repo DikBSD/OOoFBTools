@@ -79,7 +79,7 @@ Sub FindUpIndexFinderStart()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadFUISettings( sFUISettingsFilename, nX, nY )
+	ReadDlgSettings( sFUISettingsFilename, oFUI,  nX, nY )
 	oFUI.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
 
 	bFindEnd = False
@@ -99,7 +99,12 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; Поиск по заданному режиму
 Sub FUIFind()
-	Dim sFind	As String : sFind	= &quot;[:digit:]+&quot;
+	Dim sFind As String
+	If oFUI.getControl( &quot;obtnOnlyNumbers&quot; ).State = True Then
+		sFind = &quot;[:digit:]+&quot;
+	Else
+		sFind = &quot;.+&quot;
+	End If
 	Dim sTitle	As String : sTitle	=  sFUID.sTitle
 	oDocControl = ThisComponent.getCurrentController()
 	&apos; проверка, является ли объект, где производится поиск - текстом
@@ -261,46 +266,6 @@ Function GetStringNFNInListForRight( oLB As Object ) As String
 		Case Else
 			GetStringNFNInListForRight = &quot;.&quot;
 	End Select
-End Function
-
-&apos; ////////////////////////////////////////////////////////////////
-&apos; Читаем настройки и задаем значения контролам формы
-Function ReadFUISettings( sFUISettingsFilename As String, nX As Integer, nY As Integer ) As Boolean
-	On Error Resume Next
-	If FileExists( sFUISettingsFilename ) Then
-		Dim sLine As String
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-		
-		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL (sFUISettingsFilename) )
-		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
-		oTIS.setInputStream (oFS)
-		Do While ( NOT oTIS.isEOF() )
-			sLine = oTIS.readLine()
-			If sLine &lt;&gt; &quot;&quot; Then
-				&apos; Устанавливаем данные OCR корректора текста
-				Dim sSetting() As String
-				sSetting = Split(sLine, &quot;=&quot;)
-				If sSetting(0) = &quot;X&quot; Then
-					nX = sSetting(1)
-				ElseIf sSetting(0) = &quot;Y&quot; Then
-					nY = sSetting(1)
-				Else
-					Dim oCtrl As Object : oCtrl = oFUI.GetControl( sSetting(0) )
-					If Not IsNull( oCtrl ) Then
-						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-							Dim oLB As Object : oLB = oFUI.getControl( sSetting(0) )
-							oLB.SelectItemPos( sSetting(1), True )
-						End If
-					End If
-				End If
-			End If
-		Loop
-		oTIS.closeInput()
-		ReadFUISettings = True
-	Else
-		ReadFUISettings = False
-	End If
 End Function
 
 </script:module>
