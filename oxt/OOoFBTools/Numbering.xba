@@ -10,7 +10,9 @@ Option Explicit
 Public oRN As Object
 &apos; файл настроек
 Public Const sNSettingsFilename As String = &quot;/OOoFBTools/numbering.txt&quot;
-Private nIndex As Integer &apos; начальный номер абзаца
+Private nIndex	As Integer &apos; начальный номер абзаца
+Private sLeft	As String
+Private sRight	As String
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога перенумерации
@@ -21,10 +23,21 @@ Sub NumberingStart()
 	&apos; инициализация диалога перенумерации абзацев
 	InitNumberingDlg()
 	
+	Dim aList() As String
+	aList() = Array(&quot;x. &quot; &amp; sND.sSText &amp; &quot; ...&quot;, _
+					&quot;(x). &quot; &amp; sND.sSText &amp; &quot; ...&quot;, _
+					&quot;[x]. &quot; &amp; sND.sSText &amp; &quot; ...&quot;, _
+					&quot;{x}. &quot; &amp; sND.sSText &amp; &quot; ...&quot;, _
+					&quot;&lt;x&gt;. &quot; &amp; sND.sSText &amp; &quot; ...&quot;, _
+					&quot;/x/. &quot; &amp; sND.sSText &amp; &quot; ...&quot;, _
+					&quot;\x\. &quot; &amp; sND.sSText &amp; &quot; ...&quot;)
 	With oRN.Model
 		.Height	= 34
 		.Width	= 207
+		.lboxtemplate.StringItemList = aList()
 	End With
+	
+	oRN.getControl( &quot;lboxtemplate&quot; ).SelectItemPos( 0, True )
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
@@ -37,10 +50,16 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub Numbering()
 	&apos; Принятие параметров чистки текста
-	nIndex = oRN.GetControl( &quot;nfNumber&quot; ).Value
-	oRN.endExecute()
 	&apos; записываем настройки диалога
 	SaveSettings( getUserPath() &amp; sNSettingsFilename, oRN )
+	
+	nIndex = oRN.GetControl( &quot;nfNumber&quot; ).Value
+	&apos; левая и правая часть регулярного выражения для 1-го поиска номера примечания в списке примечаний
+	Dim oLB	As Object : oLB = oRN.getControl( &quot;lboxtemplate&quot; )
+	sLeft	= GetLeftString( oLB )
+	sRight	= GetRightString( oLB )
+	
+	oRN.endExecute()
 	&apos; запуск алгоритма нумерации выделенных абзацев
 	SelectedTextParser()
 End Sub
@@ -82,28 +101,66 @@ Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
 		nIndex = oRN.GetControl( &quot;nfNumber&quot; ).Value
 	End If
 	
-	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar		As Object &apos;Перебираемый параграф
 	Dim oViewCursor	As Object
 	
-	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt;= 0
-		oParEnum = oLCurs.createEnumeration()
-		Do While oParEnum.hasMoreElements()
-			oPar = oParEnum.nextElement()
-			If oLCurs.NumberingIsNumber = True Then
-				&apos; убираем нумерацию списка для этого абзаца
-				oLCurs.NumberingIsNumber = False
-			End If	
-			&apos; задаем &quot;сквозную&quot; нумерацию
-			oPar.NumberingStyleName = &quot;&quot;
-			oViewCursor = oDoc.getCurrentController().getViewCursor()
-			oViewCursor.gotoRange(oPar, False)
-			oViewCursor.collapseToStart()
-			_UnoInsertText( LTrim( Str( nIndex ) ) + &quot;. &quot; )
-		Loop
+	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
+		oPar = oLCurs.createEnumeration().nextElement()
+		If oLCurs.NumberingIsNumber = True Then
+			&apos; убираем нумерацию списка для этого абзаца
+			oLCurs.NumberingIsNumber = False
+		End If	
+		&apos; задаем &quot;сквозную&quot; нумерацию
+		oPar.NumberingStyleName = &quot;&quot;
+		oViewCursor = oDoc.getCurrentController().getViewCursor()
+		oViewCursor.gotoRange(oPar, False)
+		oViewCursor.collapseToStart()
+		_UnoInsertText( sLeft &amp; LTrim( Str( nIndex ) ) &amp; sRight )
 		oLCurs.gotoNextParagraph(False)
 		nIndex = nIndex+1
 	Loop
 End Sub
+
+Function GetLeftString( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x. Текст ...
+			GetLeftString = &quot;&quot;
+		Case 1 &apos; (x). Текст ...
+			GetLeftString = &quot;(&quot;
+		Case 2 &apos; [x]. Текст ...
+			GetLeftString = &quot;[&quot;
+		Case 3 &apos; {x}. Текст ...
+			GetLeftString = &quot;{&quot;
+		Case 4 &apos; &lt;x&gt;. Текст ...
+			GetLeftString = &quot;&lt;&quot;
+		Case 5 &apos; /x/. Текст ...
+			GetLeftString = &quot;/&quot;
+		Case 6 &apos; \x\. Текст ...
+			GetLeftString = &quot;\&quot;
+		Case Else
+			GetLeftString = &quot;&quot;
+	End Select
+End Function
+
+Function GetRightString( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x. Текст ...
+			GetRightString = &quot;. &quot;
+		Case 1 &apos; (x). Текст ...
+			GetRightString = &quot;). &quot;
+		Case 2 &apos; [x]. Текст ...
+			GetRightString = &quot;]. &quot;
+		Case 3 &apos; {x}. Текст ...
+			GetRightString = &quot;}. &quot;
+		Case 4 &apos; &lt;x&gt;. Текст ...
+			GetRightString = &quot;&gt;. &quot;
+		Case 5 &apos; /x/. Текст ...
+			GetRightString = &quot;/. &quot;
+		Case 6 &apos; \x\. Текст ...
+			GetRightString = &quot;\. &quot;
+		Case Else
+			GetRightString = &quot;. &quot;
+	End Select
+End Function
 
 </script:module>

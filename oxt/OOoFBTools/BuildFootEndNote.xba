@@ -205,7 +205,7 @@ Function GetNumberFromString( sString As String ) As String
 		Dim sChar As String : sChar = Mid( sString, i, 1 )
 		If IsNumeric( sChar ) Then sNumber = sNumber &amp; sChar
 	Next i
-	GetNumberFromString = sNumber
+	GetNumberFromString = Trim( sNumber )
 End Function
 
 &apos; вставка закладки на место номера очередной сноски
@@ -351,6 +351,8 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 									sConstBookMarkListNote As String, sConstBookMarkFNNumber As String, sConstBookMarkFNText As String, _
 									sRegStringNFNInText As String, sForLeft As String, sForRight As String ) As Long
 	ProcessingComplexFootNoteList = 0
+	lInsNotesCount = 0 &apos; инициализация счетчика сгенерированных сносок
+	
 	Dim oBookMark	As Object, oBlockNoteZoneBookMark As Object
 	Dim sNumber		As String
 	Dim nValue		As Integer
@@ -519,19 +521,19 @@ Function GetRegStringNFNInText() As String
 	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInTextTemplate&quot; )
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; ... текст (x)
-			GetRegStringNFNInText = &quot;\([:digit:]+\)&quot;
+			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot;&apos;&quot;\([:digit:]+\)&quot;
 		Case 1 &apos; ... текст [x]
 			GetRegStringNFNInText = &quot;\[[:digit:]+\]&quot;
 		Case 2 &apos; ... текст {x}
-			GetRegStringNFNInText = &quot;\{[:digit:]+\}&quot;
+			GetRegStringNFNInText = &quot;\{[:digit:]+\}|\{ +[:digit:]+\}|\{[:digit:]+ +\}|\{ +[:digit:]+ +\}&quot;&apos;&quot;\{[:digit:]+\}&quot;
 		Case 3 &apos; ... текст &lt;x&gt;
-			GetRegStringNFNInText = &quot;&lt;[:digit:]+&gt;&quot;
+			GetRegStringNFNInText = &quot;&lt;[:digit:]+&gt;|&lt; +[:digit:]+&gt;|&lt;[:digit:]+ +&gt;|&lt; +[:digit:]+ +&gt;&quot;&apos;&quot;&lt;[:digit:]+&gt;&quot;
 		Case 4 &apos; ... текст /x/
-			GetRegStringNFNInText = &quot;/[:digit:]+/&quot;
+			GetRegStringNFNInText = &quot;/[:digit:]+/|/ +[:digit:]+/|/[:digit:]+ +/|/ +[:digit:]+ +/&quot;&apos;&quot;/[:digit:]+/&quot;
 		Case 5 &apos; ... текст \x\
-			GetRegStringNFNInText = &quot;\\[:digit:]+\\&quot;
+			GetRegStringNFNInText = &quot;\\[:digit:]+\\|\\ +[:digit:]+\\|\\[:digit:]+ +\\|\\ +[:digit:]+ +\\&quot;&apos;&quot;\\[:digit:]+\\&quot;
 		Case Else
-			GetRegStringNFNInText = &quot;\([:digit:]+\)&quot;
+			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot;&apos;&quot;\([:digit:]+\)&quot;
 	End Select
 End Function
 
