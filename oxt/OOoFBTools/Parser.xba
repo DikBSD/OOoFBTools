@@ -178,7 +178,11 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 			&apos; для пустых строк Автора Цитат
 			AddBodyArray(&quot;&quot;, sParaStyleName, False)
 		Else
-			AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
+			If IsLevel( sParaStyleName ) Then
+				AddBodyArray( sPara, sParaStyleName, True )
+			Else
+				AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
+			End If
 		End If
 	Else
 		If sParaStyleName = sStyleBookTitle Then
@@ -193,11 +197,8 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 				sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
 				sParaStyleName = sStyleSubTitle Then
 					AddBodyArray( sPara, sParaStyleName, False )
-		ElseIf sParaStyleName = sStyleLevel1 Or sParaStyleName = sStyleLevel2 Or sParaStyleName = sStyleLevel3 Or _
-				sParaStyleName = sStyleLevel4 Or sParaStyleName = sStyleLevel5 Or sParaStyleName = sStyleLevel6 Or _
-				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
-				sParaStyleName = sStyleLevel10 Then
-					AddBodyArray( sPara, sParaStyleName, True )
+		ElseIf IsLevel( sParaStyleName ) Then
+				AddBodyArray( sPara, sParaStyleName, True )
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( sPara )
 		Else &apos; что-то другое или просто параграф
