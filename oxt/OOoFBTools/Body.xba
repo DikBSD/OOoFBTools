@@ -57,7 +57,7 @@ Sub SaveBody()
 	
 End Sub
 
-Sub MakeBody( sArray As String, bBody As Boolean )
+Sub _MakeBody( sArray As String, bBody As Boolean )
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
 	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
@@ -120,7 +120,7 @@ Sub MakeBody( sArray As String, bBody As Boolean )
 			Wend
 		End If
 		&apos; 2. Печать всех блоков секций, начиная от 1-й
-		Dim N As Integer, lNextIndex As Long, j As Long
+		Dim N As Integer, lNextIndex As Long
 		If lIndexOf1Section &lt;&gt; -1 Then &apos; что-то есть
 			While lCurrentElement &lt;= lParaCount &apos; по индексам
 				lNextIndex = GetIndexOfNextLevel(sArray, lCurrentElement)
@@ -148,17 +148,17 @@ Sub MakeBody( sArray As String, bBody As Boolean )
 									Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
 								End If
 								&apos; печать нужного числа открывающих &lt;section&gt;
-								SaveNOpenSection( sArray(), lCurrentElement )
+								SaveOpenSections( sArray(), lCurrentElement )
 							End If
 						Else  &apos; текущий элемент - Level
 							&apos; печать нужного числа открывающих &lt;section&gt;
-							SaveNOpenSection( sArray(), lCurrentElement )
+							SaveOpenSections( sArray(), lCurrentElement )
 						End If
 					ElseIf NN = -1 Then &apos; не смежные уровни с большего на меньший
 						If IsAdjacentCurrentLevelsOfPrevLevel( sArray(), lCurrentElement ) &lt;&gt; 1 Then
 							&apos; для несмедных уровней
 							&apos; печать нужного числа открывающих &lt;section&gt;
-							SaveNOpenSection( sArray(), lCurrentElement )
+							SaveOpenSections( sArray(), lCurrentElement )
 						End If
 					End If
 
@@ -197,7 +197,7 @@ Sub Save1OpenSectionForCandidate( sArray() As String, lCurrentElement As Long, b
 	End If
 End Sub
 
-Sub SaveNOpenSection( sArray() As String, lCurrentElement As Long )
+Sub SaveOpenSections( sArray() As String, lCurrentElement As Long )
 	&apos; печать нужного числа открывающих &lt;section&gt;
 	If lCurrentElement &gt; IndexOf1Section( sArray() ) Then
 		Dim NOpen As Integer, i As Integer
@@ -208,6 +208,16 @@ Sub SaveNOpenSection( sArray() As String, lCurrentElement As Long )
 				oTextOutputStream.writeString( &quot;&lt;section&gt;&quot; &amp; chr(10) )
 			Next i
 		End If
+	End If
+End Sub
+
+&apos; печать заданного числа открывающих &lt;section&gt;
+Sub SaveNOpenSections( N As Integer )
+	If N &gt; 0 Then
+		Dim i As Integer
+		For i=0 To N-1
+			oTextOutputStream.writeString( &quot;&lt;section&gt;&quot; &amp; chr(10) )
+		Next i
 	End If
 End Sub
 
@@ -341,5 +351,184 @@ Function IsNeededELForAnnot( sArray() As String, ByVal lCurrentElement As Long )
 	Next l
 	IsNeededELForAnnot = False
 End Function
+
+&apos; /////////////////////////////////////////////////////////////////////////////////
+Sub MakeBody( sArray As String, bBody As Boolean )
+	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
+	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
+	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
+	Dim lIndexOf1Section As Long, lParaCount As Long
+	Dim bText As Boolean, bTextSmSection As Boolean
+	lParaCount = UBound(sArray)
+	lIndexOf1Section = IndexOf1Section(sArray)
+	bText = False
+	bTextSmSection = False
+	If lIndexOf1Section = -1 Then &apos; нет ни одной секции
+		While sArray(lCurrentElement,1)=sStyleEpigraph
+			&apos; Если 1-е элементы - епиграф, то его не берем в &lt;section&gt;, хотя если взять - документ все равно валидный будет
+			SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+			If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+&apos;			If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
+		Wend
+		&apos; Все остальные элементы обрамляем &lt;section&gt;
+		If bBody = True Then &apos; только для body книги (не для сносок - лишняя секция)
+			oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+		End If
+		While lCurrentElement &lt;= UBound(sArray)
+			SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+			If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+		Wend
+		If bBody = True Then &apos; только для body книги (не для сносок - лишняя секция)
+			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		End If
+	Else &apos;секции есть
+		If lIndexOf1Section &gt; 0 Then &apos; что-то есть - записываем до 1-й секции
+			While lCurrentElement &lt; lIndexOf1Section
+				If sArray(lCurrentElement,1)=&quot;Para&quot; OR sArray(lCurrentElement,1)=sStylePoemTitle OR _
+					sArray(lCurrentElement,1)=sStylePoem OR sArray(lCurrentElement,1)=sStyleCite OR _
+					sArray(lCurrentElement,1)=sStyleSubTitle OR sArray(lCurrentElement,1)=&quot;&quot; OR _
+					sArray(lCurrentElement,1)=&quot;Image&quot; OR sArray(lCurrentElement,1)=&quot;Table&quot; OR _
+					sArray(lCurrentElement,1)=sStyleAnnotation Then
+					If bText = False Then
+						oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+						bText = True
+						&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности
+						If sArray(lCurrentElement,1)=sStyleAnnotation Then
+							bELForStartAnnot = IsNeededELForAnnot( sArray(), lCurrentElement )
+						End If
+					End If
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+					If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Else &apos; это явно эпиграф
+					If bText = True Then
+						oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+						bText = False
+						If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+					Else &apos; епиграф самый первый, как и должен 
+						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+						If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+					End If
+				End If
+				If bText = True AND lCurrentElement = lIndexOf1Section Then
+					oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+				End If
+			Wend
+		End If
+
+		&apos; 2. Печать всех блоков секций, начиная от 1-й
+		If lIndexOf1Section &lt;&gt; -1 Then &apos; секция есть
+			&apos; 2.1 Печать блока секции для 1-го Заголовка (Уровня)
+			Dim nH1Index As Integer : nH1Index = lCurrentElement
+			Dim nH2Index As Integer : nH2Index = GetIndexOfNextLevel(sArray, lCurrentElement)
+			Dim nH1Level As Integer : nH1Level = GetLevelNumber( sArray(nH1Index,1) )
+			Dim nH2Level As Integer : nH2Level = GetLevelNumber( sArray(nH2Index,1) )
+			Dim nOpenSections : nOpenSections = nH1Level &apos; число открывающих &lt;section&gt;
+			If nH2Level &lt;&gt; 0 Then &apos; если есть 2-й Заголовок
+				If nH1Level &lt; nH2Level Then
+					&apos; Уровень 1-го Заголовка &lt; Уровня 2-го (например: 1 и 2; 1 и 3; 2 и 4)
+					SaveNOpenSections( nOpenSections-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody) &apos; печатаем Заголовок
+					Dim nStep : nStep = nH2Level - nH1Level &apos; шаг между Уровнями 2-х первых Заголовков
+					SaveNOpenSections( nStep-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				ElseIf nH1Level &gt; nH2Level Then
+					&apos; Уровень 1-го Заголовка &gt; Уровня 2-го (например: 2 и 1; 6 и 2)
+					SaveNOpenSections( nOpenSections-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody) &apos; печатаем Заголовок
+					&apos; есть ли текст между этими Заголовками?
+					Dim nIter As Integer, bTextBetweenH1H2 As Boolean : bTextBetweenH1H2 = False
+					For nIter = nH1Index To nH2Index
+						If Not IsLevel( sArray( nIter,1 ) ) Then
+							bTextBetweenH1H2 = True : Exit For
+						End If
+					Next nIter
+					If bTextBetweenH1H2 = False Then 
+						&apos; между ними нет текста - печатаем пустую строку
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10)) &apos; иначе - не валидность
+					Else
+						&apos; между ними есть текст - печатаем этот текст
+						While lCurrentElement &lt; nH2Index
+							SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+						Wend
+					End If
+					SaveCloseSection( nOpenSections ) &apos; закрываем &lt;/section&gt;
+					&apos; для 2-го Заголовка печатаем недостающие открывающие &lt;section&gt;
+					SaveNOpenSections( nH2Level-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				End If
+			Else
+				&apos; в книге только 1 Заголовок
+				SaveNOpenSections( nOpenSections-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody) &apos; печатаем Заголовок
+				&apos; если после этого единственного Заголовка - всего 1 абзац, то добавляем в конец пустую строку - от зацикливания
+				If lCurrentElement = lParaCount Then
+					AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False) : lParaCount = lParaCount+1
+				End If
+			End If
+			
+			&apos; 2.2 Печать остальных блоков секций, начиная от 2-й
+			Dim N As Integer, lNextIndex As Long
+			While lCurrentElement &lt;= lParaCount &apos; по индексам
+				lNextIndex = GetIndexOfNextLevel(sArray, lCurrentElement)
+				N = GetCountSection(sArray, lCurrentElement, lNextIndex, IndexOfEndSection(sArray))
+				If lNextIndex = 0 Then lNextIndex = lParaCount + 1
+				While lCurrentElement &lt; lNextIndex
+					&apos;печатаем все абзацы между секциями (саму следующую секцию не включаем)
+					Dim NN As Integer : NN = IsAdjacentCurrentLevelsOfNextLevel( sArray(), lCurrentElement )
+					&apos;NN: например, если Level 1 и 2 - NN=1, 1 и 3 - NN=0, 3 и 1 - NN=-1, 2 и 2 - NN=-2
+					If NN = 1 Then &apos; смежные уровни
+						If N = 0 Then &apos; смежные уровни
+							&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+							Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+						End If
+					ElseIf NN = 0 Then &apos; не смежные уровни
+						If Not IsLevel( sArray( lCurrentElement,1 ) ) Then &apos; текущий элемент - не Level
+							If N = 0 Then
+								&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+								Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+							ElseIf N &lt; 0 Then &apos; не смежные уровни, а между ними - текст, цитаты...
+								If lCurrentElement &gt; IndexOf1Section( sArray() ) Then
+									&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt;
+									Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+								End If
+								&apos; печать нужного числа открывающих &lt;section&gt;
+								SaveOpenSections( sArray(), lCurrentElement )
+							End If
+						Else  &apos; текущий элемент - Level
+							&apos; печать нужного числа открывающих &lt;section&gt;
+							SaveOpenSections( sArray(), lCurrentElement )
+						End If
+					ElseIf NN = -1 Then &apos; не смежные уровни с большего на меньший
+						If IsAdjacentCurrentLevelsOfPrevLevel( sArray(), lCurrentElement ) &lt;&gt; 1 Then
+							&apos; для несмежных уровней
+							&apos; печать нужного числа открывающих &lt;section&gt;
+							SaveOpenSections( sArray(), lCurrentElement )
+						End If
+					End If
+
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+					If bBody Then oProgressBar.setValue(lCurrentElement) &apos; Статусбар
+				Wend
+	
+				&apos; закрываем секции, взависимости от смежности уровней
+				If N = 0 Then &apos; смежные уровни
+					If bTextSmSection = True Then &apos; между ними есть текст. требующий взятие его в &lt;section&gt; &lt;/section&gt;
+						SaveCloseSection(1)
+						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					End If
+				Else &apos; не смежные уровни
+					If bTextSmSection = True Then &apos; между ними есть текст. требующий взятие его в &lt;section&gt; &lt;/section&gt;
+						SaveCloseSection(1)
+						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					Else
+						SaveCloseSection(N)
+						bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+					End If
+				End If
+				
+			Wend
+		End If
+		
+	End If
+End Sub
 
 </script:module>
