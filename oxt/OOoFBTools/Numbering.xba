@@ -49,7 +49,7 @@ End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub Numbering()
-	&apos; Принятие параметров чистки текста
+	&apos; Принятие параметров
 	&apos; записываем настройки диалога
 	SaveSettings( getUserPath() &amp; sNSettingsFilename, oRN )
 	
@@ -116,6 +116,7 @@ Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
 		oViewCursor.gotoRange(oPar, False)
 		oViewCursor.collapseToStart()
 		_UnoInsertText( sLeft &amp; LTrim( Str( nIndex ) ) &amp; sRight )
+		oLCurs.gotoEndOfParagraph(False)
 		oLCurs.gotoNextParagraph(False)
 		nIndex = nIndex+1
 	Loop
