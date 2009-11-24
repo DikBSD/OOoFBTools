@@ -163,7 +163,8 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим пробелом между словами
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alpha:]+&quot;
@@ -287,7 +288,8 @@ Function GetRegWorkerString() As String
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
-			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$&quot;
+			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+								chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
 		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
 			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“)}\],.!?…»”\&quot;&quot;:;]&quot;
 	End Select
