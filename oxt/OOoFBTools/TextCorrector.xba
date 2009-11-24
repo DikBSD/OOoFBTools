@@ -346,6 +346,12 @@ Sub TextCorrectorDlgOk()
 		ElseIf bBreakLinesInParaEndSymbols = True Then
 			JoinBreakLinesInParaEndSymbols( oProgressBar )
 		ElseIf bBreakLinesInFPara = True Then
+			&apos; Заменяем разрыв строки на абзац
+			oReplace.SearchString = chr(10)
+			oReplace.ReplaceString = &quot;\n&quot;
+			oDoc.ReplaceAll(oReplace)
+			oProgressBar.setValue(nCur)
+			nCur = nCur+1
 			JoinBreakLinesInEmptyPara( oProgressBar )
 		End If
 	End If
@@ -354,25 +360,6 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
-	If bDelEmptyPar = True Then
-		&apos; Удаляем все множественные пустые абзацы
-		Dim oDoc As Object : oDoc = ThisComponent
-		Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-		With vSearch
-			.SearchRegularExpression = True
-			.SearchString = &quot;^$&quot;
-		End With
-		Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
-		Do While Not IsNull( vFound )
-			If Not IsNull( vFound ) Then
-				vFound.setString(&quot;&quot;)
-				&apos; ищем далее
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-			End If
-		Loop
-		oProgressBar.setValue( nCur )
-		nCur = nCur+1
-	End If
 	If bBreakLine = True Then
 		&apos; Разрывы строк
 		If bDel = True Then
@@ -392,6 +379,27 @@ Sub TextCorrectorDlgOk()
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
+	
+	If bDelEmptyPar = True Then
+		&apos; Удаляем все множественные пустые абзацы
+		Dim oDoc As Object : oDoc = ThisComponent
+		Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchRegularExpression = True
+			.SearchString = &quot;^$&quot;
+		End With
+		Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
+		Do While Not IsNull( vFound )
+			If Not IsNull( vFound ) Then
+				vFound.setString(&quot;&quot;)
+				&apos; ищем далее
+				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+			End If
+		Loop
+		oProgressBar.setValue( nCur )
+		nCur = nCur+1
+	End If
+	
 	&apos; Кавычки, Дефисы, Разное
 	If b2HyphenToDash = True Then
 		&apos; Заменить двойной дефис (--) на тире
