@@ -454,6 +454,15 @@ Sub MakeBody( sArray As String, bBody As Boolean )
 					SaveCloseSection( nOpenSections ) &apos; закрываем &lt;/section&gt;
 					&apos; для 2-го Заголовка печатаем недостающие открывающие &lt;section&gt;
 					SaveNOpenSections( nH2Level-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				Else
+					&apos; Уровень 1-го Заголовка = Уровню 2-го (например: 3 и 3; 1 и 1)
+					SaveNOpenSections( nOpenSections-1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody) &apos; печатаем Заголовок
+					&apos; печатаем между ними текст
+					While lCurrentElement &lt; nH2Index
+						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), bBody)
+					Wend
+					SaveCloseSection( 1 ) &apos; закрываем &lt;/section&gt;
 				End If
 			Else
 				&apos; в книге только 1 Заголовок
