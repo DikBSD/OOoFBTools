@@ -160,7 +160,8 @@ Function GetRegString( oLB As Object ) As tFindData
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchWordsHyphenDashMinus
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot; &amp; &quot;|&quot; &amp; _
+								&quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:space:]$&quot;
 			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
@@ -286,7 +287,8 @@ Function GetRegWorkerString() As String
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]&quot;
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
-			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot;
+			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot; &amp; &quot;|&quot; &amp; _
+								&quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:space:]$&quot;
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
 			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
 								chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
