@@ -120,11 +120,12 @@ Sub _MakeBody( sArray As String, bBody As Boolean )
 			Wend
 		End If
 		&apos; 2. Печать всех блоков секций, начиная от 1-й
-		Dim N As Integer, lNextIndex As Long
+		Dim N As Integer, lNextIndex As Long, lIndexOfEndSection As Long
+		lIndexOfEndSection = IndexOfEndSection( sArray() )
 		If lIndexOf1Section &lt;&gt; -1 Then &apos; что-то есть
 			While lCurrentElement &lt;= lParaCount &apos; по индексам
 				lNextIndex = GetIndexOfNextLevel(sArray, lCurrentElement)
-				N = GetCountSection(sArray, lCurrentElement, lNextIndex, IndexOfEndSection(sArray))
+				N = GetCountSection(sArray, lCurrentElement, lNextIndex, lIndexOfEndSection )
 				If lNextIndex = 0 Then
 					lNextIndex = lParaCount + 1
 				End If
@@ -148,17 +149,17 @@ Sub _MakeBody( sArray As String, bBody As Boolean )
 									Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
 								End If
 								&apos; печать нужного числа открывающих &lt;section&gt;
-								SaveOpenSections( sArray(), lCurrentElement )
+								SaveOpenSections( sArray(), lCurrentElement, lIndexOfEndSection )
 							End If
 						Else  &apos; текущий элемент - Level
 							&apos; печать нужного числа открывающих &lt;section&gt;
-							SaveOpenSections( sArray(), lCurrentElement )
+							SaveOpenSections( sArray(), lCurrentElement, lIndexOfEndSection )
 						End If
 					ElseIf NN = -1 Then &apos; не смежные уровни с большего на меньший
 						If IsAdjacentCurrentLevelsOfPrevLevel( sArray(), lCurrentElement ) &lt;&gt; 1 Then
 							&apos; для несмедных уровней
 							&apos; печать нужного числа открывающих &lt;section&gt;
-							SaveOpenSections( sArray(), lCurrentElement )
+							SaveOpenSections( sArray(), lCurrentElement, lIndexOfEndSection )
 						End If
 					End If
 
@@ -197,12 +198,12 @@ Sub Save1OpenSectionForCandidate( sArray() As String, lCurrentElement As Long, b
 	End If
 End Sub
 
-Sub SaveOpenSections( sArray() As String, lCurrentElement As Long )
+Sub SaveOpenSections( sArray() As String, lCurrentElement As Long, lIndexOfEndSection As Long )
 	&apos; печать нужного числа открывающих &lt;section&gt;
 	If lCurrentElement &gt; IndexOf1Section( sArray() ) Then
 		Dim NOpen As Integer, i As Integer
 		NOpen = GetCountOpenSection( sArray(), lCurrentElement, _
-									GetIndexOfPrevLevel( sArray(), lCurrentElement ), IndexOfEndSection( sArray() ) )
+									GetIndexOfPrevLevel( sArray(), lCurrentElement ), lIndexOfEndSection )
 		If NOpen &gt; 0 Then
 			For i=0 To NOpen-1
 				oTextOutputStream.writeString( &quot;&lt;section&gt;&quot; &amp; chr(10) )
@@ -475,10 +476,11 @@ Sub MakeBody( sArray As String, bBody As Boolean )
 			End If
 			
 			&apos; 2.2 Печать остальных блоков секций, начиная от 2-й
-			Dim N As Integer, lNextIndex As Long
+			Dim N As Integer, lNextIndex As Long, lIndexOfEndSection As Long
+			lIndexOfEndSection = IndexOfEndSection( sArray() )
 			While lCurrentElement &lt;= lParaCount &apos; по индексам
 				lNextIndex = GetIndexOfNextLevel(sArray, lCurrentElement)
-				N = GetCountSection(sArray, lCurrentElement, lNextIndex, IndexOfEndSection(sArray))
+				N = GetCountSection(sArray, lCurrentElement, lNextIndex, lIndexOfEndSection )
 				If lNextIndex = 0 Then lNextIndex = lParaCount + 1
 				While lCurrentElement &lt; lNextIndex
 					&apos;печатаем все абзацы между секциями (саму следующую секцию не включаем)
@@ -500,17 +502,17 @@ Sub MakeBody( sArray As String, bBody As Boolean )
 									Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
 								End If
 								&apos; печать нужного числа открывающих &lt;section&gt;
-								SaveOpenSections( sArray(), lCurrentElement )
+								SaveOpenSections( sArray(), lCurrentElement, lIndexOfEndSection )
 							End If
 						Else  &apos; текущий элемент - Level
 							&apos; печать нужного числа открывающих &lt;section&gt;
-							SaveOpenSections( sArray(), lCurrentElement )
+							SaveOpenSections( sArray(), lCurrentElement, lIndexOfEndSection )
 						End If
 					ElseIf NN = -1 Then &apos; не смежные уровни с большего на меньший
 						If IsAdjacentCurrentLevelsOfPrevLevel( sArray(), lCurrentElement ) &lt;&gt; 1 Then
 							&apos; для несмежных уровней
 							&apos; печать нужного числа открывающих &lt;section&gt;
-							SaveOpenSections( sArray(), lCurrentElement )
+							SaveOpenSections( sArray(), lCurrentElement, lIndexOfEndSection )
 						End If
 					End If
 
