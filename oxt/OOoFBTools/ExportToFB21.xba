@@ -192,185 +192,7 @@ Sub ExportToFB21()
 	oInfoDlg.Dispose()
 End Sub
 
-Function SaveCloseSection(nCount As Integer) As Long
-	Dim i As Integer
-	If nCount &gt; 0 Then
-		For i = 0 To nCount-1
-			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
-		Next i
-	End If
-End Function
-
-Function IsLevel(sStyle As String) As Boolean
-	&apos; Если аргумент sStyle - это Уровень, то возвращается True, иначе - False
-	If sStyle = sStyleLevel1 Or sStyle = sStyleLevel2 Or sStyle = sStyleLevel3 Or sStyle = sStyleLevel4 Or sStyle = sStyleLevel5 Or _
-		 sStyle = sStyleLevel6 Or sStyle = sStyleLevel7 Or sStyle = sStyleLevel8 Or sStyle = sStyleLevel9 Or sStyle = sStyleLevel10 Then
-		 IsLevel = True
-	Else &apos; это не Уровень
-		IsLevel = False
-	End If
-End Function
-
-Function IndexOf1Section(sArray As String) As Long
-	&apos; индекс 1-й секции
-	Dim i As Long
-	For i = 0 To UBound(sArray)
-		If IsLevel(sArray(i,1)) = True Then
-			IndexOf1Section = i
-			Exit For
-		Else
-			IndexOf1Section = -1
-		End If
-	Next i
-End Function
-
-Function IndexOfEndSection(sArray As String) As Long
-	&apos; индекс последней секции
-	Dim i As Long
-	For i = UBound(sArray) To 0 Step -1 
-		If  IsLevel(sArray(i,1)) = True Then
-			IndexOfEndSection = i
-			Exit For
-		Else
-			IndexOfEndSection = -1
-		End If
-	Next i
-End Function
-
-Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Integer
-	&apos; текущий уровень и следующий - смежные по возрастанию? (напр. 1 и 2 - да(возвр. 1), 1 и 3 - нет(0), 3 и 1 - нет (-1), 2 и 2 - нет(-2))
-	If lIndexOfCurrentLevel &gt;= UBound( sArray() ) Then
-		IsAdjacentCurrentLevelsOfNextLevel = -1
-		Exit Function
-	End If
-
-	Dim N As Integer
-	N = GetLevelNumber( sArray( lIndexOfCurrentLevel,1 ) ) - GetLevelNumber( sArray( GetIndexOfNextLevel( sArray(), lCurrentElement ),1 ) )
-	If N = 0 Then &apos; текущий и следующий уровни одного ранга, например: 2 и 2
-		IsAdjacentCurrentLevelsOfNextLevel = -2
-		Exit Function
-	End If
-
-	If N &gt; 0 Then &apos; текущий и следующий уровни, например: 3 и 1 или 2 и 1 - надо закрывать секцию
-		IsAdjacentCurrentLevelsOfNextLevel = -1
-		Exit Function
-	End If
-	
-	If N = -1 Then &apos; текущий и следующий уровни - смежные, например: 1 и 2
-		IsAdjacentCurrentLevelsOfNextLevel = 1
-	Else &apos; текущий и следующий уровни не смежные, например: 1 и 3
-		IsAdjacentCurrentLevelsOfNextLevel = 0 
-	End If
-End Function
-
-Function IsAdjacentCurrentLevelsOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Integer
-	&apos; текущий уровень и предыдущий - смежные по убыванию? (напр. 2 и 1 - да(возвр. 1), 3 и 1 - нет(0), 1 и 3 - нет (-1), 2 и 2 - нет(-2))
-	If lIndexOfCurrentLevel &gt;= UBound( sArray() ) Then
-		IsAdjacentCurrentLevelsOfPrevLevel = -1
-		Exit Function
-	End If
-	
-	Dim N As Integer
-	N = GetLevelNumber( sArray( lIndexOfCurrentLevel,1 ) ) - GetLevelNumber( sArray( GetIndexOfPrevLevel( sArray(), lCurrentElement ),1 ) )
-	If N = 0 Then &apos; текущий и предыдущий уровни одного ранга, например: 2 и 2
-		IsAdjacentCurrentLevelsOfPrevLevel = -2
-		Exit Function
-	End If
-		
-	If N &lt; 0 Then &apos; текущий и предыдущий уровни, например: 1 и 3 или 1 и 2 - надо закрывать секцию
-		IsAdjacentCurrentLevelsOfPrevLevel = -1
-		Exit Function
-	End If
-	
-	If N = 1 Then &apos; текущий и предыдущий уровни - смежные, например: 2 и 1
-		IsAdjacentCurrentLevelsOfPrevLevel = 1
-	Else &apos; текущий и предыдущий уровни не смежные, например: 3 и 1
-		IsAdjacentCurrentLevelsOfPrevLevel = 0
-	End If
-End Function
-
-Function GetIndexOfPrevLevel( sArray As String, lIndexOfCurrentLevel As Long ) As Long
-	Dim i As Long, sInput As String
-	&apos; Ищем предыдущий индекс уровня до LevelCurrent
-	If lIndexOfCurrentLevel &gt;= UBound( sArray ) Then
-		GetIndexOfPrevLevel = lIndexOfCurrentLevel
-		Exit Function
-	End If
-	For i = lIndexOfCurrentLevel-1 To 0 Step -1
-		sInput = sArray( i,1 )
-		If  IsLevel( sInput ) = True Then
-			GetIndexOfPrevLevel = i
-			Exit For
-		End If
-	Next i
-End Function
-
-Function GetCountOpenSection(sArray As String, lIndexOfCurrentLevel As Long, lIndexOfPrevLevel As Long, lIndexOfEndSection As Long) As Integer
-	&apos; сравнение по индексам, расчет по номерам уровней (число открывающих &lt;section&gt;)
-	GetCountOpenSection = 0
-	If lIndexOfCurrentLevel &gt;= lIndexOfEndSection Then Exit Function
-	If IsLevel( sArray(lIndexOfPrevLevel,1) ) = True And IsLevel( sArray(lIndexOfCurrentLevel,1) ) = True Then 
-		If lIndexOfCurrentLevel &lt; lIndexOfEndSection Then 
-			GetCountOpenSection = ( GetLevelNumber(sArray(lIndexOfCurrentLevel,1)) - _
-								GetLevelNumber(sArray(lIndexOfPrevLevel,1)) ) - 1
-		Else
-			GetCountOpenSection = GetLevelNumber(sArray(lIndexOfEndSection,1))
-		End If
-	End If
-End Function
-
-Function GetCountSection(sArray As String, lIndexOfCurrentLevel As Long, lIndexOfNextLevel As Long, lIndexOfEndSection As Long) As Integer
-	&apos; сравнение по индексам, расчет по номерам уровней (число открывающих &lt;/section&gt;)
-	If lIndexOfCurrentLevel &lt; lIndexOfEndSection Then 
-		GetCountSection = ( GetLevelNumber(sArray(lIndexOfCurrentLevel,1)) - _
-							GetLevelNumber(sArray(lIndexOfNextLevel,1)) ) + 1
-	Else
-		GetCountSection = GetLevelNumber(sArray(lIndexOfEndSection,1))
-	End If
-End Function
-
-Function GetIndexOfNextLevel(sArray As String, lIndexOfCurrentLevel As Long) As Long
-	Dim i As Long, sInput As String
-	&apos; Ищем следующий индекс уровня после LevelCurrent
-	If lIndexOfCurrentLevel = UBound(sArray) Then
-		GetIndexOfNextLevel = lIndexOfCurrentLevel
-		Exit Function
-	End If
-	For i = lIndexOfCurrentLevel+1 To UBound(sArray)
-		sInput = sArray(i,1)
-		If  IsLevel(sInput) = True Then
-			GetIndexOfNextLevel = i
-			Exit For
-		End If
-	Next i
-End Function
-
-Function GetLevelNumber(Level As String) As Integer
-	&apos; Возвращает номер уровня (число) из строки уровня
-	Select Case Level
-		Case sStyleLevel1
-			GetLevelNumber = 1
-		Case sStyleLevel2
-			GetLevelNumber = 2
-		Case sStyleLevel3
-			GetLevelNumber = 3
-		Case sStyleLevel4
-			GetLevelNumber = 4
-		Case sStyleLevel5
-			GetLevelNumber = 5
-		Case sStyleLevel6
-			GetLevelNumber = 6
-		Case sStyleLevel7
-			GetLevelNumber = 7
-		Case sStyleLevel8
-			GetLevelNumber = 8
-		Case sStyleLevel9
-			GetLevelNumber = 9
-		Case sStyleLevel10
-			GetLevelNumber = 10
-	End Select
-End Function
-
+&apos; ////////////////////////////////////////////////////////////////////////////
 Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
 	Dim sR(5) As Integer, sR1(5) As Integer, sR2(5) As Integer
 	If bSuperfluous = True Then
@@ -1168,5 +990,180 @@ Function FindIndexForID( lCurElement As Long, sID As String, bBody As Boolean ) 
 		End If
 	Next l
 End Function
+
+&apos;////////////////////////////////////////////////////////////
+
+Function IsLevel(sStyle As String) As Boolean
+	&apos; Если аргумент sStyle - это Уровень, то возвращается True, иначе - False
+	If sStyle = sStyleLevel1 Or sStyle = sStyleLevel2 Or sStyle = sStyleLevel3 Or sStyle = sStyleLevel4 Or sStyle = sStyleLevel5 Or _
+		 sStyle = sStyleLevel6 Or sStyle = sStyleLevel7 Or sStyle = sStyleLevel8 Or sStyle = sStyleLevel9 Or sStyle = sStyleLevel10 Then
+		 IsLevel = True
+	Else &apos; это не Уровень
+		IsLevel = False
+	End If
+End Function
+
+Function IndexOf1Section(sArray As String) As Long
+	&apos; индекс 1-й секции
+	Dim i As Long
+	For i = 0 To UBound(sArray)
+		If IsLevel(sArray(i,1)) = True Then
+			IndexOf1Section = i
+			Exit For
+		Else
+			IndexOf1Section = -1
+		End If
+	Next i
+End Function
+
+Function IndexOfEndSection(sArray As String) As Long
+	&apos; индекс последней секции
+	Dim i As Long
+	For i = UBound(sArray) To 0 Step -1 
+		If  IsLevel(sArray(i,1)) = True Then
+			IndexOfEndSection = i
+			Exit For
+		Else
+			IndexOfEndSection = -1
+		End If
+	Next i
+End Function
+
+Function GetIndexOfNextLevel(sArray As String, lIndexOfCurrentLevel As Long) As Long
+	GetIndexOfNextLevel = -1 &apos; следующего уровня нет
+	Dim i As Long, sInput As String
+	&apos; Ищем следующий индекс уровня после LevelCurrent
+	If lIndexOfCurrentLevel = UBound(sArray) Then
+		GetIndexOfNextLevel = lIndexOfCurrentLevel
+		Exit Function
+	End If
+	For i = lIndexOfCurrentLevel+1 To UBound(sArray)
+		sInput = sArray(i,1)
+		If IsLevel(sInput) = True Then
+			GetIndexOfNextLevel = i
+			Exit For
+		End If
+	Next i
+End Function
+
+Function GetIndexOfPrevLevel( sArray As String, lIndexOfCurrentLevel As Long ) As Long
+	GetIndexOfPrevLevel = -1 &apos; предыдущего уровня нет
+	Dim i As Long, sInput As String
+	&apos; Ищем предыдущий индекс уровня до LevelCurrent
+	If lIndexOfCurrentLevel &gt;= UBound( sArray ) Then
+		GetIndexOfPrevLevel = lIndexOfCurrentLevel
+		Exit Function
+	End If
+	For i = lIndexOfCurrentLevel-1 To 0 Step -1
+		sInput = sArray( i,1 )
+		If  IsLevel( sInput ) = True Then
+			GetIndexOfPrevLevel = i
+			Exit For
+		End If
+	Next i
+End Function
+
+Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Integer
+	&apos; данные о текущем и следующем уровне (по возрастанию);
+	&apos; шаг - разница текущего и следующего уровней (current и next, напр: 1 и 2)
+	&apos; знак (+ или -) показывает переход вправо с большего на меньший (напр: 5 и 2) уровень (-) или с меньшего на больший (напр: 1 и 2) уровень (+)
+	&apos; 10 - если lIndexOfCurrentLevel вышел за правую границу массива (все уже обработали)
+	&apos;  5 - нет следующего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - последний Заголовок)
+	&apos;  0 - текущий и следующий уровни - одного ранга, шаг = 0 (напр. 3 и 3)
+	&apos;  1 - текущий и следующий уровни - смежные, шаг = -1 (напр. 1 и 2)
+	&apos; -1 - текущий и следующий уровни - смежные, шаг = 1 (напр. 2 и 1)
+	&apos;  2 - текущий и следующий уровни - не смежные, шаг &lt; -1 (напр. 1 и 4 - шаг=-3)
+	&apos; -2 - текущий и следующий уровни - не смежные, шаг &gt; 1 (напр. 4 и 1 - шаг=3)
+	
+	If lIndexOfCurrentLevel &gt;= UBound( sArray() ) Then
+		IsAdjacentCurrentLevelsOfNextLevel = 10 : Exit Function
+	End If
+	
+	Dim lIndexOfNextLevel : lIndexOfNextLevel = GetIndexOfNextLevel( sArray(), lIndexOfCurrentLevel,1 )
+	Dim nStep As Integer
+	If lIndexOfNextLevel = -1 Then &apos; нет следующего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - последний Заголовок)
+		IsAdjacentCurrentLevelsOfNextLevel = 5
+		Exit Function
+	Else &apos; следующий Уровень есть
+		nStep = GetLevelNumber( sArray( lIndexOfCurrentLevel,1 ) ) - GetLevelNumber( sArray( lIndexOfNextLevel,1 )
+	End If
+	
+	If nStep = 0 Then &apos; текущий и следующий уровни - одного ранга, шаг = 0 (напр. 3 и 3)
+		IsAdjacentCurrentLevelsOfNextLevel = 0
+	ElseIf nStep = -1 Then &apos; текущий и следующий уровни - смежные, шаг = -1 (напр. 1 и 2)
+		IsAdjacentCurrentLevelsOfNextLevel = 1
+	ElseIf nStep = 1 Then &apos; текущий и следующий уровни - смежные, шаг = 1 (напр. 2 и 1)
+		IsAdjacentCurrentLevelsOfNextLevel = -1
+	ElseIf nStep &lt; -1 Then &apos; текущий и следующий уровни - не смежные, шаг &lt; -1 (напр. 1 и 4 - шаг=-3)
+		IsAdjacentCurrentLevelsOfNextLevel = 2
+	ElseIf nStep &gt; 1 Then &apos; текущий и следующий уровни - не смежные, шаг &gt; 1 (напр. 4 и 1 - шаг=3) - надо закрывать секцию
+		IsAdjacentCurrentLevelsOfNextLevel = -2
+	End If
+End Function
+
+Function IsAdjacentCurrentLevelsOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Integer
+	&apos; данные о текущем и предыдущем уровне (по убыванию);
+	&apos; шаг - разница текущего и предыдущего уровней (prev и current, напр: 1 и 2)
+	&apos; знак (+ или -) показывает переход влево с большего на меньший (напр: 2 и 5) уровень (-) или с меньшего на больший (напр: 2 и 1) уровень (+)
+	&apos; 10 - если lIndexOfCurrentLevel вышел за правую границу массива (все уже обработали)
+	&apos;  5 - нет предыдущего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - самый 1-й Заголовок)
+	&apos;  0 - текущий и предыдущий уровни - одного ранга, шаг = 0 (напр. 3 и 3)
+	&apos; -1 - текущий и предыдущий уровни - смежные, шаг = 1 (напр. 1 и 2)
+	&apos;  1 - текущий и предыдущий уровни - смежные, шаг = -1 (напр. 2 и 1)
+	&apos; -2 - текущий и предыдущий уровни - не смежные, шаг &gt; 1 (напр. 1 и 4 - шаг=3)
+	&apos;  2 - текущий и предыдущий уровни - не смежные, шаг &lt; 1 (напр. 4 и 1 - шаг=-3)
+	If lIndexOfCurrentLevel &gt;= UBound( sArray() ) Then
+		IsAdjacentCurrentLevelsOfPrevLevel = 10 : Exit Function
+	End If
+	
+	Dim lIndexOfPrevLevel : lIndexOfPrevLevel = GetIndexOfPrevLevel( sArray(), lIndexOfCurrentLevel,1 )
+	Dim nStep As Integer
+	If lIndexOfPrevLevel = -1 Then &apos; нет предыдущего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - самый 1-й Заголовок)
+		IsAdjacentCurrentLevelsOfPrevLevel = -1 
+		Exit Function
+	Else &apos; предыдущий Уровень есть
+		nStep = GetLevelNumber( sArray( lIndexOfCurrentLevel,1 ) ) - GetLevelNumber( sArray( lIndexOfPrevLevel,1 ) )
+	End If
+	
+	If nStep = 0 Then &apos; текущий и предыдущий уровни - одного ранга, шаг = 0 (напр. 3 и 3
+		IsAdjacentCurrentLevelsOfPrevLevel = 0
+	ElseIf nStep = 1 Then &apos; текущий и предыдущий уровни - смежные, шаг = 1 (напр. 1 и 2)
+		IsAdjacentCurrentLevelsOfPrevLevel = -1
+	ElseIf nStep = -1 Then &apos; текущий и предыдущий уровни - смежные, шаг = -1 (напр. 2 и 1)
+		IsAdjacentCurrentLevelsOfPrevLevel = 1
+	ElseIf nStep &gt; 1 Then &apos;  текущий и предыдущий уровни - не смежные, шаг &gt; 1 (напр. 1 и 4 - шаг=3)
+		IsAdjacentCurrentLevelsOfPrevLevel = -2
+	ElseIf nStep &lt; 1 Then &apos; текущий и предыдущий уровни - не смежные, шаг &lt; 1 (напр. 4 и 1 - шаг=-3)
+		IsAdjacentCurrentLevelsOfPrevLevel = 2
+	End If
+End Function
+
+Function GetLevelNumber(Level As String) As Integer
+	&apos; Возвращает номер уровня (число) из строки уровня
+	Select Case Level
+		Case sStyleLevel1
+			GetLevelNumber = 1
+		Case sStyleLevel2
+			GetLevelNumber = 2
+		Case sStyleLevel3
+			GetLevelNumber = 3
+		Case sStyleLevel4
+			GetLevelNumber = 4
+		Case sStyleLevel5
+			GetLevelNumber = 5
+		Case sStyleLevel6
+			GetLevelNumber = 6
+		Case sStyleLevel7
+			GetLevelNumber = 7
+		Case sStyleLevel8
+			GetLevelNumber = 8
+		Case sStyleLevel9
+			GetLevelNumber = 9
+		Case sStyleLevel10
+			GetLevelNumber = 10
+	End Select
+End Function
+
+&apos; ///////////////////////////////////////////////////////////////
 
 </script:module>
