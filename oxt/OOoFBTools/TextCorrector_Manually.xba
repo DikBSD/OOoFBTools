@@ -357,16 +357,23 @@ Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Inte
 	If IsNull( vFound ) Then Exit Function
 	If Not IsEmpty( vFound.TextTable ) Then &apos; таблица
 		&apos; обрабатываем ячейки  таблицы
-		Dim oTable			As Object	: oTable		= vFound.TextTable
-		Dim aCellNames()	As String	: aCellNames	= oTable.getCellNames()
-		Dim oCell 			As Object	: oCell			= oTable.getCellByName( aCellNames( 0 ) )
+		&apos;Dim oTable			As Object	: oTable		= vFound.TextTable
+		&apos;Dim aCellNames()	As String	: aCellNames	= oTable.getCellNames()
+		&apos;Dim oCell 			As Object	: oCell			= oTable.getCellByName( aCellNames( 0 ) )
 		If Not IsNull( vFound ) Then &apos; нашли
 			&apos; выделяем найденное и обрабатываем
 			oViewCursor.gotoRange( vFound, False )
-			If bWorker Then
-				ProcessingWorker( oViewCursor, iRight )
-			Else
-				InsertionSpaceAroundDash( oViewCursor )
+			If sWorker = &quot;other&quot; Then &apos; для разных инструментов
+				ProcessingTableWorker( oViewCursor, iRight )
+			ElseIf sWorker = &quot;dash&quot; Then &apos; для Слово с дефисом, тире или минусом (вставка пробелов слева и справа от дефиса...)
+				oViewCursor.goLeft( 1, False )	: _UnoInsertText( &quot; &quot; )
+				oViewCursor.goRight( 1, False )	: _UnoInsertText( &quot; &quot; )
+			ElseIf sWorker = &quot;break&quot; Then &apos; для Обрыв предложения на знаках препинания, кавычках и скобках
+				&apos;InsertionSymbol( oViewCursor )
+				&apos; снимаем выделение
+				oViewCursor.collapseToEnd()
+				&apos; вставляем знак препинания из выпадающего списка
+				_UnoInsertText( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem ) : oViewCursor.collapseToEnd()
 			End If
 			Finder = True
 			If oTDF.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then TDFFind()
@@ -419,6 +426,44 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 			End If
 			&apos; вставляем пробел
 			oViewCursor.setString( &quot; &quot; )
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+	End Select
+End Sub
+
+&apos; Обработчик найденного для Таблиц
+Sub ProcessingTableWorker( oViewCursor As Object, iRight As Integer )
+	Dim oLB As Object : oLB = oTDF.getControl( &quot;lbTDFMode&quot; )
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			&apos; удаляем найденный символ
+			_UnoDelete()
+			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
+			Dim otxtCurs As Object : otxtCurs = oViewCursor.Text.createTextCursor()
+			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
+			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			&apos; удаляем перенос и символ абзаца
+			_UnoDelete() : _UnoDelete()
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			&apos; снимаем выделение - переход в конец оборванной строки
+			oViewCursor.gotoEndOfLine( False )
+			&apos; удаляем символ абзаца
+			_UnoDelete()
+			&apos; вставляем пробел
+			oViewCursor.setString( &quot; &quot; )
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
+			If iRight = 0 Then &apos; вставка пробела СЛЕВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToStart()
+			ElseIf iRight = 1 Then &apos; вставка пробела СПРАВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToEnd()
+			End If
+			&apos; вставляем пробел
+			_UnoInsertText( &quot; &quot; )
 			&apos; снимаем выделение - вправо
 			oViewCursor.collapseToEnd()
 	End Select
