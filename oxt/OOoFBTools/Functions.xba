@@ -518,7 +518,6 @@ End Function
 
 &apos; корректировка абзаца - отлов символов &lt;,&gt;,&amp;
 Function CorrectPara(sPara As String) As String
-	Dim SA() As String
 	Dim i As Integer, iLen As Integer
 	Dim newPara As String, sChar As String
 	iLen = Len(sPara)&apos; длина анализируемой строки
@@ -537,9 +536,24 @@ Function CorrectPara(sPara As String) As String
 	CorrectPara = newPara
 End Function
 
+&apos; корректировка названия закладки - замена символов &lt;,&gt;,&amp; на _
+Function CorrectBMLink( sPara As String ) As String
+	Dim i As Integer, iLen As Integer
+	Dim newPara As String, sChar As String
+	iLen = Len(sPara)&apos; длина анализируемой строки
+	For i = 1 To iLen
+		sChar = Mid(sPara, i, 1)
+		If sChar = &quot;&amp;&quot; OR sChar = &quot;&lt;&quot; OR sChar = &quot;&gt;&quot; Then
+			newPara = newPara + &quot;_&quot;
+		Else
+			newPara = newPara  + sChar
+		End If
+	Next i
+	CorrectBMLink = newPara
+End Function
+
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
 Function FB2CorrectWord(sWord As String, iResult As Integer)
-	Dim SA() As String
 	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
@@ -563,7 +577,6 @@ End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
 Function FB2CorrectBracketsWord(sWord As String, iResult As Integer)
-	Dim SA() As String
 	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
@@ -584,7 +597,6 @@ End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
 Function FB2CorrectAmpWord(sWord As String, iResult As Integer)
-	Dim SA() As String
 	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
