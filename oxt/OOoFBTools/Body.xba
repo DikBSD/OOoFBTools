@@ -213,11 +213,19 @@ Sub MakeBody( sArray As String, bBody As Boolean )
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
 	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
-	Dim  lParaCount			As Long	: lParaCount			= UBound(sArray)
-	Dim lIndexOf1Section	As Long	: lIndexOf1Section		= IndexOf1Section( sArray() )
-	Dim lIndexOfEndSection	As Long	: lIndexOfEndSection	= IndexOfEndSection( sArray() )
-	Dim bText			As Boolean	: bText = False
-	Dim bTextSmSection	As Boolean	: bTextSmSection = False
+	Dim lParaCount			As Long		: lParaCount			= UBound(sArray)
+	Dim lIndexOfBookTitle	As Long		: lIndexOfBookTitle		= IndexOfBookTitle( sArray() )
+	&apos; ищем 1-й Заголовой любого Уровня только тот, который после Названия Книги!!!
+	Dim lIndexOf1Section	As Long
+	If lIndexOfBookTitle &lt;&gt; -1 Then &apos; если в тексте нет стиля Book Title
+		lIndexOf1Section = IndexOf1Section( sArray(), lIndexOfBookTitle )
+	Else							&apos; если стиль Book Title в тексте есть
+		lIndexOf1Section = IndexOf1Section( sArray(), 0 )
+	End If
+	Dim lIndexOfEndSection	As Long		: lIndexOfEndSection	= IndexOfEndSection( sArray() )
+	Dim bText				As Boolean	: bText					= False
+	Dim bTextSmSection		As Boolean	: bTextSmSection		= False
+	
 	If lIndexOf1Section = -1 Then &apos; нет ни одной секции
 		While sArray(lCurrentElement,1)=sStyleEpigraph
 			&apos; Если 1-е элементы - епиграф, то его не берем в &lt;section&gt;, хотя если взять - документ все равно валидный будет

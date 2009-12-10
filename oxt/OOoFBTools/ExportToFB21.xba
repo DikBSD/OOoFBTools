@@ -993,7 +993,7 @@ End Function
 
 &apos;////////////////////////////////////////////////////////////
 
-Function IsLevel(sStyle As String) As Boolean
+Function IsLevel( sStyle As String ) As Boolean
 	&apos; Если аргумент sStyle - это Уровень, то возвращается True, иначе - False
 	If sStyle = sStyleLevel1 Or sStyle = sStyleLevel2 Or sStyle = sStyleLevel3 Or sStyle = sStyleLevel4 Or sStyle = sStyleLevel5 Or _
 		 sStyle = sStyleLevel6 Or sStyle = sStyleLevel7 Or sStyle = sStyleLevel8 Or sStyle = sStyleLevel9 Or sStyle = sStyleLevel10 Then
@@ -1003,37 +1003,49 @@ Function IsLevel(sStyle As String) As Boolean
 	End If
 End Function
 
-Function IndexOf1Section(sArray As String) As Long
-	&apos; индекс 1-й секции
+Function IndexOfBookTitle( sArray() As String ) As Long
+	&apos; индекс Названия Книги
+	IndexOfBookTitle = -1
 	Dim i As Long
-	For i = 0 To UBound(sArray)
-		If IsLevel(sArray(i,1)) = True Then
-			IndexOf1Section = i
-			Exit For
-		Else
-			IndexOf1Section = -1
+	For i = 0 To UBound( sArray() )
+		If sArray(i,1) = sStyleBookTitle Then
+			IndexOfBookTitle = i
+			Exit Function
 		End If
 	Next i
 End Function
 
-Function IndexOfEndSection(sArray As String) As Long
-	&apos; индекс последней секции
+Function IndexOf1Section( sArray() As String, lStartIndex As Long ) As Long
+	&apos; индекс 1-й секции
+	IndexOf1Section = -1
+	If lStartIndex &gt; UBound( sArray() ) Or lStartIndex &lt; 0 Then Exit Function
+	
 	Dim i As Long
-	For i = UBound(sArray) To 0 Step -1 
+	For i = lStartIndex To UBound( sArray() )
+		If IsLevel( sArray(i,1) ) = True Then
+			IndexOf1Section = i
+			Exit Function
+		End If
+	Next i
+End Function
+
+Function IndexOfEndSection( sArray() As String ) As Long
+	&apos; индекс последней секции
+	IndexOfEndSection = -1
+	Dim i As Long
+	For i = UBound( sArray() ) To 0 Step -1 
 		If  IsLevel(sArray(i,1)) = True Then
 			IndexOfEndSection = i
-			Exit For
-		Else
-			IndexOfEndSection = -1
+			Exit Function
 		End If
 	Next i
 End Function
 
-Function GetIndexOfNextLevel(sArray As String, lIndexOfCurrentLevel As Long) As Long
+Function GetIndexOfNextLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Long
 	GetIndexOfNextLevel = -1 &apos; следующего уровня нет
 	Dim i As Long, sInput As String
 	&apos; Ищем следующий индекс уровня после LevelCurrent
-	If lIndexOfCurrentLevel = UBound(sArray) Then
+	If lIndexOfCurrentLevel = UBound( sArray() ) Then
 		GetIndexOfNextLevel = lIndexOfCurrentLevel
 		Exit Function
 	End If
@@ -1046,7 +1058,7 @@ Function GetIndexOfNextLevel(sArray As String, lIndexOfCurrentLevel As Long) As 
 	Next i
 End Function
 
-Function GetIndexOfPrevLevel( sArray As String, lIndexOfCurrentLevel As Long ) As Long
+Function GetIndexOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Long
 	GetIndexOfPrevLevel = -1 &apos; предыдущего уровня нет
 	Dim i As Long, sInput As String
 	&apos; Ищем предыдущий индекс уровня до LevelCurrent
