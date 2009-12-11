@@ -118,6 +118,7 @@ Sub lbTDFModeChange()
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
 			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= True
+			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sDelete
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreak
@@ -126,6 +127,7 @@ Sub lbTDFModeChange()
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sProcess
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintDeleteBreakAddBlank
@@ -134,6 +136,7 @@ Sub lbTDFModeChange()
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
 		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
 			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label = sTDFD.sInsert
 			oTDF.Model.cmdbtnTDFWorker.HelpText = sTDFD.sWorkerHintInsertBlank
@@ -142,6 +145,7 @@ Sub lbTDFModeChange()
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
 	End Select
 End Sub
 
@@ -157,7 +161,11 @@ Function GetRegString( oLB As Object ) As tFindData
 	Dim sTDF As tFindData
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;
+			If oTDF.GetControl( &quot;chBoxFindBN&quot; ).State = 1 Then &apos; искать и между цифр
+				sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;
+			Else
+				sTDF.sRegString = &quot;\&lt;[:alpha:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alpha:]+&quot;
+			End If
 			sTDF.sMessage = sTDFD.sSearchWordsHyphenDashMinus
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot; &amp; &quot;|&quot; &amp; _
