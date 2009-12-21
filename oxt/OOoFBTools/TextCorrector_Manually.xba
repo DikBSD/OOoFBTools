@@ -145,7 +145,7 @@ Sub lbTDFModeChange()
 			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
 	End Select
 End Sub
 
@@ -176,8 +176,12 @@ Function GetRegString( oLB As Object ) As tFindData
 							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим пробелом между словами
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alnum:]+&quot; &amp; &quot;|&quot; &amp;_
-							&quot;\&lt;[:alpha:]+[:digit:]+|\&lt;[:digit:]+[:alpha:]+&quot;
+			If oTDF.GetControl( &quot;chBoxFindBN&quot; ).State = 1 Then &apos; искать и между цифр
+				sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alnum:]+&quot;
+			Else
+				sTDF.sRegString = &quot;\&lt;[:alpha:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alpha:]+&quot;
+			End If
+			sTDF.sRegString = sTDF.sRegString &amp; &quot;|\&lt;[:alpha:]+[:digit:]+|\&lt;[:digit:]+[:alpha:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
 			sTDF.sRegString = &quot;[:alnum:]+&quot;
