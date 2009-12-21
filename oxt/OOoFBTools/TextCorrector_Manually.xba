@@ -176,7 +176,8 @@ Function GetRegString( oLB As Object ) As tFindData
 							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим пробелом между словами
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alpha:]+&quot;
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alnum:]+&quot; &amp; &quot;|&quot; &amp;_
+							&quot;\&lt;[:alpha:]+[:digit:]+|\&lt;[:digit:]+[:alpha:]+&quot;
 			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
 		Case Else
 			sTDF.sRegString = &quot;[:alnum:]+&quot;
@@ -324,27 +325,49 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
 	
 	If oLB.SelectedItemPos = 3 Then &apos; Место с недостающим пробелом между словами (вероятно)
-		Dim i As Integer
-		&apos; смотрим, какой символ нашли
-		Dim sFindStr		As String : sFindStr	= oDoc.getCurrentController().getViewCursor().GetString()
-		Dim sRegStr()		As String : sRegStr()	= Array( &quot;)&quot;,&quot;}&quot;,&quot;]&quot;,&quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;,&quot;,&quot;.&quot;,&quot;!&quot;,&quot;?&quot;,&quot;…&quot;,&quot;»&quot;,&quot;”&quot;,&quot;&quot;&quot;&quot;,&quot;:&quot;,&quot;;&quot;,&quot;«&quot;,&quot;“&quot; )
+		Dim i			As Integer	: i			= 0 &apos; счетчик для цикла
+		Dim sFindStr	As String	: sFindStr	= oDoc.getCurrentController().getViewCursor().GetString()
+		Dim iRight		As Integer	: iRight	= 1 &apos; пробел нужен справа (по-умолчанию)
+
+		&apos; смотрим, какая ситуация: слипшиеся слово и цифра, или же знаки препинания, скобки	и слова(цифры)
+		Dim sRegStr()	As String	: sRegStr()	= Array( &quot;)&quot;,&quot;}&quot;,&quot;]&quot;,&quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;,&quot;,&quot;.&quot;,&quot;!&quot;,&quot;?&quot;,&quot;…&quot;,&quot;»&quot;,&quot;”&quot;,&quot;&quot;&quot;&quot;,&quot;:&quot;,&quot;;&quot;,&quot;«&quot;,&quot;“&quot; )
+		Dim bFnd		As Boolean	: bFnd		= False
 		For i = 0 To UBound( sRegStr() )
 			Dim nPos As Integer : nPos = InStr( sFindStr, sRegStr(i) )
 			If nPos &lt;&gt; 0 Then
-				Dim sChar As String : sChar = sRegStr(i)
-				Exit For
-			End If
-		Next i
-		&apos; слева этот символ или справа
-		Dim sRegLeftStr()	As String	: sRegLeftStr()	= Array( &quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;“&quot; )
-		Dim iRight			As Integer	: iRight		= 1
-		For i = 0 To UBound( sRegLeftStr() )
-			If InStr( sFindStr, sRegLeftStr(i) ) &lt;&gt; 0 Then
-				iRight = 0
+				Dim sChar As String : sChar = sRegStr(i) : bFnd = True
 				Exit For
 			End If
 		Next i
 		
+		If bFnd = False Then &apos; для случаев типа &quot;в2 раза&quot; или &quot;2раза&quot;
+			&apos; смотрим, что стоит слева - цифра или буква
+			Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+			Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
+			With vSearch
+				.SearchString				= &quot;\&lt;[:alpha:]+[:digit:]+&quot;
+				.SearchCaseSensitive		= False
+				.SearchRegularExpression	= True
+			End With
+			Dim vFound As Variant : vFound = oDoc.findNext( oCurs, vSearch )
+			If Not IsNull( vFound ) Then
+				&apos; для случаев типа &quot;в2 раза&quot; - нужен пробел между &quot;в&quot; и &quot;2&quot;
+				iRight = 0 &apos; пробел нужен между буквой и цифрой (&quot;в2 раза&quot;) - слева от цифры
+			Else
+				&apos; для случаев типа &quot;2раза&quot; - нужен пробел между &quot;2&quot; и &quot;раза&quot;
+				iRight = 1 &apos; пробел нужен между цифрой и буквой (&quot;2раза&quot;) - справа от цифры
+			End If
+			sReg = &quot;[:digit:]+&quot; &apos; поиск только цифры
+		Else
+			&apos; слева нужен пробел или справа
+			Dim sRegLeftStr()	As String	: sRegLeftStr()	= Array( &quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;“&quot; )
+			For i = 0 To UBound( sRegLeftStr() )
+				If InStr( sFindStr, sRegLeftStr(i) ) &lt;&gt; 0 Then
+					iRight = 0 &apos; пробел нужен слева
+					Exit For
+				End If
+			Next i
+		End If
 		Finder( oDoc, oCurs, sReg, iRight, &quot;other&quot; )
 	Else
 		Finder( oDoc, oCurs, sReg, -1, &quot;other&quot; )
