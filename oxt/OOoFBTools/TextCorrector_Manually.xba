@@ -337,8 +337,7 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 		Dim sRegStr()	As String	: sRegStr()	= Array( &quot;)&quot;,&quot;}&quot;,&quot;]&quot;,&quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;,&quot;,&quot;.&quot;,&quot;!&quot;,&quot;?&quot;,&quot;…&quot;,&quot;»&quot;,&quot;”&quot;,&quot;&quot;&quot;&quot;,&quot;:&quot;,&quot;;&quot;,&quot;«&quot;,&quot;“&quot; )
 		Dim bFnd		As Boolean	: bFnd		= False
 		For i = 0 To UBound( sRegStr() )
-			Dim nPos As Integer : nPos = InStr( sFindStr, sRegStr(i) )
-			If nPos &lt;&gt; 0 Then
+			If InStr( sFindStr, sRegStr(i) ) &lt;&gt; 0 Then
 				Dim sChar As String : sChar = sRegStr(i) : bFnd = True
 				Exit For
 			End If
@@ -346,15 +345,9 @@ Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
 		
 		If bFnd = False Then &apos; для случаев типа &quot;в2 раза&quot; или &quot;2раза&quot;
 			&apos; смотрим, что стоит слева - цифра или буква
-			Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
-			Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
-			With vSearch
-				.SearchString				= &quot;\&lt;[:alpha:]+[:digit:]+&quot;
-				.SearchCaseSensitive		= False
-				.SearchRegularExpression	= True
-			End With
-			Dim vFound As Variant : vFound = oDoc.findNext( oCurs, vSearch )
-			If Not IsNull( vFound ) Then
+			Dim oSels	As Object	: oSels	= ThisComponent.getCurrentSelection()
+			Dim sStr	As String	: sStr	= oSels.getByIndex( 0 ).String
+			If Val( Left( sStr, 1 ) ) = 0 Then &apos; это не число
 				&apos; для случаев типа &quot;в2 раза&quot; - нужен пробел между &quot;в&quot; и &quot;2&quot;
 				iRight = 0 &apos; пробел нужен между буквой и цифрой (&quot;в2 раза&quot;) - слева от цифры
 			Else
