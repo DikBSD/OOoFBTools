@@ -424,12 +424,13 @@ End Function
 &apos; Обработчик найденного
 Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 	Dim oLB As Object : oLB = oTDF.getControl( &quot;lbTDFMode&quot; )
+	Dim otxtCurs As Object
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
 			&apos; удаляем найденный символ
 			_UnoDelete()
 			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
-			Dim otxtCurs As Object : otxtCurs = oViewCursor.Text.createTextCursor()
+			otxtCurs = oViewCursor.Text.createTextCursor()
 			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
 			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
@@ -454,8 +455,10 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer )
 			End If
 			&apos; вставляем пробел
 			oViewCursor.setString( &quot; &quot; )
-			&apos; снимаем выделение - вправо
-			oViewCursor.collapseToEnd()
+			&apos; на начало слова, т.к. в одном слове могут встречаться несколько слипшихся после OCR слов подряд
+			otxtCurs = oViewCursor.Text.createTextCursor()
+			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
+			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
 	End Select
 End Sub
 
