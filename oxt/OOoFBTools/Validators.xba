@@ -23,7 +23,7 @@ Sub StartValidate()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadXYFormPos( sValidatorSettingsFilename, nX, nY )
+	ReadDlgSettings( sValidatorSettingsFilename, oValidateDlg, nX, nY )
 	oValidateDlg.setPosSize( nX, nY, 66, 196, com.sun.star.awt.PosSize.POS )
 	
 	oValidateDlg.Execute()
@@ -73,12 +73,22 @@ Sub FB2Validate()
 		MsgBox( sVD.sFB2FileValidateWarning, 64, sVD.sFB2FileValidate )
 		Exit Sub
 	End If
-	If Trim(oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text) = &quot;&quot; Then
+	
+	Dim sFile As String : sFile = Trim( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text )
+	If sFile = &quot;&quot; Then
 		MsgBox sVD.sChooseFB2FileToValidate, 64, sVD.sFB2FileValidate
 		Exit Sub
+	ElseIf Not FileExists( sFile ) Then
+		MsgBox sVD.sFileNotExists + chr(10)+sFile, 64, sVD.sFB2FileValidate
+		Exit Sub
 	End If
-	Dim sFile As String : sFile = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text
-	Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text ) &apos;валидация fb2-файла
+	
+	If oValidateDlg.GetControl(&quot;obtnFB2Schema21&quot;).State = True Then 
+		Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, &quot;2.1&quot; )
+	Else
+		Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, &quot;2.2&quot; )
+	End If
+	
 End Sub
 
 </script:module>
