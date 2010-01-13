@@ -118,25 +118,25 @@ Sub ViewDescGenreDlg()
 	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	oDGDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.DescGenreDlg )
 	
-	&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
-	InitDescGenreDlg()
-	
-	If oDGDlg.Model.obDGFB21.State = 1 Then
-		InitDEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-	Else
-		InitDEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
-	End If
-	
 	With oDGDlg.Model
 		.Height	= 130
 		.Width	= 265
 		.numMatch.Value = &quot;&quot;
 		.lbGenres.StringItemList = sGLN()
 	End With
+	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadXYFormPos( getUserPath() &amp; sConstDescGenre, nX, nY )
+	ReadDlgSettings( getUserPath() &amp; sConstDescGenre, oDGDlg, nX, nY )
 	oDGDlg.setPosSize( nX, nY, 130, 265, com.sun.star.awt.PosSize.POS )
+
+	&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
+	InitDescGenreDlg()
+	If oDGDlg.Model.obDGFB21.State = True Or oDGDlg.Model.obDGFB21.State = 1 Then
+		InitDEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitDEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
 
 	oDGDlg.execute()
 End Sub

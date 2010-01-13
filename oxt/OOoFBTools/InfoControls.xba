@@ -87,7 +87,7 @@ End Sub
 
 Function InfoDlgExec() As Boolean
 	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( sIDD.sInfoDlsCreateDialog, 9 )
+	oProgressBar.start( sIDD.sInfoDlsCreateDialog+&quot;/&quot;+sIDD.sInfoDlgInit, 10 )
 	oProgressBar.setValue(1)
 	
 	&apos; Создание формы
@@ -96,16 +96,9 @@ Function InfoDlgExec() As Boolean
 	oProgressBar.setValue(2)
 	
 	&apos; инициализация основной формы конвертера в зависимости от локали
-	oProgressBar.start( sIDD.sInfoDlgInit, ThisComponent.ParagraphCount )
 	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl( sCurDocFile )
 	InitInfoDlg() &apos; инициализация основной формы конвертера в зависимости от локали
 	InitServiceDlgMessage() &apos; инициализация сообщений диалога Настроек в зависимости от локали
-	
-	If oInfoDlg.Model.obtnFB21.State = True Then
-		InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-	Else
-		InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
-	End If
 	oProgressBar.setValue(3) &apos; Статусбар
 
 	MakeLangList( sLangList() )
@@ -137,12 +130,19 @@ Function InfoDlgExec() As Boolean
 	Dim nX As Integer, nY As Integer
 	ReadMainFormSettings( getUserPath() &amp; sConstMainDlg, oInfoDlg, nX, nY )
 	oInfoDlg.setPosSize( nX, nY, 362, 408, com.sun.star.awt.PosSize.POS )
-	
 	oProgressBar.setValue(5) &apos; Статусбар
+	
+	&apos; заполняем списки Жанрами, взависимости от выбранной Схемы
+	If oInfoDlg.Model.obtnFB21.State = True Or oInfoDlg.Model.obtnFB21.State = 1 Then
+		InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
+	oProgressBar.setValue(6) &apos; Статусбар
 	
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 	_ReadProfile( getUserPath() &amp; sConstFB2AuthorProfile, 1 )
-	oProgressBar.setValue(6) &apos; Статусбар
+	oProgressBar.setValue(7) &apos; Статусбар
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
 	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
@@ -158,13 +158,10 @@ Function InfoDlgExec() As Boolean
 	
 	&apos; Задаем настройки в переменные по умолчанию
 	SetDefaultSettingsInVars()
-	oProgressBar.setValue(7) &apos; Статусбар
+	oProgressBar.setValue(8) &apos; Статусбар
 	&apos; только теперь считываем настройки из файла в переменные
 	ReadSettings(False)
-	oProgressBar.setValue(8) &apos; Статусбар
-	
-	&apos; читаем и заносим в контролы данные служебных стилей для Description
-	ReadServiceStyles(9)
+	oProgressBar.setValue(9) &apos; Статусбар
 	
 	bAppendBtn = True
 	
@@ -172,12 +169,20 @@ Function InfoDlgExec() As Boolean
 	Dim aArray() As String
 	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	oInfoDlg.Model.lbGenreElite.StringItemList = aArray()
+	oProgressBar.setValue(10) &apos; Статусбар
+	oProgressBar.end
+	
+	&apos; читаем и заносим в контролы данные служебных стилей для Description
+	oProgressBar.start( sIDD.sInfoDlgInit, ThisComponent.ParagraphCount )
+	ReadServiceStyles(0)
+	oProgressBar.end
 	
 	oInfoDlg.execute()
 	InfoDlgExec = bExecute
 End Function
 
 Sub ReadServiceStyles( lProgress As Long )
+	&apos; читаем и заносим в контролы данные служебных стилей для Description
 	Dim oCursor As Object : oCursor = ThisComponent.Text.createTextCursor()
 	oCursor.gotoStart(False)
 	Dim lPara As Long : lPara = lProgress &apos; для статусбара
@@ -213,7 +218,6 @@ Sub ReadServiceStyles( lProgress As Long )
 		End Select
 		oProgressBar.setValue( lPara ) &apos; Статусбар
 	Loop While oCursor.gotoNextParagraph( False )
-	oProgressBar.end
 End Sub
 
 Sub InfoDlgCanceled()
@@ -226,8 +230,7 @@ Sub NewBookID()
 End Sub
 
 Function GetNewBookID() As String
-	Dim sNow As String
-	sNow = Now
+	Dim sNow As String : sNow = Now
 	GetNewBookID = &quot;OOoFBTools-&quot; &amp; _
 				Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; _
 				&quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
@@ -923,12 +926,6 @@ Sub cbtnGenreElite_Click()
 	&apos; инициализация диалога работы с Избранными Жанрами от локали
 	InitGenreEliteDlg()
 	
-	If oGEDlg.Model.obtnGEFB21.State = 1 Then
-		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-	Else
-		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
-	End If
-	
 	With oGEDlg.Model
 		.Height	= 165
 		.Width	= 215
@@ -944,6 +941,13 @@ Sub cbtnGenreElite_Click()
 	Dim aArray() As String
 	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
 	oGEDlg.Model.lbGE.StringItemList = aArray()
+	
+	&apos; Загрузка Списка Жанров, в зависимости от выбранной Схемы Жанров
+	If oGEDlg.Model.obtnGEFB21.State = True Or oGEDlg.Model.obtnGEFB21.State = 1 Then
+		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
 	
 	oGEDlg.execute()
 End Sub
