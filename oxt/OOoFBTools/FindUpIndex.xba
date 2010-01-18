@@ -60,13 +60,20 @@ Sub FindUpIndexFinderStart()
 					&quot;... &quot; &amp; sFUID.sText &amp; &quot; \x\ ...&quot;)
 
 	Dim aNFNInListList() As String
-	aNFNInListList() = Array(&quot;x. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
-							&quot;(x). &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
-							&quot;[x]. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
-							&quot;{x}. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
-							&quot;&lt;x&gt;. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
-							&quot;/x/. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;, _
-							&quot;\x\. &quot; &amp; sFUID.sSText &amp; &quot; ...&quot;)
+	aNFNInListList() = Array(	&quot;x &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;x. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;(x) &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;(x). &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;[x] &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;[x]. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;{x} &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;{x}. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;&lt;x&gt; &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;&lt;x&gt;. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;/x/ &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;/x/. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;\x\ &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								&quot;\x\. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;	)
 
 	With oFUI.Model
 		.Height	= 49
@@ -220,7 +227,7 @@ Sub UpIndexTransformToFootNoteTemplate()
 	If oFUI.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then FUIFind()
 End Sub
 
-&apos; преобразование цифр в верхнем индексе по шаблону для номеров сносок в списке
+&apos; преобразование цифр в верхнем индексе по шаблону для номеров сносок в списке примечаний
 Sub UpIndexTransformToFootNoteListTemplate()
 	&apos; проверка на выделение
 	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
@@ -233,12 +240,13 @@ Sub UpIndexTransformToFootNoteListTemplate()
 	If oViewCursor.CharEscapementHeight &lt;&gt; 58 And oViewCursor.CharEscapement &lt;&gt; 101 Then Exit Sub
 	
 	Dim oLB		As Object : oLB		= oFUI.getControl( &quot;lboxFNInListTrans&quot; )
+	Dim sLeft	As String : sLeft	= GetStringNFNInListForLeft( oLB )
 	Dim sRight	As String : sRight	= GetStringNFNInListForRight( oLB )
 	Dim sText	As String : sText	= oViewCursor.getString()
 	
 	oViewCursor.CharEscapementHeight	= 0
 	oViewCursor.CharEscapement			= 0
-	oViewCursor.setString( sText &amp; sRight )
+	oViewCursor.setString( sLeft &amp; sText &amp; sRight )
 	
 	&apos; снимаем выделение - вправо
 	oViewCursor.collapseToEnd()
@@ -246,22 +254,72 @@ Sub UpIndexTransformToFootNoteListTemplate()
 	If oFUI.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then FUIFind()
 End Sub
 
-&apos; символы справа от номера сноски в тексте
+&apos; символы слева от номера сноски в списке примечаний
+Function GetStringNFNInListForLeft( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; x Текст ...
+			GetStringNFNInListForLeft = &quot;&quot;
+		Case 1 &apos; x. Текст ...
+			GetStringNFNInListForLeft = &quot;&quot;
+		Case 2 &apos; (x) Текст ...
+			GetStringNFNInListForLeft = &quot;(&quot;
+		Case 3 &apos; (x). Текст ...
+			GetStringNFNInListForLeft = &quot;(&quot;
+		Case 4 &apos; [x] Текст ...
+			GetStringNFNInListForLeft = &quot;[&quot;
+		Case 5 &apos; [x]. Текст ...
+			GetStringNFNInListForLeft = &quot;[&quot;
+		Case 6 &apos; {x} Текст ...
+			GetStringNFNInListForLeft = &quot;{&quot;
+		Case 7 &apos; {x}. Текст ...
+			GetStringNFNInListForLeft = &quot;{&quot;
+		Case 8 &apos; &lt;x&gt; Текст ...
+			GetStringNFNInListForLeft = &quot;&lt;&quot;
+		Case 9 &apos; &lt;x&gt;. Текст ...
+			GetStringNFNInListForLeft = &quot;&lt;&quot;
+		Case 10 &apos; /x/ Текст ...
+			GetStringNFNInListForLeft = &quot;/&quot;
+		Case 11 &apos; /x/. Текст ...
+			GetStringNFNInListForLeft = &quot;/&quot;
+		Case 12 &apos; \x\ Текст ...
+			GetStringNFNInListForLeft = &quot;\&quot;
+		Case 13 &apos; \x\. Текст ...
+			GetStringNFNInListForLeft = &quot;\&quot;
+		Case Else
+			GetStringNFNInListForLeft = &quot;&quot;
+	End Select
+End Function
+
+&apos; символы справа от номера сноски в списке примечаний
 Function GetStringNFNInListForRight( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos
-		Case 0 &apos; x. Текст ...
+		Case 0 &apos; x Текст ...
+			GetStringNFNInListForRight = &quot;&quot;
+		Case 1 &apos; x. Текст ...
 			GetStringNFNInListForRight = &quot;.&quot;
-		Case 1 &apos; (x). Текст ...
+		Case 2 &apos; (x) Текст ...
+			GetStringNFNInListForRight = &quot;)&quot;
+		Case 3 &apos; (x). Текст ...
 			GetStringNFNInListForRight = &quot;).&quot;
-		Case 2 &apos; [x]. Текст ...
+		Case 4 &apos; [x] Текст ...
+			GetStringNFNInListForRight = &quot;]&quot;
+		Case 5 &apos; [x]. Текст ...
 			GetStringNFNInListForRight = &quot;].&quot;
-		Case 3 &apos; {x}. Текст ...
+		Case 6 &apos; {x} Текст ...
+			GetStringNFNInListForRight = &quot;}&quot;
+		Case 7 &apos; {x}. Текст ...
 			GetStringNFNInListForRight = &quot;}.&quot;
-		Case 4 &apos; &lt;x&gt;. Текст ...
+		Case 8 &apos; &lt;x&gt; Текст ...
+			GetStringNFNInListForRight = &quot;&gt;&quot;
+		Case 9 &apos; &lt;x&gt;. Текст ...
 			GetStringNFNInListForRight = &quot;&gt;.&quot;
-		Case 5 &apos; /x/. Текст ...
+		Case 10 &apos; /x/ Текст ...
+			GetStringNFNInListForRight = &quot;/&quot;
+		Case 11 &apos; /x/. Текст ...
 			GetStringNFNInListForRight = &quot;/.&quot;
-		Case 6 &apos; \x\. Текст ...
+		Case 12 &apos; \x\ Текст ...
+			GetStringNFNInListForRight = &quot;\&quot;
+		Case 13 &apos; \x\. Текст ...
 			GetStringNFNInListForRight = &quot;\.&quot;
 		Case Else
 			GetStringNFNInListForRight = &quot;.&quot;
