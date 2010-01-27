@@ -214,8 +214,7 @@ End Function
 &apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
 &apos; 1 - вставка закладки для номера прмечания в ТАБЛИЦЕ
 Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
-										sRegFind As String, sConstBookMarkListNote As String, sConstBookMarkFNNumber As String, _
-										sForLeft As String, sForRight As String ) As Integer
+										sRegFind As String, sConstBookMarkListNote As String, sConstBookMarkFNNumber As String ) As Integer
 	&apos; sRegFind - строка поиска (с регулярными выражениями)
 	&apos; oLCurs - начало зоны поиска номера очередной сноски
 	&apos; oRCurs - конец зоны поиска номера очередной сноски
@@ -358,8 +357,7 @@ Function ProcessingComplexFootNoteList( oDoc As Object, oViewCursor As Object, o
 	Dim nValue		As Integer
 
 	Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров сносок не сравнялась или не перешла за правую
-		nValue = InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, _
-												sConstBookMarkListNote, sConstBookMarkFNNumber, sForLeft, sForRight )
+		nValue = InsertBookmarkToNumberFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, sConstBookMarkListNote, sConstBookMarkFNNumber )
 		&apos; nValue:
 		&apos; -1 - номер примечания в тексте не найден - конец документа
 		&apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
@@ -524,7 +522,7 @@ Function GetRegStringNFNInText() As String
 		Case 0 &apos; ... текст (x)
 			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot;&apos;&quot;\([:digit:]+\)&quot;
 		Case 1 &apos; ... текст [x]
-			GetRegStringNFNInText = &quot;\[[:digit:]+\]&quot;
+			GetRegStringNFNInText = &quot;\[[:digit:]+\]|\[ +[:digit:]+\]|\[[:digit:]+ +\]|\[ +[:digit:]+ +\]&quot;&apos;&quot;\[[:digit:]+\]&quot;
 		Case 2 &apos; ... текст {x}
 			GetRegStringNFNInText = &quot;\{[:digit:]+\}|\{ +[:digit:]+\}|\{[:digit:]+ +\}|\{ +[:digit:]+ +\}&quot;&apos;&quot;\{[:digit:]+\}&quot;
 		Case 3 &apos; ... текст &lt;x&gt;
@@ -1218,7 +1216,7 @@ Sub FootNoteTest()
 			&apos; Тест для Режима 1: Нумерация - сквозная; Общий список примечаний - в конце книги
 			oRCurs = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
 			oListBookMark = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
-			GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
+			GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
 								lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 								lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
@@ -1263,7 +1261,7 @@ Sub FootNoteTest()
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				bIsNumbersInTableExsist		= False : bIsNumbersInFrameExsist		= False
 				bIsNumbersInListTableExsist	= False : bIsNumbersInListFrameExsist	= False
-				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
+				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
 									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 									nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
@@ -1321,7 +1319,7 @@ Sub FootNoteTest()
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				bIsNumbersInTableExsist		= False : bIsNumbersInFrameExsist		= False
 				bIsNumbersInListTableExsist	= False : bIsNumbersInListFrameExsist	= False
-				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
+				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
 									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
 									nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
@@ -1368,7 +1366,7 @@ End Sub
 
 &apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
 Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oListBookMark As Object, _
-						sRegFind As String, sLeft As String, sRight As String, oTOS As Object, oProgressBar As Object, _
+						sRegFind As String, oTOS As Object, oProgressBar As Object, _
 						lCountAllTextNotes As Long, saNumbersInText() As String, vaRepeatNumbersInText() As Variant, _
 						bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
 						lCountAllListNotes As Long, saNumbersInList() As String, vaRepeatNumbersInList() As Variant, _
@@ -1386,7 +1384,7 @@ Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object
 	&apos; перевод курсора на начала закладки зоны поиска списка примечаний
 	oViewCursor.gotoRange( oRCurs.getStart(), False )
 	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oListBookMark.getStart(), oListBookMark.getEnd(), _
-														sLeft &amp; &quot;[:digit:]+&quot; &amp; sRight, _
+														GetRegStringNFNInListForNextFind(), _
 														saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
 			
 	oProgressBar.start( sBTEND.sTestDataAnalysis &amp; &quot;:&quot;, 13 )
@@ -1679,8 +1677,6 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 		oTOS.writeString( s )
 	End If
 	
-&apos;	s = &quot;&lt;font color=green&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestResult &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
-&apos;	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
@@ -1810,9 +1806,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 		End If
 	End If
 	oTOS.writeString( s )
-	
-&apos;	s = &quot;&lt;font color=green&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestResult &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
-&apos;	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
