@@ -1261,6 +1261,8 @@ Sub FootNoteTest()
 				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oRCurs = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
+				bIsNumbersInTableExsist		= False : bIsNumbersInFrameExsist		= False
+				bIsNumbersInListTableExsist	= False : bIsNumbersInListFrameExsist	= False
 				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
 									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
@@ -1317,6 +1319,8 @@ Sub FootNoteTest()
 				&apos; печатаем номер очередной тестируемой зоны (глава и ее Список примечаний)
 				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
+				bIsNumbersInTableExsist		= False : bIsNumbersInFrameExsist		= False
+				bIsNumbersInListTableExsist	= False : bIsNumbersInListFrameExsist	= False
 				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, sLeft, sRight, oTOS, oProgressBar, _
 									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
 									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
@@ -1429,13 +1433,18 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 	Dim vFound			As Variant	: vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
 	Dim lCountAllNotes	As Long		: lCountAllNotes = 0
 	If Not IsNull( vFound ) Then &apos; нашли
-		bIsNumbersInTableExsist = False : bIsNumbersInFrameExsist = False
 		Do While ( Not IsNull( vFound ) )
 			If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
 				If vFound.ParaStyleName &lt;&gt; &quot;Frame contents&quot; And vFound.ParaStyleName &lt;&gt; &quot;Table Contents&quot; Then
 					If oDoc.Text.compareRegionEnds(vFound.getEnd(), oRCurs.getStart()) &lt;= 0 Then
 						GetDataForTestComplexFootNote = lCountAllNotes
 						Exit Function &apos; вышли за правую границу или прямо на ней
+					End If
+				Else
+					If vFound.ParaStyleName = &quot;Frame contents&quot; Then
+						bIsNumbersInFrameExsist = True
+					ElseIf vFound.ParaStyleName = &quot;Table Contents&quot; Then
+						bIsNumbersInTableExsist = True
 					End If
 				End If
 				If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
@@ -1652,15 +1661,6 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	Dim s As String, l As Long
 	s = &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestBookChapter &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
 	oTOS.writeString( s )
-
-	If ThisComponent.TextTables.Count = 0 Then
-		s = &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNoTablesInDoc &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
-	End If
-	If ThisComponent.TextFrames.Count = 0 Then
-		s = &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNoFramesInDoc &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
-	End If
 	
 	If bIsNumbersInTableExsist Or bIsNumbersInFrameExsist Then
 		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestWarning &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
