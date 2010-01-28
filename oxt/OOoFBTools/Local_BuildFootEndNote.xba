@@ -60,13 +60,6 @@ Type tBuildTootEndNoteData
 	sTestMode3			 				As String &apos; Режим: Все Списки примечаний - в конце книги
 	sTestBookChapter	 				As String &apos; Глава книги
 	sTestNotesList	 					As String &apos; Список примечаний
-	sTestWarning		 				As String &apos; ПРЕДУПРЕЖДЕНИЕ!
-	sTestNotesInTablesInText			As String &apos; В Тексте есть Таблицы, в которых есть номера примечаний.
-	sTestNotesInTextFramesInText		As String &apos; В Тексте есть Текстовые Врезки, в которых есть номера примечаний.
-	sTestNotesInTablesInList			As String &apos; В Списке Примечаний есть Таблицы, в которых есть номера примечаний.
-	sTestNotesInListFrames				As String &apos; В Списке есть Текстовые Врезки, в которых есть номера примечаний.
-	sTestIgnoredInTest					As String &apos; В тесте они игнорировались.
-	sTestIgnoredInGenerate				As String &apos; При генерации сносок они будут проигнорированы!
 	sTestProcessedNotesNumbersInText	As String &apos; Обработано номеров примечаний в Тексте (Всего)
 	sTestProcessedNotesNumbersInList	As String &apos; Обработано примечаний в Списке (Всего)
 	sTestUniqueNumbersInText			As String &apos; Уникальные (неповторяющиеся) номера в Тексте
@@ -99,6 +92,7 @@ Type tBuildTootEndNoteData
 	sTestResultOK						As String &apos; Все в порядке!
 	sTestResultOKMess					As String &apos; Для каждого Номера примечаний в Главе найден соответствующий ему текст в Списке примечаний.
 	sTestResultOKMess1					As String &apos; Ни одна Глава Книги и ни один Список примечаний не нуждается в корректировке!
+	sTestContinueQuery					As String &apos; Продолжить выполнение задания?
 End Type
 
 Public sBTEND As tBuildTootEndNoteData
@@ -178,13 +172,6 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestMode3			 				= &quot;Режим: Все Списки примечаний - в конце книги&quot;
 			.sTestBookChapter		 			= &quot;Глава книги&quot;
 			.sTestNotesList	 					= &quot;Список примечаний&quot;
-			.sTestWarning		 				= &quot;ПРЕДУПРЕЖДЕНИЕ!&quot;
-			.sTestNotesInTablesInText			= &quot;В Тексте есть Таблицы, в которых есть номера примечаний.&quot;
-			.sTestNotesInTextFramesInText		= &quot;В Тексте есть Текстовые Врезки, в которых есть номера примечаний.&quot;
-			.sTestNotesInTablesInList			= &quot;В Списке Примечаний есть Таблицы, в которых есть номера примечаний.&quot;
-			.sTestNotesInListFrames				= &quot;В Списке есть Текстовые Врезки, в которых есть номера примечаний.&quot;
-			.sTestIgnoredInTest					= &quot;В тесте они игнорировались.&quot;
-			.sTestIgnoredInGenerate				= &quot;При генерации сносок они будут проигнорированы!&quot;
 			.sTestProcessedNotesNumbersInText	= &quot;Обработано номеров примечаний в Тексте (Всего)&quot;
 			.sTestProcessedNotesNumbersInList	= &quot;Обработано примечаний в Списке (Всего)&quot;
 			.sTestUniqueNumbersInText			= &quot;Уникальные (неповторяющиеся) номера в Тексте&quot;
@@ -218,6 +205,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestResultOK						= &quot;Все в порядке!&quot;
 			.sTestResultOKMess					= &quot;Для каждого Номера примечаний в Главе найден соответствующий ему текст в Списке примечаний.&quot;
 			.sTestResultOKMess1					= &quot;Ни одна Глава Книги и ни один Список примечаний не нуждается в корректировке!&quot;
+			.sTestContinueQuery					= &quot;Продолжить выполнение задания?&quot;
 		End With
 	Else
 		With sBTEND
@@ -291,13 +279,6 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestMode3			 				= &quot;Mode: All Lists of Notes - in the End of the Book&quot;
 			.sTestBookChapter	 				= &quot;the Chapter of the Book&quot;
 			.sTestNotesList	 					= &quot;the List of Notes&quot;
-			.sTestWarning		 				= &quot;WARNING!&quot;
-			.sTestNotesInTablesInText			= &quot;In the Text there are Tables in which there are Numbers of Notes.&quot;
-			.sTestNotesInTextFramesInText		= &quot;In the Text there are Text Frames in which there are Numbers of Notes.&quot;
-			.sTestNotesInTablesInList			= &quot;In the List there are Tables in which there are Numbers of Notes.&quot;
-			.sTestNotesInListFrames				= &quot;In the List there are Text Frames in which there are Numbers of Notes.&quot;
-			.sTestIgnoredInTest					= &quot;In the Test they were ignored.&quot;
-			.sTestIgnoredInGenerate				= &quot;At Generation of Footnotes they will be ignored!&quot;
 			.sTestProcessedNotesNumbersInText	= &quot;It is processed Numbers of Notes in the Text (in All)&quot;
 			.sTestProcessedNotesNumbersInList	= &quot;It is processed Numbers of Notes in the List (in All)&quot;
 			.sTestUniqueNumbersInText			= &quot;Unique (non-recurrent) numbers in the Text&quot;
@@ -331,6 +312,7 @@ Sub InitBuildTootEndNoteMessage()
 			.sTestResultOK						= &quot;All Right!&quot;
 			.sTestResultOKMess					= &quot;For each Number of the Notes in Chapter is found corresponding to him text in List of the notes.&quot;
 			.sTestResultOKMess1					= &quot;Nor one Chapter of the Book and nor a one List of the Notes not needs for adjustment!&quot;
+			.sTestContinueQuery					= &quot;Continue performance of task?&quot;
 		End With
 	End If
 End Sub
@@ -358,6 +340,7 @@ Sub InitBuildFootEndNoteDlg()
 			.cmnbtnBuild.Label			= &quot;Сгенерировать&quot;
 			.cmnbtnCancel.Label			= &quot;Отмена&quot;
 			.cmnbtnTest					= &quot;Тест&quot;
+			.lblTestHelp.Label			= &quot;Подсказка:&quot;
 		End With
 	Else
 		With oBuildFootEndNoteDlg.getModel
@@ -373,6 +356,7 @@ Sub InitBuildFootEndNoteDlg()
 			.cmnbtnBuild.Label			= &quot;Generate&quot;
 			.cmnbtnCancel.Label			= &quot;Cancel&quot;
 			.cmnbtnTest					= &quot;Test&quot;
+			.lblTestHelp.Label			= &quot;Hint:&quot;
 		End With
 	End If
 End Sub

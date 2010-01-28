@@ -838,6 +838,38 @@ Sub DeleteAllWorkFootNoteBookMark()
 	End If
 End Sub
 
+&apos; проверка, есть ли в Документе Врезки и/или Таблицы
+Function IsTableAndOrTextFrameExistInDocument() As Boolean
+	IsTableAndOrTextFrameExistInDocument = False
+	If ThisComponent.TextTables.Count &gt; 0 Or ThisComponent.TextFrames.Count &gt; 0 Then
+		If getOOoLocal() = &quot;ru&quot; Then
+			oBuildFootEndNoteDlg.getModel.tfTestHelp.Text = &quot;В Документе имеются Таблицы и/или Текстовые Врезки.&quot; &amp; chr(10) &amp; _
+						&quot;OOo Writer не может размещать Таблицы в сносках.&quot; &amp; chr(10) &amp; _
+						&quot;Генератор сносок и Тест не могут корректно работать, если в Списках примечаний есть Таблицы и/или Текстовые Врезки.&quot;  &amp; chr(10) &amp; _
+						&quot;Поэтому, посмотрите, есть ли в Списках Примечаний Таблиц и Врезок, и сделайте для них следующее:&quot;  &amp; chr(10) &amp; _
+						&quot;1. Вынесите текст из Врезки в соответствующий ей текст Списка примечаний.&quot;  &amp; chr(10) &amp; _
+						&quot;2. Таблицу уберите из Списка примечаний, а после генерации сносок вставьте в нужное место текста сноски картинку этой Таблицы.&quot;
+		Else
+			oBuildFootEndNoteDlg.getModel.tfTestHelp.Text = &quot;In Document there are Tables and Text Frames Exist.&quot; &amp; chr(10) &amp; _
+						&quot;The OOo Writer cannot place the Table in footnotes.&quot; &amp; chr(10) &amp; _
+						&quot;The Generator of the footnotes and Test can not correct to work if there is Tables in List of the notes and/or Text Frames Exists.&quot;  &amp; chr(10) &amp; _
+						&quot;Therefore, see, there is in List of the Notes of the Tables and Frames, and do for them following:&quot;  &amp; chr(10) &amp; _
+						&quot;1. Transfer all text from Text Frame in the corresponding it text of the List of notes.&quot;  &amp; chr(10) &amp; _
+						&quot;2. The Table remove from the List of notes, and after generation of footnotes insert into the necessary place of the text of a footnote a picture of this Table.&quot;
+		End If
+		IsTableAndOrTextFrameExistInDocument = True
+	Else
+		If getOOoLocal() = &quot;ru&quot; Then
+			oBuildFootEndNoteDlg.getModel.tfTestHelp.Text = &quot;Документ не имеет Таблиц и Текстовых Врезок.&quot; &amp; chr(10) &amp; _
+						&quot;Это - важное условие для корректной работы Теста и Генератора сносок!&quot;
+		Else
+			oBuildFootEndNoteDlg.getModel.tfTestHelp.Text = &quot;In the Document of no Tables and Text Frames.&quot; &amp; chr(10) &amp; _
+						&quot;This - an important condition for correct functioning(working) the Test and Generator of the footnotes!&quot;
+		End If
+		IsTableAndOrTextFrameExistInDocument = False
+	End If
+End Function
+
 &apos;///////////////////////////////////////////////////////////////////////////////////////
 &apos; 		работа контролов диалога генерации сносок
 &apos;///////////////////////////////////////////////////////////////////////////////////////
@@ -848,7 +880,7 @@ Sub StartBuildFootEndNoteDlg()
 
 	&apos; инициализация диалога генерации сносок в зависимости от локали
 	InitBuildFootEndNoteDlg()
-	
+		
 	Dim aNFNInTextList() As String
 	aNFNInTextList() = Array(	&quot;... &quot; &amp; sBTEND.sText &amp; &quot; (x) ...&quot;, _
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [x] ...&quot;, _
@@ -878,7 +910,7 @@ Sub StartBuildFootEndNoteDlg()
 		.lblNSimpleFNInTextTemplate.StringItemList	= aNFNInTextList()
 		.lblNFNInTextTemplate.StringItemList 		= aNFNInTextList()
 		.lblNFNInListTemplate.StringItemList		= aNFNInListList()
-		.Height	= 106
+		.Height	= 220
 		.Width	= 270
 	End With
 	
@@ -888,9 +920,12 @@ Sub StartBuildFootEndNoteDlg()
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg, nX, nY )
-	oBuildFootEndNoteDlg.setPosSize( nX, nY, 106, 270, com.sun.star.awt.PosSize.POS )
+	oBuildFootEndNoteDlg.setPosSize( nX, nY, 220, 270, com.sun.star.awt.PosSize.POS )
 	
 	ControlModeEnabled()
+	
+	&apos; инициализация Подсказки в зависимости от условия - есть ли в Документе Врезки и/или Таблицы или нет.
+	IsTableAndOrTextFrameExistInDocument()
 	
 	oBuildFootEndNoteDlg.execute()
 End Sub
@@ -944,6 +979,13 @@ End Sub
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; генерация сносок в зависимости от режима (простой или сложный)
 Sub BuildFootNote()
+	&apos; проверка, есть ли в Документе Врезки и/или Таблицы
+	If IsTableAndOrTextFrameExistInDocument() Then
+		If MsgBox ( oBuildFootEndNoteDlg.getModel.tfTestHelp.Text &amp; chr(10) &amp; chr(10) &amp; sBTEND.sTestContinueQuery, 32 + 16 + 1, sBTEND.sFootnotesGeneration ) &lt;&gt; 1 Then
+			Exit Sub
+		End If
+	End If
+	
 	oBuildFootEndNoteDlg.endExecute()
 	&apos; сохранение настроек
 	SaveSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg )
@@ -989,7 +1031,7 @@ Sub StartFootNoteLinkTransDlg()
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstFootNoteLinkTransDlgSettingsSettings, oFootNoteLinkTransDlg, nX, nY )
 	oFootNoteLinkTransDlg.setPosSize( nX, nY, 50, 238, com.sun.star.awt.PosSize.POS )
-	
+
 	oFootNoteLinkTransDlg.execute()
 End Sub
 
@@ -1155,6 +1197,12 @@ End Function
 &apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; генерация сносок в зависимости от режима (простой или сложный)
 Sub FootNoteTest()
+	&apos; проверка, есть ли в Документе Врезки и/или Таблицы
+	If IsTableAndOrTextFrameExistInDocument() Then
+		If MsgBox ( oBuildFootEndNoteDlg.getModel.tfTestHelp.Text &amp; chr(10) &amp; chr(10) &amp; sBTEND.sTestContinueQuery, 32 + 16 + 1, sBTEND.sFootnotesGeneration ) &lt;&gt; 1 Then
+			Exit Sub
+		End If
+	End If
 	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnComplexFootNote&quot; ).State Then &apos; для сложного режима генерации сносок
 		&apos; зона поиска номеров сносок: oLCurs - левая верхняя граница; oRCurs - правая нижняя граница
 		&apos; зона поика текста для заданного номера сноски: закладки с именами производными от sConstBookMarkListNote
@@ -1182,16 +1230,12 @@ Sub FootNoteTest()
 		Dim vaZoneFlagsArray()			As Variant	&apos; хранить данные-флаги по всем зонам поиска
 		
 		Dim vaRepeatNumbersInText()		As Variant	&apos; для хранения рез-тов найденного в Тексте
-		Dim bIsNumbersInTableExsist		As Boolean	&apos; флаг - есть ли в таблицах хоть один номер примечания в пределах зоны поиска
-		Dim bIsNumbersInFrameExsist		As Boolean	&apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска
 		Dim saNumbersInText()			As String	&apos; хранит все номеры примечаний из текста в пределах зоны поиска
 		Dim lCountAllTextNotes			As Long		&apos; число обработанных номеров примечаний в тексте
 		Dim nAbsentNumbersInText()		As Integer	&apos; номера отсутствующих номеров примечаний в Тексте
 		Dim naAbsentTextNumbersInList()	As Integer	&apos; список номеровпримечаний из Текста, отсутствующих в Списке примечаний
 		
 		Dim vaRepeatNumbersInList()		As Variant	&apos; для хранения рез-тов найденного в Списке примечаний
-		Dim bIsNumbersInListTableExsist	As Boolean	&apos; флаг - есть ли в таблицах хоть один номер примечания в пределах зоны поиска списка примечаний
-		Dim bIsNumbersInListFrameExsist	As Boolean	&apos; флаг - есть ли во врезках хоть один номер примечания в пределах зоны поиска списка примечаний
 		Dim saNumbersInList()			As String	&apos; хранит все номеры примечаний из списка в пределах зоны поиска списка примечаний
 		Dim lCountAllListNotes			As Long		&apos; число обработанных примечаний в списке примечаний
 		Dim nAbsentNumbersInList()		As Integer	&apos; номера отсутствующих номеров примечаний в Списке
@@ -1217,15 +1261,15 @@ Sub FootNoteTest()
 			oRCurs = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
 			oListBookMark = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
 			GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
-								lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
-								lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+								lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
+								lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			&apos; сгенерировать отчет и запустить его на просмотр
 			SaveStartReportText( oTOS, sBTEND.sTestMode1 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			&apos; печатаем номер тестируемой зоны (глава и ее Список примечаний) - вся книга
 			oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
-			MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
-						lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+			MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
+						lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
 						vaZoneFlagsArray(), 0, &quot;-&quot;, sConstBookMarkListNote )
 			oProgressBar.setValue( 2 )
@@ -1259,14 +1303,12 @@ Sub FootNoteTest()
 				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oRCurs = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
-				bIsNumbersInTableExsist		= False : bIsNumbersInFrameExsist		= False
-				bIsNumbersInListTableExsist	= False : bIsNumbersInListFrameExsist	= False
 				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
-									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
-									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
+									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 									nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
-				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
-							lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
+							lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
 							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l) )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
@@ -1317,14 +1359,12 @@ Sub FootNoteTest()
 				&apos; печатаем номер очередной тестируемой зоны (глава и ее Список примечаний)
 				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
-				bIsNumbersInTableExsist		= False : bIsNumbersInFrameExsist		= False
-				bIsNumbersInListTableExsist	= False : bIsNumbersInListFrameExsist	= False
 				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
-									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
-									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
+									lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 									nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
-				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist, _
-							lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist, _
+				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
+							lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
 							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l) )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
@@ -1368,24 +1408,20 @@ End Sub
 Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oListBookMark As Object, _
 						sRegFind As String, oTOS As Object, oProgressBar As Object, _
 						lCountAllTextNotes As Long, saNumbersInText() As String, vaRepeatNumbersInText() As Variant, _
-						bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
 						lCountAllListNotes As Long, saNumbersInList() As String, vaRepeatNumbersInList() As Variant, _
-						bIsNumbersInListTableExsist As Boolean, bIsNumbersInListFrameExsist As Boolean, _
 						nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
 						naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer )
 	oProgressBar.start( sBTEND.sTestDataGathering &amp; &quot;:&quot;, 2 )
 	oProgressBar.setValue( 1 )
 		
 	&apos; сбор информации по номерам примечаний из текста
-	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, _
-														saNumbersInText(), bIsNumbersInTableExsist, bIsNumbersInFrameExsist  )
+	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, saNumbersInText()  )
 	oProgressBar.setValue( 2 )
 	&apos; сбор информации по номерам примечаний из списка примечаний
 	&apos; перевод курсора на начала закладки зоны поиска списка примечаний
 	oViewCursor.gotoRange( oRCurs.getStart(), False )
 	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oListBookMark.getStart(), oListBookMark.getEnd(), _
-														GetRegStringNFNInListForNextFind(), _
-														saNumbersInList(), bIsNumbersInListTableExsist, bIsNumbersInListFrameExsist  )
+														GetRegStringNFNInListForNextFind(), saNumbersInList()  )
 			
 	oProgressBar.start( sBTEND.sTestDataAnalysis &amp; &quot;:&quot;, 13 )
 	oProgressBar.setValue( 1 )
@@ -1412,10 +1448,9 @@ Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object
 	oProgressBar.setValue( 1 )
 End Sub
 
-
 &apos; Сбор информации по номерам из Текста для теста сложной генерации сносок - режим: Нумерация - сквозная; Общий список примечаний - в конце книги.
-Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, sRegFind As String, _
-										saNumbers() As String, bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean ) As Long
+Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
+									sRegFind As String, saNumbers() As String ) As Long
 	GetDataForTestComplexFootNote = 0
 	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Function
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
@@ -1438,22 +1473,14 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 						GetDataForTestComplexFootNote = lCountAllNotes
 						Exit Function &apos; вышли за правую границу или прямо на ней
 					End If
-				Else
-					If vFound.ParaStyleName = &quot;Frame contents&quot; Then
-						bIsNumbersInFrameExsist = True
-					ElseIf vFound.ParaStyleName = &quot;Table Contents&quot; Then
-						bIsNumbersInTableExsist = True
-					End If
 				End If
 				If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
-					bIsNumbersInTableExsist = True
 					&apos; перепрыгиваем таблицу - не обрабатываем ее
 					oViewCursor.gotoRange( vFound, False )
 					CursorAfterCurrentTextTable( oViewCursor )
 					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
 					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 				ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
-					bIsNumbersInFrameExsist = True
 					&apos; перепрыгиваем через врезку - не обрабатываем ее.
 					oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
 					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
@@ -1637,9 +1664,7 @@ End Sub
 
 &apos; создание отчета о работе Теста генерации сносок
 Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As String, vaRepeatNumbersInText() As Variant, _
-				bIsNumbersInTableExsist As Boolean, bIsNumbersInFrameExsist As Boolean, _
 				lCountAllListNotes As Long, saNumbersInList() As String, vaRepeatNumbersInList() As Variant, _
-				bIsNumbersInListTableExsist As Boolean, bIsNumbersInListFrameExsist As Boolean, _
 				nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
 				naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer, _
 				vaZoneFlagsArray() As Variant, lZoneNumber As Long, sLBookMark As String, sRBookMark As String )
@@ -1659,24 +1684,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	Dim s As String, l As Long
 	s = &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestBookChapter &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
 	oTOS.writeString( s )
-	
-	If bIsNumbersInTableExsist Or bIsNumbersInFrameExsist Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestWarning &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
-		If bIsNumbersInTableExsist Then
-			s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNotesInTablesInText &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInTest &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInGenerate &amp; &quot;&lt;/p&gt;&quot;
-			s = s &amp; chr(10)
-		End If
-		If bIsNumbersInFrameExsist Then
-			s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNotesInTextFramesInText &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInTest &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInGenerate &amp; &quot;&lt;/p&gt;&quot;
-			s = s &amp; chr(10)
-		End If
-		oTOS.writeString( s )
-	End If
-	
+
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
@@ -1790,21 +1798,6 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	&apos; /////////////// Тестируем Список примечаний /////////////////
 	s = chr(10)
 	s = s &amp; &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestNotesList &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
-	If bIsNumbersInListTableExsist Or bIsNumbersInListFrameExsist Then
-		s = s &amp; &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestWarning &amp; &quot;&lt;/h3&gt;&quot; &amp; chr(10)
-		If bIsNumbersInListTableExsist Then
-			s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNotesInTablesInList &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInTest &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInGenerate &amp; &quot;&lt;/p&gt;&quot;
-			s = s &amp; chr(10)
-		End If
-		If bIsNumbersInListFrameExsist Then
-			s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestNotesInListFrames &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInTest &amp; &quot; &quot;
-			s = s &amp; sBTEND.sTestIgnoredInGenerate &amp; &quot;&lt;/p&gt;&quot;
-			s = s &amp; chr(10)
-		End If
-	End If
 	oTOS.writeString( s )
 
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
@@ -2002,5 +1995,25 @@ Sub SaveTablesFinalReport( oTOS As Object, vaZoneFlagsArray() As Variant )
 		oTOS.writeString( s )
 	End If
 End Sub
+
+&apos;////////////////////////////////////////////////////// не работает //////////////////////////
+&apos; возвращает: True, если в зоне списка закладок aListBookMarks есть Врезка и/или Таблица
+&apos; не пустой массив aListBookMarkName() с именами закладок списков примечаний
+Function TextFrameOrAndTableExistsInBookmark( aListBookMarks() As Object, aListBookMarkName() As String ) As Boolean
+	TextFrameOrAndTableExistsInBookmark = False
+	Dim oDoc					As Object	: oDoc = ThisComponent
+	Dim i, k					As Integer
+	Dim oBookMarks, oBookMark	As Object	: oBookMarks = oDoc.getBookmarks()
+	For i=0 To UBound( aListBookMarks() )
+		oBookMark = oBookMarks.getByName( aListBookMarks(i) ).getAnchor()
+		If Not IsEmpty( oBookMark.TextTable ) Or Not IsEmpty( oBookMark.TextFrame ) Then
+			&apos; заносим название закладки, где есть Таблица и/или Врезка в массив
+			k = Ubound( aListBookMarkName() ) + 1
+			ReDim Preserve aListBookMarkName(k)
+			aListBookMarkName(k) = oBookMark.getName()
+			TextFrameOrAndTableExistsInBookmark = True
+		End If
+	Next i
+End Function
 
 </script:module>
