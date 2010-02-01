@@ -924,8 +924,14 @@ Sub StartBuildFootEndNoteDlg()
 	
 	ControlModeEnabled()
 	
-	&apos; инициализация Подсказки в зависимости от условия - есть ли в Документе Врезки и/или Таблицы или нет.
-	IsTableAndOrTextFrameExistInDocument()
+	If oBuildFootEndNoteDlg.getModel.optbtnComplexFootNote.State Then
+		&apos; инициализация Подсказки в зависимости от условия - есть ли в Документе Врезки и/или Таблицы или нет.
+		IsTableAndOrTextFrameExistInDocument()
+		oBuildFootEndNoteDlg.getModel.tfTestHelp.Enabled	= True
+	Else
+		oBuildFootEndNoteDlg.getModel.tfTestHelp.Text		= &quot;&quot;
+		oBuildFootEndNoteDlg.getModel.tfTestHelp.Enabled	= False
+	End If
 	
 	oBuildFootEndNoteDlg.execute()
 End Sub
