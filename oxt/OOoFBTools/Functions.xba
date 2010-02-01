@@ -1065,6 +1065,19 @@ Function bubble_sort_int( aArray() As Integer, nSize As Integer )
 	Next i
 End Function
 
+&apos; ///////////////// Графика ///////////////
+&apos; возвращает True, если oContent содержит Graphic; False, если oContent содержит ReplacementGraphic
+Function IsGraphic() As Boolean
+	IsGraphic = False
+	On Error Goto ErrorHandler
+	If Not IsNull( oContent.Graphic ) Then
+		IsGraphic = True &apos; графика: картинки
+		Exit Function
+	End if
+	ErrorHandler:
+	IsGraphic = False &apos; OLE: формулы и/или диаграммы
+End Function
+
 &apos; /// Работа с системой ///
 
 &apos; Версия OOo
