@@ -208,8 +208,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
 		End If
 	Else
-		If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; _
-			OR oContent.FrameStyleName = &quot;mwlib_frmInner&quot; Then &apos; Картинки 
+		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
 			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
@@ -226,7 +225,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 				ExportGraphicToFile( oContent, sFileNameURL, sExt )
 			End If
-		Else &apos; OLE (Диаграммы) или Formula:
+		Else &apos; oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; : OLE (Диаграммы) или Formula:
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
@@ -260,14 +259,13 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 			oGraphic = oContent.Graphic
 		End If
 	Else
-		If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; _
-				OR oContent.FrameStyleName = &quot;mwlib_frmInner&quot; Then &apos; Картинки 
+		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
 			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 				oGraphic = oContent.Graphic
 			End If
-		Else &apos; OLE (Диаграммы) или Formula:
+		Else &apos; oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; : OLE (Диаграммы) или Formula:
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			oGraphic = oContent.ReplacementGraphic
 		End If
