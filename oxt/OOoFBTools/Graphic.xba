@@ -107,19 +107,28 @@ Function GetGraphicExt( ByVal oContent As Object ) As String
 			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
 			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
 			sExt = sFD.sExt
+		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+			sExt = sFD.sExt
 		Else
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
 		End If
 	Else
-		If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+		&apos;If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
+		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
 			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
 				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
 				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
-				sExt = sFD.sExt
+				sExt = sFD.sExt		
+			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+				sExt = sFD.sExt	
 			Else
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
@@ -201,6 +210,9 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 				FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
 			End If
 			sFileNameURL = GetOOoFBToolsImageURL( sExt )
+		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		Else
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
@@ -219,6 +231,9 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 					FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
 				End If
 				sFileNameURL = GetOOoFBToolsImageURL( sExt )
+			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			Else
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
@@ -257,6 +272,9 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			oGraphic = oContent.Graphic
+		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		End If
 	Else
 		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
@@ -264,6 +282,9 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 				oGraphic = oContent.Graphic
+			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			End If
 		Else &apos; oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; : OLE (Диаграммы) или Formula:
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
