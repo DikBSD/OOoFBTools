@@ -107,7 +107,8 @@ Function GetGraphicExt( ByVal oContent As Object ) As String
 			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
 			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
 			sExt = sFD.sExt
-		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
 			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
 			sExt = sFD.sExt
@@ -125,7 +126,8 @@ Function GetGraphicExt( ByVal oContent As Object ) As String
 				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
 				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
 				sExt = sFD.sExt		
-			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
 				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
 				sExt = sFD.sExt	
@@ -210,7 +212,8 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 				FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
 			End If
 			sFileNameURL = GetOOoFBToolsImageURL( sExt )
-		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
 			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		Else
@@ -231,7 +234,8 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 					FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
 				End If
 				sFileNameURL = GetOOoFBToolsImageURL( sExt )
-			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
 				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			Else
@@ -272,7 +276,8 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			oGraphic = oContent.Graphic
-		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
 			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		End If
@@ -282,7 +287,8 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 				oGraphic = oContent.Graphic
-			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
 				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			End If
