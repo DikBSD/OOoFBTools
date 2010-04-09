@@ -320,11 +320,12 @@ Function InLineAllParser(oSect As Object) As String
 End Function
 
 &apos; парсер сносок
-Function FootEndNoteParser(oSect As Object) As String
-	Dim sNote As String, sNoteText As String
+Function FootEndNoteParser( oSect As Object ) As String
+	Dim sNote		As String : sNote		= &quot;&quot;
+	Dim sNoteText	As String : sNoteText	= &quot;&quot;
 	Dim oFootnoteCursor As Object
 	Static i As Integer
-	sNote = &quot;&quot;
+	
 	i = iFootnoteCount + 1
 	If bFootnoteSpace = True Then
 		sNote = sNote &amp; &quot; &quot;
@@ -335,7 +336,7 @@ Function FootEndNoteParser(oSect As Object) As String
 
 	If bStyleFootnote = True Then &apos; форматирование текста сноски по inline-стилям
 		&apos; отформатированный текст сноски сохраняем в массив
-		FormatFootnoteText(oSect)
+		FormatFootnoteText( oSect )
 	Else &apos; не применяем inline-стили к тексту сносок
 		oFootnoteCursor = oSect.Footnote.createTextCursor()
 		oFootnoteCursor.gotoStart(False)
@@ -343,28 +344,45 @@ Function FootEndNoteParser(oSect As Object) As String
 			Dim sTextArray() As String &apos; временный массив для хранения всех строк одного абзаца
 			Dim sType As String &apos; тип абзаца - стих, абзац, цитата...
 			Do
-				oFootnoteCursor.gotoEndOfParagraph(True)
+				oFootnoteCursor.gotoEndOfParagraph( True )
 				
 				If bCorrectPara = True Then
-					sNoteText = CorrectPara(oFootnoteCursor.String)
+					sNoteText = CorrectPara( oFootnoteCursor.getString() )
 				Else
-					sNoteText = oFootnoteCursor.String
+					sNoteText = oFootnoteCursor.getString()
+				End If
+
+				&apos; маркеры и нумерация в сносках
+				If oFootnoteCursor.NumberingIsNumber = True Then &apos; нумерованные списки
+					sNoteText = MakeNumberingNumberPara( oFootnoteCursor, sNoteText, sNoteText )
+					bMarker = True
 				End If
 			
-				sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sNoteText)
-				sTextArray(UBound(sTextArray())) = sTextArray(UBound(sTextArray())) &amp; chr(10) &amp; sType
+				sType = FootnoteStyleParser( sTextArray, oFootnoteCursor.ParaStyleName, sNoteText )
+				sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) ) &amp; chr(10) &amp; sType
+				
 			Loop While oFootnoteCursor.gotoNextParagraph(False)
-			sFootnoteText(iFootnoteCount) = Join(sTextArray(), chr(10))
+			
+			sFootnoteText( iFootnoteCount ) = Join( sTextArray(), chr(10) )
+			
 		Else &apos; Не экспортируем сложные структуры текста сносок
+			Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 			Do
-				oFootnoteCursor.gotoEndOfParagraph(True)
-				sNoteText = sNoteText &amp; oFootnoteCursor.String &amp; chr(10)
-			Loop While oFootnoteCursor.gotoNextParagraph(False)
+				oFootnoteCursor.gotoEndOfParagraph( True )
+				sString = oFootnoteCursor.getString() &amp; chr(10)
+				
+				&apos; маркеры и нумерация в сносках
+				If oFootnoteCursor.NumberingIsNumber = True Then &apos; нумерованные списки
+					sString = MakeNumberingNumberPara( oFootnoteCursor, sString, sString )
+					bMarker = True
+				End If
+				sNoteText = sNoteText &amp; sString
+			Loop While oFootnoteCursor.gotoNextParagraph( False )
 	
 			If bCorrectPara = True Then
-				sFootnoteText(iFootnoteCount) = CorrectPara(sNoteText)
+				sFootnoteText( iFootnoteCount ) = CorrectPara( sNoteText )
 			Else
-				sFootnoteText(iFootnoteCount) = sNoteText
+				sFootnoteText( iFootnoteCount ) = sNoteText
 			End If
 		End If
 	End If
@@ -374,7 +392,7 @@ Function FootEndNoteParser(oSect As Object) As String
 	FootEndNoteParser = sNote
 End Function
 
-Function FormatFootnoteText(oSect)
+Sub FormatFootnoteText( oSect )
 	&apos; форматирование текста сноски по стилям
 	Dim oFootnoteCursor As Object
 	oFootnoteCursor = oSect.Footnote.createTextCursor()
@@ -386,15 +404,20 @@ Function FormatFootnoteText(oSect)
 		sParagF = &quot;&quot;
 	Dim sTextArray() As String &apos; временный массив для хранения всех строк одного абзаца
 	Dim sType As String &apos; тип абзаца - стих, абзац, цитата...
+	Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 	
 	Do
 		oFootnoteCursor.gotoEndOfParagraph(True)
 		oEnumF = oFootnoteCursor.createEnumeration
 		While oEnumF.hasMoreElements
-			oTextF = oEnumF.nextElement
-			oSecEnumF = oTextF.createEnumeration
+			sParagF		= &quot;&quot;
+			oTextF		= oEnumF.nextElement
+			sString		= oTextF.getString()	
+			oSecEnumF	= oTextF.createEnumeration
 			While oSecEnumF.hasMoreElements
 				oTextPortionF = oSecEnumF.nextElement
+				&apos;TODO: если рядом с текстом в однос строке стоит картинка с Привязкой К Символу, то к тесту добавляется предыдущая часть.
+				&apos;Надо ввести проверку!!!
 				If bOnlyOneStyle = True Then
 					sParagF = sParagF &amp; InLineParser( oTextPortionF )
 				Else
@@ -404,26 +427,34 @@ Function FormatFootnoteText(oSect)
 		
 			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
 			sParagF = DelBreakLineInString( sParagF )
-		
-			&apos; парсер стилей сносок
-			If bNotesElements = True Then
-				sType = FootnoteStyleParser(sTextArray, oFootnoteCursor.ParaStyleName, sParagF)
-				sTextArray(UBound(sTextArray())) = sTextArray(UBound(sTextArray())) &amp; chr(10) &amp; sType
-				sParagF = &quot;&quot;
-			End If	
-		Wend
-		If bNotesElements = False Then
-			sParagF = sParagF &amp; chr(10)
-		End If
-	Loop While oFootnoteCursor.gotoNextParagraph(False)
-	If bNotesElements = True Then
-		sFootnoteText(iFootnoteCount) = Join(sTextArray(), chr(10))
-	Else
-		sFootnoteText(iFootnoteCount) = sParagF
-	End If
-End Function
 
-Function AddBodyArray(sPara As String, TextType As String, bLevel As Boolean)
+			&apos; маркеры и нумерация в сносках
+			If oTextF.NumberingIsNumber = True Then &apos; нумерованные списки
+				sParagF = MakeNumberingNumberPara( oTextF, sString, sParagF )
+				bMarker = True
+			End If
+
+			&apos; парсер стилей сносок
+			sType = FootnoteStyleParser( sTextArray(), oFootnoteCursor.ParaStyleName, sParagF )
+			If bNotesElements = True Then
+				sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) ) &amp; chr(10) &amp; sType
+			Else
+				sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) )
+			End If
+		Wend
+	Loop While oFootnoteCursor.gotoNextParagraph( False )
+	
+	sParagF = Join( sTextArray(), chr(10) )
+	
+	If bNotesElements = False Then
+		sParagF = sParagF &amp; chr(10) &apos; чтобы последняя строка sFootnoteText() в последствии не удалилась!!!
+	End If
+	
+	sFootnoteText( iFootnoteCount ) = sParagF
+	
+End Sub
+
+Function AddBodyArray( sPara As String, TextType As String, bLevel As Boolean )
 	Dim l As Long : l = Ubound(sBodyParagraphs(), 1) + 1
 	&apos; для уровней - проверка на несколько строк
 	If bLevel = False Then 
