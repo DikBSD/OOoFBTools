@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="HandWorkingParagraphs" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Private oHWPDlg As Object
+Private bWorkEnd As Boolean &apos; флаг конца обработки - закрытия диалога (True)
+
+Private sHWPSettingsFilename As String &apos; файл настроек
+
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub HandWorkingParagraphsDlg_windowActivated(oEv)
+End Sub
+
+Sub HandWorkingParagraphsDlg_windowDeactivated(oEv)
+End Sub
+
+Sub HandWorkingParagraphsDlg_windowOpened(oEv)
+End Sub
+
+Sub HandWorkingParagraphsDlg_windowClosing(oEv)
+	bWorkEnd = True
+	&apos; записываем настройки диалога
+ 	SaveSettings( sHWPSettingsFilename, oHWPDlg )
+End Sub
+
+Sub HandWorkingParagraphsDlg_windowClosed(oEv)
+End Sub
+
+Sub HandWorkingParagraphsDlg_windowMinimized(oEv)
+End Sub
+
+Sub HandWorkingParagraphsDlg_windowNormalized(oEv)
+End Sub
+
+Sub HandWorkingParagraphsDlg_disposing(oEv)
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация и запуск диалога поиска
+Sub HandWorkingParagraphsStart()
+	&apos; файл настроек
+	sHWPSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/hand_working_paragraphs.txt&quot;
+
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
+	oHWPDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;HandWorkingParagraphsDlg&quot; )
+	
+	&apos; инициализация диалога в зависимости от локали
+	InitHandWorkingParagraphsDlg()
+
+	Dim aModeList() As String : aModeList() = Array( sHWPD.sBreakPara, sHWPD.sBreakLine )
+											
+	With oHWPDlg.Model
+		.Height	= 50
+		.Width	= 350
+		.lbHWPMode.StringItemList = aModeList()
+	End With
+	oHWPDlg.getControl( &quot;lbHWPMode&quot; ).SelectItemPos( 0, True )
+	oHWPDlg.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( sHWPSettingsFilename, oHWPDlg, nX, nY )
+	oHWPDlg.setPosSize( nX, nY, 50, 350, com.sun.star.awt.PosSize.POS )
+
+	bWorkEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;HandWorkingParagraphsDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oHWPDlg.addTopWindowListener( oList )
+
+	oHWPDlg.setVisible( True )  
+	While Not bWorkEnd
+		Wait 200     
+	Wend
+	
+	oHWPDlg.setVisible( False )
+End Sub
+
+Sub lbHWPModeChange()
+	&apos; Изменение Вида обработки при изменении Режима обработки абзацев
+	Dim aModeTypeList() As String
+	Select Case oHWPDlg.GetControl( &quot;lbHWPMode&quot; ).SelectedItemPos
+		Case 0 &apos; Обрыв абзаца (¶)
+			aModeTypeList() = Array( sHWPD.sSpliceReplaceParaToSpace, _
+									sHWPD.sSpliceRemovePara, _
+									sHWPD.sReplaceBreakParaToBR )
+		Case 1 &apos; Разрыв строки (↵)
+			aModeTypeList() = Array( sHWPD.sSpliceReplaceBRToSpace, _
+									sHWPD.sSpliceRemoveBR, _
+									sHWPD.sReplaceBRToBreakPara )
+	End Select
+	oHWPDlg.Model.lbHWPModeType.StringItemList = aModeTypeList()
+	oHWPDlg.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
+End Sub
+
+Sub cmdBtnWorkClick()
+	&apos; Обработка выделенных абзацев по указанному виду обработки
+	Dim lSel	As Integer : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
+	Dim nCount	As Integer : nCount = 0
+	&apos; проверка, что выделено
+	If lSel = -1 Then
+		MsgBox sHWPD.sSelectTextOnly, 64, sHWPD.sHandWorkingParagraphs
+		Exit Sub
+	End If
+	
+	Dim oCurs() As Object, l As Integer
+	If Not CreateSelectedTextIterator( ThisComponent, sHWPD.sNoSelectText &amp; chr(10) &amp; _
+										sHWPD.sProcessAllDoc, sHWPD.sHandWorkingParagraphs, oCurs() ) Then Exit Sub
+	
+	oHWPDlg.Enable = False
+	
+	For l = LBound( oCurs() ) To UBound( oCurs() )
+		Select Case oHWPDlg.GetControl( &quot;lbHWPMode&quot; ).SelectedItemPos
+			Case 0 &apos; Обрыв абзаца (¶)
+				Select Case oHWPDlg.GetControl( &quot;lbHWPModeType&quot; ).SelectedItemPos
+					Case 0 &apos; Склейка в 1 абзац (Замена ¶ на 1 пробел)
+						nCount = nCount + ParagraphsWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), &quot;$&quot;, &quot; &quot; )
+					Case 1 &apos; Склейка в 1 абзац (Удаление ¶)
+						nCount = nCount + ParagraphsWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), &quot;$&quot;, &quot;&quot; )
+					Case 2 &apos; Заменить обрыв абзаца ¶ на разрыв строки (\n)
+						nCount = nCount + ParagraphsWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), &quot;$&quot;, chr(10) )
+				End Select
+			Case 1 &apos; Разрыв строки (↵)
+				Select Case oHWPDlg.GetControl( &quot;lbHWPModeType&quot; ).SelectedItemPos
+					Case 0 &apos; Склейка в 1 абзац (Замена ↵ на 1 пробел)
+						nCount = nCount + ParagraphsWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), chr(10), &quot; &quot; )
+					Case 1 &apos; Склейка в 1 абзац (Удаление ↵)
+						nCount = nCount + ParagraphsWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), chr(10), &quot;&quot; )
+					Case 2 &apos; Заменить ↵ на абзац (¶)
+						nCount = nCount + ParagraphsWorker( ThisComponent, oCurs(l, 0), oCurs(l, 1), chr(10), chr(13) )
+				End Select
+		End Select
+	Next l
+
+	If lSel &lt;&gt; -1 Then
+		Dim sMess As String
+		If nCount &gt; 0 Then &apos; обработка была сделана
+			If lSel = 0 Then
+				sMess = sHWPD.sProcessAllDocEnd &amp; chr(10)
+			Else
+				sMess = sHWPD.sProcessSelectedFragments &amp; &quot;: &quot; &amp; lSel &amp; chr(10) &amp; _
+						sHWPD.sProcessPara &amp; &quot;: &quot; &amp; nCount
+			End If
+		Else &apos; обработки не было - не найдено условие в абзацах
+			Dim sM As String : sM = sHWPD.sNotTermsFindInText
+			If lSel = 0 Then
+				sMess = sHWPD.sNotProcessAllDocEnd &amp; &quot; &quot; &amp; sM &amp; chr(10)
+			Else
+				sMess = sHWPD.sNotProcessSelTextEnd &amp; &quot; &quot; &amp; sM &amp; chr(10)
+			End If
+		End If
+		MsgBox sMess, 64, sHWPD.sHandWorkingParagraphs
+	End If
+
+	oHWPDlg.Enable = True
+
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////////////////////////
+&apos; Функции обработки абзацев для выбранного Режима и Типа обработки
+&apos; ////////////////////////////////////////////////////////////////////////////////////
+Function ParagraphsWorker( oDoc As Object, oLCurs As Object, oRCurs As Object, sFindReg As String, sReplaceReg As String ) As Integer
+	ParagraphsWorker = 0
+	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Function
+	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Function
+	
+	oLCurs.goRight( 0, False )
+
+	On Error GoTo ErrorHandler
+
+	Dim vDescriptor : vDescriptor = oDoc.createSearchDescriptor()
+	With vDescriptor
+		.SearchString				= sFindReg
+		.SearchCaseSensitive		= False
+		.SearchRegularExpression	= True
+	End With
+	Dim vFound : vFound = oDoc.findNext( oLCurs, vDescriptor )
+	Do While Not IsNull(vFound)
+		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Function
+		vFound.setString( sReplaceReg )
+		ParagraphsWorker = ParagraphsWorker + 1
+		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
+	Loop
+ErrorHandler:
+
+End Function
+
+</script:module>
