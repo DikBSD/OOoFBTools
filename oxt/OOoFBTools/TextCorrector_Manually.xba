@@ -221,8 +221,12 @@ Function GetLesfSymCountToDash( ovCurs As Object ) As Integer
 	otxtCurs.gotoRange( ovCurs.getEnd(), False )
 	otxtCurs.gotoStartOfWord( True ) : otxtCurs.goLeft( 1, True ) &apos; для захвата дефиса..., если он есть
 	Dim s As String : s = otxtCurs.getString()
-	If InStr( s, &quot;-&quot; ) = 1 Or InStr( s, chr(8209) ) = 1 Or InStr( s, chr(8211) ) = 1 Or InStr( s, chr(8212) ) = 1 Then
-		GetLesfSymCountToDash = Len( s ) - 1
+	Dim nPos As Integer : nPos = InStr( s, &quot;-&quot; )
+	nPos = nPos + InStr( s, chr(8209)
+	nPos = nPos + InStr( s, chr(8211)
+	nPos = nPos + InStr( s, chr(8212)
+	If nPos &gt; 0 Then
+		GetLesfSymCountToDash = nPos - 1
 		Exit Function
 	End if
 	GetLesfSymCountToDash = -1
