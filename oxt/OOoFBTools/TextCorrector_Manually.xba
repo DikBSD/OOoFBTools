@@ -215,23 +215,6 @@ Function GetRegString( oLB As Object ) As tFindData
 End Function
 
 &apos; ////////////////////////////////////////////////////////////////
-&apos; число символов влево до дефиса, тире или минуса, если они есть
-Function GetLesfSymCountToDash( ovCurs As Object ) As Integer
-	Dim otxtCurs As Object : otxtCurs = ovCurs.Text.createTextCursor()
-	otxtCurs.gotoRange( ovCurs.getEnd(), False )
-	otxtCurs.gotoStartOfWord( True ) : otxtCurs.goLeft( 1, True ) &apos; для захвата дефиса..., если он есть
-	Dim s As String : s = otxtCurs.getString()
-	Dim nPos As Integer : nPos = InStr( s, &quot;-&quot; )
-	nPos = nPos + InStr( s, chr(8209)
-	nPos = nPos + InStr( s, chr(8211)
-	nPos = nPos + InStr( s, chr(8212)
-	If nPos &gt; 0 Then
-		GetLesfSymCountToDash = nPos - 1
-		Exit Function
-	End if
-	GetLesfSymCountToDash = -1
-End Function
-
 &apos; Поиск регулярного выражения в тексте
 Sub FindRegWord( sFind As String, sTitle As String )
 	oDocControl = ThisComponent.getCurrentController()
@@ -243,10 +226,22 @@ Sub FindRegWord( sFind As String, sTitle As String )
 	
 	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
 	If oLB.SelectedItemPos = 0 Then &apos; только для режима поиска дефисных слов
-		Dim nPos : nPos = GetLesfSymCountToDash( ovCurs )
-		If nPos &lt;&gt; -1 Then
-			ovCurs.goLeft( nPos, False ) &apos; назад для захвата и второго дефиса (например: Кое-ко-го)
-		End If
+		&apos; идем влево до минуса (тире или дефиса)
+		Dim i, nPos, j As Integer 
+		Dim s As String : s = ovCurs.getString()
+		Dim si As String
+		For i=Len(s) To 1 Step -1
+			j = j + 1 &apos; счетчик-положение минуса, тире или дефиса
+			si = Mid(s, i, 1)
+			nPos = InStr( si, &quot;-&quot; )
+			nPos = nPos + InStr( si, chr(8209) )
+			nPos = nPos + InStr( si, chr(8211) )
+			nPos = nPos + InStr( si, chr(8212) )
+			If nPos &gt; 0 Then
+				ovCurs.goLeft( j, False ) &apos; назад для захвата и второго дефиса (например: Кое-ко-го)
+				Exit For
+			End If
+		Next i
 	End If
 	
 	otxtCurs = ovCurs.Text.createTextCursor() 
