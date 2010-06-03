@@ -52,7 +52,7 @@ Sub DocumentParser()
 				oContent = oCEnum.nextElement()
 				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 					&apos; парсер графики, привязанной к параграфу
-					MakeGraphic( oContent, True )
+					MakeGraphic( oPar, oContent, True )
 				Else
 					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -61,10 +61,10 @@ Sub DocumentParser()
 							TextFrameParser(oContent)
 						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 							&apos; парсер формулы, привязка &quot;параграф&quot;
-							MakeGraphic( oContent, True )
+							MakeGraphic( oPar, oContent, True )
 						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 							&apos; парсер диаграм, привязка &quot;параграф&quot;
-							MakeGraphic( oContent, True )
+							MakeGraphic( oPar, oContent, True )
 						End If
 					End If
 				End If
@@ -95,7 +95,7 @@ Sub DocumentParser()
 						oContent = oCEnum.nextElement()
 						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 							&apos; парсер графики, привязанной к символу
-							MakeGraphic( oContent, True )
+							MakeGraphic( oPar, oContent, True )
 						Else
 							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -104,10 +104,10 @@ Sub DocumentParser()
 									TextFrameParser(oContent)
 								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 									&apos; парсер формулы, привязка &quot;символ&quot;
-									MakeGraphic( oContent, True )
+									MakeGraphic( oPar, oContent, True )
 								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; парсер диаграм, привязка &quot;символ&quot;
-									MakeGraphic( oContent, True )
+									MakeGraphic( oPar, oContent, True )
 								End If
 							End If
 						End If

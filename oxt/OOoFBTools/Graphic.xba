@@ -168,7 +168,7 @@ Function ValidateFileExt( sExt As String ) As String
 End Function
 
 &apos; создание картинки из графических объектов
-Sub MakeGraphic( oContent As Object, bIsText As Boolean )
+Sub MakeGraphic( oPara As Object, oContent As Object, bIsText As Boolean )
 	&apos; определяем тип (расширение) картинки
 	Dim sExt As String
 	sExt = GetGraphicExt( oContent )
@@ -180,10 +180,14 @@ Sub MakeGraphic( oContent As Object, bIsText As Boolean )
 		If oContent.AnchorType = 1 Then
 			sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 		Else
-			If bSaveImageTitle=True Then
-				AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+			If oPara.ParaStyleName = sStyle_BookAnnotation Then
+				sPara = sPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 			Else
-				AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+				If bSaveImageTitle=True Then
+					AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+				Else
+					AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+				End If
 			End If
 		End If
 	End If
