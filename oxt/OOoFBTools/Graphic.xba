@@ -3,6 +3,8 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Graphic" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+Private nCoverNumber As Integer	&apos; Счетчик картинок ДО Обложек
+
 Type tFileData	&apos; для хранения данных файла
 	sFileUrl As String
 	sFile As String
@@ -13,6 +15,8 @@ End Type
 &apos; //////////////////////////////////////// Графика //////////////////////////////////////////////////////
 &apos; парсер обложек книги
 Sub MakeCoverParser()
+	nCoverNumber = -1		&apos; Счетчик картинок ДО Обложек
+	
 	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
 	Dim oPar As Object 		&apos;Перебираемый параграф
 	Dim oSectEnum As Object &apos;Счетчик, используемый для перебора текстовых разделов
@@ -32,7 +36,7 @@ Sub MakeCoverParser()
 				oContent = oCEnum.nextElement()
 				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 					&apos; нашли обложку книги, привязанной к параграфу
-					MakeCoverTag( oContent )
+					MakeCoverTag( oPar, oContent )
 				Else
 					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -40,10 +44,10 @@ Sub MakeCoverParser()
 							&apos; Парсер Текстовой Врезки
 						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 							&apos; нашли обложку книги - формулу, привязанную к параграфу
-							MakeCoverTag( oContent )
+							MakeCoverTag( oPar, oContent )
 						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 							&apos; нашли обложку книги - диаграмму, привязанную к параграфу
-							MakeCoverTag( oContent )
+							MakeCoverTag( oPar, oContent )
 						End If
 					End If
 				End If
@@ -59,17 +63,17 @@ Sub MakeCoverParser()
 						oContent = oCEnum.nextElement()
 						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 							&apos; нашли обложку книги, привязанной к символу
-							MakeCoverTag( oContent )
+							MakeCoverTag(oPar, oContent )
 						Else
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
 								If oContent.FrameStyleName = &quot;Frame&quot; Then
 									&apos; Парсер Текстовой Врезки
 								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 									&apos; нашли обложку книги - формулу, привязанную к символу
-									MakeCoverTag( oContent )
+									MakeCoverTag( oPar, oContent )
 								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; нашли обложку книги - диаграмму, привязанную к символу
-									MakeCoverTag( oContent )
+									MakeCoverTag( oPar, oContent )
 								End If
 							End If
 						End If
@@ -85,16 +89,20 @@ Sub MakeCoverParser()
 End Sub
 
 &apos; добавляем данные об очередной картинке-обложке в массив
-Sub MakeCoverTag( oContent As Object )
-	&apos; заносим тэги обложек в массив
-	Dim sExt As String
-	sExt = GetGraphicExt( oContent )
-	&apos; приведение расширения графики к допустимому для fb2-читалок
-	sExt = ValidateFileExt( sExt )
-	Dim i As Integer
-	i = Ubound(Covers()) + 1
-	ReDim Preserve Covers(i)
-	Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+Sub MakeCoverTag( oPar As Object, oContent As Object )
+	nCoverNumber = nCoverNumber+1
+	If oPar.ParaStyleName &lt;&gt; sStyle_BookAnnotation Then
+		&apos; заносим тэги обложек в массив
+		Dim sExt As String
+		sExt = GetGraphicExt( oContent )
+		&apos; приведение расширения графики к допустимому для fb2-читалок
+		sExt = ValidateFileExt( sExt )
+		Dim i As Integer
+		i = Ubound(Covers()) + 1
+		ReDim Preserve Covers(i)
+		&apos;Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; Ubound(Covers()) &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+		Covers(i) = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; nCoverNumber &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+	End If
 End Sub
 
 &apos; данные графики и ее расширение
