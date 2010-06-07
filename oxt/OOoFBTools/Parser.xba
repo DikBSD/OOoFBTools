@@ -52,7 +52,7 @@ Sub DocumentParser()
 				oContent = oCEnum.nextElement()
 				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 					&apos; парсер графики, привязанной к параграфу
-					MakeGraphic( oPar, oContent, True )
+					MakeGraphic( oPar, oContent, True, sPara, False )
 				Else
 					&apos; Привязка к параграфу
 					If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -61,10 +61,10 @@ Sub DocumentParser()
 							TextFrameParser(oContent)
 						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 							&apos; парсер формулы, привязка &quot;параграф&quot;
-							MakeGraphic( oPar, oContent, True )
+							MakeGraphic( oPar, oContent, True, sPara, False )
 						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 							&apos; парсер диаграм, привязка &quot;параграф&quot;
-							MakeGraphic( oPar, oContent, True )
+							MakeGraphic( oPar, oContent, True, sPara, False )
 						End If
 					End If
 				End If
@@ -95,7 +95,7 @@ Sub DocumentParser()
 						oContent = oCEnum.nextElement()
 						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
 							&apos; парсер графики, привязанной к символу
-							MakeGraphic( oPar, oContent, True )
+							MakeGraphic( oPar, oContent, True, sPara, False )
 						Else
 							&apos; Привязка к символу
 							If oContent.ShapeType = &quot;FrameShape&quot; Then
@@ -104,10 +104,10 @@ Sub DocumentParser()
 									TextFrameParser(oContent)
 								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
 									&apos; парсер формулы, привязка &quot;символ&quot;
-									MakeGraphic( oPar, oContent, True )
+									MakeGraphic( oPar, oContent, True, sPara, False )
 								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
 									&apos; парсер диаграм, привязка &quot;символ&quot;
-									MakeGraphic( oPar, oContent, True )
+									MakeGraphic( oPar, oContent, True, sPara, False )
 								End If
 							End If
 						End If
@@ -400,59 +400,130 @@ Sub FormatFootnoteText( oSect )
 	oFootnoteCursor.gotoEndOfParagraph(True)
 	
 	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
-	Dim sParagF As String, sFNTH As String
-		sParagF = &quot;&quot;
+	Dim sParagFN As String, sFNTH As String
+		sParagFN = &quot;&quot;
 	Dim sTextArray() As String &apos; временный массив для хранения всех строк одного абзаца
-	Dim sType As String &apos; тип абзаца - стих, абзац, цитата...
 	Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
+	
+	Dim oCEnum				As Object &apos;Перебирает содержимое, такое как графические объекты
+	Dim oContent			As Object &apos;Перебираемое содержимое
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 	
 	Do
 		oFootnoteCursor.gotoEndOfParagraph(True)
-		oEnumF = oFootnoteCursor.createEnumeration
-		While oEnumF.hasMoreElements
-			sParagF		= &quot;&quot;
-			oTextF		= oEnumF.nextElement
+		oEnumF = oFootnoteCursor.createEnumeration()
+		While oEnumF.hasMoreElements()
+			sParagFN		= &quot;&quot;
+			oTextF		= oEnumF.nextElement()
 			sString		= oTextF.getString()	
-			oSecEnumF	= oTextF.createEnumeration
-			While oSecEnumF.hasMoreElements
-				oTextPortionF = oSecEnumF.nextElement
+			oSecEnumF	= oTextF.createEnumeration()
+			&apos;////////////////////////////////////////////////////////////
+			oCEnum = oTextF.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oCEnum.hasMoreElements()
+				oContent = oCEnum.nextElement()
+				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+					&apos; парсер графики, привязанной к параграфу
+					MakeGraphic( oSect, oContent, True, sParagFN, True )
+				Else
+					&apos; Привязка к параграфу
+					If oContent.ShapeType = &quot;FrameShape&quot; Then
+						If oContent.FrameStyleName = &quot;Frame&quot; Then
+							&apos; Парсер Текстовой Врезки
+&apos;							TextFrameParser(oContent)
+						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+							&apos; парсер формулы, привязка &quot;параграф&quot;
+							MakeGraphic( oSect, oContent, True, sParagFN, True )
+						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+							&apos; парсер диаграм, привязка &quot;параграф&quot;
+							MakeGraphic( oSect, oContent, True, sParagFN, True )
+						End If
+					End If
+				End If
+			Loop			
+			&apos;////////////////////////////////////////////////////////////
+			
+			While oSecEnumF.hasMoreElements()
+				oTextPortionF = oSecEnumF.nextElement()
+				&apos;////////////////////////////////////////////////////////////
+				If oTextPortionF.TextPortionType = &quot;Frame&quot; Then
+					oCEnum = oTextPortionF.createContentEnumeration(textGraphService)
+					Do While oCEnum.hasMoreElements()
+						oContent = oCEnum.nextElement()
+						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
+							&apos; парсер графики, привязанной к символу
+							MakeGraphic( oSect, oContent, True, sParagFN, True )
+						Else
+							&apos; Привязка к символу
+							If oContent.ShapeType = &quot;FrameShape&quot; Then
+								If oContent.FrameStyleName = &quot;Frame&quot; Then
+									&apos; Парсер Текстовой Врезки
+&apos;									TextFrameParser(oContent)
+								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
+									&apos; парсер формулы, привязка &quot;символ&quot;
+									MakeGraphic( oSect, oContent, True, sParagFN, True )
+								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
+									&apos; парсер диаграм, привязка &quot;символ&quot;
+									MakeGraphic( oSect, oContent, True, sParagFN, True )
+								End If
+							End If
+						End If
+					Loop
+				End If
+				&apos;///////////////////////////////////////////////////////////
 				&apos;TODO: если рядом с текстом в однос строке стоит картинка с Привязкой К Символу, то к тесту добавляется предыдущая часть.
 				&apos;Надо ввести проверку!!!
 				If bOnlyOneStyle = True Then
-					sParagF = sParagF &amp; InLineParser( oTextPortionF )
+					sParagFN = sParagFN &amp; InLineParser( oTextPortionF )
 				Else
-					sParagF = sParagF &amp; InLineAllParser( oTextPortionF )
+					sParagFN = sParagFN &amp; InLineAllParser( oTextPortionF )
 				End If
 			Wend
 		
 			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
-			sParagF = DelBreakLineInString( sParagF )
+			sParagFN = DelBreakLineInString( sParagFN )
 
 			&apos; маркеры и нумерация в сносках
 			If oTextF.NumberingIsNumber = True Then &apos; нумерованные списки
-				sParagF = MakeNumberingNumberPara( oTextF, sString, sParagF )
+				sParagFN = MakeNumberingNumberPara( oTextF, sString, sParagFN )
 				bMarker = True
 			End If
-
-			&apos; парсер стилей сносок
-			sType = FootnoteStyleParser( sTextArray(), oFootnoteCursor.ParaStyleName, sParagF )
-			If bNotesElements = True Then
-				sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) ) &amp; chr(10) &amp; sType
+			
+			If InStr(sParagFN,  &quot;__fn__OOo_graphics__&quot; ) = 0 Then
+				sTextArray() = MakeTextArray( sParagFN, oFootnoteCursor, sTextArray() )
 			Else
-				sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) )
+				Dim i As Integer, sStr As String : sStr = &quot;&quot;
+				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot;)
+				For i=0 To UBound( aStr() )
+					If aStr(i) &lt;&gt; &quot;&quot; Then
+						sTextArray() = MakeTextArray( aStr(i), oFootnoteCursor, sTextArray() )
+					End If
+				Next i
 			End If
+
 		Wend
 	Loop While oFootnoteCursor.gotoNextParagraph( False )
 	
-	sParagF = Join( sTextArray(), chr(10) )
+	sParagFN = Join( sTextArray(), chr(10) )
 	
 	If bNotesElements = False Then
-		sParagF = sParagF &amp; chr(10) &apos; чтобы последняя строка sFootnoteText() в последствии не удалилась!!!
+		sParagFN = sParagFN &amp; chr(10) &apos; чтобы последняя строка sFootnoteText() в последствии не удалилась!!!
 	End If
 	
-	sFootnoteText( iFootnoteCount ) = sParagF
-	
+	sFootnoteText( iFootnoteCount ) = sParagFN
 End Sub
+
+Function MakeTextArray( sStr As String, oFootnoteCursor, sTextArray() As String )
+	Dim sType As String &apos; тип абзаца - стих, абзац, цитата...
+	&apos; парсер стилей сносок
+	sType = FootnoteStyleParser( sTextArray(), oFootnoteCursor.ParaStyleName, sStr )
+	If bNotesElements = True Then
+		sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) ) &amp;  chr(10) &amp; sType
+	Else
+		sTextArray( UBound( sTextArray() ) ) = sTextArray( UBound( sTextArray() ) )
+	End If
+	MakeTextArray = sTextArray()
+End Function
 
 Function AddBodyArray( sPara As String, TextType As String, bLevel As Boolean )
 	Dim l As Long : l = Ubound(sBodyParagraphs(), 1) + 1
