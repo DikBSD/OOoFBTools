@@ -652,13 +652,23 @@ Function FB2CorrectAmpWord(sWord As String, iResult As Integer)
 End Function
 
 &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
-Sub RemoveSuperfluous( sSource As String, iResult As Integer )
+Sub RemoveSuperfluous( sSource As String, iResult() As Integer )
 	iResult(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
 	iResult(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
 	iResult(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
 	iResult(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
 	iResult(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
 	iResult(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
+End Sub
+
+&apos; Убираем пустышки типа &lt;x&gt;&lt;/x&gt;
+Sub RemoveSuperfluousLR( sSource As String, iResult() As Integer )
+	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;&lt;/strong&gt;&quot;, &quot;&quot;)
+	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot;, &quot;&quot;)
+	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;&lt;/sub&gt;&quot;, &quot;&quot;)
+	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;&lt;/sup&gt;&quot;, &quot;&quot;)
+	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;&lt;/code&gt;&quot;, &quot;&quot;)
+	iResult(5) = ReplaceFromString(sSource, &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot;, &quot;&quot;)
 End Sub
 
 &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
