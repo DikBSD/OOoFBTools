@@ -121,10 +121,12 @@ Sub DocumentParser()
 					sPara = sPara &amp; FootEndNoteParser(oSect)
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
 					&apos; текстовые поля
-					If bOnlyOneStyle = True Then
-						sPara = sPara &amp; InLineParser( oSect )
-					Else
-						sPara = sPara &amp; InLineAllParser( oSect )
+					If bTextField = True Then
+						If bOnlyOneStyle = True Then
+							sPara = sPara &amp; InLineParser( oSect )
+						Else
+							sPara = sPara &amp; InLineAllParser( oSect )
+						End If
 					End If
 				ElseIf oSect.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
