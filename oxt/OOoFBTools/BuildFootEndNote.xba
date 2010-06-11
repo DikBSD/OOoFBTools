@@ -23,15 +23,17 @@ Type tTestDataRepeat
 End Type
 
 Type tTestDataFlags
-	lZoneNumber							As Long	&apos; Номер Зоны поиска (Глава + ее Список примечаний)
-	lTestRepeatingNumbersInText			As Long	&apos; Повторяющиеся номера в Тексте
-	lTestRepeatingNumbersInList			As Long	&apos; Повторяющиеся номера в Списке
-	lTestAbsentNumbersInText			As Long	&apos; Отсутствующие номера в Тексте
-	lTestAbsentNumbersInList			As Long	&apos; Отсутствующие номера в Списке
-	lTestAbsentNumbersFromTextInList	As Long	&apos; Отсутствующие номера из Текста в Списке
-	lTestAbsentNumbersFromListInText	As Long	&apos; Отсутствующие номера из Списка в Тексте
-	sLBookmark							As String &apos; название закладки для Главы книги
-	sRBookMark							As String &apos; название закладки для Списка примечаний этой главы
+	nZoneNumber							As Integer	&apos; Номер Зоны поиска (Глава + ее Список примечаний)
+	nCountFindNumbersInText				As Integer	&apos; Число найденных номеров Примечаний в Тексте, удовлетворяющий шаблону поиска
+	nCountFindNumbersInList				As Integer	&apos; Число найденных номеров Примечаний в Списке, удовлетворяющий шаблону поиска
+	nTestRepeatingNumbersInText			As Integer	&apos; Повторяющиеся номера в Тексте
+	nTestRepeatingNumbersInList			As Integer	&apos; Повторяющиеся номера в Списке
+	nTestAbsentNumbersInText			As Integer	&apos; Отсутствующие номера в Тексте
+	nTestAbsentNumbersInList			As Integer	&apos; Отсутствующие номера в Списке
+	nTestAbsentNumbersFromTextInList	As Integer	&apos; Отсутствующие номера из Текста в Списке
+	nTestAbsentNumbersFromListInText	As Integer	&apos; Отсутствующие номера из Списка в Тексте
+	sLBookmark							As String	&apos; название закладки для Главы книги
+	sRBookMark							As String	&apos; название закладки для Списка примечаний этой главы
 End Type
 
 &apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,6 +210,25 @@ Function GetNumberFromString( sString As String ) As String
 	GetNumberFromString = Trim( sNumber )
 End Function
 
+&apos; поиск следующего заданного регекса в документе
+Function FindNumbersUpIndexText( oLCurs ) As Variant
+	&apos; задаем поиск верхнего индекса
+	Dim SrchAttributes(2) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
+	SrchAttributes(0).Value	= True
+	SrchAttributes(1).Name	= &quot;CharEscapementHeight&quot;
+	SrchAttributes(1).Value	= 58
+	SrchAttributes(2).Name	= &quot;CharEscapement&quot;
+	SrchAttributes(2).Value	= 101
+  
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
+	oDesc.SearchRegularExpression = True
+	oDesc.SetSearchAttributes(SrchAttributes())
+	oDesc.SearchString = &quot;[:digit:]+&quot;
+	
+	FindNumbersUpIndexText = ThisComponent.findNext( oLCurs, oDesc )
+End Function
+
 &apos; вставка закладки на место номера очередной сноски
 &apos; возвращает:
 &apos; -1 - номер примечания в тексте не найден - конец документа
@@ -216,6 +237,7 @@ End Function
 Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
 										sRegFind As String, sConstBookMarkListNote As String, sConstBookMarkFNNumber As String ) As Integer
 	&apos; sRegFind - строка поиска (с регулярными выражениями)
+	&apos; если sRegFind=&quot;NumbersUpIndex&quot;, то это - &quot;... цифры в верхнем индексе ...&quot;
 	&apos; oLCurs - начало зоны поиска номера очередной сноски
 	&apos; oRCurs - конец зоны поиска номера очередной сноски
 	InsertBookmarkToNumberFootNote = -1
@@ -224,14 +246,24 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 	
 	&apos; поиск с регулярными выражениями
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = sRegFind
-	End With
+	Dim vSearch As Variant
+	Dim bModeNumbersUpIndex As Boolean : bModeNumbersUpIndex = False
+	If sRegFind = &quot;NumbersUpIndex&quot; Then bModeNumbersUpIndex = True
 	
 	&apos; ищем заданный номер сноски в блоке текста сносок
-	Dim vFound As Variant : vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
+	Dim vFound As Variant 
+	
+	If bModeNumbersUpIndex = True Then
+		vFound = FindNumbersUpIndexText( oLCurs.getStart() )
+	Else
+		vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchRegularExpression = True
+			.SearchString = sRegFind
+		End With
+		vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
+	End If
+	
 	If Not IsNull( vFound ) Then &apos; нашли
 		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
 			If Not IsEmpty( vFound.TextTable ) Then &apos; номер очередной сноски находится в таблице
@@ -240,13 +272,21 @@ Function InsertBookmarkToNumberFootNote( oDoc As Object, oViewCursor As Object, 
 				CursorAfterCurrentTextTable( oViewCursor )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
 				oLCurs.gotoRange( oViewCursor, False )
-				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				If bModeNumbersUpIndex = True Then
+					vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+				Else
+					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				End If
 				InsertBookmarkToNumberFootNote = 1
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
 				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Ничего ни делаем - Просто игнорируем номер для сноски.
 				oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
 &apos;				oLCurs.gotoRange( oViewCursor, False )
-				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				If bModeNumbersUpIndex = True Then
+					vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+				Else
+					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				End If
 			Else &apos; просто текст
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
 					&apos; переводим курсор на конец найденного номера сноски в списке текста сносок
@@ -271,14 +311,28 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 	If IsNull(oViewCursor) Or IsNull(oDoc) Then Exit Function
 	
 	&apos; поиск с регулярными выражениями
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = sRegFind
-	End With
+	Dim vSearch As Variant
+	Dim bModeNumbersUpIndex As Boolean : bModeNumbersUpIndex = False
+	If InStr( sRegFind, &quot;NumbersUpIndex&quot; ) &gt; 0 Then
+		bModeNumbersUpIndex = True
+	Else
+		bModeNumbersUpIndex = True
+	End If
 	
 	&apos; ищем заданный номер сноски в блоке текста сносок
-	Dim vFound As Variant : vFound = oDoc.findNext( oBlockNoteZoneBookMark.getStart(), vSearch )
+	Dim vFound As Variant 
+	
+	If bModeNumbersUpIndex = True Then
+		vFound = FindNumbersUpIndexText( oBlockNoteZoneBookMark.getStart() )
+	Else
+		vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchRegularExpression = True
+			.SearchString = sRegFind
+		End With
+		vFound = oDoc.findNext( oBlockNoteZoneBookMark.getStart(), vSearch )
+	End If
+	
 	&apos; ищем следующий текст сноски по следующему номеру сноски
 	If Not IsNull(vFound) Then &apos; нашли
 		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; And IsEmpty( vFound.TextFrame ) Then &apos; сноски не обрабатываем
@@ -286,7 +340,11 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
 				oViewCursor.gotoRange( vFound, False )
 				CursorAfterCurrentTextTable( oViewCursor )
-				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				If bModeNumbersUpIndex = True Then
+					vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+				Else
+					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				End If
 			Else &apos; текст сноски - в тексте
 				If oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 				&apos; выделяем найденный номер сноски в блоке текста сносок
@@ -297,15 +355,24 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 				_UnoInsertBookmark( sConstBookMarkFNText )
 				Do While  oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &gt;= 0
 					&apos; мы все еще внутри зоны поиска... ищем следующий номер сноски в списке
-					vSearch.SearchString = GetRegStringNFNInListForNextFind() &apos; для дальнейшего поиска согласно выбранного шаблона поиска номера сноски в списке сносок
-					vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+					If bModeNumbersUpIndex = True Then
+						vFound = FindNumbersUpIndexText( vFound.getEnd() )
+					Else
+						vSearch.SearchString = GetRegStringNFNInListForNextFind() &apos; для дальнейшего поиска согласно выбранного шаблона поиска номера сноски в списке сносок
+						vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+					End If
+				
 					If Not IsNull(vFound) Then
 						If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; Then &apos; сноски не обрабатываем
 							If Not IsEmpty( vFound.TextTable ) Then &apos; текст сноски - в таблице
 								&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
 								oViewCursor.gotoRange( vFound, False )
 								CursorAfterCurrentTextTable( oViewCursor )
-								vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+								If bModeNumbersUpIndex = True Then
+									vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+								Else
+									vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+								End If
 								vFound.gotoStartOfParagraph( False )
 							ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст сноски - в текстовой врезке
 								&apos; не обрабатываем сноски
@@ -531,6 +598,8 @@ Function GetRegStringNFNInText() As String
 			GetRegStringNFNInText = &quot;/[:digit:]+/|/ +[:digit:]+/|/[:digit:]+ +/|/ +[:digit:]+ +/&quot;&apos;&quot;/[:digit:]+/&quot;
 		Case 5 &apos; ... текст \x\
 			GetRegStringNFNInText = &quot;\\[:digit:]+\\|\\ +[:digit:]+\\|\\[:digit:]+ +\\|\\ +[:digit:]+ +\\&quot;&apos;&quot;\\[:digit:]+\\&quot;
+		Case 6 &apos; &quot;... цифры в верхнем индексе ...&quot;
+			GetRegStringNFNInText = &quot;NumbersUpIndex&quot;
 		Case Else
 			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot;&apos;&quot;\([:digit:]+\)&quot;
 	End Select
@@ -568,6 +637,8 @@ Function GetRegStringNFNInListForNextFind() As String
 			GetRegStringNFNInListForNextFind = &quot;^\\[:digit:]+\\&quot;
 		Case 13 &apos; \x\. Текст ...
 			GetRegStringNFNInListForNextFind = &quot;^\\[:digit:]+\\\.&quot;
+		Case 14 &apos; &quot;цифры в верхнем индексе ...&quot;
+			GetRegStringNFNInListForNextFind = &quot;NumbersUpIndex&quot;
 		Case Else
 			GetRegStringNFNInListForNextFind = &quot;^[:digit:]+\.&quot;
 	End Select
@@ -603,6 +674,8 @@ Function GetRegStringNFNInListForLeft( oLB As Object ) As String
 			GetRegStringNFNInListForLeft = &quot;^\\&quot;
 		Case 13 &apos; \x\. Текст ...
 			GetRegStringNFNInListForLeft = &quot;^\\&quot;
+		Case 14 &apos; &quot;цифры в верхнем индексе ...&quot;
+			GetRegStringNFNInListForLeft = &quot;NumbersUpIndex&quot;
 		Case Else
 			GetRegStringNFNInListForLeft = &quot;^&quot;
 	End Select
@@ -638,6 +711,8 @@ Function GetRegStringNFNInListForRight( oLB As Object ) As String
 			GetRegStringNFNInListForRight = &quot;\\&quot;
 		Case 13 &apos; \x\. Текст ...
 			GetRegStringNFNInListForRight = &quot;\\\.&quot;
+		Case 14 &apos; &quot;... цифры в верхнем индексе ...&quot;
+			GetRegStringNFNInListForRight = &quot;NumbersUpIndex&quot;
 		Case Else
 			GetRegStringNFNInListForRight = &quot;\.&quot;
 	End Select
@@ -867,7 +942,8 @@ Sub StartBuildFootEndNoteDlg()
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {x} ...&quot;, _
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; &lt;x&gt; ...&quot;, _
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; /x/ ...&quot;, _
-								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;	)
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sNumberInUpIndex &amp; &quot; ...&quot;	)
 	Dim aNFNInListList() As String
 	aNFNInListList() = Array(	&quot;x &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
 								&quot;x. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
@@ -882,7 +958,8 @@ Sub StartBuildFootEndNoteDlg()
 								&quot;/x/ &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
 								&quot;/x/. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
 								&quot;\x\ &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
-								&quot;\x\. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;	)
+								&quot;\x\. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
+								sBTEND.sNumberInUpIndex &amp; &quot; ...&quot;	)
 	
 	&apos; файл настроек BuildFootEndNoteDlg
 	
@@ -1251,7 +1328,8 @@ Sub FootNoteTest()
 								lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
 			&apos; сгенерировать отчет и запустить его на просмотр
-			SaveStartReportText( oTOS, sBTEND.sTestMode1 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			SaveStartReportText( oTOS, sBTEND.sTestMode1 )
 			&apos; печатаем номер тестируемой зоны (глава и ее Список примечаний) - вся книга
 			oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 			MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
@@ -1282,7 +1360,8 @@ Sub FootNoteTest()
 			End If
 			
 			&apos; сгенерировать отчет и запустить его на просмотр
-			SaveStartReportText( oTOS, sBTEND.sTestMode2 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			SaveStartReportText( oTOS, sBTEND.sTestMode2 )
 			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
 			For l=0 To UBound( aRBookMarks() )
 				&apos; печатаем номер очередной тестируемой зоны (глава и ее Список примечаний)
@@ -1328,7 +1407,8 @@ Sub FootNoteTest()
 			End If
 			
 			&apos; сгенерировать отчет и запустить его на просмотр
-			SaveStartReportText( oTOS, sBTEND.sTestMode3 ) &apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
+			SaveStartReportText( oTOS, sBTEND.sTestMode3 )
 			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
 			&apos; получаем L-зоны для поиска номеров примечаний
 			For l=0 To UBound( aRBookMarks() )
@@ -1401,16 +1481,17 @@ Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object
 	oProgressBar.setValue( 1 )
 		
 	&apos; сбор информации по номерам примечаний из текста
-	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, saNumbersInText()  )
+	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, saNumbersInText() )
 	oProgressBar.setValue( 2 )
+	
 	&apos; сбор информации по номерам примечаний из списка примечаний
 	&apos; перевод курсора на начала закладки зоны поиска списка примечаний
 	oViewCursor.gotoRange( oRCurs.getStart(), False )
 	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oListBookMark.getStart(), oListBookMark.getEnd(), _
-														GetRegStringNFNInListForNextFind(), saNumbersInList()  )
-			
+														GetRegStringNFNInListForNextFind(), saNumbersInList() )
 	oProgressBar.start( sBTEND.sTestDataAnalysis &amp; &quot;:&quot;, 13 )
 	oProgressBar.setValue( 1 )
+	
 	&apos; тест на наличие одинаковых номеров примечаний в Тексте
 	TestForIdenticalNumbers( saNumbersInText(), vaRepeatNumbersInText() )
 	oProgressBar.setValue( 2 )
@@ -1442,14 +1523,26 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 	
 	&apos; поиск с регулярными выражениями
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = sRegFind
-	End With
+	Dim vSearch As Variant
+	
+	Dim bModeNumbersUpIndex As Boolean : bModeNumbersUpIndex = False
+	If sRegFind = &quot;NumbersUpIndex&quot; Then bModeNumbersUpIndex = True
+	
+	&apos; ищем заданный номер сноски в блоке текста сносок
+	Dim vFound As Variant 
+	
+	If bModeNumbersUpIndex = True Then
+		vFound = FindNumbersUpIndexText( oLCurs.getStart() )
+	Else
+		vSearch = oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchRegularExpression = True
+			.SearchString = sRegFind
+		End With
+		vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
+	End If
 	
 	&apos; ищем заданный шаблон
-	Dim vFound			As Variant	: vFound = oDoc.findNext( oLCurs.getStart(), vSearch )
 	Dim lCountAllNotes	As Long		: lCountAllNotes = 0
 	If Not IsNull( vFound ) Then &apos; нашли
 		Do While ( Not IsNull( vFound ) )
@@ -1465,17 +1558,29 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 					oViewCursor.gotoRange( vFound, False )
 					CursorAfterCurrentTextTable( oViewCursor )
 					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
-					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+					If bModeNumbersUpIndex = True Then
+						vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+					Else
+						vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+					End If
 				ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; номер очередной сноски находится в текстовой врезке
 					&apos; перепрыгиваем через врезку - не обрабатываем ее.
 					oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
-					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+					If bModeNumbersUpIndex = True Then
+						vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+					Else
+						vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+					End If
 				Else &apos; просто текст
 					If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
 						oViewCursor.gotoRange( vFound, False )
 						AddNewItemToArray1( saNumbers(), vFound.getString() )
 						lCountAllNotes = lCountAllNotes+1
-						vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+						If bModeNumbersUpIndex = True Then
+							vFound = FindNumbersUpIndexText( vFound.getEnd() )
+						Else
+							vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+						End If
 					Else
 						GetDataForTestComplexFootNote = lCountAllNotes
 						Exit Function
@@ -1653,16 +1758,18 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				lCountAllListNotes As Long, saNumbersInList() As String, vaRepeatNumbersInList() As Variant, _
 				nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
 				naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer, _
-				vaZoneFlagsArray() As Variant, lZoneNumber As Long, sLBookMark As String, sRBookMark As String )
+				vaZoneFlagsArray() As Variant, nZoneNumber As Long, sLBookMark As String, sRBookMark As String )
 	&apos; все данные-флаги по конкретной зоне поиска - инициализация
 	Dim t As tTestDataFlags 
-	t.lZoneNumber						= lZoneNumber &apos; порядковый номер тестируемой зоны (глава и ее список примечаний)
-	t.lTestRepeatingNumbersInText		= 0
-	t.lTestRepeatingNumbersInList		= 0
-	t.lTestAbsentNumbersInText			= 0
-	t.lTestAbsentNumbersInList			= 0
-	t.lTestAbsentNumbersFromTextInList	= 0
-	t.lTestAbsentNumbersFromListInText	= 0
+	t.nZoneNumber						= nZoneNumber &apos; порядковый номер тестируемой зоны (глава и ее список примечаний)
+	t.nCountFindNumbersInText			= lCountAllTextNotes &apos; Число найденных номеров Примечаний в Тексте, удовлетворяющий шаблону поиска
+	t.nCountFindNumbersInList			= lCountAllListNotes &apos; Число найденных номеров Примечаний в Списке, удовлетворяющий шаблону поиска
+	t.nTestRepeatingNumbersInText		= 0
+	t.nTestRepeatingNumbersInList		= 0
+	t.nTestAbsentNumbersInText			= 0
+	t.nTestAbsentNumbersInList			= 0
+	t.nTestAbsentNumbersFromTextInList	= 0
+	t.nTestAbsentNumbersFromListInText	= 0
 	t.sLBookMark = sLBookMark
 	t.sRBookMark = sRBookMark
 	
@@ -1672,35 +1779,41 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	oTOS.writeString( s )
 
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllTextNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInText &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	
 	Dim lBound As Long : lBound = -1
 	Dim lUnique As Long
 	If Not IsNull( vaRepeatNumbersInText() ) Then
-		lBound = UBound( vaRepeatNumbersInText() )
-		t.lTestRepeatingNumbersInText = lBound+1 &apos; есть повторяющиеся номера примечаний в главе
-		For l=0 To lBound
-			lUnique = lUnique + vaRepeatNumbersInText(l).lCount
-		Next l
+		If UBound( vaRepeatNumbersInText() ) &gt; -1 Then
+			lBound = UBound( vaRepeatNumbersInText() )
+			t.nTestRepeatingNumbersInText = lBound+1 &apos; есть повторяющиеся номера примечаний в главе
+			For l=0 To lBound
+				lUnique = lUnique + vaRepeatNumbersInText(l).lCount
+			Next l
+		End If
 	End If
 	lUnique = lCountAllTextNotes - lUnique
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lUnique &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInText &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInText &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	lBound = -1
 	If Not IsNull( nAbsentNumbersInText() ) Then
-		lBound = UBound( nAbsentNumbersInText() )
-		t.lTestAbsentNumbersInText = lBound+1 &apos; есть отсутствующие номера примечаний в Главе
+		If UBound( nAbsentNumbersInText() ) &gt; -1 Then
+			lBound = UBound( nAbsentNumbersInText() )
+			t.nTestAbsentNumbersInText = lBound+1 &apos; есть отсутствующие номера примечаний в Главе
+		End If
 	End If
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromTextInList &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	lBound = -1
 	If Not IsNull( naAbsentTextNumbersInList() ) Then
-		lBound = UBound(naAbsentTextNumbersInList() )
-		t.lTestAbsentNumbersFromTextInList = lBound+1 &apos; есть отсутствующие номера примечаний из Главы в Списке
+		If UBound( naAbsentTextNumbersInList() ) &gt; -1 Then
+			lBound = UBound(naAbsentTextNumbersInList() )
+			t.nTestAbsentNumbersFromTextInList = lBound+1 &apos; есть отсутствующие номера примечаний из Главы в Списке
+		End If
 	End If
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
@@ -1708,16 +1821,18 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	oTOS.writeString( s )
 	
 	&apos; для Главы книги
-	If  Not IsNull( saNumbersInText() ) And ( UBound( saNumbersInText() ) &gt; -1 ) Then
-		s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
-		s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
-		For l=0 To Ubound( saNumbersInText() )
-			s = s &amp; saNumbersInText(l)
-			If l &lt;&gt; Ubound( saNumbersInText() ) Then s = s &amp; &quot;; &quot;
-		Next l
-		s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-		oTOS.writeString( s )
+	If Not IsNull( saNumbersInText() ) Then
+		If UBound( saNumbersInText() ) &gt; -1 Then
+			s = &quot;&lt;h3&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;:&lt;/h3&gt;&quot;
+			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
+			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
+			For l=0 To Ubound( saNumbersInText() )
+				s = s &amp; saNumbersInText(l)
+				If l &lt;&gt; Ubound( saNumbersInText() ) Then s = s &amp; &quot;; &quot;
+			Next l
+			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+			oTOS.writeString( s )
+		End If
 	End If
 	
 	Dim iaUniqueNumbers() As Integer
@@ -1732,7 +1847,8 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 			For l=0 To Ubound( iaUniqueNumbers() )
-				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; iaUniqueNumbers(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 )
+&apos;				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; iaUniqueNumbers(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 )
+				s = s &amp; iaUniqueNumbers(l)
 				If l &lt;&gt; Ubound( iaUniqueNumbers() ) Then s = s &amp; &quot;; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
@@ -1760,7 +1876,8 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 			For l=0 To Ubound( nAbsentNumbersInText() )
-				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; nAbsentNumbersInText(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 )
+&apos;				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; nAbsentNumbersInText(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 )
+				s = s &amp; nAbsentNumbersInText(l)
 				If l &lt;&gt; Ubound( nAbsentNumbersInText() ) Then s = s &amp; &quot;; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
@@ -1773,7 +1890,8 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 			s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 			s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; chr(10)
 			For l=0 To Ubound( naAbsentTextNumbersInList() )
-				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; naAbsentTextNumbersInList(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 )
+&apos;				s = s &amp; Mid( saNumbersInText(0), 1, 1 ) &amp; naAbsentTextNumbersInList(l) &amp; Mid( saNumbersInText(0), Len( saNumbersInText(0) ), 1 )
+				s = s &amp; naAbsentTextNumbersInList(l)
 				If l &lt;&gt; Ubound( naAbsentTextNumbersInList() ) Then s = s &amp; &quot;; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
@@ -1787,34 +1905,40 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	oTOS.writeString( s )
 
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCountAllListNotes &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestUniqueNumbersInList &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	lUnique = 0
 	lBound = -1
 	If Not IsNull( vaRepeatNumbersInList() ) Then
-		lBound = UBound( vaRepeatNumbersInList() )
-		t.lTestRepeatingNumbersInList = lBound+1 &apos; есть повторяющиеся номера примечаний в Списке
-		For l=0 To lBound
-			lUnique = lUnique + vaRepeatNumbersInList(l).lCount
-		Next l
+		If UBound( vaRepeatNumbersInList() ) &gt; -1 Then
+			lBound = UBound( vaRepeatNumbersInList() )
+			t.nTestRepeatingNumbersInList = lBound+1 &apos; есть повторяющиеся номера примечаний в Списке
+			For l=0 To lBound
+				lUnique = lUnique + vaRepeatNumbersInList(l).lCount
+			Next l
+		End If
 	End If
 	lUnique = lCountAllListNotes - lUnique
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lUnique &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestRepeatingNumbersInList &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersInList &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	lBound = -1
 	If Not IsNull( nAbsentNumbersInList() ) Then
-		lBound = UBound(nAbsentNumbersInList() )
-		t.lTestAbsentNumbersInList = lBound+1 &apos; есть отсутствующие номера примечаний в Списке
+		If UBound( nAbsentNumbersInList() ) &gt; -1 Then
+			lBound = UBound(nAbsentNumbersInList() )
+			t.nTestAbsentNumbersInList = lBound+1 &apos; есть отсутствующие номера примечаний в Списке
+		End If
 	End If
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestAbsentNumbersFromListInText &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	lBound = -1
 	If Not IsNull( naAbsentListNumbersInText() ) Then
-		lBound = UBound(naAbsentListNumbersInText() )
-		t.lTestAbsentNumbersFromListInText = lBound+1 &apos; есть отсутствующие номера примечаний из Списка в Главе
+		If UBound( naAbsentListNumbersInText() ) &gt; -1 Then
+			lBound = UBound(naAbsentListNumbersInText() )
+			t.nTestAbsentNumbersFromListInText = lBound+1 &apos; есть отсутствующие номера примечаний из Списка в Главе
+		End If
 	End If
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
@@ -1929,9 +2053,9 @@ Sub SaveZonesCount( oTOS As Object, lCB As Long, lLB As Long  )
 	Dim s As String
 	s = &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestBookmarkForSearchZones &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForStatChapter &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForStatChapter &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lCB &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
-	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForListNotes &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestBookmarkForListNotes &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lLB &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10) &amp; chr(10)
 	oTOS.writeString( s )
@@ -1945,14 +2069,15 @@ Sub SaveTablesFinalReport( oTOS As Object, vaZoneFlagsArray() As Variant )
 	oTOS.writeString( s )
 	
 	For l=0 To UBound( vaZoneFlagsArray() )
-		If vaZoneFlagsArray(l).lTestRepeatingNumbersInText&lt;1 And vaZoneFlagsArray(l).lTestRepeatingNumbersInList&lt;1 And _
-			vaZoneFlagsArray(l).lTestAbsentNumbersInText&lt;1 And vaZoneFlagsArray(l).lTestAbsentNumbersInList&lt;1 And _
-			vaZoneFlagsArray(l).lTestAbsentNumbersFromTextInList&lt;1 And vaZoneFlagsArray(l).lTestAbsentNumbersFromListInText&lt;1 Then
+		If vaZoneFlagsArray(l).nCountFindNumbersInText&gt;0 And vaZoneFlagsArray(l).nCountFindNumbersInList&gt;0 And _
+		  	vaZoneFlagsArray(l).nTestRepeatingNumbersInText&lt;=0 And vaZoneFlagsArray(l).nTestRepeatingNumbersInList&lt;=0 And _
+			vaZoneFlagsArray(l).nTestAbsentNumbersInText&lt;=0 And vaZoneFlagsArray(l).nTestAbsentNumbersInList&lt;=0 And _
+			vaZoneFlagsArray(l).nTestAbsentNumbersFromTextInList&lt;=0 And vaZoneFlagsArray(l).nTestAbsentNumbersFromListInText&lt;=0 Then
 			&apos; эта зона не требует ручной правки
-			AddNewItemToLongArray1( alOk(), vaZoneFlagsArray(l).lZoneNumber )
+			AddNewItemToLongArray1( alOk(), vaZoneFlagsArray(l).nZoneNumber )
 		Else
 			&apos; эта зона требует ручной правки
-			AddNewItemToLongArray1( alErr(), vaZoneFlagsArray(l).lZoneNumber )
+			AddNewItemToLongArray1( alErr(), vaZoneFlagsArray(l).nZoneNumber )
 		End If
 	Next l
 	
