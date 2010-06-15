@@ -144,8 +144,8 @@ Sub ExportToFB21()
 	SaveBody()
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
-	If UBound(sFootnoteText()) &lt;&gt; -1 Then
-		oProgressBar.start( sIDD.sFB2ExportProgressBarFootnote, UBound(sFootnoteText() )
+	If UBound(vFootnoteText()) &lt;&gt; -1 Then
+		oProgressBar.start( sIDD.sFB2ExportProgressBarFootnote, UBound(vFootnoteText() )
 		oProgressBar.setValue(0)
 		SaveNotes()
 	End If
@@ -977,20 +977,25 @@ Function MakeSection(sArray As String, sLevel As String, bBody As Boolean) As St
 	MakeSection = sSect
 End Function
 
-&apos; поиск номера(индекса) абзаца из массива sLinksTo, соответствующему текущему элементу из sParaStyleName (если такое соответствие есть)
+&apos; поиск номера(индекса) абзаца из массива sLinksTo() для основного текста, соответствующему текущему элементу из sParaStyleName (если такое соответствие есть)
+&apos; для сносок - из массива asFNPars()
 Function FindIndexForID( lCurElement As Long, sID As String, bBody As Boolean ) As Long
 	FindIndexForID = -1
-	If bBody = False Then &apos; ссылки только для основного текста книги, а не для сносок
-		Exit Function
-	End If
-	Dim l As Long
-	For l=0 To UBound(sLinksTo)
-		If sLinksTo(l,0) = lCurElement Then
-			FindIndexForID = sLinksTo(l,0)
-			sID = CorrectBMLink( sLinksTo(l,1) )
-			Exit For
+	If bBody = True Then
+		Dim l As Long
+		For l=0 To UBound( sLinksTo() )
+			If sLinksTo(l,0) = lCurElement Then
+				FindIndexForID = sLinksTo(l,0)
+				sID = CorrectBMLink( sLinksTo(l,1) )
+				Exit For
+			End If
+		Next l
+	Else
+		If asFNPars(lCurElement,2) &lt;&gt; &quot;&quot;  Then
+			sID = CorrectBMLink( asFNPars(lCurElement, 2) )
+			FindIndexForID = 0
 		End If
-	Next l
+	End If
 End Function
 
 &apos;////////////////////////////////////////////////////////////

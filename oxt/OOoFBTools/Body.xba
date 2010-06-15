@@ -4,6 +4,7 @@
 Option Explicit
 
 Public bELForStartAnnot As Boolean
+Public asFNPars() As String &apos; массив абзацев сноски с ее &quot;аттрибутами&quot; (для печати)
 
 Function IsAECP( sStyle As String ) As Boolean
 	&apos; Если sStyle - это Эпиграф, Цитата или Поэма - то возвращается True, иначе - False
@@ -94,43 +95,32 @@ Function IsCandidateToSections( sArray() As String, lCurrentElement As Long )
 End Function
 
 Sub SaveNotes()
-	Dim lCount As Long, l As Long
+	lCurrentElement = 0
+	Dim lCount As Long, lParaCount As Long, l As Long
 	Dim sNotePars() As String
 	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-	For lCount = 0 To UBound(sFootnoteText())
+&apos;	For lCount = 0 To UBound(sFootnoteText())
+	For lCount = 0 To UBound(vFootnoteText())
 		oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; lCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
 		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; lCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-		sNotePars = Split(sFootnoteText(lCount), chr(10))
-		If bNotesElements = True Then &apos; экспортируем сложные структуры текста сносок
-			Dim sNote As String, sType As String
-			Dim sPars() As String
-			For l=0 To UBound(sNotePars)
-				If IsEvenNumber(l) Then
-					sNote = sNotePars(l)
-				Else
-					sType = sNotePars(l)
-				End If
-				If Not IsEvenNumber(l) Then
-					AddNewItemToArray2(sPars, sNote, sType)
-				End If
-			Next l
-			lCurrentElement = 0
-			&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - 
-			&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поэма, Цитата
-		 	&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
-		 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
-			AddNewItemToArray2(sPars, &quot;&quot;, &quot;end-fn&quot;) &apos; иначе тип последней строки сноски определяется неверно
-			MakeBody(sPars, False)
-		Else	
-			For l=0 To UBound(sNotePars)-1
-				If sNotePars(l) = &quot;&quot; Then
-					oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
-				Else
-					oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sNotePars(l) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
-				End If
-			Next l
-		End If
+		&apos; по всем абзацам каждой сноски
+		Dim vaFNPara() As Variant
+		Dim sNote As String, sType As String, sBookMark As String
+		vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+
+		For lParaCount = 0 To UBound( vaFNPara() )
+			sNote		= vaFNPara( lParaCount, 0 )
+			sType		= vaFNPara( lParaCount, 1 )
+			sBookMark	= vaFNPara( lParaCount, 2 )
+			AddNewItemToArray3( asFNPars(), sNote, sType, sBookMark )
+		Next lParaCount
+		&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - Уровень, Эпиграф, Поэма, Цитата (в нарушение схемы)
+		&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
+	 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
+		AddNewItemToArray3( asFNPars(), &quot;&quot;, &quot;end-fn&quot;, &quot;&quot; ) &apos; иначе тип последней строки сноски определяется неверно
+		MakeBody( asFNPars(), False )
+
 		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
 		oProgressBar.setValue(lCount) &apos; Статусбар
 	Next lCount
