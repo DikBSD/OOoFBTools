@@ -354,43 +354,77 @@ Function RemoveIdenticalNonSortArrayElements_int( naArray() As Integer ) As Arra
 End Function
 
 Function AddNewItemToVarArray1( vArray() As Variant, vValue As Variant )
-	Dim j As Long
-	j = Ubound(vArray()) + 1
-	ReDim Preserve vArray(j)
-	vArray(j) = vValue
+	Dim l As Long : l = Ubound(vArray()) + 1
+	ReDim Preserve vArray(l)
+	vArray(l) = vValue
 End Function
 
 Function AddNewItemToIntArray1( nArray() As Integer, nValue As Integer )
-	Dim j As Long
-	j = Ubound(nArray()) + 1
-	ReDim Preserve nArray(j)
-	nArray(j) = nValue
+	Dim l As Long : l = Ubound(nArray()) + 1
+	ReDim Preserve nArray(l)
+	nArray(l) = nValue
 End Function
 
 Function AddNewItemToLongArray1( lArray() As Long, lValue As Long )
-	Dim j As Long
-	j = Ubound(lArray()) + 1
-	ReDim Preserve lArray(j)
-	lArray(j) = lValue
+	Dim l As Long : l = Ubound(lArray()) + 1
+	ReDim Preserve lArray(l)
+	lArray(l) = lValue
 End Function
 
 Function AddNewItemToArray1( sArray() As String, sValue As String )
-	Dim j As Long
-	j = Ubound(sArray()) + 1
-	ReDim Preserve sArray(j)
-	sArray(j) = sValue
+	Dim l As Long : l = Ubound(sArray()) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sArray(l)
+	Else ReDim sArray(l)
+	End If
+	
+	sArray(l) = sValue
 End Function
 
-Function AddNewItemToArray2( sArray As String, sValue1 As String, sValue2 As String )
-	Dim l As Long
-	l = Ubound(sArray(), 1) + 1
+Function AddNewItemToArray2( sArray() As String, sValue0 As String, sValue1 As String )
+	Dim l As Long : l = Ubound(sArray(), 1) + 1
 	If l &gt; 0 Then
 		ReDim Preserve sArray(l, 1)
 	Else Redim sArray(l, 1)
 	End If
 	
-	sArray(l,0) = sValue1
-	sArray(l,1) = sValue2	
+	sArray(l,0) = sValue0
+	sArray(l,1) = sValue1	
+End Function
+
+Function AddNewItemToArray3( sArray() As String, sValue0 As String, sValue1 As String, sValue2 As String )
+	Dim l As Long : l = Ubound(sArray(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sArray(l, 2)
+	Else Redim sArray(l, 2)
+	End If
+	
+	sArray(l,0) = sValue0
+	sArray(l,1) = sValue1
+	sArray(l,2) = sValue2
+End Function
+
+Function AddNewItemToArray2ISS( sArray() As String, nValue0 As Integer, sValue1 As String )
+	Dim l As Long : l = Ubound(sArray(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sArray(l, 1)
+	Else Redim sArray(l, 1)
+	End If
+	
+	sArray(l,0) = nValue0
+	sArray(l,1) = sValue1	
+End Function
+
+Function AddNewItemToArray3ISS( sArray() As String, nValue0 As Integer, sValue1 As String, sValue2 As String )
+	Dim l As Long : l = Ubound(sArray(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sArray(l, 2)
+	Else Redim sArray(l, 2)
+	End If
+	
+	sArray(l,0) = nValue0
+	sArray(l,1) = sValue1
+	sArray(l,2) = sValue2
 End Function
 
 Function AddLineInArray( sTextArray() As String, sText As String, oProgressBar )
