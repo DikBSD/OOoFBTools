@@ -969,6 +969,11 @@ Sub StartBuildFootEndNoteDlg()
 		.lblNFNInListTemplate.StringItemList		= aNFNInListList()
 		.Height	= 220
 		.Width	= 300
+		If .cmnbtnFootNote.State = 1 Then
+			.Title = sBTEND.sFootnotesGeneration
+		Else
+			.Title = sBTEND.sInnerLinksGeneration
+		End If
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
@@ -991,6 +996,47 @@ Sub StartBuildFootEndNoteDlg()
 	End If
 	
 	oBuildFootEndNoteDlg.execute()
+End Sub
+
+
+Sub cmnbtnFootNoteClick()
+	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 0
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 1
+		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
+		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
+		oBuildFootEndNoteDlg.Model.Step = 1
+	Else
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 0
+		oBuildFootEndNoteDlg.Model.Step = 0
+	End If
+	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
+		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
+	Else
+		oBuildFootEndNoteDlg.Model.Title = sBTEND.sInnerLinksGeneration
+	End If
+	ControlModeEnabled()
+End Sub
+
+Sub cmnbtnInnerLinksClick()
+	If oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State = 1 Then
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 0
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 1
+		oBuildFootEndNoteDlg.Model.Step = 0
+	Else
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 0
+		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
+		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
+		oBuildFootEndNoteDlg.Model.Step = 1
+	End If
+	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
+		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
+	Else
+		oBuildFootEndNoteDlg.Model.Title = sBTEND.sInnerLinksGeneration
+	End If
+	ControlModeEnabled()
 End Sub
 
 Sub SetBuildFootEndNoteDlgSettingDefault
@@ -1086,7 +1132,7 @@ Sub StartFootNoteLinkTransDlg()
 		.Height	= 50
 		.Width	= 238
 	End With
-	
+
 	&apos; Настройки По умолчанию - в контролы
 	SetFootNoteLinkTransDlgSettingDefault()
 	
