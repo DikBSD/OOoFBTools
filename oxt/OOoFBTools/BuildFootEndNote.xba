@@ -210,7 +210,7 @@ Function GetNumberFromString( sString As String ) As String
 	GetNumberFromString = Trim( sNumber )
 End Function
 
-&apos; поиск следующего заданного регекса в документе
+&apos; поиск следующей цифры в верхнем индексе в документе
 Function FindNumbersUpIndexText( oLCurs ) As Variant
 	&apos; задаем поиск верхнего индекса
 	Dim SrchAttributes(2) As New com.sun.star.beans.PropertyValue
@@ -316,7 +316,7 @@ Function InsertBookmarkToTextForFootNote( oDoc As Object, oViewCursor As Object,
 	If InStr( sRegFind, &quot;NumbersUpIndex&quot; ) &gt; 0 Then
 		bModeNumbersUpIndex = True
 	Else
-		bModeNumbersUpIndex = True
+		bModeNumbersUpIndex = False
 	End If
 	
 	&apos; ищем заданный номер сноски в блоке текста сносок
@@ -724,7 +724,7 @@ End Function
 &apos; вставка очередной закладки для зоны поиска номера сносок в тексте
 Sub InsertFindFootNoteNumberZoneBookMark()
 	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
-	InitBuildTootEndNoteMessage()
+	InitBuildFootEndNoteMessage()
 	
 	Dim l As Long : l = GetSelectionCount()
 	If l =-1 Then &apos; только для выделений Текста!
@@ -801,7 +801,7 @@ End Sub
 &apos; вставка очередной закладки для зоны поиска текста сносок (список текста сносок)
 Sub InsertFindFootNoteTextListBookMark()
 	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
-	InitBuildTootEndNoteMessage()
+	InitBuildFootEndNoteMessage()
 	
 	Dim l As Long : l = GetSelectionCount()
 	If l =-1 Then &apos; только для выделений Текста!
@@ -898,7 +898,7 @@ End Sub
 &apos; удаляем служебные закладки, если они есть
 Sub DeleteAllWorkFootNoteBookMark()
 	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
-	InitBuildTootEndNoteMessage()
+	InitBuildFootEndNoteMessage()
 
 	If MsgBox( sBTEND.sDeleteBookmarksQuestion &amp; chr(10), _
 				1 + 32 + 256, sBTEND.sDeleteBookmarks ) = 1 Then
@@ -1543,7 +1543,8 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 	End If
 	
 	&apos; ищем заданный шаблон
-	Dim lCountAllNotes	As Long		: lCountAllNotes = 0
+	On Error Resume Next
+	Dim lCountAllNotes	As Long	: lCountAllNotes = 0
 	If Not IsNull( vFound ) Then &apos; нашли
 		Do While ( Not IsNull( vFound ) )
 			If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then

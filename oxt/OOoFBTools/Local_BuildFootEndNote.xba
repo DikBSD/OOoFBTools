@@ -8,7 +8,7 @@
 Option Explicit
 
 &apos; для хранения сообщений для работы со сносками
-Type tBuildTootEndNoteData
+Type tBuildFootEndNoteData
 	sLBCountNotEqualRBCount				As String &apos; Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!
 	sNoSelectText						As String &apos; Нет ни одного выделенного фрагмента текста для поиска!
 	sProcessAllDoc						As String &apos; Обрабатывать весь документ?
@@ -99,11 +99,11 @@ Type tBuildTootEndNoteData
 	sCount								As String &apos; кол-во
 End Type
 
-Public sBTEND As tBuildTootEndNoteData
+Public sBTEND As tBuildFootEndNoteData
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация сообщений работы со сносками в зависимости от локали
-Sub InitBuildTootEndNoteMessage()
+Sub InitBuildFootEndNoteMessage()
 	If getOOoLocal() = &quot;ru&quot; Then
 		With sBTEND
 			.sLBCountNotEqualRBCount	= &quot;Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!&quot;
@@ -344,7 +344,7 @@ End Sub
 &apos; инициализация диалога генерации сносок в зависимости от локали
 Sub InitBuildFootEndNoteDlg()
 	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
-	InitBuildTootEndNoteMessage()
+	InitBuildFootEndNoteMessage()
 	
 	With oBuildFootEndNoteDlg.getModel
 		.Title = sBTEND.sFootnotesGeneration
@@ -357,8 +357,8 @@ Sub InitBuildFootEndNoteDlg()
 			.optbtnComplexFootNote.Label	= &quot;Сложный режим генерации сносок (по спискам примечаний)&quot;
 			.lblComplexFNInText.Label	= &quot;Шаблон для № примечания в тексте:&quot;
 			.lblComplexFNInList.Label	= &quot;Шаблон для № примечания в списке:&quot;
-			.optbtnFNTextAfterEachChapter.Label	= &quot;Список примечаний - после каждой главы книги&quot;
-			.optbtnFNTextInBookEnd.Label	= &quot;Нумерация - сквозная; Общий список примечаний - в конце книги&quot;
+			.optbtnFNTextInBookEnd.Label			= &quot;Нумерация - сквозная; Общий список примечаний - в конце книги&quot;
+			.optbtnFNTextAfterEachChapter.Label		= &quot;Список примечаний - после каждой главы книги&quot;
 			.optbtnAllChaptersFNTextAtEndOf.Label	= &quot;Все списки примечаний - в конце книги&quot;
 			.cboxDelBookMarks.Label		= &quot;Удалить все закладки-пометки для генерации сносок по завершению работы&quot;
 			.cmnbtnBuild.Label			= &quot;Сгенерировать&quot;
@@ -373,8 +373,8 @@ Sub InitBuildFootEndNoteDlg()
 			.optbtnComplexFootNote.Label	= &quot;the Complex Mode of generation of Footnotes (under lists of Notes)&quot;
 			.lblComplexFNInText.Label	= &quot;the Pattern for № Notes in the Text:&quot;
 			.lblComplexFNInList.Label	= &quot;the Pattern for № Notes in the List:&quot;
-			.optbtnFNTextInBookEnd.Label	= &quot;Numbering - throught; General List of Notes - in the End of the Book&quot;
-			.optbtnFNTextAfterEachChapter.Label	= &quot;List of Notes - after the each Chapter of the Book&quot;
+			.optbtnFNTextInBookEnd.Label			= &quot;Numbering - throught; General List of Notes - in the End of the Book&quot;
+			.optbtnFNTextAfterEachChapter.Label		= &quot;List of Notes - after the each Chapter of the Book&quot;
 			.optbtnAllChaptersFNTextAtEndOf.Label	= &quot;All Lists of Notes - in the End of the Book&quot;
 			.cboxDelBookMarks.Label		= &quot;to remove all Bookmarks-Marks for generation of Footnotes on End of Work&quot;
 			.cmnbtnBuild.Label			= &quot;Generate&quot;
@@ -388,7 +388,7 @@ End Sub
 &apos; инициализация диалога преобразования номеров примечаний в верхнем индексе по шаблону в зависимости от локали
 Sub InitFootNoteLinkTransDlg()
 	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
-	InitBuildTootEndNoteMessage()
+	InitBuildFootEndNoteMessage()
 	
 	If getOOoLocal() = &quot;ru&quot; Then
 		With oFootNoteLinkTransDlg.getModel
