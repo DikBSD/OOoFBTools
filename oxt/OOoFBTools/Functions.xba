@@ -1285,14 +1285,30 @@ Sub _UnoInsertBookmark( sBookMark As String )
 End Sub
 
 Sub _UnoDeleteBookMark( sBookMark As String )
-	Dim document   As Object
-	Dim dispatcher As Object
-	document   = ThisComponent.CurrentController.Frame
-	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(0) As New com.sun.star.beans.PropertyValue
 	args1(0).Name = &quot;Bookmark&quot;
 	args1(0).Value = sBookMark
 	dispatcher.executeDispatch(document, &quot;.uno:DeleteBookmark&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+Sub _UnoMakeHyperlink( sSelectedText As String, sBookMarkName As String )
+
+	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
+	Dim oDispatcher As Object : oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(4) as new com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Hyperlink.Text&quot;
+	args1(0).Value = sSelectedText
+	args1(1).Name = &quot;Hyperlink.URL&quot;
+	args1(1).Value = &quot;#&quot; &amp; sBookMarkName
+	args1(2).Name = &quot;Hyperlink.Target&quot;
+	args1(2).Value = &quot;&quot;
+	args1(3).Name = &quot;Hyperlink.Name&quot;
+	args1(3).Value = &quot;&quot;
+	args1(4).Name = &quot;Hyperlink.Type&quot;
+	args1(4).Value = 1
+	oDispatcher.executeDispatch(oDoc, &quot;.uno:SetHyperlink&quot;, &quot;&quot;, 0, args1())
 End Sub
 
 &apos;//////////////////////////////////////////////////////////////////////////////
