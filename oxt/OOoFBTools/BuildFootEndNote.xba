@@ -17,6 +17,8 @@ Private oBuildFootEndNoteDlg	As Object
 Private	oFootNoteLinkTransDlg	As Object
 Private lInsNotesCount			As Long
 
+Private bIsFootNoteMode			As Boolean &apos; режим работы Генератора: True - как Генератор Сносок, False - как Генератор внутренних ссылок
+
 Type tTestDataRepeat
 	sFind As String &apos; повторяющийся номер примечания
 	lCount As Long 	&apos; сколько раз повторяется
@@ -930,6 +932,8 @@ End Function
 &apos;///////////////////////////////////////////////////////////////////////////////////////
 &apos; запуск диалога генерации сносок
 Sub StartBuildFootEndNoteDlg()
+	bIsFootNoteMode = True &apos; режим Генератора Сносок по-умолчанию
+	
 	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
 	oBuildFootEndNoteDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.BuildFootEndNoteDlg )
 
@@ -1001,8 +1005,8 @@ End Sub
 
 Sub cmnbtnFootNoteClick()
 	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 0
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 0
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State		= 1
 		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
 		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
 		oBuildFootEndNoteDlg.Model.Step = 1
@@ -1013,28 +1017,32 @@ Sub cmnbtnFootNoteClick()
 	End If
 	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
 		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
+		bIsFootNoteMode = True
 	Else
 		oBuildFootEndNoteDlg.Model.Title = sBTEND.sInnerLinksGeneration
+		bIsFootNoteMode = False
 	End If
 	ControlModeEnabled()
 End Sub
 
 Sub cmnbtnInnerLinksClick()
 	If oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State = 1 Then
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 0
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State		= 0
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 1
 		oBuildFootEndNoteDlg.Model.Step = 0
 	Else
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 1
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 0
+		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State		= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 0
 		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
 		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
 		oBuildFootEndNoteDlg.Model.Step = 1
 	End If
 	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
 		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
+		bIsFootNoteMode = True
 	Else
 		oBuildFootEndNoteDlg.Model.Title = sBTEND.sInnerLinksGeneration
+		bIsFootNoteMode = False
 	End If
 	ControlModeEnabled()
 End Sub
