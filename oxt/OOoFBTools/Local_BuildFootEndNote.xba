@@ -2,12 +2,12 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_BuildFootEndNote" script:language="StarBasic">REM  *****  BASIC  *****
 
-&apos; //////////////////////////////////////
-&apos; модуль локализации работы со сносками
-&apos; //////////////////////////////////////
+&apos; ////////////////////////////////////////
+&apos; модуль локализации работы с примечаниями
+&apos; ////////////////////////////////////////
 Option Explicit
 
-&apos; для хранения сообщений для работы со сносками
+&apos; для хранения сообщений для работы с примечаниями
 Type tBuildFootEndNoteData
 	sLBCountNotEqualRBCount				As String &apos; Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!
 	sNoSelectText						As String &apos; Нет ни одного выделенного фрагмента текста для поиска!
@@ -16,7 +16,7 @@ Type tBuildFootEndNoteData
 	sProcessAllDocEnd					As String &apos; Обработан весь документ:
 	sProcessSelectedFragments			As String &apos; Обработано выделенных фрагментов текста:
 	sFootnotesGeneration				As String &apos; Генерация сносок
-	sInnerLinksGeneration				As String &apos; Генерация внутренних ссылок
+	sHyperLinksGeneration				As String &apos; Генерация гиперссылок
 	sFootnotesGenerationCount			As String &apos; Сгенерировано сносок:
 	sFootnotesNotGeneration				As String &apos; Сноски не сгенерированы:
 	sNotFoundSelectedTextForTemplate	As String &apos; Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!
@@ -103,7 +103,7 @@ End Type
 Public sBTEND As tBuildFootEndNoteData
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos; инициализация сообщений работы со сносками в зависимости от локали
+&apos; инициализация сообщений работы с примечаниями в зависимости от локали
 Sub InitBuildFootEndNoteMessage()
 	If getOOoLocal() = &quot;ru&quot; Then
 		With sBTEND
@@ -114,7 +114,7 @@ Sub InitBuildFootEndNoteMessage()
 			.sProcessAllDocEnd			= &quot;Обработан весь документ:&quot;
 			.sProcessSelectedFragments	= &quot;Обработано выделенных фрагментов текста:&quot;
 			.sFootnotesGeneration		= &quot;Генерация сносок&quot;
-			.sInnerLinksGeneration		= &quot;Генерация внутренних ссылок&quot;
+			.sHyperLinksGeneration		= &quot;Генерация гиперссылок&quot;
 			.sFootnotesGenerationCount	= &quot;Сгенерировано сносок:&quot;
 			.sFootnotesNotGeneration	= &quot;Сноски не сгенерированы:&quot;
 			.sNotFoundSelectedTextForTemplate	= &quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;
@@ -123,7 +123,7 @@ Sub InitBuildFootEndNoteMessage()
 			.sBuildFootNoteComplexVerify		= sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; _
 					&quot;Т.е. число закладок для Глав книги с НОМЕРАМИ примечаний не соответствует числу закладок для их Списков примечаний.&quot; &amp; _
 					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
-					&quot;Генерация сносок прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Генерация сносок (гиперссылок) прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					&quot;Совет:&quot; &amp; chr(10) &amp; _
 					&quot;1. Если в главе нет ни одного № примечаний (ошибки OCR), то не ставьте в ее начале закладку для зоны поиска № примечаний.&quot; &amp; chr(10) &amp; _
 					&quot;Например, в книге - 5 глав, номера примечаний есть только в 3-й главе. В конце книги перечислены списки примечаний для глав 1 и 3. Оригинала книги у вас нет.&quot; &amp; chr(10) &amp; _
@@ -219,7 +219,7 @@ Sub InitBuildFootEndNoteMessage()
 						&quot;1. Вынесите текст из Врезки в соответствующий ей текст Списка примечаний.&quot;  &amp; chr(10) &amp; _
 						&quot;2. Таблицу уберите из Списка примечаний, а после генерации сносок вставьте в нужное место текста сноски картинку этой Таблицы.&quot;
 			.stfTestHelpNotTableTextFrame		= &quot;Документ не имеет Таблиц и Текстовых Врезок.&quot; &amp; chr(10) &amp; _
-						&quot;Это - важное условие для корректной работы Теста, Генератора сносок и Генератора внутренних ссылок!&quot;
+						&quot;Это - важное условие для корректной работы Теста, Генератора Сносок и Генератора Гиперссылок!&quot;
 			.sNumberInUpIndex					= &quot;цифры в верхнем индексе&quot;
 			.sCount								= &quot;кол-во&quot;
 		End With
@@ -232,7 +232,7 @@ Sub InitBuildFootEndNoteMessage()
 			.sProcessAllDocEnd			= &quot;Process all Document:&quot;
 			.sProcessSelectedFragments	= &quot;It is processed the allocated Fragments of the Text:&quot;
 			.sFootnotesGeneration		= &quot;Generation of Footnotes&quot;
-			.sInnerLinksGeneration		= &quot;Generation of Inner Links&quot;
+			.sHyperLinksGeneration		= &quot;Generation of HyperLinks&quot;
 			.sFootnotesGenerationCount	= &quot;It is generated Footnotes:&quot;
 			.sFootnotesNotGeneration	= &quot;Footnotes are not generated:&quot;
 			.sNotFoundSelectedTextForTemplate	= &quot;It is not found any Text Fragment, search of notes satisfying to a set Pattern!&quot;
@@ -241,7 +241,7 @@ Sub InitBuildFootEndNoteMessage()
 			.sBuildFootNoteComplexVerify		= sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; _
 					&quot;That is the Number of Bookmarks for Chapters of the Book with NUMBERS of Notes mismatches Тumber of Bookmarks for their Lists of Notes.&quot; &amp; _
 					&quot;It will lead to that the Note will appear &quot;&quot;adhered&quot;&quot; not to that Chapter.&quot; &amp; chr(10) &amp; _
-					&quot;Generation of Footnotes is interrupted.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Generation of Footnotes (Hyperlinks) is interrupted.&quot; &amp; chr(10) &amp; chr(10) &amp; _
 					&quot;Advice:&quot; &amp; chr(10) &amp; _
 					&quot;1. If in the Chapter there is no № Notes (Mistake OCR) do not put in its beginning a Bookmark for a Zone of search № Notes.&quot; &amp; chr(10) &amp; _
 					&quot;For Example, in the Book - 5 Chapters, Numbers of Notes are only in 3-rd Chapter. In the End of the Book Lists of Notes for Chapters 1 and 3 are listed. The Original of the Book at you is not present.&quot; &amp; chr(10) &amp; _
@@ -337,7 +337,7 @@ Sub InitBuildFootEndNoteMessage()
 						&quot;1. Transfer all text from Text Frame in the corresponding it text of the List of notes.&quot;  &amp; chr(10) &amp; _
 						&quot;2. The Table remove from the List of notes, and after generation of footnotes insert into the necessary place of the text of a footnote a picture of this Table.&quot;
 			.stfTestHelpNotTableTextFrame		= &quot;In the Document of no Tables and Text Frames.&quot; &amp; chr(10) &amp; _
-						&quot;This - an important condition for correct functioning(working) the Test, Generator of the footnotes and Generator of the inner Links!&quot;
+						&quot;This - an important condition for correct functioning(working) the Test, Generator of the footnotes and Generator of the Hyperlinks!&quot;
 			.sNumberInUpIndex					= &quot;Numers in Upper Index&quot;
 			.sCount								= &quot;amount&quot;
 		End With
@@ -354,8 +354,8 @@ Sub InitBuildFootEndNoteDlg()
 			.optbtnSimpleFootNote.Label		= &quot;Простой режим генерации сносок (по шаблону)&quot;
 			.lblSimpleFN.Label				= &quot;Шаблон для текста примечаний:&quot;
 			.optbtnComplexFootNote.Label	= &quot;Сложный режим генерации сносок (по спискам примечаний)&quot;
-			.lblComplexFNInText.Label	= &quot;Шаблон для № примечания в тексте:&quot;
-			.lblComplexFNInList.Label	= &quot;Шаблон для № примечания в списке:&quot;
+			.lblComplexFNInText.Label		= &quot;Шаблон для № примечания в тексте:&quot;
+			.lblComplexFNInList.Label		= &quot;Шаблон для № примечания в списке:&quot;
 			.optbtnFNTextInBookEnd.Label			= &quot;Нумерация - сквозная; Общий список примечаний - в конце книги&quot;
 			.optbtnFNTextAfterEachChapter.Label		= &quot;Список примечаний - после каждой главы книги&quot;
 			.optbtnAllChaptersFNTextAtEndOf.Label	= &quot;Все списки примечаний - в конце книги&quot;
@@ -364,14 +364,16 @@ Sub InitBuildFootEndNoteDlg()
 			.cmnbtnCancel.Label			= &quot;Отмена&quot;
 			.cmnbtnTest					= &quot;Тест&quot;
 			.lblTestHelp.Label			= &quot;Подсказка:&quot;
+			.cmnbtnFootNote.Label		= &quot;Генератор Сносок&quot;
+			.cmnbtnHyperLinks.Label		= &quot;Генератор Гиперссылок&quot;
 		End With
 	Else
 		With oBuildFootEndNoteDlg.getModel
 			.optbtnSimpleFootNote.Label		= &quot;the Simple Mode of generation of Footnotes (on a Pattern)&quot;
 			.lblSimpleFN.Label				= &quot;the Pattern for the Text of Notes:&quot;
 			.optbtnComplexFootNote.Label	= &quot;the Complex Mode of generation of Footnotes (under lists of Notes)&quot;
-			.lblComplexFNInText.Label	= &quot;the Pattern for № Notes in the Text:&quot;
-			.lblComplexFNInList.Label	= &quot;the Pattern for № Notes in the List:&quot;
+			.lblComplexFNInText.Label		= &quot;the Pattern for № Notes in the Text:&quot;
+			.lblComplexFNInList.Label		= &quot;the Pattern for № Notes in the List:&quot;
 			.optbtnFNTextInBookEnd.Label			= &quot;Numbering - throught; General List of Notes - in the End of the Book&quot;
 			.optbtnFNTextAfterEachChapter.Label		= &quot;List of Notes - after the each Chapter of the Book&quot;
 			.optbtnAllChaptersFNTextAtEndOf.Label	= &quot;All Lists of Notes - in the End of the Book&quot;
@@ -380,6 +382,8 @@ Sub InitBuildFootEndNoteDlg()
 			.cmnbtnCancel.Label			= &quot;Cancel&quot;
 			.cmnbtnTest					= &quot;Test&quot;
 			.lblTestHelp.Label			= &quot;Hint:&quot;
+			.cmnbtnFootNote.Label		= &quot;Footnotes Generator&quot;
+			.cmnbtnHyperLinks.Label		= &quot;Hyperlinks Generator&quot;
 		End With
 	End If
 End Sub

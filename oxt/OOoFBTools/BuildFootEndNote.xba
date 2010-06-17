@@ -569,6 +569,12 @@ Sub BuildFootNoteComplex( bIsFootNoteMode As Boolean )
 			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode2
 			Exit Sub	
 		End If
+		
+		&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста примечаний
+		If UBound( aLBookMarks() ) &lt;&gt; UBound( aBookMarks() ) Then
+			MsgBox sBTEND.sBuildFootNoteComplexVerify, 64, sBTEND.sTestMode2
+			Exit Sub	
+		End If
 
 		For nNoteListNumber=0 To UBound( aBookMarks() )
 			oRCurs = oBookMarks.getByName( aBookMarks(nNoteListNumber) ).getAnchor()
@@ -1016,7 +1022,7 @@ Sub StartBuildFootEndNoteDlg()
 		If .cmnbtnFootNote.State = 1 Then
 			.Title = sBTEND.sFootnotesGeneration
 		Else
-			.Title = sBTEND.sInnerLinksGeneration
+			.Title = sBTEND.sHyperLinksGeneration
 		End If
 	End With
 	
@@ -1046,32 +1052,32 @@ End Sub
 Sub cmnbtnFootNoteClick()
 	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
 		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 0
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State		= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State		= 1
 		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
 		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
 		oBuildFootEndNoteDlg.Model.Step = 1
 	Else
 		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 1
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State	= 0
+		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State	= 0
 		oBuildFootEndNoteDlg.Model.Step = 0
 	End If
 	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
 		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
 		bIsFootNoteMode = True
 	Else
-		oBuildFootEndNoteDlg.Model.Title = sBTEND.sInnerLinksGeneration
+		oBuildFootEndNoteDlg.Model.Title = sBTEND.sHyperLinksGeneration
 		bIsFootNoteMode = False
 	End If
 	ControlModeEnabled()
 End Sub
 
-Sub cmnbtnInnerLinksClick()
-	If oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State = 1 Then
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State		= 0
+Sub cmnbtnHyperLinksClick()
+	If oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State = 1 Then
+		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State		= 0
 		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 1
 		oBuildFootEndNoteDlg.Model.Step = 0
 	Else
-		oBuildFootEndNoteDlg.Model.cmnbtnInnerLinks.State		= 1
+		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State		= 1
 		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 0
 		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
 		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
@@ -1081,7 +1087,7 @@ Sub cmnbtnInnerLinksClick()
 		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
 		bIsFootNoteMode = True
 	Else
-		oBuildFootEndNoteDlg.Model.Title = sBTEND.sInnerLinksGeneration
+		oBuildFootEndNoteDlg.Model.Title = sBTEND.sHyperLinksGeneration
 		bIsFootNoteMode = False
 	End If
 	ControlModeEnabled()
@@ -1448,8 +1454,8 @@ Sub FootNoteTest()
 			&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
 			If UBound( aLBookMarks() ) &lt;&gt; UBound( aRBookMarks() ) Then
 				MsgBox sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; chr(10) &amp; _
-						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() ) &amp; chr(10) &amp; _
-						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aRBookMarks() ) &amp; chr(10), 64, sBTEND.sTestMode2
+						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() )+1 &amp; chr(10) &amp; _
+						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aRBookMarks() )+1 &amp; chr(10), 64, sBTEND.sTestMode2
 				Exit Sub	
 			End If
 			
@@ -1495,8 +1501,8 @@ Sub FootNoteTest()
 			&apos;проверка - соответствует ли число закладок L-зоны числу закладок списков текста сносок
 			If UBound( aLBookMarks() ) &lt;&gt; UBound( aRBookMarks() ) Then
 				MsgBox sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; chr(10) &amp; _
-						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() ) &amp; chr(10) &amp; _
-						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aRBookMarks() ) &amp; chr(10), 64, sBTEND.sTestMode3
+						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() )+1 &amp; chr(10) &amp; _
+						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aRBookMarks() )+1 &amp; chr(10), 64, sBTEND.sTestMode3
 				Exit Sub	
 			End If
 			
