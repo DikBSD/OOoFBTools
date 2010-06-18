@@ -23,6 +23,7 @@ Public sCustomInfos()	As String &apos; данные пользователя
 Private asPaperBook(4)	As String &apos; Данные о бумажном варианте книги 
 
 Private sLangList() As String
+Private saTranslitLetters(66) As String &apos; для транслитерации
 
 Private bExecute	As Boolean
 Private bAppendBtn	As Boolean
@@ -47,6 +48,75 @@ Sub InitFB22()
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 	
+End Sub
+
+Sub MakeTranslitLettersList( saTranslitLetters() )
+	saTranslitLetters(0)=&quot;a&quot; &apos;	// а
+	saTranslitLetters(1)=&quot;b&quot; &apos;	// б
+	saTranslitLetters(2)=&quot;v&quot; &apos;	// в
+	saTranslitLetters(3)=&quot;g&quot; &apos;	// г
+	saTranslitLetters(4)=&quot;d&quot; &apos;	// д
+	saTranslitLetters(5)=&quot;e&quot; &apos;	// е
+	saTranslitLetters(6)=&quot;yo&quot; &apos;	// ё
+	saTranslitLetters(7)=&quot;zh&quot; &apos;	// ж
+	saTranslitLetters(8)=&quot;z&quot; &apos;	// з
+	saTranslitLetters(9)=&quot;i&quot; &apos;	// и
+	saTranslitLetters(10)=&quot;y&quot; &apos;	// й
+	saTranslitLetters(11)=&quot;k&quot; &apos;	// к
+	saTranslitLetters(12)=&quot;l&quot; &apos;	// л
+	saTranslitLetters(13)=&quot;m&quot; &apos;	// м
+	saTranslitLetters(14)=&quot;n&quot; &apos;	// н
+	saTranslitLetters(15)=&quot;o&quot; &apos;	// о
+	saTranslitLetters(16)=&quot;p&quot; &apos;	// п
+	saTranslitLetters(17)=&quot;r&quot; &apos;	// р
+	saTranslitLetters(18)=&quot;s&quot; &apos;	// с
+	saTranslitLetters(19)=&quot;t&quot; &apos;	// т
+	saTranslitLetters(20)=&quot;u&quot; &apos;	// у
+	saTranslitLetters(21)=&quot;f&quot; &apos;	// ф
+	saTranslitLetters(22)=&quot;h&quot; &apos;	// х
+	saTranslitLetters(23)=&quot;ts&quot; &apos;// ц
+	saTranslitLetters(24)=&quot;ch&quot; &apos;// ч
+	saTranslitLetters(25)=&quot;sh&quot; &apos;// ш
+	saTranslitLetters(26)=&quot;sch&quot; &apos;// щ
+	saTranslitLetters(27)=&quot;&apos;&quot; &apos;	// ъ
+	saTranslitLetters(28)=&quot;y&quot; &apos;	// ы
+	saTranslitLetters(29)=&quot;&apos;&quot; &apos;	// ь
+	saTranslitLetters(30)=&quot;e&quot; &apos;	// э
+	saTranslitLetters(31)=&quot;yu&quot; &apos;// ю
+	saTranslitLetters(32)=&quot;ya&quot; &apos;// я
+	saTranslitLetters(33)=&quot;A&quot; &apos;	// А
+	saTranslitLetters(34)=&quot;B&quot; &apos;	// Б
+	saTranslitLetters(35)=&quot;V&quot; &apos;	// В
+	saTranslitLetters(36)=&quot;G&quot; &apos;	// Г
+	saTranslitLetters(37)=&quot;D&quot; &apos;	// Д
+	saTranslitLetters(38)=&quot;E&quot; &apos;	// Е
+	saTranslitLetters(39)=&quot;YO&quot; &apos;// Ё
+	saTranslitLetters(40)=&quot;ZH&quot; &apos;// Ж
+	saTranslitLetters(41)=&quot;Z&quot; &apos;	// З
+	saTranslitLetters(42)=&quot;I&quot; &apos;	// И
+	saTranslitLetters(43)=&quot;Y&quot; &apos;	// Й
+	saTranslitLetters(44)=&quot;K&quot; &apos;	// К
+	saTranslitLetters(45)=&quot;L&quot; &apos;	// Л
+	saTranslitLetters(46)=&quot;M&quot; &apos;	// М
+	saTranslitLetters(47)=&quot;N&quot; &apos;	// Н
+	saTranslitLetters(48)=&quot;O&quot; &apos;	// О
+	saTranslitLetters(49)=&quot;P&quot; &apos;	// П
+	saTranslitLetters(50)=&quot;R&quot; &apos;	// Р
+	saTranslitLetters(51)=&quot;S&quot; &apos;	// С
+	saTranslitLetters(52)=&quot;T&quot; &apos;	// Т
+	saTranslitLetters(53)=&quot;U&quot; &apos;	// У
+	saTranslitLetters(54)=&quot;F&quot; &apos;	// Ф
+	saTranslitLetters(55)=&quot;H&quot; &apos;	// Х
+	saTranslitLetters(56)=&quot;TS&quot; &apos;// Ц
+	saTranslitLetters(57)=&quot;CH&quot; &apos;// Ч
+	saTranslitLetters(58)=&quot;SH&quot; &apos;// Ш
+	saTranslitLetters(59)=&quot;SCH&quot; &apos;// Щ
+	saTranslitLetters(60)=&quot;&apos;&quot; &apos;	// Ъ
+	saTranslitLetters(61)=&quot;Y&quot; &apos;	// Ы
+	saTranslitLetters(62)=&quot;&apos;&quot; &apos;	// Ь
+	saTranslitLetters(63)=&quot;E&quot; &apos;	// Э
+	saTranslitLetters(64)=&quot;YU&quot; &apos;// Ю
+	saTranslitLetters(65)=&quot;YA&quot; &apos;// Я
 End Sub
 
 Sub MakeLangList( aLangList() )
@@ -99,6 +169,7 @@ Function InfoDlgExec() As Boolean
 	oInfoDlg.Model.FilenameTextField.Text = ConvertFromUrl( sCurDocFile )
 	InitInfoDlg() &apos; инициализация основной формы конвертера в зависимости от локали
 	InitServiceDlgMessage() &apos; инициализация сообщений диалога Настроек в зависимости от локали
+	MakeTranslitLettersList( saTranslitLetters() )&apos; инициализация массива транслитерации
 	oProgressBar.setValue(3) &apos; Статусбар
 
 	MakeLangList( sLangList() )
@@ -115,16 +186,17 @@ Function InfoDlgExec() As Boolean
 		.diDateTextField.Text	= Date
 		.diDateValueField.Text	= Year(sNow) &amp; &quot;-&quot; &amp; Format(Month(sNow), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(sNow), &quot;00&quot;)
 		.ProgrammUsedField.Text	= &quot;ExportToFB21&quot;
-		.IDField.Text			= GetNewBookID()
 		.VersionField.Text		= &quot;1.0&quot;
 		.KeywordsField.Text		= FindTextOfStyle(sStyle_BookKeywords, true)
 	End With
 	
 	&apos; язык книги по-умолчанию - локаль Ooo
 	SetBookLangOOoDefaultLocal( oInfoDlg, &quot;LangComboBox&quot; )
-	oInfoDlg.getControl( &quot;SrcLangComboBox&quot; ).AddItem( &quot;&quot;, 0 )
-	oInfoDlg.getControl( &quot;Codepage&quot; ).addItems(Array( &quot;utf-8&quot;, &quot;windows-1251&quot;), 0 )
-	oInfoDlg.getControl( &quot;Codepage&quot; ).SelectItemPos( 0, True )
+	With oInfoDlg
+		.getControl( &quot;SrcLangComboBox&quot; ).AddItem( &quot;&quot;, 0 )
+		.getControl( &quot;Codepage&quot; ).addItems(Array( &quot;utf-8&quot;, &quot;windows-1251&quot;), 0 )
+		.getControl( &quot;Codepage&quot; ).SelectItemPos( 0, True )
+	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
@@ -175,6 +247,8 @@ Function InfoDlgExec() As Boolean
 	&apos; читаем и заносим в контролы данные служебных стилей для Description
 	oProgressBar.start( sIDD.sInfoDlgInit, ThisComponent.ParagraphCount )
 	ReadServiceStyles(0)
+	&apos; генерируем ID Книги
+	oInfoDlg.Model.IDField.Text	= GetNewBookID()
 	oProgressBar.end
 	
 	oInfoDlg.execute()
@@ -194,17 +268,17 @@ Sub ReadServiceStyles( lProgress As Long )
 		Case sStyleBookTitle
 			If bUp = True Then Exit Do
 		Case sStyle_BookAuthor
-			ReadBookAuthorsOrTranslatorsInfo( oCursor, sAuthors )
+			ReadBookAuthorsOrTranslatorsInfo( oCursor, sAuthors() )
 			oInfoDlg.GetControl(&quot;lblBookAutors&quot;).Text = Ubound(sAuthors())+1
 		Case sStyle_BookTranslator
-			ReadBookAuthorsOrTranslatorsInfo( oCursor, sTranslators )
-			oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound(sTranslators())+1
+			ReadBookAuthorsOrTranslatorsInfo( oCursor, sTranslators() )
+			oInfoDlg.GetControl(&quot;lblTranslators&quot;).Text = Ubound (sTranslators() )+1
 		Case sStyle_BookSeries
 			ReadSequencesInfo( oCursor, sSequences, sStyle_Sequence, sStyle_SequenceNumber )
-			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound(sSequences())+1
+			oInfoDlg.GetControl(&quot;lblSequences&quot;).Text = Ubound( sSequences() )+1
 		Case sStyle_PaperBookSeries
 			ReadSequencesInfo( oCursor, sPubSequences, sStyle_Sequence, sStyle_SequenceNumber )
-			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound(sPubSequences())+1
+			oInfoDlg.GetControl(&quot;lblPubSequences&quot;).Text = Ubound( sPubSequences() )+1
 		Case sStyle_BookDate
 			ReadBookDateInfo( oCursor )
 		Case sStyle_PaperBook	
@@ -233,8 +307,65 @@ End Sub
 Function GetNewBookID() As String
 	Dim sNow As String : sNow = Now
 	GetNewBookID = &quot;OOoFBTools-&quot; &amp; _
-				Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; _
-				&quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
+				Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow)
+	If bComplexID = True Then
+		&apos; формирование ID-книги в зависимости от Автора Книги и fb2-Автора
+		GetNewBookID = GetNewBookID &amp; _
+			GetNewBookIDBookAuthors( sAuthors(), Trim( oInfoDlg.Model.tiNickname.Text ), Trim( oInfoDlg.Model.tiLast.Text ), Trim( oInfoDlg.Model.tiFirst.Text ), Trim( oInfoDlg.Model.tiMiddle.Text ) ) &amp; _
+			GetNewBookIDBookAuthors( sDocAuthors(), Trim( oInfoDlg.Model.diNicknameField.Text ), Trim( oInfoDlg.Model.diLastField.Text ), Trim( oInfoDlg.Model.diFirstField.Text ), Trim( oInfoDlg.Model.diMiddleField.Text ) )
+	End If
+	GetNewBookID = GetNewBookID &amp; &quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
+End Function
+
+Function GetNewBookIDBookAuthors( asArray(), sNickname As String, sLast As String, sFirst As String, sMiddle As String ) As String
+	Dim i As Integer
+	&apos; формирование ID-книги в зависимости от fb2-Автора
+	If Not IsNull( asArray() ) Then
+		For i=0 To UBound( asArray() )
+			If asArray(i, 3) &lt;&gt; &quot;&quot; Then
+				GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; i+1 &amp; &quot;-&quot;
+				If getOOoLocal() = &quot;ru&quot; Then
+					GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; StrictString( RusTransliterationString( saTranslitLetters(), asArray(i, 3) ) )
+				Else
+					GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; StrictString( saTranslitLetters(), asArray(i, 3) )
+				End if
+			Else
+				If asArray(i, 2) &lt;&gt; &quot;&quot; Or asArray(i, 0) &lt;&gt; &quot;&quot; Then
+					GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; i+1
+				End If
+				If getOOoLocal() = &quot;ru&quot; Then
+					If asArray(i, 2) &lt;&gt; &quot;&quot; Then GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), asArray(i, 2) ) )
+					If asArray(i, 0) &lt;&gt; &quot;&quot; Then GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), asArray(i, 0) ) )
+&apos;					If asArray(i, 1) &lt;&gt; &quot;&quot; Then GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), asArray(i, 1) ) )
+				Else
+					If asArray(i, 2) &lt;&gt; &quot;&quot; Then GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), asArray(i, 2) )
+					If asArray(i, 0) &lt;&gt; &quot;&quot; Then GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), asArray(i, 0) )
+&apos;					If asArray(i, 1) &lt;&gt; &quot;&quot; Then GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), asArray(i, 1) )
+				End If
+			End If
+		Next i
+	End If
+	If sNickname &lt;&gt; &quot;&quot; Then
+		GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; i+1 &amp; &quot;-&quot;
+		If getOOoLocal() = &quot;ru&quot; Then
+			GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; StrictString( RusTransliterationString( saTranslitLetters(), sNickname ) )
+		Else
+			GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; StrictString( saTranslitLetters(), sNickname )
+		End If
+	Else
+		If sLast &lt;&gt; &quot;&quot; Or sFirst &lt;&gt; &quot;&quot; Then
+			GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; i+1
+		End If
+		If getOOoLocal() = &quot;ru&quot; Then
+			If sLast &lt;&gt; &quot;&quot; Then		GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), sLast ) )
+			If sFirst &lt;&gt; &quot;&quot; Then	GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), sFirst ) )
+&apos;			If sMiddle &lt;&gt; &quot;&quot; Then	GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), sMiddle ) )
+		Else
+			If sLast &lt;&gt; &quot;&quot; Then		GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), sLast )
+			If sFirst &lt;&gt; &quot;&quot; Then	GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), sFirst )
+&apos;			If sMiddle &lt;&gt; &quot;&quot; Then	GetNewBookIDBookAuthors = GetNewBookIDBookAuthors &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), sMiddle )
+		End If
+	End If
 End Function
 
 Sub ConvertingFile()
@@ -1116,6 +1247,21 @@ Sub GenreDown()
 		swap( aArray, oGEDlg.Model.lbGE.SelectedItems(0), oGEDlg.Model.lbGE.SelectedItems(0)+1 )
 		oGEDlg.Model.lbGE.StringItemList = aArray
 		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
+	End If
+End Sub
+
+&apos;/////////////////////////////////////////////////////////
+&apos; при вводе данных на Автора fb2-файла генерируем &quot;уникальное&quot; Id книги
+Sub FB2AuthorsFieldsChange()
+	If bComplexID = True Then
+		oInfoDlg.Model.IDField.Text = GetNewBookID()
+	End If
+End Sub
+
+&apos; при вводе данных на Автора Книги генерируем &quot;уникальное&quot; Id книги
+Sub BookAuthorsFieldsChange()
+	If bComplexID = True Then
+		oInfoDlg.Model.IDField.Text = GetNewBookID()
 	End If
 End Sub
 

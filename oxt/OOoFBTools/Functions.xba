@@ -484,6 +484,51 @@ Sub ClearParaStyle()
 	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2())
 End Sub
 
+&apos; транслитерация строки (только для русских букв)
+Function RusTransliterationString( saTranslitLetters() As String, sString As String ) As String
+	RusTransliterationString = sString
+	Dim sStr As String : sStr = sString
+	Dim s As String, nCode As Integer
+	If Not IsNull( sString ) Or Len( sString ) &gt; 0 Then
+		Dim sTemplate As String : sTemplate = &quot;абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ&quot;
+		Dim sTranslit As String : sTranslit = &quot;&quot;
+		Dim i As Integer, nInd As Integer
+		For i=1 To Len( sString )
+			s = Mid( sStr, i, 1 )
+			nInd = InStr( sTemplate, s )
+			nCode = Asc( s )
+			If ( nCode &gt;= 1040 And nCode &lt;=1103 ) Or nCode = 1025 Or nCode = 1105 Then
+				If nInd &gt; 0 Then
+					sTranslit = sTranslit &amp; saTranslitLetters(nInd-1)
+				Else
+					sTranslit = sTranslit &amp; &quot;-&quot;
+				End If
+			Else
+				sTranslit = sTranslit &amp; s
+			End If
+		Next i
+		RusTransliterationString = sTranslit
+	End If
+End Function
+
+&apos; &quot;строгое&quot; значение строки (только цифры и латинские буквы)
+Function StrictString( sString As String ) As String
+	StrictString = sString
+	If sString = Null Or Len( sString ) = 0 Then Exit Function
+
+	Dim sStrictLetters As String : sStrictLetters = &quot;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-&quot;
+	Dim sStrict As String : sStrict = &quot;&quot;
+	Dim i As Integer, nInd As Integer, s As String
+	For i=1 To Len( sString )
+		s = Mid( sString, i, 1 )
+		nInd = InStr( sStrictLetters, s )
+		If nInd &gt; 0 Then
+			sStrict = sStrict &amp; s
+		End If
+	Next i
+	StrictString = sStrict
+End Function
+
 &apos; /// Корректура строки ///
 
 &apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert

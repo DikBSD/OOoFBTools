@@ -1036,7 +1036,7 @@ End Function
 Function DeletePunctMarkInString( byval sString As String ) As String
 	Dim aPunctMarks() As String
 	Dim i As Integer, c As Integer
-	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot;;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;,&quot;…&quot;, _
+	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot; &apos;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;,&quot;…&quot;, _
 						&quot;(&quot;,&quot;)&quot;,&quot;[&quot;,&quot;]&quot;,&quot;{&quot;,&quot;}&quot;,&quot;|&quot;,&quot;№&quot;,&quot;`&quot;,&quot;~&quot;,&quot;@&quot;,&quot;#&quot;,&quot;$&quot;,&quot;%&quot;,&quot;^&quot;,&quot;&lt;&quot;,&quot;&gt;&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;»&quot; )
 	For i=0 To UBound( aPunctMarks() )
 		c = InStr( sString, aPunctMarks(i) )
@@ -1067,8 +1067,8 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSynbolCode
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;;&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;; — &quot;
+	oReplace.SearchString = &quot; &apos;&quot; &amp; chr(nSynbolCode)
+	oReplace.ReplaceString = &quot; &apos; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1271,13 +1271,13 @@ Function HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;;-&quot;
-	oReplace.ReplaceString = &quot;; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;; — &quot;
+	oReplace.SearchString = &quot; &apos;-&quot;
+	oReplace.ReplaceString = &quot; &apos; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;; {1,}-&quot;  &apos;&quot; ;-&quot;
-	oReplace.ReplaceString = &quot;; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;; — &quot;
+	oReplace.SearchString = &quot; &apos; {1,}-&quot;  &apos;&quot; ;-&quot;
+	oReplace.ReplaceString = &quot; &apos; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1

@@ -79,20 +79,20 @@ Sub SetDefaultSettingsInControls()
 	oLB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
 	oLB.SelectItemPos(0, True)
 	&apos; Разное
-	oServiceDlg.Model.cboxCorrect.State = 1
-	oServiceDlg.Model.cboxDelEL.State = 0
+	oServiceDlg.Model.cboxCorrect.State	= 1
+	oServiceDlg.Model.cboxDelEL.State	= 0
 	oServiceDlg.Model.cboxDocLinks.State = 1
 	oServiceDlg.Model.cboxSaveUTF8.State = 1
 	&apos; &quot;Служебная область&quot;
-	oServiceDlg.Model.obtnUp.State = 1
+	oServiceDlg.Model.obtnUp.State	= 1
 	oServiceDlg.Model.obtnAny.State = 0
 	&apos; экспорт форматирования стилями слов
-	oServiceDlg.Model.obtnOnlyOneStyle.State = 0
-	oServiceDlg.Model.obtnAllStyles.State = 1
+	oServiceDlg.Model.obtnOnlyOneStyle.State	= 0
+	oServiceDlg.Model.obtnAllStyles.State		= 1
 	
 	&apos; Чистка fb2 кода
 	oServiceDlg.Model.cboxSuperfluous.State = 1
-	oServiceDlg.Model.cboxStyleSpace.State = 1
+	oServiceDlg.Model.cboxStyleSpace.State	= 1
 	
 	&apos; запустить полученный fb2-файл на просмотр
 	oServiceDlg.Model.cboxFB2Execute.State = 1
@@ -100,7 +100,10 @@ Sub SetDefaultSettingsInControls()
 	&apos; Валидация
 	oServiceDlg.Model.cboxValidate.State = 1
 	
+	&apos; экспорт тестовых полей
 	oServiceDlg.Model.cboxTextField.State = 1
+	&apos; генерировать сложный ID Книги
+	oServiceDlg.Model.cboxComplexID.State = 0
 
 End Sub
 
@@ -222,9 +225,12 @@ Sub SetSettingsInVars( sCurrentLine )
 		&apos; Валидация
 		Case &quot;cboxValidate&quot;
 			bValidate = sSetting(1)
-			
+		&apos; экспорт текстовых полей
 		Case &quot;cboxTextField&quot;
 			bTextField = sSetting(1)
+		&apos; генерировать сложный ID Книги
+		Case &quot;cboxComplexID&quot;
+			bComplexID = sSetting(1)
 	End Select
 End Sub
 
@@ -306,6 +312,8 @@ Sub SetDefaultSettingsInVars
 	bCorrectPara = True
 	&apos; Экспорт Текстовых Полей
 	bTextField = True
+	&apos; генерироват сложный ID Книги
+	bComplexID = False
 	
 	&apos; значения по умолчанию для сохранения названия картинки, как аттрибута &quot;title&apos;
 	bSaveImageTitle = False

@@ -86,15 +86,21 @@ Sub ServiceDlgOk()
 	ReDim  sSequences()		As String
 	ReDim  sPubSequences()	As String
 	ReDim  sCustomInfos()	As String
-	oInfoDlg.GetControl( &quot;lblGenres&quot; ).Text			= Ubound(sGenres())+1
-	oInfoDlg.GetControl( &quot;lblBookAutors&quot; ).Text		= Ubound(sAuthors())+1
-	oInfoDlg.GetControl( &quot;lblTranslators&quot; ).Text	= Ubound(sTranslators())+1
-	oInfoDlg.GetControl( &quot;lblSequences&quot; ).Text		= Ubound(sSequences())+1
-	oInfoDlg.GetControl( &quot;lblPubSequences&quot; ).Text	= Ubound(sPubSequences())+1
-	oInfoDlg.GetControl( &quot;lbCustomInfo&quot; ).Text		= Ubound(sCustomInfos())+1
-	&apos; Поиск &quot;служебных стилей&quot;
-	oServiceDlg.Enable = False
-	ReadServiceStyles(0)
+	
+	With oInfoDlg
+		.GetControl( &quot;lblGenres&quot; ).Text			= Ubound(sGenres())+1
+		.GetControl( &quot;lblBookAutors&quot; ).Text		= Ubound(sAuthors())+1
+		.GetControl( &quot;lblTranslators&quot; ).Text	= Ubound(sTranslators())+1
+		.GetControl( &quot;lblSequences&quot; ).Text		= Ubound(sSequences())+1
+		.GetControl( &quot;lblPubSequences&quot; ).Text	= Ubound(sPubSequences())+1
+		.GetControl( &quot;lbCustomInfo&quot; ).Text		= Ubound(sCustomInfos())+1
+		&apos; Поиск &quot;служебных стилей&quot;
+		.Enable = False
+		ReadServiceStyles(0)
+		&apos; ID Книги
+		.Model.IDField.Text = GetNewBookID()
+	End With
+	
 	oProgressBar.end
 	oServiceDlg.Enable = True	
 
@@ -102,25 +108,27 @@ Sub ServiceDlgOk()
 End Sub
 
 Sub cboxExportGraphicsEnabled()
-	If oServiceDlg.GetControl( &quot;cboxExportGraphics&quot; ).State = 1 Then
-		oServiceDlg.GetControl( &quot;lblGif&quot; ).Enable		= True
-		oServiceDlg.GetControl( &quot;lbGifAs&quot; ).Enable		= True
-		oServiceDlg.GetControl( &quot;lblTif&quot; ).Enable		= True
-		oServiceDlg.GetControl( &quot;lbTifBMPAs&quot; ).Enable	= True
-		oServiceDlg.GetControl( &quot;lblAny&quot; ).Enable		= True
-		oServiceDlg.GetControl( &quot;lbAnyAs&quot; ).Enable		= True
-		oServiceDlg.GetControl( &quot;lblOLE&quot; ).Enable		= True
-		oServiceDlg.GetControl( &quot;lbOLEAs&quot; ).Enable		= True
-	Else
-		oServiceDlg.GetControl( &quot;lblGif&quot; ).Enable		= False
-		oServiceDlg.GetControl( &quot;lbGifAs&quot; ).Enable		= False
-		oServiceDlg.GetControl( &quot;lblTif&quot; ).Enable		= False
-		oServiceDlg.GetControl( &quot;lbTifBMPAs&quot; ).Enable	= False
-		oServiceDlg.GetControl( &quot;lblAny&quot; ).Enable		= False
-		oServiceDlg.GetControl( &quot;lbAnyAs&quot; ).Enable		= False
-		oServiceDlg.GetControl( &quot;lblOLE&quot; ).Enable		= False
-		oServiceDlg.GetControl( &quot;lbOLEAs&quot; ).Enable		= False
-	End If
+	With oServiceDlg
+		If .GetControl( &quot;cboxExportGraphics&quot; ).State = 1 Then
+			.GetControl( &quot;lblGif&quot; ).Enable		= True
+			.GetControl( &quot;lbGifAs&quot; ).Enable		= True
+			.GetControl( &quot;lblTif&quot; ).Enable		= True
+			.GetControl( &quot;lbTifBMPAs&quot; ).Enable	= True
+			.GetControl( &quot;lblAny&quot; ).Enable		= True
+			.GetControl( &quot;lbAnyAs&quot; ).Enable		= True
+			.GetControl( &quot;lblOLE&quot; ).Enable		= True
+			.GetControl( &quot;lbOLEAs&quot; ).Enable		= True
+		Else
+			.GetControl( &quot;lblGif&quot; ).Enable		= False
+			.GetControl( &quot;lbGifAs&quot; ).Enable		= False
+			.GetControl( &quot;lblTif&quot; ).Enable		= False
+			.GetControl( &quot;lbTifBMPAs&quot; ).Enable	= False
+			.GetControl( &quot;lblAny&quot; ).Enable		= False
+			.GetControl( &quot;lbAnyAs&quot; ).Enable		= False
+			.GetControl( &quot;lblOLE&quot; ).Enable		= False
+			.GetControl( &quot;lbOLEAs&quot; ).Enable		= False
+		End If
+	End With
 End Sub
 
 </script:module>
