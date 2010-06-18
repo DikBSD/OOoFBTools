@@ -18,13 +18,8 @@ Sub LoadStylesTemplate()
 
 	oPathSettings = CreateUnoService( &quot;com.sun.star.util.PathSettings&quot; )
 	sFile = &quot;fb21_styles.ott&quot;
-	
-	If OOoWriterVersion() &gt;= &quot;3.2&quot; Then
-		sPathArray = Split( oPathSettings.Template,&quot;;&quot; )
-	Else
-		sPathArray = Split( oPathSettings.Template,&quot; &apos;&quot; )
-	End If
-	
+
+	sPathArray = Split( oPathSettings.Template,&quot;;&quot; )
 	&apos; Ищем папку, хранящую наш шаблон
 	For i = LBound( sPathArray ) To UBound( sPathArray )
 		If FileExists( sPathArray(i) &amp; &quot;/&quot; &amp; sFile ) Then
@@ -34,8 +29,18 @@ Sub LoadStylesTemplate()
 	Next i
 	
 	If sPath = &quot;&quot; Then
-		MsgBox sLSTD.sTemplateNotFound, 64, sConvertorName
-		Exit Sub
+		sPathArray = Split( oPathSettings.Template,&quot;&apos;&quot; )
+		&apos; Ищем папку, хранящую наш шаблон
+		For i = LBound( sPathArray ) To UBound( sPathArray )
+			If FileExists( Trim( sPathArray(i) ) &amp; &quot;/&quot; &amp; sFile ) Then
+				sPath = Trim( sPathArray(i) ) &amp; &quot;/&quot; &amp; sFile
+				Exit For
+			End If
+		Next i
+		If sPath = &quot;&quot; Then
+			MsgBox sLSTD.sTemplateNotFound, 64, sConvertorName
+			Exit Sub
+		End If
 	End If
 	oProgressBar.setValue( 1 )
 	
