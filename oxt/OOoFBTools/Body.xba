@@ -109,12 +109,14 @@ Sub SaveNotes()
 		Dim sNote As String, sType As String, sBookMark As String
 		vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
 
+		Redim asFNPars() As String
 		For lParaCount = 0 To UBound( vaFNPara() )
 			sNote		= vaFNPara( lParaCount, 0 )
 			sType		= vaFNPara( lParaCount, 1 )
 			sBookMark	= vaFNPara( lParaCount, 2 )
 			AddNewItemToArray3( asFNPars(), sNote, sType, sBookMark )
 		Next lParaCount
+		lCurrentElement = 0
 		&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - Уровень, Эпиграф, Поэма, Цитата (в нарушение схемы)
 		&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
 	 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!

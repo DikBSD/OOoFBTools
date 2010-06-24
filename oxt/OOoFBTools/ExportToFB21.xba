@@ -7,8 +7,8 @@ Public sCurDocFile As String
 Public oTextOutputStream As Object
 Public sBookAnnotation() As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
 Public sBodyParagraphs() As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
-Public sLinksTo() As String		&apos; массив ссылок КУДА и их ID
-Public sConvertorName As String	&apos; название конвертора
+Public sLinksTo() 		 As String &apos; массив ссылок КУДА и их ID
+Public sConvertorName 	 As String &apos; название конвертора
 
 &apos; для аннотации
 Public bMergeAnnotationSubTitle As Boolean
@@ -58,6 +58,8 @@ Public bFB2Execute As Boolean
 Public bValidate As Boolean
 
 Public lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
+
+Public sIDFNPrev As String &apos; хранит имя закладки-ID
 
 Sub ExportToFB21()
 	sConvertorName = &quot;ExportToFB2.1&quot;
@@ -996,7 +998,18 @@ Function FindIndexForID( lCurElement As Long, sID As String, bBody As Boolean ) 
 	Else
 		If asFNPars(lCurElement,2) &lt;&gt; &quot;&quot;  Then
 			sID = CorrectBMLink( asFNPars(lCurElement, 2) )
-			FindIndexForID = 0
+			If sIDFNPrev &lt;&gt; &quot;&quot; Then
+				If sID = sIDFNPrev Then
+					sID = &quot;&quot; &apos; зашита от дублирования ID по одинаковому имени закладки (текст сноски состоит из нескольких абзацев)
+					FindIndexForID = -1
+				Else
+					sIDFNPrev = sID
+					FindIndexForID = 0
+				End If
+			Else
+				sIDFNPrev = sID
+				FindIndexForID = 0
+			End If
 		End If
 	End If
 End Function
