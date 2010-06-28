@@ -626,8 +626,13 @@ Sub BuildFootNoteComplex( bIsFootNoteMode As Boolean )
 		DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkListNote )
 	End If
 	
-	MsgBox sBTEND.sDocumentIsProcessing &amp; chr(10) &amp;_
-			sBTEND.sFootnotesGenerationCount &amp; &quot; &quot; &amp; lFindCount &amp; &quot;.&quot;, 64, sBTEND.sFootnotesGeneration
+	Dim sStrMess As String
+	If bIsFootNoteMode = True Then &apos; Режим генерации сносок
+		sStrMess = sBTEND.sFootnotesGenerationCount
+	Else
+		sStrMess = sBTEND.sHyperlinksGenerationCount
+	End If
+	MsgBox sBTEND.sDocumentIsProcessing &amp; chr(10) &amp; sStrMess &amp; &quot; &quot; &amp; lFindCount &amp; &quot;.&quot;, 64, sBTEND.sFootnotesGeneration
 End Sub
 
 &apos; возвращает строку с регулярным выражением для поиска, в зависимости от выбора шаблона номера сноски в тексте
