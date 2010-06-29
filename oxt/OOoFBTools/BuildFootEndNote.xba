@@ -317,7 +317,8 @@ End Function
 &apos; oBlockNoteZoneBookMark - закладка - зона поиска
 Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumber As Integer, _
 											oDoc As Object, oViewCursor As Object, oBlockNoteZoneBookMark As Object, _
-											sForLeft As String, sNumber As String, sForRight As String, sConstBookMarkFNText As String ) As Boolean
+											sForLeft As String, sNumber As String, sForRight As String, sConstBookMarkFNText As String, _
+											sBMHyperlink As String ) As Boolean
 	InsertBookmarkToTextForFootNote = False
 	If IsNull(oViewCursor) Or IsNull(oDoc) Then Exit Function
 	
@@ -367,8 +368,16 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 					&apos; ставим закладку - по ней потом найдем этот текст для формирования соответствующего текста примечания
 					_UnoInsertBookmark( sConstBookMarkFNText )
 				Else &apos; Режим генерации внутренних ссылок
-					&apos; ставим закладку - для ссылки на нее
-					_UnoInsertBookmark( &quot;_bmk_Link_&quot; &amp; Str( nZoneNumber ) &amp; &quot;_&quot; &amp; sNumber &amp; &quot;_&quot; )
+					&apos; проверка в позиции oViewCursor - есть ли закладка с таким же именем, если есть - то не ставим, 
+					&apos; если нет - то ставим закладку - для ссылки на нее
+					Dim oBookMarks As Object : oBookMarks = oDoc.getBookmarks()
+					Dim nIter As Integer, bExsist As Boolean : bExsist = False
+					For nIter=0 To oBookMarks.getCount()-1
+						If oBookMarks.getByIndex( nIter ).Name = sBMHyperlink Then
+							bExsist = True : Exit For
+						End If
+					Next nIter
+					If bExsist = False Then _UnoInsertBookmark( sBMHyperlink )
 				End If
 				Do While  oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &gt;= 0
 					&apos; мы все еще внутри зоны поиска... ищем следующий номер примечания в списке
@@ -468,14 +477,15 @@ Function ProcessingComplexFootNoteList( bIsFootNoteMode As Boolean, nZoneNumber 
 			oBlockNoteZoneBookMark = oBookMarks.getByName(sConstBookMarkListNote).getAnchor()
 			&apos; перевод курсора на начала закладки зоны поиска текста примечаний
 			oViewCursor.gotoRange( oBlockNoteZoneBookMark.getStart(), False )
+			Dim sBMHyperlink As String : sBMHyperlink = &quot;_bmk_Link_&quot; &amp; Trim( Str( nZoneNumber ) ) &amp; &quot;_&quot; &amp; sNumber &amp; &quot;_&quot;
 			If InsertBookmarkToTextForFootNote( bIsFootNoteMode, nZoneNumber, oDoc, oViewCursor, oBlockNoteZoneBookMark, _
-												sForLeft, sNumber, sForRight, sConstBookMarkFNText ) Then
+												sForLeft, sNumber, sForRight, sConstBookMarkFNText, sBMHyperlink ) Then
 				If bIsFootNoteMode = True Then &apos; режим генерации сносок
 					&apos; вставка найденного текста примечания вместо найденного по шаблону номера примечания (режим - генерация сносок)
 					InsertCurrentFootNote( oViewCursor, sConstBookMarkFNNumber )
 				Else  &apos; режим генерации внутренних ссылок
 					&apos; формирование гиперссылки для найденного по шаблону номера примечания (режим - генерация внутренних ссылок)
-					MakeHiperLink( oViewCursor, sConstBookMarkFNNumber, &quot;_bmk_Link_&quot; &amp; Str( nZoneNumber ) &amp; &quot;_&quot; &amp; sNumber &amp; &quot;_&quot; )
+					MakeHiperLink( oViewCursor, sConstBookMarkFNNumber, sBMHyperlink )
 					&apos; перемещаем курсор на конец закладки - к концу текста сгенерированной гиперссылки
 					oViewCursor.gotoRange(oBookMark.getEnd(), False)
 				End If
