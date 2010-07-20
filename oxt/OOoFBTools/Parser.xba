@@ -78,11 +78,7 @@ Sub DocumentParser()
 						sAllSectString = sAllSectString &amp; oSect.getString()
 					End If
 					&apos; парсер текстового абзаца
-					If bOnlyOneStyle = True Then
-						sPara = sPara &amp; InLineParser( oSect )
-					Else
-						sPara = sPara &amp; InLineAllParser( oSect )
-					End if
+					sPara = sPara &amp; InLineAllParser( oSect )
 					&apos; Обработка текста - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
 					sPara = DelBreakLineInString( sPara )
 				ElseIf oSect.TextPortionType = &quot;Frame&quot; Then
@@ -118,11 +114,7 @@ Sub DocumentParser()
 				ElseIf oSect.TextPortionType = &quot;TextField&quot; Then
 					&apos; текстовые поля
 					If bTextField = True Then
-						If bOnlyOneStyle = True Then
-							sPara = sPara &amp; InLineParser( oSect )
-						Else
-							sPara = sPara &amp; InLineAllParser( oSect )
-						End If
+						sPara = sPara &amp; InLineAllParser( oSect )
 					End If
 				ElseIf oSect.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
@@ -215,51 +207,6 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 	End If
 	sPrevStyle = sParaStyleName
 End Sub
-
-&apos; перебор по in-line стилям
-Function InLineParser(oSect As Object) As String
-	&apos; обработка &quot;проблемных&quot; символов
-	If bCorrectPara = True Then
-		InLineParser = CorrectPara(oSect.getString())
-	Else
-		InLineParser = oSect.getString()
-	End If
-	
-	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
-		Dim s As String
-		s = Mid(oSect.HyperLinkURL, 1, 1)
-		IF s &lt;&gt; &quot;#&quot; Then &apos; гиперссылка
-			s = CorrectPara( oSect.HyperLinkURL )
-		Else			&apos; закладка
-			s = Mid(oSect.HyperLinkURL, 2)
-			s = &quot;#_&quot; &amp; CorrectBMLink( s )
-		End If
-		InLineParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/a&gt;&quot;
-	ElseIf oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
-		InLineParser = &quot;&lt;strong&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/strong&gt;&quot;
-	ElseIf oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
-		InLineParser = &quot;&lt;emphasis&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/emphasis&gt;&quot;
-	ElseIf oSect.CharEscapement &gt; 0 Then
-		InLineParser = &quot;&lt;sup&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/sup&gt;&quot;
-	ElseIf oSect.CharEscapement &lt; 0 Then
-		InLineParser = &quot;&lt;sub&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/sub&gt;&quot;
-	ElseIf oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then
-		&apos; тень или контур или символьный стиль code
-		InLineParser = &quot;&lt;code&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/code&gt;&quot;
-	ElseIf oSect.CharStrikeout &gt; 0 Then
-		InLineParser = &quot;&lt;strikethrough&gt;&quot; &amp; InLineParser &amp; &quot;&lt;/strikethrough&gt;&quot;
-	End If
-	
-	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
-	If InLineParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
-		InLineParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
-		InLineParser = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
-		InLineParser = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
-		InLineParser = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
-		InLineParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
-		InLineParser = &quot;&quot;
-	End If
-End Function
 
 &apos; перебор по всем in-line стилям
 Function InLineAllParser(oSect As Object) As String
@@ -409,11 +356,7 @@ Function FootEndNoteParser( oSect As Object ) As String
 				&apos;///////////////////////////////////////////////////////////
 				&apos;TODO: если рядом с текстом в однос строке стоит картинка с Привязкой К Символу, то к тесту добавляется предыдущая часть.
 				&apos;Надо ввести проверку!!!
-				If bOnlyOneStyle = True Then
-					sParagFN = sParagFN &amp; InLineParser( oTextPortionF )
-				Else
-					sParagFN = sParagFN &amp; InLineAllParser( oTextPortionF )
-				End If
+				sParagFN = sParagFN &amp; InLineAllParser( oTextPortionF )
 			Wend
 		
 			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
