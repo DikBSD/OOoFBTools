@@ -61,6 +61,10 @@ Sub SetDefaultSettingsInControls()
 	&apos; Графика
 	oServiceDlg.Model.cboxImageTitle.State = 0
 	oServiceDlg.Model.cboxExportGraphics.State = 1
+	oLB = oServiceDlg.getControl(&quot;lbJPEGAs&quot;)
+	oLB.SelectItemPos(2, True)
+	oLB = oServiceDlg.getControl(&quot;lbPNGAs&quot;)
+	oLB.SelectItemPos(0, True)
 	oLB = oServiceDlg.getControl(&quot;lbGifAs&quot;)
 	oLB.SelectItemPos(0, True)
 	oLB = oServiceDlg.getControl(&quot;lbTifBMPAs&quot;)
@@ -169,6 +173,10 @@ Sub SetSettingsInVars( sCurrentLine )
 			bSaveImageTitle = sSetting(1)
 		Case &quot;cboxExportGraphics&quot;
 			bExportGraphics = sSetting(1)	
+		Case &quot;lbJPEGAs&quot;
+			sJpegAs = GetFormat(sSetting(1))
+		Case &quot;lbPNGAs&quot;
+			sPngAs 	= GetFormat(sSetting(1))
 		Case &quot;lbGifAs&quot;
 			sGifAs 	= GetFormat(sSetting(1))
 		Case &quot;lbTifBMPAs&quot;
@@ -271,9 +279,9 @@ Function GetFormat( sSetting As String) As String
 	Select Case sSetting
 		Case &quot;0&quot; 
 			GetFormat = &quot;png&quot;
-		Case &quot;2&quot;
+		Case &quot;1&quot;
 			GetFormat = &quot;jpg&quot;
-		Case &quot;3&quot;
+		Case &quot;2&quot;
 			GetFormat = &quot;jpeg&quot;
 		Case Else
 			GetFormat =  &quot;png&quot;
@@ -314,6 +322,8 @@ Sub SetDefaultSettingsInVars
 	&apos; значение по-умолчанию для экспорта Графики
 	bExportGraphics = True
 	&apos; значение по умолчанию для формата преобразования
+	sJpegAs		= &quot;jpg&quot;
+	sPngAs		= &quot;png&quot;
 	sGifAs		= &quot;png&quot;
 	sTifBMPAs	= &quot;png&quot;
 	sAnyAs		= &quot;png&quot;

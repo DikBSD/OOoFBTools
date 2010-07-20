@@ -155,14 +155,16 @@ End Function
 
 &apos; приведение расширения графики к допустимому для fb2-читалок
 Function ValidateFileExt( sExt As String ) As String
-	If LCase(sExt) &lt;&gt; &quot;png&quot; And LCase(sExt) &lt;&gt; &quot;jpeg&quot; And LCase(sExt) &lt;&gt; &quot;jpg&quot; Then
-		If sExt = LCase(&quot;gif&quot;) Then
-			sExt = sGifAs
-		ElseIf sExt = LCase(&quot;tif&quot;) Or sExt = LCase(&quot;tiff&quot;) Or sExt = LCase(&quot;bmp&quot;) Then
-			sExt = sTifBMPAs &apos; для &quot;основных&quot; растровых форматов
-		Else
-			sExt = sAnyAs &apos; для остальных форматов, включая векторные
-		End If
+	If sExt = LCase(&quot;jpeg&quot;) Or sExt = LCase(&quot;jpg&quot;) Then
+		sExt = sJpegAs
+	ElseIf sExt = LCase(&quot;png&quot;) Then
+		sExt = sPngAs
+	ElseIf sExt = LCase(&quot;gif&quot;) Then
+		sExt = sGifAs
+	ElseIf sExt = LCase(&quot;tif&quot;) Or sExt = LCase(&quot;tiff&quot;) Or sExt = LCase(&quot;bmp&quot;) Then
+		sExt = sTifBMPAs &apos; для &quot;основных&quot; растровых форматов
+	Else
+		sExt = sAnyAs &apos; для остальных форматов, включая векторные
 	End If
 	ValidateFileExt = LCase(sExt)
 End Function
