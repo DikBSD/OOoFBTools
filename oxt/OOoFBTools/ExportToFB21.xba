@@ -117,6 +117,18 @@ Sub ExportToFB21()
 		Exit Sub
 	End If
 	
+	&apos; создаем OOoFBToolsTemp папку
+	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+		MkDir getOOoFBToolsTempPath()
+	End If
+	&apos; для Windows системы копируем base64.exe из расширения в OOoFBToolsTemp папку для работы экспорта графики в портабельном режиме
+	If GetOS() = 0 Then &apos; для Windows-системы
+		Dim base64Path As String : base64Path = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\base64.exe&quot;
+		If FileExists( base64Path ) Then
+			FileCopy base64Path, ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\base64.exe&quot; )
+		End If
+	End If
+
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
 	If IsStyleExists( sStyleBookTitle ) And ( ThisComponent.getGraphicObjects().Count &gt; 0 Or ThisComponent.getDrawPage().Count &gt; 0) Then
 		MakeCoverParser()
