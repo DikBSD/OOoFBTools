@@ -250,7 +250,7 @@ Function FindNumbersUpIndexList( oLCurs ) As Variant
 	FindNumbersUpIndexList = ThisComponent.findNext( oLCurs, oDesc )
 End Function
 
-&apos; вставка закладки на место номера очередного примечания
+&apos; вставка закладки на место номера очередного примечания в Тексте
 &apos; возвращает:
 &apos; -1 - номер примечания в тексте не найден - конец документа
 &apos; 0 - вставка закладки для номера прмечания в ТЕКСТЕ
@@ -333,7 +333,7 @@ Function InsertBookmarkToNumberFootNote( bIsFootNoteMode As Boolean, oDoc As Obj
 ErrorHandler:
 End Function
 
-&apos; вставка закладки на место текста для указанного номера примечания
+&apos; вставка закладки на место текста для указанного номера примечания в Списке
 &apos; sRegFind - строка поиска (с регулярными выражениями)
 &apos; oBlockNoteZoneBookMark - закладка - зона поиска
 Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumber As Integer, _
@@ -357,7 +357,17 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 	Dim vFound As Variant 
 	
 	If bModeNumbersUpIndex = True Then
-		vFound = FindNumbersUpIndexList( oBlockNoteZoneBookMark.getStart() )
+		If bIsFootNoteMode = True Then &apos; Режим генерации сносок
+			vFound = FindNumbersUpIndexList( oBlockNoteZoneBookMark.getStart() )
+		Else &apos; генерация гиперссылок
+			&apos; поиск СЛЕДУЮЩЕГО номера в Списке, а не первого встречного
+			vFound = FindNumbersUpIndexList( oBlockNoteZoneBookMark.getStart() )
+			If Not IsNull(vFound) And vFound.getString() &lt;&gt; sNumber Then
+				Do
+					vFound = FindNumbersUpIndexList( vFound.getEnd() )
+				Loop While ( Not IsNull(vFound) And vFound.getString() &lt;&gt; sNumber )
+			End If
+		End If
 	Else
 		vSearch = oDoc.createSearchDescriptor()
 		With vSearch
@@ -423,7 +433,6 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 								oViewCursor.gotoRange( vFound, False )
 								CursorAfterCurrentTextTable( oViewCursor )
 								If bModeNumbersUpIndex = True Then
-&apos;									vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
 									vFound = FindNumbersUpIndexList( oViewCursor.getStart() )
 								Else
 									vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
