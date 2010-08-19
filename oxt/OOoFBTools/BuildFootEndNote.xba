@@ -231,6 +231,25 @@ Function FindNumbersUpIndexText( oLCurs ) As Variant
 	FindNumbersUpIndexText = ThisComponent.findNext( oLCurs, oDesc )
 End Function
 
+&apos; поиск следующей цифры в верхнем индексе в Списке примечаний
+Function FindNumbersUpIndexList( oLCurs ) As Variant
+	&apos; задаем поиск верхнего индекса
+	Dim SrchAttributes(2) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
+	SrchAttributes(0).Value	= True
+	SrchAttributes(1).Name	= &quot;CharEscapementHeight&quot;
+	SrchAttributes(1).Value	= 58
+	SrchAttributes(2).Name	= &quot;CharEscapement&quot;
+	SrchAttributes(2).Value	= 101
+  
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
+	oDesc.SearchRegularExpression = True
+	oDesc.SetSearchAttributes(SrchAttributes())
+	oDesc.SearchString = &quot;^[:digit:]+&quot;
+	
+	FindNumbersUpIndexList = ThisComponent.findNext( oLCurs, oDesc )
+End Function
+
 &apos; вставка закладки на место номера очередного примечания
 &apos; возвращает:
 &apos; -1 - номер примечания в тексте не найден - конец документа
@@ -298,6 +317,7 @@ Function InsertBookmarkToNumberFootNote( bIsFootNoteMode As Boolean, oDoc As Obj
 					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 				End If
 			Else &apos; просто текст
+				On Error GoTo ErrorHandler &apos; в случай выхода на текст сноски
 				If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0	Then &apos; если не вышли за правую границу или прямо на ней
 					&apos; переводим курсор на конец найденного номера примечания в списке текста примечаний
 					oViewCursor.gotoRange( vFound, False )
@@ -310,6 +330,7 @@ Function InsertBookmarkToNumberFootNote( bIsFootNoteMode As Boolean, oDoc As Obj
 			End If
 		End If
 	End If
+ErrorHandler:
 End Function
 
 &apos; вставка закладки на место текста для указанного номера примечания
@@ -336,7 +357,8 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 	Dim vFound As Variant 
 	
 	If bModeNumbersUpIndex = True Then
-		vFound = FindNumbersUpIndexText( oBlockNoteZoneBookMark.getStart() )
+&apos;		vFound = FindNumbersUpIndexText( oBlockNoteZoneBookMark.getStart() )
+		vFound = FindNumbersUpIndexList( oBlockNoteZoneBookMark.getStart() )
 	Else
 		vSearch = oDoc.createSearchDescriptor()
 		With vSearch
@@ -348,13 +370,21 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 	
 	&apos; ищем следующий текст примечания по следующему номеру примечания
 	If Not IsNull(vFound) Then &apos; нашли
+		&apos;Если режим - цыфра в верхнем индексе, то проверяем совпадение найденного номера в Тексте и в Списке примечаний.
+		If bModeNumbersUpIndex = True Then
+			If sNumber &lt;&gt; vFound.getString Then
+				Exit Function
+			End If
+		End If
+	
 		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot; And IsEmpty( vFound.TextFrame ) Then &apos; сноски не обрабатываем
 			If Not IsEmpty( vFound.TextTable ) Then &apos; пропускаем таблицу
 				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
 				oViewCursor.gotoRange( vFound, False )
 				CursorAfterCurrentTextTable( oViewCursor )
 				If bModeNumbersUpIndex = True Then
-					vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+&apos;					vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+					vFound = FindNumbersUpIndexList( oViewCursor.getStart() )
 				Else
 					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 				End If
@@ -382,7 +412,8 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 				Do While  oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &gt;= 0
 					&apos; мы все еще внутри зоны поиска... ищем следующий номер примечания в списке
 					If bModeNumbersUpIndex = True Then
-						vFound = FindNumbersUpIndexText( vFound.getEnd() )
+&apos;						vFound = FindNumbersUpIndexText( vFound.getEnd() )
+						vFound = FindNumbersUpIndexList( vFound.getEnd() )
 					Else
 						vSearch.SearchString = GetRegStringNFNInListForNextFind() &apos; для дальнейшего поиска согласно выбранного шаблона поиска номера сноски в списке сносок
 						vFound = oDoc.findNext( vFound.getEnd(), vSearch )
@@ -395,7 +426,8 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 								oViewCursor.gotoRange( vFound, False )
 								CursorAfterCurrentTextTable( oViewCursor )
 								If bModeNumbersUpIndex = True Then
-									vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+&apos;									vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+									vFound = FindNumbersUpIndexList( oViewCursor.getStart() )
 								Else
 									vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 								End If
@@ -1596,14 +1628,14 @@ Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object
 	oProgressBar.setValue( 1 )
 		
 	&apos; сбор информации по номерам примечаний из текста
-	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, saNumbersInText() )
+	lCountAllTextNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oLCurs, oRCurs, sRegFind, saNumbersInText(), True )
 	oProgressBar.setValue( 2 )
 	
 	&apos; сбор информации по номерам примечаний из списка примечаний
 	&apos; перевод курсора на начала закладки зоны поиска списка примечаний
 	oViewCursor.gotoRange( oRCurs.getStart(), False )
 	lCountAllListNotes = GetDataForTestComplexFootNote( oDoc, oViewCursor, oListBookMark.getStart(), oListBookMark.getEnd(), _
-														GetRegStringNFNInListForNextFind(), saNumbersInList() )
+														GetRegStringNFNInListForNextFind(), saNumbersInList(), False )
 	oProgressBar.start( sBTEND.sTestDataAnalysis &amp; &quot;:&quot;, 13 )
 	oProgressBar.setValue( 1 )
 	
@@ -1632,7 +1664,7 @@ End Sub
 
 &apos; Сбор информации по номерам из Текста для теста сложной генерации сносок - режим: Нумерация - сквозная; Общий список примечаний - в конце книги.
 Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
-									sRegFind As String, saNumbers() As String ) As Long
+									sRegFind As String, saNumbers() As String, bInText As Boolean ) As Long
 	GetDataForTestComplexFootNote = 0
 	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Function
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
@@ -1647,7 +1679,11 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 	Dim vFound As Variant 
 	
 	If bModeNumbersUpIndex = True Then
-		vFound = FindNumbersUpIndexText( oLCurs.getStart() )
+		If bInText = True Then
+			vFound = FindNumbersUpIndexText( oLCurs.getStart() )
+		Else
+			vFound = FindNumbersUpIndexList( oLCurs.getStart() )
+		End If
 	Else
 		vSearch = oDoc.createSearchDescriptor()
 		With vSearch
@@ -1675,7 +1711,11 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 					CursorAfterCurrentTextTable( oViewCursor )
 					&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров сносок
 					If bModeNumbersUpIndex = True Then
-						vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+						If bInText = True Then
+							vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+						Else
+							vFound = FindNumbersUpIndexList( oViewCursor.getStart() )
+						End If
 					Else
 						vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 					End If
@@ -1683,7 +1723,11 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 					&apos; перепрыгиваем через врезку - не обрабатываем ее.
 					oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
 					If bModeNumbersUpIndex = True Then
-						vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+						If bInText = True Then
+							vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
+						Else
+							vFound = FindNumbersUpIndexList( oViewCursor.getStart() )
+						End If
 					Else
 						vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 					End If
@@ -1693,7 +1737,11 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 						AddNewItemToArray1( saNumbers(), vFound.getString() )
 						lCountAllNotes = lCountAllNotes+1
 						If bModeNumbersUpIndex = True Then
-							vFound = FindNumbersUpIndexText( vFound.getEnd() )
+							If bInText = True Then
+								vFound = FindNumbersUpIndexText( vFound.getEnd() )
+							Else
+								vFound = FindNumbersUpIndexList( vFound.getEnd() )
+							End If
 						Else
 							vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 						End If
