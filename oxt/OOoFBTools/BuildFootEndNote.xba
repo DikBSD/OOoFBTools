@@ -279,6 +279,7 @@ Function InsertBookmarkToNumberFootNote( bIsFootNoteMode As Boolean, oDoc As Obj
 			vFound = FindNumbersUpIndexText( oLCurs.getStart() )
 		Else &apos; режим генерации внутренних ссылок
 			vFound = FindNumbersUpIndexText( oLCurs.getEnd() )
+			If oDoc.Text.compareRegionEnds( vFound, oRCurs.getStart() ) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
 		End If
 	Else
 		vSearch = oDoc.createSearchDescriptor()
@@ -365,7 +366,8 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 			If Not IsNull(vFound) And vFound.getString() &lt;&gt; sNumber Then
 				Do
 					vFound = FindNumbersUpIndexList( vFound.getEnd() )
-				Loop While ( Not IsNull(vFound) And vFound.getString() &lt;&gt; sNumber )
+					If IsNull( vFound ) Then Exit Do
+				Loop While ( vFound.getString() &lt;&gt; sNumber )
 			End If
 		End If
 	Else
@@ -496,7 +498,7 @@ Function ProcessingComplexFootNoteList( bIsFootNoteMode As Boolean, nZoneNumber 
 	Dim sNumber		As String
 	Dim nValue		As Integer
 
-	Do While ( oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров примечаний не сравнялась или не перешла за правую
+	Do While ( oDoc.Text.compareRegionEnds( oLCurs, oRCurs.getStart() ) &gt;= 0 ) &apos; пока левая граница зоны поиска номеров примечаний не сравнялась или не перешла за правую
 		nValue = InsertBookmarkToNumberFootNote( bIsFootNoteMode, oDoc, oViewCursor, oLCurs, oRCurs, sRegStringNFNInText, sConstBookMarkListNote, sConstBookMarkFNNumber )
 		&apos; nValue:
 		&apos; -1 - номер примечания в тексте не найден - конец документа
