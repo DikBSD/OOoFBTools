@@ -357,7 +357,6 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 	Dim vFound As Variant 
 	
 	If bModeNumbersUpIndex = True Then
-&apos;		vFound = FindNumbersUpIndexText( oBlockNoteZoneBookMark.getStart() )
 		vFound = FindNumbersUpIndexList( oBlockNoteZoneBookMark.getStart() )
 	Else
 		vSearch = oDoc.createSearchDescriptor()
@@ -383,7 +382,6 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 				oViewCursor.gotoRange( vFound, False )
 				CursorAfterCurrentTextTable( oViewCursor )
 				If bModeNumbersUpIndex = True Then
-&apos;					vFound = FindNumbersUpIndexText( oViewCursor.getStart() )
 					vFound = FindNumbersUpIndexList( oViewCursor.getStart() )
 				Else
 					vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
@@ -412,7 +410,6 @@ Function InsertBookmarkToTextForFootNote( bIsFootNoteMode As Boolean, nZoneNumbe
 				Do While  oDoc.Text.compareRegionEnds( vFound.getStart(), oBlockNoteZoneBookMark.getEnd() ) &gt;= 0
 					&apos; мы все еще внутри зоны поиска... ищем следующий номер примечания в списке
 					If bModeNumbersUpIndex = True Then
-&apos;						vFound = FindNumbersUpIndexText( vFound.getEnd() )
 						vFound = FindNumbersUpIndexList( vFound.getEnd() )
 					Else
 						vSearch.SearchString = GetRegStringNFNInListForNextFind() &apos; для дальнейшего поиска согласно выбранного шаблона поиска номера сноски в списке сносок
