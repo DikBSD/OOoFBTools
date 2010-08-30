@@ -292,7 +292,17 @@ Function SaveElements(sArray() As String, sParaStyleName As String, sPara As Str
 
 		Case &quot;&quot; &apos; &lt;empty-line/&gt;
 			If bDelEL = False Then
-				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+				If bDocLinks = True Then
+					&apos; обработка ссылок внутри документа
+					Dim sIDEL As String
+					If FindIndexForID( lCurrentElement, sIDEL, bBody ) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						oTextOutputStream.writeString( &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sIDEL &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) )
+					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+						oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+					End If
+				Else
+					oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+				End If
 			Else
 				If lCurrentElement &gt; 0 And lCurrentElement &lt; UBound(sArray) Then
 					If IsLevel( sArray(lCurrentElement-1,1) ) And IsLevel( sArray(lCurrentElement+1,1) ) Then
