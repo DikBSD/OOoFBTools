@@ -1035,8 +1035,11 @@ End Function
 Sub StartBuildFootEndNoteDlg()
 	bIsFootNoteMode = True &apos; режим Генератора Сносок по-умолчанию
 	
-	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	oBuildFootEndNoteDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.BuildFootEndNoteDlg )
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oBuildFootEndNoteDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.BuildFootEndNoteDlg )
 
 	&apos; инициализация диалога генерации сносок в зависимости от локали
 	InitBuildFootEndNoteDlg()
@@ -1222,8 +1225,11 @@ End Sub
 &apos;///////////////////////////////////////////////////////////////////////////////////////
 &apos; запуск диалога преобразования номеров примечаний в верхнем индексе по шаблону
 Sub StartFootNoteLinkTransDlg()
-	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	oFootNoteLinkTransDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.FootNoteLinkTransDlg )
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oFootNoteLinkTransDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.FootNoteLinkTransDlg )
 
 	&apos; инициализация диалога преобразования номеров примечаний в верхнем индексе по шаблону в зависимости от локали
 	InitFootNoteLinkTransDlg()

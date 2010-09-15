@@ -161,8 +161,11 @@ Function InfoDlgExec() As Boolean
 	oProgressBar.setValue(1)
 	
 	&apos; Создание формы
-	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	oInfoDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.InfoDlg )
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oInfoDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.InfoDlg )
 	oProgressBar.setValue(2)
 	
 	&apos; инициализация основной формы конвертера в зависимости от локали
@@ -1053,7 +1056,7 @@ End Sub
 
 &apos; запуск диалога работы со списком избранных жанров
 Sub cbtnGenreElite_Click()
-	oGEDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.GenreEliteDlg )
+	oGEDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.GenreEliteDlg )
 	
 	&apos; инициализация диалога работы с Избранными Жанрами от локали
 	InitGenreEliteDlg()

@@ -115,8 +115,11 @@ End Function
 &apos; //////////////// вставка Языка в Служебную область ///////////////////
 &apos; запуск диалога работы со списком выбранных жанров для книги
 Sub ViewDescGenreDlg()
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oDGDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.DescGenreDlg )
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oDGDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.DescGenreDlg )
 	
 	With oDGDlg.Model
 		.Height	= 130
@@ -284,8 +287,11 @@ End Sub
 &apos; //////////////// вставка Языка в Служебную область ///////////////////
 &apos; запуск диалога работы с языками книги
 Sub ViewDescLangDlg()
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oDLDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.DescLangDlg)
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oDLDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.DescLangDlg )
 	
 	&apos; инициализация формы вставки Языка Книги в Служебную области Текста
 	InitDescLangDlg()

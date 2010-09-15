@@ -10,8 +10,11 @@ Private	sValidatorSettingsFilename	As String
 Sub StartValidate()
 	sValidatorSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/validator.txt&quot;
 	
-	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	oValidateDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.ValidateDlg )
+	&apos;DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oValidateDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.ValidateDlg )
 	
 	&apos; инициализация диалога Валидатора в зависимости от локали
 	InitValidateDlg()

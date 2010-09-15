@@ -5,8 +5,11 @@ Option Explicit
 
 Sub About
 	Dim oAboutDlg As Object
-	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	oAboutDlg = CreateUnoDialog( DialogLibraries.OOoFBTools.AboutDlg )
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.BasicLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.BasicLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oAboutDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.AboutDlg )
 	With oAboutDlg.getModel
 		.ImageURL = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/images/about-dlg.png&quot;
 		.lblName.Label = &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; )

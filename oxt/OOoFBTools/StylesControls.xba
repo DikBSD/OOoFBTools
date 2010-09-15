@@ -86,8 +86,11 @@ Function SetUserStyles() As Boolean
 	oProgressBar.start( sSD.sCreateDialog, 1 )
 	oProgressBar.setValue(1)
 	
-	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
-	oStylesDlg = CreateUnoDialog(DialogLibraries.OOoFBTools.StylesDlg)
+	&apos;DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oStylesDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.StylesDlg )
 	
 	&apos; инициализация диалога Пользовательских Стилей в зависимости от локали
 	oProgressBar.start( sSD.sStylesLoad, 4 )
