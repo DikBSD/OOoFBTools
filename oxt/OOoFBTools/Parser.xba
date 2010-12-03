@@ -210,13 +210,24 @@ End Sub
 
 &apos; перебор по всем in-line стилям
 Function InLineAllParser(oSect As Object) As String
+	Dim sLexem As String, sLSpace As String, sRSpace As String, sStr As String
+
 	&apos; обработка &quot;проблемных&quot; символов
 	If bCorrectPara = True Then
-		InLineAllParser = CorrectPara(oSect.getString())
+		sLexem = CorrectPara(oSect.getString())
 	Else
-		InLineAllParser = oSect.getString()
+		sLexem = oSect.getString()
 	End If
 	
+	&apos; вынос начальных и завершающих пробелов лексемы, если они есть, за тэги форматирования
+	sStr = Trim( sLexem )
+	If Len( sLexem ) &gt; Len( sStr ) Then &apos; изначальная лексема содержала пробелы в начале и(или) в конце
+		Dim iPos As Integer : iPos = InStr( sLexem, sStr )
+		sLSpace = Space( iPos-1 )
+		sRSpace = Space( Len( sLexem ) - Len ( Trim (sLexem ) ) - Len( sLSpace ) )
+		sLexem = sStr
+	End If
+		
 	If oSect.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
 		Dim s As String
 		s = Mid(oSect.HyperLinkURL, 1, 1)
@@ -226,42 +237,43 @@ Function InLineAllParser(oSect As Object) As String
 			s = Mid(oSect.HyperLinkURL, 2)
 			s = &quot;#_&quot; &amp; CorrectBMLink( s )
 		End If
-		InLineAllParser = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/a&gt;&quot;
+		sLexem = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sLexem &amp; &quot;&lt;/a&gt;&quot;
 	End If
 	If oSect.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
-		InLineAllParser = &quot;&lt;strong&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strong&gt;&quot;
+		sLexem = &quot;&lt;strong&gt;&quot; &amp; sLexem &amp; &quot;&lt;/strong&gt;&quot;
 	End If
 	If oSect.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
-		InLineAllParser = &quot;&lt;emphasis&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/emphasis&gt;&quot;
+		sLexem = &quot;&lt;emphasis&gt;&quot; &amp; sLexem &amp; &quot;&lt;/emphasis&gt;&quot;
 	End If
 	If oSect.CharEscapement &gt; 0 Then
-		InLineAllParser = &quot;&lt;sup&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sup&gt;&quot;
+		sLexem = &quot;&lt;sup&gt;&quot; &amp; sLexem &amp; &quot;&lt;/sup&gt;&quot;
 	End If
 	If oSect.CharEscapement &lt; 0 Then
-		InLineAllParser = &quot;&lt;sub&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/sub&gt;&quot;
+		sLexem = &quot;&lt;sub&gt;&quot; &amp; sLexem &amp; &quot;&lt;/sub&gt;&quot;
 	End If
 	If oSect.CharShadowed = True OR oSect.CharContoured = True OR oSect.CharStyleName = &quot;code&quot; Then
 		&apos; тень или контур или символьный стиль code
-		InLineAllParser = &quot;&lt;code&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/code&gt;&quot;
+		sLexem = &quot;&lt;code&gt;&quot; &amp; sLexem &amp; &quot;&lt;/code&gt;&quot;
 	End If
 	If oSect.CharStrikeout &gt; 0 Then
-		InLineAllParser = &quot;&lt;strikethrough&gt;&quot; &amp; InLineAllParser &amp; &quot;&lt;/strikethrough&gt;&quot;
+		sLexem = &quot;&lt;strikethrough&gt;&quot; &amp; sLexem &amp; &quot;&lt;/strikethrough&gt;&quot;
 	End If
 	&apos; только теперь, после всех проверок
-	If InLineAllParser = &quot;&quot; Then
+	If sLexem = &quot;&quot; Then
 		&apos; просто обычный текст
-		InLineAllParser = oSect.getString()
+		sLexem = oSect.getString()
 	End If
 	
 	&apos; проверка на пустой абзац с форматом &lt;strong&gt;, &lt;emphasis&gt;...
-	If InLineAllParser = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
-		InLineAllParser = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
-		InLineAllParser = &quot;&quot;
+	If sLexem = &quot;&lt;strong&gt;&lt;/strong&gt;&quot; OR _
+		sLexem = &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot; OR _
+		sLexem = &quot;&lt;sub&gt;&lt;/sub&gt;&quot; OR _
+		sLexem = &quot;&lt;sup&gt;&lt;/sup&gt;&quot; OR _
+		sLexem = &quot;&lt;code&gt;&lt;/code&gt;&quot; OR _
+		sLexem = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
+		sLexem = &quot;&quot;
 	End If
+	InLineAllParser = sLSpace + sLexem + sRSpace
 End Function
 
 &apos; парсер сносок
