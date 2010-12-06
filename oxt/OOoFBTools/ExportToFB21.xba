@@ -250,6 +250,11 @@ Function SaveElements(sArray() As String, sParaStyleName As String, sPara As Str
 		Case sStyleCiteSubTitle
 			sStr = MakeCite(sArray, bBody)
 			SaveFBCorrectText(sStr, True)
+		Case sStyleCiteAuthor
+			&apos; если после текста стоит Автор Цитаты (без самой цитаты) - обычно - в конце Введения книги
+			sStr = MakeCiteAuthor(sArray, bBody)
+			If sStr&lt;&gt;&quot;&quot; Then sStr = &quot;&lt;cite&gt;&quot; + sStr + &quot;&lt;/cite&gt;&quot;
+			SaveFBCorrectText(sStr, True)
 		Case sStyleAnnotation
 			sStr = MakeAnnotation(sArray, bBody)
 			SaveFBCorrectText(sStr, True)
@@ -934,7 +939,7 @@ Function MakeCiteAuthor(sArray As String, bBody As Boolean) As String
 	lCurrentElement = l
 	MakeCiteAuthor = sCite
 End Function	
-	
+
 Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTitle As String, bBody As Boolean) As String
 	Dim sSubtitle As String, l As Long, sSubTag As String, sID As String
 	If bMerge_SubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
