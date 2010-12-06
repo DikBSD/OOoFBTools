@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Const sConstCorrector As String = &quot;/OOoFBTools/corrector.txt&quot; &apos; файл начтроек Корректора Текста
+Const sConstCorrector As String = &quot;/OOoFBTools/corrector.txt&quot; &apos; файл настроек Корректора Текста
 
 Private oDoc As Object
 Private oReplace As Object
@@ -17,10 +17,6 @@ Private bDefisWordDelOnlyPara
 Private bDefisWordDeAll
 
 Private bDelEmptyPar As Boolean
-Private bBreakLinesInPara As Boolean
-Private bBreakLinesInParaStartSpace As Boolean
-Private bBreakLinesInParaEndSymbols As Boolean
-Private bBreakLinesInFPara			As Boolean
 
 Private bDelMP As Boolean &apos; удаление мягкие переносы
 Private bWordDefisPara As Boolean
@@ -49,14 +45,14 @@ Sub TextCorrector()
 	End If
 	oTextCorrectorDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.TextCorrectorDlg )
 	
-	&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
+	&apos; инициализация формы
 	InitTextCorrectorDlg()
 	
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
 		.Height = 278
-		.Width  = 360
+		.Width  = 420
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
 	
@@ -77,18 +73,12 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 242, 318, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 242, 420, com.sun.star.awt.PosSize.POS )
 	
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
-	cboxBreakLinesInParaEnabled()
 	
-	&apos; защита от невнимательности - ВСЕГДА при запуске диалога опция склейки строк в параграф ОТКЛЮЧЕНА - ее можно при желании включить и запустить корректировку.
-	&apos; это сделано для того, чтобы при очередном запуске корректора и по-забывчивости не отключив эту опцию там, гда она не нужна - не загубить документ
-	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
-	cboxBreakLinesInParaEnabled()
-				
 	oTextCorrectorDlg.execute()
 
 End Sub
@@ -107,10 +97,6 @@ Sub SaveCorrectorSettings()
 	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
 	
 	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
-	bBreakLinesInPara = oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State
-	bBreakLinesInParaStartSpace = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
-	bBreakLinesInParaEndSymbols = oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
-	bBreakLinesInFPara			= oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).State
 	
 	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
 	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
@@ -146,10 +132,6 @@ Sub SetCorrectorSettingDefault()
 
 	&apos; Работа с абзацами и разрывами	
 	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 0
-	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State = 0
-	oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).State			= 0
 	
 	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
 	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 0
@@ -175,7 +157,6 @@ Sub SetCorrectorSettingDefault()
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
-	cboxBreakLinesInParaEnabled()
 End Sub
 
 Sub CheckAllOptions()
@@ -189,7 +170,6 @@ Sub CheckAllOptions()
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
-	cboxBreakLinesInParaEnabled()
 End Sub
 
 Sub UnCheckAllOptions()
@@ -203,7 +183,6 @@ Sub UnCheckAllOptions()
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
-	cboxBreakLinesInParaEnabled()
 End Sub
 
 Sub cboxWordDefisParaEnabled()
@@ -240,23 +219,10 @@ Sub cboxBreakLineEnabled()
 	End If
 End Sub
 
-Sub cboxBreakLinesInParaEnabled()
-	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLinesInPara&quot;).State = 1 Then
-		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).Enable			 = True
-	Else
-		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).Enable			 = False
-	End If
-End Sub
-
 &apos; //////////////////////////////////////////////////////////////////////////////////
 &apos; запуск корректировки
 Sub TextCorrectorDlgOk()
-	Dim sCorrectorName As String
-	sCorrectorName = sTCD.sTextCorrecting
+	Dim sCorrectorName As String : sCorrectorName = sTCD.sTextCorrecting
 	&apos; Если есть опции для чистки, то - работаем
 	Dim ctrl As Object, i As Integer, bSel As Boolean
 	bSel = False
@@ -327,36 +293,9 @@ Sub TextCorrectorDlgOk()
 		If bDelMP = False Then
 			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 		End If
-		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
-		&apos; в тексте, таблицах, сносках и врезках
-		JoinWordDefisParaInAllTexts( oProgressBar )
-	End If
-	
-	If bBreakLinesInPara = True Then
-		&apos; !!!!!!!!!не переставлять местами все эти условия!!! Результат будет неверен!!!!!!
-		&apos; Удаление мягких переносов
-		If bDelMP = False Then
-			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
-		End If
-		If bWordDefisPara = False Then &apos; если обработка дефисов не проводилась
-			&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
-			&apos; в тексте, таблицах, сносках и врезках
-			JoinWordDefisParaInAllTexts( oProgressBar )
-		End If
-		oProgressBar.start( sTCD.sSpliceLines, ThisComponent.ParagraphCount )
-		If bBreakLinesInParaStartSpace = True Then
-			JoinBreakLinesInParaStartSpace( oProgressBar )
-		ElseIf bBreakLinesInParaEndSymbols = True Then
-			JoinBreakLinesInParaEndSymbols( oProgressBar )
-		ElseIf bBreakLinesInFPara = True Then
-			&apos; Заменяем разрыв строки на абзац
-			oReplace.SearchString = chr(10)
-			oReplace.ReplaceString = &quot;\n&quot;
-			oDoc.ReplaceAll(oReplace)
-			oProgressBar.setValue(nCur)
-			nCur = nCur+1
-			JoinBreakLinesInEmptyPara( oProgressBar )
-		End If
+		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках
+		oProgressBar.start( sTCD.sDelWordBreak, ThisComponent.ParagraphCount )
+		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
 	End If
 
 	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 144 )
@@ -528,151 +467,22 @@ Sub DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 	nCur = nCur+1
 End Sub
 
-&apos; /////////////////////////////////////////////////////////////////////////
-&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
-&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
-&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
-Sub JoinBreakLinesInParaStartSpace( oProgressBar As Object )
-	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant
-	Dim oDoc As Object, l As Long
-	oDoc = ThisComponent
-	vSearch = oDoc.createSearchDescriptor()
-	&apos; поиск с регулярными выражениями
-	vSearch.SearchRegularExpression = True
-	vSearch.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
-	&apos; Находим первый идентификатор
-	vStartFound = oDoc.findFirst( vSearch )
-	l = 0
-	Do While Not IsNull(vStartFound)
-		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
-		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
-		If IsNull(vEndFound) Then
-			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			Exit Do
-		Else
-			vEndFound.gotoPreviousParagraph(False)
-			&apos;vEndFound.gotoEndOfParagraph(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
-		End If
-	Loop
-End Sub
-
-&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
-&apos; Идентификатор строки &quot;одного абзаца&quot; - символы окончания предложения (.!?…»”\&quot;&quot;:;) в конце строки.
-&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
-Sub JoinBreakLinesInParaEndSymbols( oProgressBar As Object )
-	Dim vStartSearch, vEndSearch &apos;Open и Close descriptors
-	Dim vStartFound, vEndFound &apos;Open и Close find objects
-	Dim oDoc As Object, l As Long
-	oDoc = ThisComponent
-	
-	&apos; Удаляем все конечные пробелы, иначе результат будет неверным
-	oDoc = ThisComponent
-	oReplace = oDoc.createReplaceDescriptor
-	oReplace.SearchRegularExpression = True
-	oReplace.SearchString = &quot; {1,}$&quot;
-	oReplace.ReplaceString = &quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	
-	&apos; Создать дескрипторы для документа, в котором возможен поиск.
-	vStartSearch = oDoc.createSearchDescriptor()
-	vEndSearch = oDoc.createSearchDescriptor()
-
-	vStartSearch.SearchRegularExpression	= True
-	vEndSearch.SearchRegularExpression		= True
-	
-	&apos; Задать текст, который нужно искать, и др.
-	vStartSearch.SearchString = &quot;$&quot;&apos;( если поиск по пробелам в конце абзаца - &quot;[:space:]+$&quot; - этот вариант не всегда встречается и не все разорванные строки &quot;видит&quot;)
-	vEndSearch.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot;
-	&apos; Найти первый открывающий разделитель
-	vStartFound = oDoc.findFirst(vStartSearch)
-	l = 0
-	Do While Not IsNull(vStartFound)
-		&apos;Поиск закрывающего разделителья, начиная с найденного открывающего
-		vEndFound = oDoc.findNext( vStartFound.End, vEndSearch)
-		If IsNull(vEndFound) Then
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			Exit Do
-		Else
-			&apos; Выделить текст внутри разделителей
-			vStartFound.gotoStartOfParagraph(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch )
-		End If
-	Loop
-End Sub
-
-&apos; склейка разорваных строк абзаца знаком абзаца в один абзац.
-&apos; Идентификатор каждого &quot;нового абзаца&quot; - пустой абзац.
-&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
-Sub JoinBreakLinesInEmptyPara()
-	Dim vStartFound As Variant, vEndFound As Variant
-	Dim oDoc As Object, l As Long : l = 0
-	oDoc = ThisComponent
-	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
-
-	&apos; Находим верхнюю границу области
-	Dim vSearch As Variant
-	vSearch = oDoc.createSearchDescriptor()
-	vSearch.SearchRegularExpression = True
-	vSearch.SearchString = &quot;^$&quot;
-&apos;	vStartFound = oDoc.findFirst( vSearch )
-	&apos; верхняя граница - на самый верх документа
-	vStartFound = oDoc.getText().createTextCursor()
-	vStartFound.gotoStart( False )	
-	
-	&apos; поиск и обработка следующих областей, удовлетворяющих условию поиска
-	Do While Not IsNull(vStartFound)
-		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
-		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
-		If IsNull(vEndFound) Then
-			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			Exit Do
-		Else
-			vEndFound.gotoPreviousParagraph(False)
-			vEndFound.gotoPreviousParagraph(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
-		End If
-	Loop
-End Sub
-
-Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
-	On Error GoTo ErrorHandler
-	
-	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
-	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
-	oLCurs.goRight(0, False)
-	Dim vDescriptor, vFound
-	vDescriptor = oDoc.createSearchDescriptor()
-	With vDescriptor
-		.SearchString = &quot;$&quot;
-		.SearchCaseSensitive = False
-		.SearchRegularExpression = True
-	End With
-	vFound = oDoc.findNext( oLCurs, vDescriptor )
-	Do While Not IsNull(vFound)
-		l = l + 1
-		oProgressBar.setValue(l)
-		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Do
-		vFound.setString(&quot; &quot;)
-		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
-	Loop
-ErrorHandler:
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
+&apos; в тексте, таблицаъ, сносках и врезках
+Sub JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
+	JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице
+	JoinWordDefisParaInTables( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
+	&apos; в сноская (Footnote и Endnote) и в текстовых врезках
+	JoinWordDefisParaInFENotesAndTextFrames( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
 End Sub
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
-Sub JoinWordDefisParaInText( oProgressBar As Object )
+Sub JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
 	Dim oDoc As Object, l As Long
@@ -704,7 +514,7 @@ Sub JoinWordDefisParaInText( oProgressBar As Object )
 					vR.gotoNextParagraph(False)
 					vR.gotoEndOfWord(False)
 					&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, True, oProgressBar, l )
+					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, True, bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, l )
 					&apos; ищем далее
 					vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 					vEndFound = oDoc.findNext( vEndFound.End, vSearch )
@@ -730,7 +540,7 @@ End Sub
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице
-Sub JoinWordDefisParaInTables( oProgressBar As Object )
+Sub JoinWordDefisParaInTables( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
 	Dim oDoc As Object, oTable As Object, oCell As Object
@@ -771,7 +581,7 @@ Sub JoinWordDefisParaInTables( oProgressBar As Object )
 				vR.gotoNextParagraph(False)
 				vR.gotoEndOfWord(False)
 				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, oProgressBar, l )
+				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, l )
 				&apos; ищем далее
 				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
@@ -784,23 +594,9 @@ Sub JoinWordDefisParaInTables( oProgressBar As Object )
 End Sub
 
 &apos; ////////////////////////////////////////////////////////////////////////////////////////////////
-&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
-&apos; в тексте, таблицаъ, сносках и врезках
-Sub JoinWordDefisParaInAllTexts( oProgressBar )
-	oProgressBar.start( sTCD.sDelWordBreak, ThisComponent.ParagraphCount )
-	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
-	JoinWordDefisParaInText( oProgressBar )
-	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице
-	JoinWordDefisParaInTables( oProgressBar )
-	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
-	&apos; в сноская (Footnote и Endnote) и в текстовых врезках
-	JoinWordDefisParaInFENotesAndTextFrames( oProgressBar )
-End Sub
-
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
 &apos; в сноская (Footnote и Endnote) и в текстовых врезках
-Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
+Sub JoinWordDefisParaInFENotesAndTextFrames( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
 	Dim oFootNotes As Object
@@ -842,7 +638,7 @@ Sub JoinWordDefisParaInFENotesAndTextFrames( oProgressBar As Object )
 				vR.gotoNextParagraph(False)
 				vR.gotoEndOfWord(False)
 				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, oProgressBar, l )
+				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, l )
 				&apos; ищем далее
 				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
@@ -856,7 +652,7 @@ End Sub
 
 &apos; ///////////////////////////////////////////////////////////////////////////
 &apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
-Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressBar, l )
+Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, bDefisWordDelOnlyPara As Boolean, bDefisWordDeAll As Boolean, oProgressBar, l )
 	&apos; Алгоритм: если это слово с дефисом, то удаляем разрыв; иначе - удаляем и &quot;-&quot;, и разрыв
 	On Error GoTo ErrorHandler
 	
@@ -870,14 +666,17 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, oProgressB
 	If IsHyphen( vL.getString() ) = True Then
 		&apos; Слово с дефисом - просто удаляем разрыв
 		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+		RegReplaceSymbol( &quot;\n&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 	Else
 		If bDefisWordDelOnlyPara Then
 			&apos; еще и для слов удаляем только символ абзаца без переноса
 			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+			RegReplaceSymbol( &quot;\n&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		ElseIf bDefisWordDeAll Then
 			&apos; еще и для слов удаляем и перенос, и символ абзаца
 			RegReplaceSymbol( &quot;[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+			RegReplaceSymbol( &quot;\n&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
 		End If
 	End If
 	

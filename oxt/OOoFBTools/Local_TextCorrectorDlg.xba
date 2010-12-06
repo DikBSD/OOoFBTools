@@ -14,7 +14,6 @@ Type tTextCorrectorDlgData
 	sAsSymbol		As String &apos; Как символ
 	sTextCorrecting	As String &apos; Корректировка текста
 	sSelectOptions	As String &apos; Выберите, пожалуйста, хоть одну опцию для корректуры текста!
-	sSpliceLines	As String &apos; Склейка строк в параграф:
 	sEndWork		As String &apos; Коррекция текста документа завершена!
 	sDelWordBreak	As String &apos; Удаление разрыва слов:
 End Type
@@ -26,50 +25,41 @@ Public sTCD As tTextCorrectorDlgData
 Sub InitTextCorrectorDlgMessage()
 	If getOOoLocal() = &quot;ru&quot; Then
 		With sTCD
-			.sToParagraph	= &quot;К абзацу&quot;
-			.sToSymbol		= &quot;К символу&quot;
-			.sAsSymbol		= &quot;Как символ&quot;
+			.sToParagraph		= &quot;К абзацу&quot;
+			.sToSymbol			= &quot;К символу&quot;
+			.sAsSymbol			= &quot;Как символ&quot;
 			.sTextCorrecting	= &quot;Корректировка текста&quot;
 			.sSelectOptions		= &quot;Выберите, пожалуйста, хоть одну опцию для корректуры текста!&quot;
-			.sSpliceLines		= &quot;Склейка строк в параграф:&quot;
 			.sEndWork			= &quot;Коррекция текста документа завершена!&quot;
 			.sDelWordBreak		= &quot;Удаление разрыва слов:&quot;
 		End With
 	Else
 		With sTCD
-			.sToParagraph	= &quot;To Paragraph&quot;
-			.sToSymbol		= &quot;To Symbol&quot;
-			.sAsSymbol		= &quot;As Symbol&quot;
+			.sToParagraph		= &quot;To Paragraph&quot;
+			.sToSymbol			= &quot;To Symbol&quot;
+			.sAsSymbol			= &quot;As Symbol&quot;
 			.sTextCorrecting	= &quot;Text Correcting&quot;
 			.sSelectOptions		= &quot;Please, select though one Option for Text Correcting!&quot;
-			.sSpliceLines		= &quot;Splice Lines to Paragraph:&quot;
 			.sEndWork			= &quot;Correction complete!&quot;
 			.sDelWordBreak		= &quot;Removing the Words Break:&quot;
 		End With
 	End If
 End Sub
 
-&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
+&apos; инициализация форм
 Sub InitTextCorrectorDlg()
-	&apos; инициализация сообщений диалога диалога Корректора Текста в зависимости от локали
+	&apos; инициализация сообщений диалога Корректора Текста в зависимости от локали
 	InitTextCorrectorDlgMessage()
 	
 	If getOOoLocal() = &quot;ru&quot; Then
 		With oTextCorrectorDlg.getModel
 			.Title 							= &quot;Корректор текста документа&quot;
-			.fcHyphenDashMinusCarry.Label	= &quot; Разорванные дефисы и переносы символом ¶ &quot;
+			.fcHyphenDashMinusCarry.Label	= &quot; Разорванные дефисы и переносы символом абзаца(¶) и строки &quot;
 			.cboxWordDefisPara.Label		= &quot;Удалить разрывы для дефисов и переносов слов&quot;
 			.obtnOnlyDefisPara.Label		= &quot;Обрабатывать только разорванные дефисы&quot;
-			.obtnDefisWordDelOnlyPara.Label	= &quot;Дефисы и удаление из слов только символа ¶ без переноса (-)&quot;
-			.obtnDefisWordDeAll.Label		= &quot;Дефисы и удаление из слов разрыва: и переноса (-) и абзаца (¶)&quot;
+			.obtnDefisWordDelOnlyPara.Label	= &quot;Удаление только разрыва абзаца(¶) и строки(BR); перенос (-) не удаляется&quot;
+			.obtnDefisWordDeAll.Label		= &quot;Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)&quot;
 			.fcParaAndCarry.Label					= &quot; Абзацы и разрывы &quot;
-			.cboxBreakLinesInPara.Label				= &quot;Собрать разорванные символом ¶ строки абзаца в один абзац&quot;
-			.cboxBreakLinesInPara.HelpText			= &quot;Не включайте, если в этом нет необходимости!!!&quot;
-			.obtBreakLinesInParaStartSpace.Label	= &quot;По пробелам в начале абзаца&quot;
-			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; каждого нового абзаца - 1 или несколько стартовых пробелов&quot;
-			.obtBreakLinesInParaEndSymbols.Label	= &quot;По .!?…”»&quot;&quot;:; в конце абзаца&quot;
-			.obtBreakLinesInFPara.Label				= &quot;По &quot;&quot;пустому&quot;&quot; абзацу&quot;
-			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; завершения абзаца - один из знаков окончания предложения и знак абзаца ¶&quot;
 			.cboxDelEmptyPar.Label					= &quot;Удалить пустые абзацы (замена множественных ¶ одним)&quot;
 			.cboxBreakLine.Label					= &quot;Разрыв строки:&quot;
 			.obtnDel.Label							= &quot;Удалить&quot;
@@ -101,19 +91,12 @@ Sub InitTextCorrectorDlg()
 	Else
 		With oTextCorrectorDlg.getModel
 			.Title  						= &quot;Text Corrector&quot;
-			.fcHyphenDashMinusCarry.Label	= &quot; The broken off hyphens and carries by a symbol ¶ &quot;
+			.fcHyphenDashMinusCarry.Label	= &quot; The broken off hyphens and carries by paragraphs(¶) and lines &quot;
 			.cboxWordDefisPara.Label		= &quot;To remove breaks for hyphens and hyphenations&quot;
 			.obtnOnlyDefisPara.Label		= &quot;To process only the broken off hyphens&quot;
-			.obtnDefisWordDelOnlyPara.Label	= &quot;Hyphens and removal from words only a symbol ¶ without carry (-)&quot;
-			.obtnDefisWordDeAll.Label		= &quot;Hyphens and removal break from words: carry (-) and paragraph (¶)&quot;
+			.obtnDefisWordDelOnlyPara.Label	= &quot;Delete ONLY breakup of the paragraph(¶) and lines(BR); carrying(-) does NOT delete&quot;
+			.obtnDefisWordDeAll.Label		= &quot;Delete AND breakup of the carrying(-) AND symbol of the paragraph(¶) AND lines(BR)&quot;
 			.fcParaAndCarry.Label					= &quot; Paragraphs and breaks &quot;
-			.cboxBreakLinesInPara.Label				= &quot;Collect the lines of the paragraph broken off by a symbol in 1 paragraph&quot;
-			.cboxBreakLinesInPara.HelpText			= &quot;Do not include, if in it there is no necessity!!!&quot;
-			.obtBreakLinesInParaStartSpace.Label	= &quot;On blanks in the Paragraph Start&quot;
-			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;The Determinant&quot;&quot; each new paragraph - 1 or some starting blanks&quot;
-			.obtBreakLinesInParaEndSymbols.Label	= &quot;On .!?…”»&quot;&quot;:; in Paragraph End&quot;
-			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;The Determinant&quot;&quot; end of the paragraph - one of signs on the termination of the offer and a sign on the paragraph ¶&quot;
-			.obtBreakLinesInFPara.Label				= &quot;On &quot;&quot;empty&quot;&quot; Paragraph&quot;
 			.cboxDelEmptyPar.Label					= &quot;To remove empty paragraphs (replacement plural ¶ by one)&quot;
 			.cboxBreakLine.Label					= &quot;Line Break:&quot;
 			.obtnDel.Label							= &quot;Remove&quot;

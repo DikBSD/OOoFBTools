@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="JoinBreakLines" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Const sConstJoinBreakLines As String = &quot;/OOoFBTools/joinbreaklines.txt&quot; &apos; файл настроек
+
+Public oJoinBreakLinesDlg			As Object
+
+Private bBreakLinesInParaStartSpace	As Boolean
+Private bBreakLinesInParaEndSymbols	As Boolean
+Private bBreakLinesInFPara			As Boolean
+
+Private bDefisWordDelOnlyPara		As Boolean
+Private bDefisWordDeAll				As Boolean
+
+Sub JoinBreakLines()
+&apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oJoinBreakLinesDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.JoinBreakLinesDlg )
+	
+	&apos; инициализация формы диалога Склейки разорванных строк абзац
+	InitJoinBreakLinesDlg()
+	
+	With oJoinBreakLinesDlg.Model
+		.Height = 90
+		.Width  = 305
+	End With
+	
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg, nX, nY )
+	oJoinBreakLinesDlg.setPosSize( nX, nY, 90, 305, com.sun.star.awt.PosSize.POS )
+	
+	oJoinBreakLinesDlg.execute()
+
+End Sub
+
+Sub SaveJoinBreakLinesDlgSettings()
+	&apos; сохранение положение формы
+	SaveSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg )
+	&apos; заполняем переменные
+	bBreakLinesInParaStartSpace = oJoinBreakLinesDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
+	bBreakLinesInParaEndSymbols = oJoinBreakLinesDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
+	bBreakLinesInFPara			= oJoinBreakLinesDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).State
+	
+	bDefisWordDelOnlyPara		= oJoinBreakLinesDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
+	bDefisWordDeAll				= oJoinBreakLinesDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).State
+End Sub
+
+Sub JoinBreakLinesDlgOkClick()
+	Dim sMessageTitle As String : sMessageTitle = sJBLD.sMessageTitle
+	
+	&apos; Принятие параметров чистки текста
+	oJoinBreakLinesDlg.endExecute()
+
+	&apos; сохранение настроек склейки строк
+	SaveJoinBreakLinesDlgSettings()
+
+	Dim oDoc		As Object, oReplace	As Object, oProgressBar
+	Dim nCur		As Integer : nCur = 1
+	oDoc = ThisComponent
+	oReplace = oDoc.createReplaceDescriptor
+	oReplace.SearchRegularExpression = True
+	oProgressBar = oDoc.CurrentController.StatusIndicator
+	
+	&apos; !!!!!!!!!не переставлять местами все следующие 2 действия DeleteMPer() и JoinWordDefisParaInAllTexts() !!! Результат будет неверен!!!!!!
+	&apos; Удаление мягких переносов
+	oProgressBar.start( sJBLD.sFrontEndProcessing &amp; &quot;:&quot;, 3 )
+	&apos; Заменяем разрыв строки на абзац
+	oReplace.SearchString = chr(10)
+	oReplace.ReplaceString = &quot;\n&quot;
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; удаляем мягкие переносы
+	DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках
+	JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	oProgressBar.setValue(nCur) : nCur = nCur+1
+
+	&apos; ОБРАБОТКА ТЕКСТА
+	oProgressBar.start( sJBLD.sJoinLines &amp; &quot;:&quot;, oDoc.ParagraphCount )
+	
+	If bBreakLinesInParaStartSpace = True Then
+		JoinBreakLinesInParaStartSpace( oDoc, oProgressBar )
+	ElseIf bBreakLinesInParaEndSymbols = True Then
+		JoinBreakLinesInParaEndSymbols( oDoc, oProgressBar )
+	ElseIf bBreakLinesInFPara = True Then
+		JoinBreakLinesInEmptyPara( oDoc, oProgressBar )
+	End If
+	
+	MsgBox sJBLD.sEndWork, 64, sMessageTitle
+	
+	oProgressBar.end
+End Sub
+
+&apos;////////////////////////////////////////
+&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
+&apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+Sub JoinBreakLinesInParaStartSpace( oDoc As Object, oProgressBar As Object )
+	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant
+	Dim l As Long
+	
+	vSearch = oDoc.createSearchDescriptor()
+	&apos; поиск с регулярными выражениями
+	vSearch.SearchRegularExpression = True
+	vSearch.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
+	&apos; Находим первый идентификатор
+	vStartFound = oDoc.findFirst( vSearch )
+	l = 0
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
+		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
+		If IsNull(vEndFound) Then
+			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			Exit Do
+		Else
+			vEndFound.gotoPreviousParagraph(False)
+			&apos;vEndFound.gotoEndOfParagraph(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+		End If
+	Loop
+End Sub
+
+&apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
+&apos; Идентификатор строки &quot;одного абзаца&quot; - символы окончания предложения (.!?…»”\&quot;&quot;:;) в конце строки.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+Sub JoinBreakLinesInParaEndSymbols( oDoc As Object, oProgressBar As Object )
+	Dim vStartSearch, vEndSearch &apos;Open и Close descriptors
+	Dim vStartFound, vEndFound &apos;Open и Close find objects
+	Dim l As Long
+	
+	&apos; Удаляем все конечные пробелы, иначе результат будет неверным
+	oDoc = ThisComponent
+	oReplace = oDoc.createReplaceDescriptor
+	oReplace.SearchRegularExpression = True
+	oReplace.SearchString = &quot; {1,}$&quot;
+	oReplace.ReplaceString = &quot;&quot;
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; Создать дескрипторы для документа, в котором возможен поиск.
+	vStartSearch = oDoc.createSearchDescriptor()
+	vEndSearch = oDoc.createSearchDescriptor()
+
+	vStartSearch.SearchRegularExpression	= True
+	vEndSearch.SearchRegularExpression		= True
+	
+	&apos; Задаем текст, который нужно искать, и др.
+	vStartSearch.SearchString = &quot;^$&quot;&apos;&quot;$&quot;&apos;( если поиск по пробелам в конце абзаца - &quot;[:space:]+$&quot; - этот вариант не всегда встречается и не все разорванные строки &quot;видит&quot;)
+	vEndSearch.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot;
+	&apos; Найти первый открывающий разделитель
+	vStartFound = oDoc.findFirst(vStartSearch)
+	l = 0
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителья, начиная с найденного открывающего
+		vEndFound = oDoc.findNext( vStartFound.End, vEndSearch)
+		If IsNull(vEndFound) Then
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			Exit Do
+		Else
+			&apos; Выделить текст внутри разделителей
+			vStartFound.gotoStartOfParagraph(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch )
+		End If
+	Loop
+End Sub
+
+&apos; склейка разорваных строк абзаца знаком абзаца в один абзац.
+&apos; Идентификатор каждого &quot;нового абзаца&quot; - пустой абзац.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+Sub JoinBreakLinesInEmptyPara( oDoc As Object, oProgressBar As Object )
+	Dim vStartFound As Variant, vEndFound As Variant
+	Dim l As Long : l = 0
+
+	&apos; Находим верхнюю границу области
+	Dim vSearch As Variant
+	vSearch = oDoc.createSearchDescriptor()
+	vSearch.SearchRegularExpression = True
+	vSearch.SearchString = &quot;^$&quot;
+&apos;	vStartFound = oDoc.findFirst( vSearch )
+	&apos; верхняя граница - на самый верх документа
+	vStartFound = oDoc.getText().createTextCursor()
+	vStartFound.gotoStart( False )	
+	
+	&apos; поиск и обработка следующих областей, удовлетворяющих условию поиска
+	Do While Not IsNull(vStartFound)
+		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
+		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
+		If IsNull(vEndFound) Then
+			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			Exit Do
+		Else
+			vEndFound.gotoPreviousParagraph(False)
+			vEndFound.gotoPreviousParagraph(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+		End If
+	Loop
+End Sub
+
+&apos; /////////////////////////////////////////////////////////////////////////
+Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
+	On Error GoTo ErrorHandler
+	
+	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
+	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
+	oLCurs.goRight(0, False)
+	Dim vDescriptor, vFound
+	vDescriptor = oDoc.createSearchDescriptor()
+	With vDescriptor
+		.SearchString = &quot;$&quot;
+		.SearchCaseSensitive = False
+		.SearchRegularExpression = True
+	End With
+	vFound = oDoc.findNext( oLCurs, vDescriptor )
+	Do While Not IsNull(vFound)
+		l = l + 1
+		oProgressBar.setValue(l)
+		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Do
+		vFound.setString(&quot; &quot;)
+		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
+	Loop
+ErrorHandler:
+End Sub
+
+</script:module>

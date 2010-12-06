@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_JoinBreakLinesDlg" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; //////////////////////////////////////////////////////////////
+&apos; модуль локализации диалога Склейки разорванных строк абзаца
+&apos; //////////////////////////////////////////////////////////////
+Option Explicit
+
+&apos; для хранения сообщений для диалога Корректора Текста
+Type tJoinBreakLinesDlgData
+	sMessageTitle		As String &apos; Склейка разорванных строк абзаца
+	sJoinLines			As String &apos; Склейка строк в параграф
+	sFrontEndProcessing	As String &apos; Удаление мягких переносов
+	sEndWork			As String &apos; Склейка разорванных строк абзацев документа завершена!
+End Type
+
+Public sJBLD As tJoinBreakLinesDlgData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация сообщений диалога Склейки разорванных строк абзаца в зависимости от локали
+Sub InitJoinBreakLinesDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With sJBLD
+			.sMessageTitle			= &quot;Склейка разорванных строк абзаца&quot;
+			.sJoinLines				= &quot;Склейка строк в параграф&quot;
+			.sFrontEndProcessing	= &quot;Предварительная обработка текста&quot;
+			.sEndWork				= &quot;Склейка разорванных строк абзацев документа завершена!&quot;
+		End With
+	Else
+		With sJBLD
+			.sMessageTitle			= &quot;Join the BreakLines of the Paragraph&quot;
+			.sJoinLines				= &quot;Join Lines to Paragraph&quot;
+			.sFrontEndProcessing	= &quot;front-end processing&quot;
+			.sEndWork				= &quot;Join complete!&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация формы диалога Склейки разорванных строк абзац
+Sub InitJoinBreakLinesDlg()
+	&apos; инициализация сообщений диалога Склейки разорванных строк абзаца в зависимости от локали
+	InitJoinBreakLinesDlgMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; Then
+		With oJoinBreakLinesDlg.getModel
+			.Title 									= &quot;Склейка разорванных строк абзаца&quot;
+			.lblNewParaIdent.Label					= &quot;Идентификатор нового абзаца:&quot;
+			.obtBreakLinesInParaStartSpace.Label	= &quot;Пробелы в начале абзаца&quot;
+			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; каждого нового абзаца - 1 или несколько стартовых пробелов&quot;
+			.obtBreakLinesInParaEndSymbols.Label	= &quot;Символы .!?…”»&quot;&quot;:; в конце абзаца&quot;
+			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; завершения абзаца - один из знаков окончания предложения и знак абзаца ¶&quot;
+			.obtBreakLinesInFPara.Label				= &quot;&quot;&quot;Пустой&quot;&quot; абзац или одиночный разрыв строки&quot;
+			
+			.lblWordBreak.Label						= &quot;Обработка разрывов дефисных слов и переносов:&quot;
+			.obtnDefisWordDelOnlyPara.Label			= &quot;Удаление только разрыва абзаца(¶) и строки(BR); перенос (-) не удаляется&quot;
+			.obtnDefisWordDeAll.Label				= &quot;Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)&quot;
+			
+			.cmbbtnOk.Label			= &quot;Принять&quot;
+			.cmbbtnNo.Label			= &quot;Отмена&quot;
+		End With
+	Else
+		With oJoinBreakLinesDlg.getModel
+			.Title  								= &quot;Join the BreakLines of the Paragraph&quot;
+			.lblNewParaIdent.Label					= &quot;The Identifier of the new paragraph:&quot;
+			.obtBreakLinesInParaStartSpace.Label	= &quot;The Spaces in the Paragraph Start&quot;
+			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;The Determinant&quot;&quot; each new paragraph - 1 or some starting blanks&quot;
+			.obtBreakLinesInParaEndSymbols.Label	= &quot;The Symbols .!?…”»&quot;&quot;:; in Paragraph End&quot;
+			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;The Determinant&quot;&quot; end of the paragraph - one of signs on the termination of the offer and a sign on the paragraph ¶&quot;
+			.obtBreakLinesInFPara.Label				= &quot;&quot;&quot;Empty&quot;&quot; Paragraph or single breakup of the line&quot;
+			
+			.lblWordBreak.Label						= &quot;Processing breakup carrying:&quot;
+			.obtnDefisWordDelOnlyPara.Label			= &quot;Delete ONLY breakup of the paragraph(¶) and lines(BR); carrying(-) does NOT delete&quot;
+			.obtnDefisWordDeAll.Label				= &quot;Delete AND breakup of the carrying(-) AND symbol of the paragraph(¶) AND lines(BR)&quot;
+			
+			.cmbbtnOk.Label			= &quot;Apply&quot;
+			.cmbbtnNo.Label			= &quot;Cancel&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
