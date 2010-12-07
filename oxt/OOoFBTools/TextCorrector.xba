@@ -37,6 +37,7 @@ Private bPoints As Boolean
 Private bC As Boolean
 Private bImages As Boolean
 Private nAnchor As String
+Private bDeleteAllLineShape As Boolean
 
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -51,7 +52,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 278
+		.Height = 255
 		.Width  = 420
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -73,7 +74,7 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 242, 420, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 255, 420, com.sun.star.awt.PosSize.POS )
 	
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
@@ -115,7 +116,7 @@ Sub SaveCorrectorSettings()
 	nAnchor = oLB.SelectedItem
 	bDelMP = oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State
 	bDelPB = oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State
-	
+	bDeleteAllLineShape = oTextCorrectorDlg.GetControl(&quot;cboDeleteAllLineShape&quot;).State
 End Sub
 
 Sub SetCorrectorSettingDefault()
@@ -153,6 +154,8 @@ Sub SetCorrectorSettingDefault()
 	oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 1
 	&apos; разрывы страниц
 	oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State = 0
+	&apos; удаление из текста всех векторных линий
+	oTextCorrectorDlg.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0
 	
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
@@ -251,6 +254,39 @@ Sub TextCorrectorDlgOk()
 	oReplace = oDoc.createReplaceDescriptor
 	oReplace.SearchRegularExpression = True
 	
+	&apos; удаление из документа всех векторных линий (посде OCR)
+	If bDeleteAllLineShape = True Then
+		Dim oPage	As Object	: oPage	= oDoc.getDrawPage()
+		Dim oShape	As Object
+		Dim nAllDrawPage	As Integer : nAllDrawPage = oPage.getCount()
+		Dim nLineShape		As Integer : nLineShape = -1		&apos;счетчик всех шейпов (счетчик проходов)
+&apos;		Dim nDelLineShape	As Integer : nDelLineShape = 0	&apos;счетчик удаленных линий
+		&apos; подсчет всех линий LineShape
+&apos;		Dim i As Integer
+		For i = 0 To nAllDrawPage - 1
+			oShape = oPage.getByIndex ( i )
+			If oShape.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
+				nLineShape = nLineShape + 1
+			End If
+		Next i
+		&apos; удаление из документа всех линий LineShape
+		oProgressBar.start( sTCD.sWorkGraphic, nLineShape )
+		Do While oPage.getCount() &gt;= 0 And nLineShape &gt; -1
+			oShape = oPage.getByIndex ( nLineShape )
+			If oShape.supportsService(&quot;com.sun.star.drawing.LineShape&quot;) Then
+				oPage.remove( oShape )
+&apos;				nDelLineShape = nDelLineShape + 1
+			End If
+			oProgressBar.setValue(nLineShape)
+			nLineShape = nLineShape - 1
+		Loop
+&apos;		If nDelLineShape &gt; 0 Then
+&apos;			MsgBox &quot;Удалено &quot; &amp; Str$( nDelLineShape ) &amp; &quot; векторной линии&quot;, 176, &quot;Удаление LineShape из документа&quot;
+&apos;		Else
+&apos;			MsgBox &quot;Не найдено ни одной векторной линии&quot;, 176, &quot;Удаление LineShape из документа&quot;
+&apos;		End If
+	End If
+	
 	&apos; Привязка картинок
 	If bImages = True Then
 		Dim oGraphics As Object 
@@ -267,9 +303,11 @@ Sub TextCorrectorDlgOk()
 				iAnchor = 0
 		End Select
 		oGraphics = oDoc.getGraphicObjects()
+	    oProgressBar.start( sTCD.sWorkGraphic, oGraphics.Coun )
 	    For i = 0 to oGraphics.Count - 1
 	    	oThisGraphic = oGraphics.GetByIndex(i)
 			oThisGraphic.AnchorType  = iAnchor
+			oProgressBar.setValue(i)
 		Next i
 	End If
 	
