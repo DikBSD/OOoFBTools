@@ -69,19 +69,21 @@ Sub JoinBreakLinesDlgOkClick()
 	&apos; Удаление мягких переносов
 	oProgressBar.start( sJBLD.sFrontEndProcessing &amp; &quot;:&quot;, 3 )
 	&apos; Заменяем разрыв строки на абзац
+	oProgressBar.setValue(nCur)
 	oReplace.SearchString = chr(10)
 	oReplace.ReplaceString = &quot;\n&quot;
 	oDoc.ReplaceAll(oReplace)
+	nCur = nCur+1
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; удаляем мягкие переносы
 	DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках
+	oProgressBar.start( sJBLD.sFrontEndProcessing &amp; &quot;:&quot;, 100)
 	JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
-	oProgressBar.setValue(nCur) : nCur = nCur+1
 
 	&apos; ОБРАБОТКА ТЕКСТА
-	oProgressBar.start( sJBLD.sJoinLines &amp; &quot;:&quot;, oDoc.ParagraphCount )
+	oProgressBar.start( sJBLD.sJoinLines &amp; &quot;:&quot;, 100 )
 	
 	If bBreakLinesInParaStartSpace = True Then
 		JoinBreakLinesInParaStartSpace( oDoc, oProgressBar )
@@ -227,6 +229,7 @@ Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
 	End With
 	vFound = oDoc.findNext( oLCurs, vDescriptor )
 	Do While Not IsNull(vFound)
+		If l&gt;=100 Then l = 0
 		l = l + 1
 		oProgressBar.setValue(l)
 		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Do
