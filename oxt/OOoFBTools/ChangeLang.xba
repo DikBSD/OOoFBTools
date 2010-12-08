@@ -67,15 +67,19 @@ Sub RuEnRu( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As O
 	asLineChars(0) = &quot;qwertyuiop[]asdfghjkl;&apos;zxcvbnm,.`&quot;+&quot;QWERTYUIOP{}ASDFGHJKL:&quot;&quot;&quot;+&quot;ZXCVBNM&lt;&gt;~&quot; + &quot;@#$%^&amp;&quot;
 	asLineChars(1) = &quot;йцукенгшщзхъфывапролджэячсмитьбюё&quot;+&quot;ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ&quot; +&quot;ЯЧСМИТЬБЮЁ&quot; + &quot;&quot;&quot;№;%:?&quot;
 	
-	oLCurs.goRight(0, False)
-	oLCurs.goRight(1, True)
+	With oLCurs
+		.goRight(0, False)
+		.goRight(1, True)
+	End With
 	TransCode( oLCurs(), asLineChars(), oViewCursor.getString() )
 	
 	&apos; закладку на выделение
 	Dim bmTemp As String : bmTemp = &quot;__dikbsd_temp_EnToRuToEn_temp_bookmark__&quot;
 	_UnoInsertBookmark( bmTemp )
-	oViewCursor.collapseToStart()
-	oViewCursor.goLeft( 1, True )
+	With oViewCursor
+		.collapseToStart()
+		.goLeft( 1, True )
+	End With
 	_UnoInsertBookmark( bmTempStart )
 	GoToViewCursorToBookMark( oViewCursor, bmTemp, True )
 	If oBookMarks.hasByName( bmTemp ) Then _UnoDeleteBookMark( bmTemp )

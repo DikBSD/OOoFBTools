@@ -14,6 +14,9 @@ Private bBreakLinesInFPara			As Boolean
 Private bDefisWordDelOnlyPara		As Boolean
 Private bDefisWordDeAll				As Boolean
 
+Private bStartSpaceDelete			As Boolean
+Private bDelSpace					As Boolean
+
 Sub JoinBreakLines()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
@@ -25,13 +28,13 @@ Sub JoinBreakLines()
 	InitJoinBreakLinesDlg()
 	
 	With oJoinBreakLinesDlg.Model
-		.Height = 90
+		.Height = 132
 		.Width  = 305
 	End With
 	
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg, nX, nY )
-	oJoinBreakLinesDlg.setPosSize( nX, nY, 90, 305, com.sun.star.awt.PosSize.POS )
+	oJoinBreakLinesDlg.setPosSize( nX, nY, 132, 305, com.sun.star.awt.PosSize.POS )
 	
 	oJoinBreakLinesDlg.execute()
 
@@ -41,12 +44,17 @@ Sub SaveJoinBreakLinesDlgSettings()
 	&apos; сохранение положение формы
 	SaveSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg )
 	&apos; заполняем переменные
-	bBreakLinesInParaStartSpace = oJoinBreakLinesDlg.GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
-	bBreakLinesInParaEndSymbols = oJoinBreakLinesDlg.GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
-	bBreakLinesInFPara			= oJoinBreakLinesDlg.GetControl(&quot;obtBreakLinesInFPara&quot;).State
+	With oJoinBreakLinesDlg
+		bBreakLinesInParaStartSpace = .GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
+		bBreakLinesInParaEndSymbols = .GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
+		bBreakLinesInFPara			= .GetControl(&quot;obtBreakLinesInFPara&quot;).State
 	
-	bDefisWordDelOnlyPara		= oJoinBreakLinesDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
-	bDefisWordDeAll				= oJoinBreakLinesDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).State
+		bDefisWordDelOnlyPara		= .GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
+		bDefisWordDeAll				= .GetControl(&quot;obtnDefisWordDeAll&quot;).State
+	
+		bStartSpaceDelete			= .GetControl(&quot;cboxStartSpaceDelete&quot;).State
+		bDelSpace					= .GetControl(&quot;cboxDelSpace&quot;).State
+	End With
 End Sub
 
 Sub JoinBreakLinesDlgOkClick()
@@ -65,21 +73,27 @@ Sub JoinBreakLinesDlgOkClick()
 	oReplace.SearchRegularExpression = True
 	oProgressBar = oDoc.CurrentController.StatusIndicator
 	
-	&apos; !!!!!!!!!не переставлять местами все следующие 2 действия DeleteMPer() и JoinWordDefisParaInAllTexts() !!! Результат будет неверен!!!!!!
+	&apos; !!!!!!!!!не переставлять местами все следующие действия ДО условия If bBreakLinesInParaStartSpace = True Then !!! Результат будет неверен!!!!!!
 	&apos; Удаление мягких переносов
-	oProgressBar.start( sJBLD.sFrontEndProcessing &amp; &quot;:&quot;, 3 )
-	&apos; Заменяем разрыв строки на абзац
-	oProgressBar.setValue(nCur)
-	oReplace.SearchString = chr(10)
-	oReplace.ReplaceString = &quot;\n&quot;
+	With oProgressBar
+		.start( sJBLD.sFrontEndProcessing &amp; &quot;:&quot;, 4 )
+		.setValue(nCur)
+	End With
+	&apos; Заменяем разрыв строки на абзац, для обработки текста с разрывом строк &lt;BR&gt;
+	With oReplace
+		.SearchString = chr(10)
+		.ReplaceString = &quot;\n&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	nCur = nCur+1
 	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; удаляем мягкие переносы
+	&apos; Удаляем все конечные пробелы, иначе результат будет неверным
+	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
+	&apos; удаляем мягкие переносы, иначе результат будет неверным
 	DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+	oProgressBar.setValue(nCur)
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках
-	oProgressBar.start( sJBLD.sFrontEndProcessing &amp; &quot;:&quot;, 100)
+	oProgressBar.start( sJBLD.sCarryingProcessing &amp; &quot;:&quot;, 100)
 	JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
 
 	&apos; ОБРАБОТКА ТЕКСТА
@@ -91,6 +105,32 @@ Sub JoinBreakLinesDlgOkClick()
 		JoinBreakLinesInParaEndSymbols( oDoc, oProgressBar )
 	ElseIf bBreakLinesInFPara = True Then
 		JoinBreakLinesInEmptyPara( oDoc, oProgressBar )
+	End If
+	
+	&apos; /////////// постобработка ///////////////
+	&apos; удаление конечных пробелов
+	Dim i As Integer : i = 2
+	nCur = 1
+	If bStartSpaceDelete = True Then i = i + 1
+	If bDelSpace = True Then i = i + 1
+
+	With oProgressBar
+		.start( sJBLD.sPostProcessing &amp; &quot;:&quot;, i )
+		.setValue(nCur)
+	End With
+	nCur = nCur+1
+	
+	&apos; Удаляем все конечные пробелы
+	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
+
+	If bStartSpaceDelete = True Then
+		&apos; Удаляем все стартовые пробелы
+		DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	
+	If bDelSpace = True Then
+		&apos; Замена множественныз пробелов и табуляций на один пробел
+		DelMSpace( oDoc, oReplace, oProgressBar, nCur )
 	End If
 	
 	MsgBox sJBLD.sEndWork, 64, sMessageTitle
@@ -106,10 +146,12 @@ Sub JoinBreakLinesInParaStartSpace( oDoc As Object, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant
 	Dim l As Long
 	
+	&apos; поиск абзаца-идентификатора
 	vSearch = oDoc.createSearchDescriptor()
-	&apos; поиск с регулярными выражениями
-	vSearch.SearchRegularExpression = True
-	vSearch.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
+	With vSearch
+		.SearchRegularExpression = True
+		.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
+	End With
 	&apos; Находим первый идентификатор
 	vStartFound = oDoc.findFirst( vSearch )
 	l = 0
@@ -139,24 +181,21 @@ Sub JoinBreakLinesInParaEndSymbols( oDoc As Object, oProgressBar As Object )
 	Dim vStartFound, vEndFound &apos;Open и Close find objects
 	Dim l As Long
 	
-	&apos; Удаляем все конечные пробелы, иначе результат будет неверным
-	oDoc = ThisComponent
-	oReplace = oDoc.createReplaceDescriptor
-	oReplace.SearchRegularExpression = True
-	oReplace.SearchString = &quot; {1,}$&quot;
-	oReplace.ReplaceString = &quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	
 	&apos; Создать дескрипторы для документа, в котором возможен поиск.
 	vStartSearch = oDoc.createSearchDescriptor()
 	vEndSearch = oDoc.createSearchDescriptor()
 
-	vStartSearch.SearchRegularExpression	= True
-	vEndSearch.SearchRegularExpression		= True
-	
-	&apos; Задаем текст, который нужно искать, и др.
-	vStartSearch.SearchString = &quot;^$&quot;&apos;&quot;$&quot;&apos;( если поиск по пробелам в конце абзаца - &quot;[:space:]+$&quot; - этот вариант не всегда встречается и не все разорванные строки &quot;видит&quot;)
-	vEndSearch.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot;
+	With vStartSearch
+		.SearchRegularExpression = True
+		&apos; Задаем текст, который нужно искать, и др.
+		.SearchString = &quot;$&quot;
+	End With
+	With vEndSearch
+		.SearchRegularExpression = True
+		&apos; Задаем текст, который нужно искать, и др.
+		.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot;
+	End With
+
 	&apos; Найти первый открывающий разделитель
 	vStartFound = oDoc.findFirst(vStartSearch)
 	l = 0
@@ -187,8 +226,11 @@ Sub JoinBreakLinesInEmptyPara( oDoc As Object, oProgressBar As Object )
 	&apos; Находим верхнюю границу области
 	Dim vSearch As Variant
 	vSearch = oDoc.createSearchDescriptor()
-	vSearch.SearchRegularExpression = True
-	vSearch.SearchString = &quot;^$&quot;
+	With vSearch
+		.SearchRegularExpression = True
+		.SearchString = &quot;^$&quot;
+	End With
+	
 &apos;	vStartFound = oDoc.findFirst( vSearch )
 	&apos; верхняя граница - на самый верх документа
 	vStartFound = oDoc.getText().createTextCursor()
@@ -205,8 +247,10 @@ Sub JoinBreakLinesInEmptyPara( oDoc As Object, oProgressBar As Object )
 			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			Exit Do
 		Else
-			vEndFound.gotoPreviousParagraph(False)
-			vEndFound.gotoPreviousParagraph(False)
+			With vEndFound
+				.gotoPreviousParagraph(False)
+				.gotoPreviousParagraph(False)
+			End With
 			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 		End If

@@ -12,6 +12,8 @@ Type tJoinBreakLinesDlgData
 	sMessageTitle		As String &apos; Склейка разорванных строк абзаца
 	sJoinLines			As String &apos; Склейка строк в параграф
 	sFrontEndProcessing	As String &apos; Удаление мягких переносов
+	sCarryingProcessing	As String &apos; Обработка разрыва переносов
+	sPostProcessing		As String &apos; Пост-обработка
 	sEndWork			As String &apos; Склейка разорванных строк абзацев документа завершена!
 End Type
 
@@ -23,15 +25,19 @@ Sub InitJoinBreakLinesDlgMessage()
 	If getOOoLocal() = &quot;ru&quot; Then
 		With sJBLD
 			.sMessageTitle			= &quot;Склейка разорванных строк абзаца&quot;
-			.sJoinLines				= &quot;Склейка строк в параграф&quot;
+			.sJoinLines				= &quot;Склейка строк в абзац&quot;
 			.sFrontEndProcessing	= &quot;Предварительная обработка текста&quot;
+			.sCarryingProcessing	= &quot;Обработка разрыва переносов&quot;
+			.sPostProcessing		= &quot;Пост-обработка&quot;
 			.sEndWork				= &quot;Склейка разорванных строк абзацев документа завершена!&quot;
 		End With
 	Else
 		With sJBLD
 			.sMessageTitle			= &quot;Join the BreakLines of the Paragraph&quot;
 			.sJoinLines				= &quot;Join Lines to Paragraph&quot;
-			.sFrontEndProcessing	= &quot;front-end processing&quot;
+			.sFrontEndProcessing	= &quot;Front-end processing&quot;
+			.sCarryingProcessing	= &quot;Processing the breakup carrying&quot;
+			.sPostProcessing		= &quot;Post-processing&quot;
 			.sEndWork				= &quot;Join complete!&quot;
 		End With
 	End If
@@ -56,6 +62,10 @@ Sub InitJoinBreakLinesDlg()
 			.obtnDefisWordDelOnlyPara.Label			= &quot;Удаление только разрыва абзаца(¶) и строки(BR); перенос (-) не удаляется&quot;
 			.obtnDefisWordDeAll.Label				= &quot;Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)&quot;
 			
+			.lblPostProcessing.Label				= &quot;Пост-обработка:&quot;
+			.cboxStartSpaceDelete.Label				= &quot;Удалить все пробелы в начале абзаца&quot;
+			.cboxDelSpace.Label						= &quot;Удалить все лишние пробелы и табуляции&quot;
+			
 			.cmbbtnOk.Label			= &quot;Склеить&quot;
 			.cmbbtnNo.Label			= &quot;Отмена&quot;
 		End With
@@ -70,8 +80,12 @@ Sub InitJoinBreakLinesDlg()
 			.obtBreakLinesInFPara.Label				= &quot;&quot;&quot;Empty&quot;&quot; Paragraph or single breakup of the line&quot;
 			
 			.lblWordBreak.Label						= &quot;Processing breakup carrying:&quot;
-			.obtnDefisWordDelOnlyPara.Label			= &quot;Delete ONLY breakup of the paragraph(¶) and lines(BR); carrying(-) does NOT delete&quot;
-			.obtnDefisWordDeAll.Label				= &quot;Delete AND breakup of the carrying(-) AND symbol of the paragraph(¶) AND lines(BR)&quot;
+			.obtnDefisWordDelOnlyPara.Label			= &quot;Remove ONLY breakup of the paragraph(¶) and lines(BR); carrying(-) does NOT delete&quot;
+			.obtnDefisWordDeAll.Label				= &quot;Remove AND breakup of the carrying(-) AND symbol of the paragraph(¶) AND lines(BR)&quot;
+			
+			.lblPostProcessing.Label				= &quot;Post-processing:&quot;
+			.cboxStartSpaceDelete.Label				= &quot;Remove all Spaces at the beginning initially paragraph&quot;
+			.cboxDelSpace.Label						= &quot;Remove all superfluous blanks and tabulation&quot;
 			
 			.cmbbtnOk.Label			= &quot;Join&quot;
 			.cmbbtnNo.Label			= &quot;Cancel&quot;

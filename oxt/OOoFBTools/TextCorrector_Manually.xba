@@ -78,9 +78,11 @@ Sub TextDefectFinderStart()
 		.lbTDFMode.StringItemList = aModeList()
 		.lbTDFPunctMarks.StringItemList = aPunctList()
 	End With
-	oTDF.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
-	oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
-	oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+	With oTDF
+		.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
+		.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
+		.getControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
@@ -103,73 +105,90 @@ End Sub
 Sub lbTDFModeChange()
 	Select Case oTDF.GetControl( &quot;lbTDFMode&quot; ).SelectedItemPos
 		Case 0 &apos; Слово с дефисом, тире или минусом
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sDelete
-			oTDF.Model.cmdbtnTDFWorker.HelpText					= sTDFD.sWorkerHintDeleteMinus
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= sTDFD.sInsertSpace
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
-			oTDF.Model.cmdbtnTDFInsertSpace.HelpText			= sTDFD.sInsertSpaceAroundHint
-			oTDF.Model.cmdbtnTDFSave.Label						= sTDFD.sWordSave
-			oTDF.Model.cmdbtnTDFSave.HelpText					= sTDFD.sWordSaveHint
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
-			oTDF.Model.cmdbtnTDFEdit.Label						= sTDFD.sListWordsEdit
-			oTDF.Model.cmdbtnTDFEdit.HelpText					= sTDFD.sListWordsEditHint
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= True
-			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sDelete
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= sTDFD.sInsertSpace
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= True
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintDeleteMinus
+				.cmdbtnTDFInsertSpace.HelpText			= sTDFD.sInsertSpaceAroundHint
+				.cmdbtnTDFSave.Label					= sTDFD.sWordSave
+				.cmdbtnTDFSave.HelpText					= sTDFD.sWordSaveHint
+				.cmdbtnTDFEdit.Label					= sTDFD.sListWordsEdit
+				.cmdbtnTDFEdit.HelpText					= sTDFD.sListWordsEditHint
+			End With
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sDelete
-			oTDF.Model.cmdbtnTDFWorker.HelpText					= sTDFD.sWorkerHintDeleteBreak
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= &quot;-&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
-			oTDF.Model.cmdbtnTDFInsertSpace.HelpText			= &quot;&quot;
-			oTDF.Model.cmdbtnTDFSave.Label						= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFSave.HelpText					= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
-			oTDF.Model.cmdbtnTDFEdit.Label						= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFEdit.HelpText					= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sDelete
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintDeleteBreak
+				.cmdbtnTDFInsertSpace.HelpText			= &quot;&quot;
+				.cmdbtnTDFSave.Label					= &quot;-&quot;
+				.cmdbtnTDFSave.HelpText					= &quot;&quot;
+				.cmdbtnTDFEdit.Label					= &quot;-&quot;
+				.cmdbtnTDFEdit.HelpText					= &quot;&quot;
+			End With
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= sTDFD.sInsert
-			oTDF.Model.cmdbtnTDFInsertSymbol.HelpText			= sTDFD.sWorkerHintInsertPunctMark
-			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sProcess
-			oTDF.Model.cmdbtnTDFWorker.HelpText					= sTDFD.sWorkerHintDeleteBreakAddBlank
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= sTDFD.sMergeWord
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= True
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
-			oTDF.Model.cmdbtnTDFInsertSpace.HelpText			= sTDFD.sMergeWordHint
-			oTDF.Model.cmdbtnTDFSave.Label						= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFSave.HelpText					= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
-			oTDF.Model.cmdbtnTDFEdit.Label						= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFEdit.HelpText					= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= sTDFD.sInsert
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sProcess
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= sTDFD.sMergeWord
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= True
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= sTDFD.sWorkerHintInsertPunctMark
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintDeleteBreakAddBlank
+				.cmdbtnTDFInsertSpace.HelpText			= sTDFD.sMergeWordHint
+				.cmdbtnTDFSave.Label					= &quot;-&quot;
+				.cmdbtnTDFSave.HelpText					= &quot;&quot;
+				.cmdbtnTDFEdit.Label					= &quot;-&quot;
+				.cmdbtnTDFEdit.HelpText					= &quot;&quot;
+			
+			End With
 		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sInsert
-			oTDF.Model.cmdbtnTDFWorker.HelpText					= sTDFD.sWorkerHintInsertBlank
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= &quot;-&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
-			oTDF.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
-			oTDF.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
-			oTDF.Model.cmdbtnTDFInsertSpace.HelpText			= &quot;&quot;
-			oTDF.Model.cmdbtnTDFSave.Label						= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFSave.HelpText					= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
-			oTDF.Model.cmdbtnTDFEdit.Label						= &quot;-&quot;
-			oTDF.Model.cmdbtnTDFEdit.HelpText					= &quot;&quot;
-			oTDF.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-			oTDF.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sInsert
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintInsertBlank
+				.cmdbtnTDFInsertSpace.HelpText			= &quot;&quot;
+				.cmdbtnTDFSave.Label					= &quot;-&quot;
+				.cmdbtnTDFSave.HelpText					= &quot;&quot;
+				.cmdbtnTDFEdit.Label					= &quot;-&quot;
+				.cmdbtnTDFEdit.HelpText					= &quot;&quot;
+			End With
 	End Select
 End Sub
 
@@ -282,8 +301,10 @@ Function FindNextInText( sFind ) As Boolean
 	End If
 
 	otxtCurs = Found.Text.createTextCursor()
-	otxtCurs.gotorange( Found.getStart(), False )
-	otxtCurs.gotorange( Found.getEnd(), True )
+	With otxtCurs
+		.gotorange( Found.getStart(), False )
+		.gotorange( Found.getEnd(), True )
+	End With
 
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
@@ -467,7 +488,10 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer, sButtonClickName
 			_UnoDelete()
 			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
 			otxtCurs = oViewCursor.Text.createTextCursor()
-			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
+			With otxtCurs
+				.gotoRange( oViewCursor.getEnd(), False )
+				.gotoStartOfWord( False )
+			End With
 			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			&apos; удаляем перенос и символ абзаца
@@ -495,7 +519,10 @@ Sub ProcessingWorker( oViewCursor As Object, iRight As Integer, sButtonClickName
 			oViewCursor.setString( &quot; &quot; )
 			&apos; на начало слова, т.к. в одном слове могут встречаться несколько слипшихся после OCR слов подряд
 			otxtCurs = oViewCursor.Text.createTextCursor()
-			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
+			With otxtCurs
+				.gotoRange( oViewCursor.getEnd(), False )
+				.gotoStartOfWord( False )
+			End With
 			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
 	End Select
 End Sub
@@ -509,7 +536,10 @@ Sub ProcessingTableWorker( oViewCursor As Object, iRight As Integer, sButtonClic
 			_UnoDelete()
 			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
 			Dim otxtCurs As Object : otxtCurs = oViewCursor.Text.createTextCursor()
-			otxtCurs.gotoRange( oViewCursor.getEnd(), False ) : otxtCurs.gotoStartOfWord( False ) 
+			With otxtCurs
+				.gotoRange( oViewCursor.getEnd(), False )
+				.gotoStartOfWord( False )
+			End With
 			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
 		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
 			&apos; удаляем перенос и символ абзаца
@@ -655,8 +685,10 @@ End Sub
 &apos; обработчик - вставка пробелов слева и справа от дефиса...
 Sub InsertionSpaceAroundDash( oViewCursor As Object )
 	Dim s As String : s = oViewCursor.getString()
-	oViewCursor.setString( &quot; &quot; &amp; s &amp; &quot; &quot; )
-	oViewCursor.collapseToEnd()
+	With oViewCursor
+		.setString( &quot; &quot; &amp; s &amp; &quot; &quot; )
+		.collapseToEnd()
+	End With
 End Sub
 
 &apos; вставка недостающего знака препинания в конце предложения
@@ -674,10 +706,12 @@ End Sub
 &apos; обработка найденного для вставки недостающего знака препинания в конце предложения
 Sub InsertionSymbol( oViewCursor As Objec )
 	&apos; снимаем выделение
-	oViewCursor.collapseToEnd()
-	&apos; вставляем знак препинания из выпадающего списка
-	oViewCursor.setString( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem )
-	oViewCursor.collapseToEnd()
+	With oViewCursor
+		.collapseToEnd()
+		&apos; вставляем знак препинания из выпадающего списка
+		.setString( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem )
+		.collapseToEnd()
+	End With
 End Sub
 
 

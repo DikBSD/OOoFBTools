@@ -148,8 +148,10 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
 				&apos; OOo не позволяет вставлять сноску в текстовую врезку.
 				&apos; перепрыгиваем врезку - не обрабатываем ее
-				oViewCursor.gotoRange( vFound, False )
-				oViewCursor.gotoRange( vFound.TextFrame.getEnd(), False )
+				With oViewCursor
+					.gotoRange( vFound, False )
+					.gotoRange( vFound.TextFrame.getEnd(), False )
+				End With
 				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
 			Else &apos; просто текст
 				&apos; переводим курсор на найденный текст сноски
@@ -184,10 +186,12 @@ Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks
 	&apos; возвращаемся к закладке - началу текста сноски
 	Dim b : b = oDoc.getBookmarks().getByName( sConstBookMarkSimple ).getAnchor()
 	&apos; курсор - на начала закладки (текста сноски)
-	oViewCursor.gotoRange(b.getStart(), False)
-	oViewCursor.goRight( 1, False )
-	oViewCursor.gotoRange( vFound.getEnd(), True )
-	oViewCursor.goLeft( 1, True )
+	With oViewCursor
+		.gotoRange(b.getStart(), False)
+		.goRight( 1, False )
+		.gotoRange( vFound.getEnd(), True )
+		.goLeft( 1, True )
+	End With
 	&apos; вырезать выделенный текст сноски в буфер
 	_UnoCut()
 	&apos; переход курсора на временную закладку
@@ -224,9 +228,11 @@ Function FindNumbersUpIndexText( oLCurs ) As Variant
 	SrchAttributes(2).Value	= 101
   
 	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
-	oDesc.SearchRegularExpression = True
-	oDesc.SetSearchAttributes(SrchAttributes())
-	oDesc.SearchString = &quot;[:digit:]+&quot;
+	With oDesc
+		.SearchRegularExpression = True
+		.SetSearchAttributes(SrchAttributes())
+		.SearchString = &quot;[:digit:]+&quot;
+	End With
 	
 	FindNumbersUpIndexText = ThisComponent.findNext( oLCurs, oDesc )
 End Function
@@ -243,9 +249,11 @@ Function FindNumbersUpIndexList( oLCurs ) As Variant
 	SrchAttributes(2).Value	= 101
   
 	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
-	oDesc.SearchRegularExpression = True
-	oDesc.SetSearchAttributes(SrchAttributes())
-	oDesc.SearchString = &quot;^[:digit:]+&quot;
+	With oDesc
+		.SearchRegularExpression = True
+		.SetSearchAttributes(SrchAttributes())
+		.SearchString = &quot;^[:digit:]+&quot;
+	End With
 	
 	FindNumbersUpIndexList = ThisComponent.findNext( oLCurs, oDesc )
 End Function
@@ -1094,107 +1102,117 @@ Sub StartBuildFootEndNoteDlg()
 	
 	ControlModeEnabled()
 	
-	If oBuildFootEndNoteDlg.getModel.optbtnComplexFootNote.State Then
-		&apos; инициализация Подсказки в зависимости от условия - есть ли в Документе Врезки и/или Таблицы или нет.
-		IsTableAndOrTextFrameExistInDocument()
-		oBuildFootEndNoteDlg.getModel.tfTestHelp.Enabled	= True
-	Else
-		oBuildFootEndNoteDlg.getModel.tfTestHelp.Text		= &quot;&quot;
-		oBuildFootEndNoteDlg.getModel.tfTestHelp.Enabled	= False
-	End If
+	With oBuildFootEndNoteDlg.getModel
+		If .optbtnComplexFootNote.State Then
+			&apos; инициализация Подсказки в зависимости от условия - есть ли в Документе Врезки и/или Таблицы или нет.
+			IsTableAndOrTextFrameExistInDocument()
+			.tfTestHelp.Enabled	= True
+		Else
+			.tfTestHelp.Text	= &quot;&quot;
+			.tfTestHelp.Enabled	= False
+		End If
+	End With
 	
 	oBuildFootEndNoteDlg.execute()
 End Sub
 
 
 Sub cmnbtnFootNoteClick()
-	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 0
-		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State		= 1
-		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
-		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
-		oBuildFootEndNoteDlg.Model.Step = 1
-	Else
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State		= 1
-		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State	= 0
-		oBuildFootEndNoteDlg.Model.Step = 0
-	End If
-	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
-		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
-		bIsFootNoteMode = True
-	Else
-		oBuildFootEndNoteDlg.Model.Title = sBTEND.sHyperLinksGeneration
-		bIsFootNoteMode = False
-	End If
+	With oBuildFootEndNoteDlg.Model
+		If .cmnbtnFootNote.State = 1 Then
+			.cmnbtnFootNote.State			= 0
+			.cmnbtnHyperLinks.State			= 1
+			.optbtnComplexFootNote.State	= 1
+			.optbtnSimpleFootNote.State		= 0
+			.Step 							= 1
+		Else
+			.cmnbtnFootNote.State	= 1
+			.cmnbtnHyperLinks.State	= 0
+			.Step 					= 0
+		End If
+		If .cmnbtnFootNote.State = 1 Then
+			.Title = sBTEND.sFootnotesGeneration
+			bIsFootNoteMode = True
+		Else
+			.Title = sBTEND.sHyperLinksGeneration
+			bIsFootNoteMode = False
+		End If
+	End With
 	ControlModeEnabled()
 End Sub
 
 Sub cmnbtnHyperLinksClick()
-	If oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State = 1 Then
-		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State		= 0
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 1
-		oBuildFootEndNoteDlg.Model.Step = 0
-	Else
-		oBuildFootEndNoteDlg.Model.cmnbtnHyperLinks.State		= 1
-		oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State			= 0
-		oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State	= 1
-		oBuildFootEndNoteDlg.Model.optbtnSimpleFootNote.State	= 0
-		oBuildFootEndNoteDlg.Model.Step = 1
-	End If
-	If oBuildFootEndNoteDlg.Model.cmnbtnFootNote.State = 1 Then
-		oBuildFootEndNoteDlg.Model.Title = sBTEND.sFootnotesGeneration
-		bIsFootNoteMode = True
-	Else
-		oBuildFootEndNoteDlg.Model.Title = sBTEND.sHyperLinksGeneration
-		bIsFootNoteMode = False
-	End If
+	With oBuildFootEndNoteDlg.Model
+		If .cmnbtnHyperLinks.State = 1 Then
+			.cmnbtnHyperLinks.State	= 0
+			.cmnbtnFootNote.State	= 1
+			.Step 					= 0
+		Else
+			.cmnbtnHyperLinks.State			= 1
+			.cmnbtnFootNote.State			= 0
+			.optbtnComplexFootNote.State	= 1
+			.optbtnSimpleFootNote.State		= 0
+			.Step							= 1
+		End If
+		If .cmnbtnFootNote.State = 1 Then
+			.Title = sBTEND.sFootnotesGeneration
+			bIsFootNoteMode = True
+		Else
+			.Title = sBTEND.sHyperLinksGeneration
+			bIsFootNoteMode = False
+		End If
+	End With
 	ControlModeEnabled()
 End Sub
 
 Sub SetBuildFootEndNoteDlgSettingDefault
 	&apos; Установка настроек по умолчанию в контролы
-	oBuildFootEndNoteDlg.GetControl( &quot;optbtnSimpleFootNote&quot; ).State = 0
-	oBuildFootEndNoteDlg.GetControl( &quot;optbtnComplexFootNote&quot; ).State = 1
-	oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State = 1
-	oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State = 0
-	oBuildFootEndNoteDlg.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State = 0
-	Dim oLB As Object
-	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
-	oLB.SelectItemPos( 0, True )
-	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInTextTemplate&quot; )
-	oLB.SelectItemPos( 2, True )
-	oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInListTemplate&quot; )
-	oLB.SelectItemPos( 0, True )
+	With oBuildFootEndNoteDlg
+		.GetControl( &quot;optbtnSimpleFootNote&quot; ).State = 0
+		.GetControl( &quot;optbtnComplexFootNote&quot; ).State = 1
+		.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State = 1
+		.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State = 0
+		.GetControl( &quot;optbtnAllChaptersFNTextAtEndOf&quot; ).State = 0
+		Dim oLB As Object
+		oLB = 	.getControl( &quot;lblNSimpleFNInTextTemplate&quot; )
+		oLB.SelectItemPos( 0, True )
+		oLB = 	.getControl( &quot;lblNFNInTextTemplate&quot; )
+		oLB.SelectItemPos( 2, True )
+		oLB = 	.getControl( &quot;lblNFNInListTemplate&quot; )
+		oLB.SelectItemPos( 0, True )
+	End With
 End Sub
 
 Sub ControlModeEnabled()
-	If oBuildFootEndNoteDlg.Model.optbtnComplexFootNote.State Then
-		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInText&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInList&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextInBookEnd&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;cmnbtnTest&quot;).Enable = True
+	With oBuildFootEndNoteDlg
+	If .Model.optbtnComplexFootNote.State Then
+		.GetControl(&quot;lblComplexFNInText&quot;).Enable = True
+		.GetControl(&quot;lblComplexFNInList&quot;).Enable = True
+		.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = True
+		.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = True
+		.GetControl(&quot;optbtnFNTextInBookEnd&quot;).Enable = True
+		.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = True
+		.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = True
+		.GetControl(&quot;cboxDelBookMarks&quot;).Enable = True
+		.GetControl(&quot;cmnbtnTest&quot;).Enable = True
 		
-		oBuildFootEndNoteDlg.GetControl(&quot;lblSimpleFN&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = False
+		.GetControl(&quot;lblSimpleFN&quot;).Enable = False
+		.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = False
 	Else
-		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInText&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;lblComplexFNInList&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextInBookEnd&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;cboxDelBookMarks&quot;).Enable = False
-		oBuildFootEndNoteDlg.GetControl(&quot;cmnbtnTest&quot;).Enable = False
+		.GetControl(&quot;lblComplexFNInText&quot;).Enable = False
+		.GetControl(&quot;lblComplexFNInList&quot;).Enable = False
+		.GetControl(&quot;lblNFNInTextTemplate&quot;).Enable = False
+		.GetControl(&quot;lblNFNInListTemplate&quot;).Enable = False
+		.GetControl(&quot;optbtnFNTextInBookEnd&quot;).Enable = False
+		.GetControl(&quot;optbtnFNTextAfterEachChapter&quot;).Enable = False
+		.GetControl(&quot;optbtnAllChaptersFNTextAtEndOf&quot;).Enable = False
+		.GetControl(&quot;cboxDelBookMarks&quot;).Enable = False
+		.GetControl(&quot;cmnbtnTest&quot;).Enable = False
 		
-		oBuildFootEndNoteDlg.GetControl(&quot;lblSimpleFN&quot;).Enable = True
-		oBuildFootEndNoteDlg.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = True
+		.GetControl(&quot;lblSimpleFN&quot;).Enable = True
+		.GetControl(&quot;lblNSimpleFNInTextTemplate&quot;).Enable = True
 	End If
+	End With
 End Sub
 
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1323,9 +1341,11 @@ Function TextParser( oProgressBar ) As Long
 					If ParaParser( oSect, nCharEscapementHeight ) Then &apos; это - число в верхнем индексе
 						lFindCount = lFindCount + 1
 						&apos; преобразуем в шаблонный вид
-						oSect.CharEscapementHeight = nCharEscapementHeight
-						oSect.CharEscapement = 0
-						oSect.setString( sLeft &amp; oSect.getString() &amp; sRight )
+						With oSect
+							.CharEscapementHeight = nCharEscapementHeight
+							.CharEscapement = 0
+							.setString( sLeft &amp; oSect.getString() &amp; sRight )
+						End With
 					End If
 				End If
 			Loop
@@ -1353,9 +1373,11 @@ Function CellParaParser( oCell As Object, sLeft as String, sRight as String ) As
 				If ParaParser( oWord, nCharEscapementHeight ) Then &apos; это - число в верхнем индексе
 					lFindCount = lFindCount + 1
 					&apos; преобразуем в шаблонный вид
-					oWord.CharEscapementHeight = nCharEscapementHeight
-					oWord.CharEscapement = 0
-					oWord.setString( sLeft &amp; oWord.getString() &amp; sRight )
+					With oWord
+						.CharEscapementHeight = nCharEscapementHeight
+						.CharEscapement = 0
+						.setString( sLeft &amp; oWord.getString() &amp; sRight )
+					End With
 				End If
 			End If
 		Loop
@@ -1474,8 +1496,10 @@ Sub FootNoteTest()
 		oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 		oOS = oFA.openFileWrite( sReport )
 		oOS.truncate()
-		oTOS.setOutputStream( oOS )
-		oTOS.setEncoding( &quot;utf-8&quot; )
+		With oTOS
+			.setOutputStream( oOS )
+			.setEncoding( &quot;utf-8&quot; )
+		End With
 		
 		Dim aLBookMarks() As String &apos; список закладох на главы книги
 		Dim oListBookMark As Object &apos; закладка списка примечаний
@@ -1538,8 +1562,10 @@ Sub FootNoteTest()
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
 							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l) )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
-				oLCurs.gotoRange( oRCurs.getEnd(), False )
-				oLCurs.goRight( 1, False )
+				With oLCurs
+					.gotoRange( oRCurs.getEnd(), False )
+					.goRight( 1, False )
+				End With
 				&apos; очищение всех рабочих массивов для следующего прохода теста
 				RedimAllArrays( saNumbersInText(), vaRepeatNumbersInText(), saNumbersInList(), vaRepeatNumbersInList(), _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
@@ -1595,8 +1621,10 @@ Sub FootNoteTest()
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
 							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l) )
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
-				oLCurs.gotoRange( oRCurs.getEnd(), False )
-				oLCurs.goRight( 1, False )
+				With oLCurs
+					.gotoRange( oRCurs.getEnd(), False )
+					.goRight( 1, False )
+				End With
 				&apos; очищение всех рабочих массивов для следующего прохода теста
 				RedimAllArrays( saNumbersInText(), vaRepeatNumbersInText(), saNumbersInList(), vaRepeatNumbersInList(), _
 								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )

@@ -81,8 +81,10 @@ Sub FindUpIndexFinderStart()
 		.lboxFNLTrans.StringItemList = aList()
 		.lboxFNInListTrans.StringItemList = aNFNInListList()
 	End With
-	oFUI.getControl( &quot;lboxFNLTrans&quot; ).SelectItemPos( 2, True )
-	oFUI.getControl( &quot;lboxFNInListTrans&quot; ).SelectItemPos( 0, True )
+	With oFUI
+		.getControl( &quot;lboxFNLTrans&quot; ).SelectItemPos( 2, True )
+		.getControl( &quot;lboxFNInListTrans&quot; ).SelectItemPos( 0, True )
+	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
@@ -92,9 +94,10 @@ Sub FindUpIndexFinderStart()
 	bFindEnd = False
 	
 	Dim oList : oList = createUnoListener( &quot;FindUpIndexDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
-	oFUI.addTopWindowListener( oList )
-
-	oFUI.setVisible( True )  
+	With oFUI
+		.addTopWindowListener( oList )
+		.setVisible( True )
+	End With
 	While Not bFindEnd
 		Wait 200     
 	Wend
@@ -166,9 +169,11 @@ Function FindNextInText( sFind ) As Boolean
 	SrchAttributes(2).Value	= 101
   
 	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
-	oDesc.SearchRegularExpression = True
-	oDesc.SetSearchAttributes(SrchAttributes())
-	oDesc.SearchString = sFind
+	With oDesc
+		.SearchRegularExpression = True
+		.SetSearchAttributes(SrchAttributes())
+		.SearchString = sFind
+	End With
 	
 	otxtCurs.collapseToEnd()
 	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
@@ -181,8 +186,10 @@ Function FindNextInText( sFind ) As Boolean
 	End If
 
 	otxtCurs = Found.Text.createTextCursor()
-	otxtCurs.gotorange( Found.getStart(), False )
-	otxtCurs.gotorange( Found.getEnd(), True )
+	With otxtCurs
+		.gotorange( Found.getStart(), False )
+		.gotorange( Found.getEnd(), True )
+	End With
 
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
@@ -217,12 +224,14 @@ Sub UpIndexTransformToFootNoteTemplate()
 	Dim sRight	As String : sRight	= GetStringRight( oLB )
 	Dim sText	As String : sText	= oViewCursor.getString()
 	
-	oViewCursor.CharEscapementHeight	= 0
-	oViewCursor.CharEscapement			= 0
-	oViewCursor.setString( sLeft &amp; sText &amp; sRight )
+	With oViewCursor
+		.CharEscapementHeight	= 0
+		.CharEscapement			= 0
+		.setString( sLeft &amp; sText &amp; sRight )
+		&apos; снимаем выделение - вправо
+		.collapseToEnd()
+	End With
 	
-	&apos; снимаем выделение - вправо
-	oViewCursor.collapseToEnd()
 	&apos; продолжение поиска, если включена опция
 	If oFUI.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then FUIFind()
 End Sub
@@ -244,12 +253,13 @@ Sub UpIndexTransformToFootNoteListTemplate()
 	Dim sRight	As String : sRight	= GetStringNFNInListForRight( oLB )
 	Dim sText	As String : sText	= oViewCursor.getString()
 	
-	oViewCursor.CharEscapementHeight	= 0
-	oViewCursor.CharEscapement			= 0
-	oViewCursor.setString( sLeft &amp; sText &amp; sRight )
-	
-	&apos; снимаем выделение - вправо
-	oViewCursor.collapseToEnd()
+	With oViewCursor
+		.CharEscapementHeight	= 0
+		.CharEscapement			= 0
+		.setString( sLeft &amp; sText &amp; sRight )
+		&apos; снимаем выделение - вправо
+		.collapseToEnd()
+	End With
 	&apos; продолжение поиска, если включена опция
 	If oFUI.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then FUIFind()
 End Sub

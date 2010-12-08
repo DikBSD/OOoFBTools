@@ -90,72 +90,76 @@ Sub SaveCorrectorSettings()
 	SaveSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg )
 	
 	&apos; заполняем переменные
-	bWordDefisPara = oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State
-	bOnlyDefisPara = oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).State
-	bDefisWordDelOnlyPara = oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
-	bDefisWordDeAll = oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).State
+	With oTextCorrectorDlg
+		bWordDefisPara = 		.GetControl(&quot;cboxWordDefisPara&quot;).State
+		bOnlyDefisPara = 		.GetControl(&quot;obtnOnlyDefisPara&quot;).State
+		bDefisWordDelOnlyPara = .GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
+		bDefisWordDeAll = 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State
 		
-	bDelSpace = oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State
+		bDelSpace = 	.GetControl(&quot;cboxDelSpace&quot;).State
 	
-	bDelEmptyPar = oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State
+		bDelEmptyPar = 	.GetControl(&quot;cboxDelEmptyPar&quot;).State
 	
-	bBreakLine = oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State
-	bDel = oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State
-	bPar = oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State
-	bSpace = oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State
+		bBreakLine = 	.GetControl(&quot;cboxBreakLine&quot;).State
+		bDel = 			.GetControl(&quot;obtnDel&quot;).State
+		bPar = 			.GetControl(&quot;obtnPar&quot;).State
+		bSpace = 		.GetControl(&quot;obtnSpace&quot;).State
 	
-	b2HyphenToDash = oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State
-	bHyphenToDash = oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State
-	bInsertSpaceBSymAndMDH = oTextCorrectorDlg.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State
-	bDefis = oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State
-	bKav = oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State
-	bPoints = oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State
-	bC = oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State
-	bImages = oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State
-	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
-	nAnchor = oLB.SelectedItem
-	bDelMP = oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State
-	bDelPB = oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State
-	bDeleteAllLineShape = oTextCorrectorDlg.GetControl(&quot;cboDeleteAllLineShape&quot;).State
+		b2HyphenToDash = 			.GetControl(&quot;cbox2HyphenToDash&quot;).State
+		bHyphenToDash = 			.GetControl(&quot;cboxHyphenToDash&quot;).State
+		bInsertSpaceBSymAndMDH = 	.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State
+		bDefis = 					.GetControl(&quot;cboxDefis&quot;).State
+		bKav = 						.GetControl(&quot;cboxKav&quot;).State
+		bPoints = 					.GetControl(&quot;cboxPoints&quot;).State
+		bC = 						.GetControl(&quot;cboxC&quot;).State
+		bImages = 					.GetControl(&quot;cboxImages&quot;).State
+		oLB = 						.getControl(&quot;cbAnchor&quot;)
+		nAnchor = 					oLB.SelectedItem
+		bDelMP = 					.GetControl(&quot;cboxMP&quot;).State
+		bDelPB = 					.GetControl(&quot;cboDelPB&quot;).State
+		bDeleteAllLineShape = 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State
+	End With
 End Sub
 
 Sub SetCorrectorSettingDefault()
 	&apos; Установка настроек по умолчанию в контролы
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Работа с пробелами и табуляциями
-	oTextCorrectorDlg.GetControl(&quot;cboxDelSpace&quot;).State = 1
+	With oTextCorrectorDlg
+		.GetControl(&quot;cboxDelSpace&quot;).State = 1
 
-	&apos; Работа с разорванными дефисами и переносами символом ¶ 
-	oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).State = 0
-	oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0
+		&apos; Работа с разорванными дефисами и переносами символом ¶ 
+		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1
+		.GetControl(&quot;obtnOnlyDefisPara&quot;).State = 0
+		.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State = 1
+		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0
 
-	&apos; Работа с абзацами и разрывами	
-	oTextCorrectorDlg.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
+		&apos; Работа с абзацами и разрывами	
+		.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
 	
-	oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).State = 0
-	oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).State = 0
-	&apos; Кавычки, Дефисы. Разное
-	oTextCorrectorDlg.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxDefis&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxKav&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxPoints&quot;).State = 1
-	oTextCorrectorDlg.GetControl(&quot;cboxC&quot;).State = 0
-	&apos; Картинки
-	oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 0
-	oLB = oTextCorrectorDlg.getControl(&quot;cbAnchor&quot;)
-	oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
-	&apos; мягкие переносы
-	oTextCorrectorDlg.GetControl(&quot;cboxMP&quot;).State = 1
-	&apos; разрывы страниц
-	oTextCorrectorDlg.GetControl(&quot;cboDelPB&quot;).State = 0
-	&apos; удаление из текста всех векторных линий
-	oTextCorrectorDlg.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0
+		.GetControl(&quot;cboxBreakLine&quot;).State = 1
+		.GetControl(&quot;obtnDel&quot;).State = 0
+		.GetControl(&quot;obtnPar&quot;).State = 1
+		.GetControl(&quot;obtnSpace&quot;).State = 0
+		&apos; Кавычки, Дефисы. Разное
+		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
+		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1
+		.GetControl(&quot;cboxDefis&quot;).State = 1
+		.GetControl(&quot;cboxKav&quot;).State = 1
+		.GetControl(&quot;cboxPoints&quot;).State = 1
+		.GetControl(&quot;cboxC&quot;).State = 0
+		&apos; Картинки
+		.GetControl(&quot;cboxImages&quot;).State = 0
+		oLB = 	.getControl(&quot;cbAnchor&quot;)
+		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		&apos; мягкие переносы
+		.GetControl(&quot;cboxMP&quot;).State = 1
+		&apos; разрывы страниц
+		.GetControl(&quot;cboDelPB&quot;).State = 0
+		&apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0
+	End With
 	
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
@@ -189,37 +193,43 @@ Sub UnCheckAllOptions()
 End Sub
 
 Sub cboxWordDefisParaEnabled()
-	If oTextCorrectorDlg.GetControl(&quot;cboxWordDefisPara&quot;).State = 1 Then
-		oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).Enable = True
-	Else
-		oTextCorrectorDlg.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;obtnDefisWordDeAll&quot;).Enable = False
-	End If
+	With oTextCorrectorDlg
+		If .GetControl(&quot;cboxWordDefisPara&quot;).State = 1 Then
+			.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable			= True
+			.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable	= True
+			.GetControl(&quot;obtnDefisWordDeAll&quot;).Enable		= True
+		Else
+			.GetControl(&quot;obtnOnlyDefisPara&quot;).Enable			= False
+			.GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).Enable	= False
+			.GetControl(&quot;obtnDefisWordDeAll&quot;).Enable		= False
+		End If
+	End With
 End Sub
 
 Sub cboxImagesEnabled()
-	If oTextCorrectorDlg.GetControl(&quot;cboxImages&quot;).State = 1 Then
-		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = True
-	Else
-		oTextCorrectorDlg.GetControl(&quot;lblAnchor&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;cbAnchor&quot;).Enable = False
-	End If
+	With oTextCorrectorDlg
+	If .GetControl(&quot;cboxImages&quot;).State = 1 Then
+			.GetControl(&quot;lblAnchor&quot;).Enable	= True
+			.GetControl(&quot;cbAnchor&quot;).Enable	= True
+		Else
+			.GetControl(&quot;lblAnchor&quot;).Enable	= False
+			.GetControl(&quot;cbAnchor&quot;).Enable	= False
+		End If
+	End With
 End Sub
 
 Sub cboxBreakLineEnabled()
-	If oTextCorrectorDlg.GetControl(&quot;cboxBreakLine&quot;).State = 1 Then
-		oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = True
-		oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).Enable = True
-	Else
-		oTextCorrectorDlg.GetControl(&quot;obtnDel&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;obtnPar&quot;).Enable = False
-		oTextCorrectorDlg.GetControl(&quot;obtnSpace&quot;).Enable = False
-	End If
+	With oTextCorrectorDlg
+		If .GetControl(&quot;cboxBreakLine&quot;).State = 1 Then
+			.GetControl(&quot;obtnDel&quot;).Enable	= True
+			.GetControl(&quot;obtnPar&quot;).Enable	= True
+			.GetControl(&quot;obtnSpace&quot;).Enable	= True
+		Else
+			.GetControl(&quot;obtnDel&quot;).Enable	= False
+			.GetControl(&quot;obtnPar&quot;).Enable	= False
+			.GetControl(&quot;obtnSpace&quot;).Enable	= False
+		End If
+	End With
 End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////
@@ -303,7 +313,7 @@ Sub TextCorrectorDlgOk()
 				iAnchor = 0
 		End Select
 		oGraphics = oDoc.getGraphicObjects()
-	    oProgressBar.start( sTCD.sWorkGraphic, oGraphics.Coun )
+	    oProgressBar.start( sTCD.sWorkGraphic, oGraphics.Count )
 	    For i = 0 to oGraphics.Count - 1
 	    	oThisGraphic = oGraphics.GetByIndex(i)
 			oThisGraphic.AnchorType  = iAnchor
@@ -344,16 +354,22 @@ Sub TextCorrectorDlgOk()
 		&apos; Разрывы строк
 		If bDel = True Then
 			&apos; Удаляем разрыв строки
-			oReplace.SearchString = chr(10)
-			oReplace.ReplaceString = &quot;&quot;
+			With oReplace
+				.SearchString = chr(10)
+				.ReplaceString = &quot;&quot;
+			End With
 		ElseIf bPar = True Then
 			&apos; Заменяем разрыв строки на абзац
-			oReplace.SearchString = chr(10)
-			oReplace.ReplaceString = &quot;\n&quot;
+			With oReplace
+				.SearchString = chr(10)
+				.ReplaceString = &quot;\n&quot;
+			End With
 		ElseIf bSpace = True Then
 			&apos; Заменяем разрыв строки на 1 пробел
-			oReplace.SearchString = chr(10)
-			oReplace.ReplaceString = &quot; &quot;
+			With oReplace
+				.SearchString = chr(10)
+				.ReplaceString = &quot; &quot;
+			End With
 		End If
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
@@ -383,13 +399,17 @@ Sub TextCorrectorDlgOk()
 	&apos; Кавычки, Дефисы, Разное
 	If b2HyphenToDash = True Then
 		&apos; Заменить двойной дефис (--) на тире
-		oReplace.SearchString = &quot;--&quot;
-		oReplace.ReplaceString = &quot; — &quot;
+		With oReplace
+			.SearchString = &quot;--&quot;
+			.ReplaceString = &quot; — &quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = chr(8211) &amp; chr(8211)
-		oReplace.ReplaceString = &quot; — &quot;
+		With oReplace
+			.SearchString = chr(8211) &amp; chr(8211)
+			.ReplaceString = &quot; — &quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
@@ -408,33 +428,43 @@ Sub TextCorrectorDlgOk()
 	End If
 	If bDefis = True Then
 		&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
-		oReplace.SearchString = &quot;\&gt;[-&quot; &amp; chr(8209) &amp; &quot;]\&lt;&quot;
-		oReplace.ReplaceString = chr(8211)
+		With oReplace
+			.SearchString = &quot;\&gt;[-&quot; &amp; chr(8209) &amp; &quot;]\&lt;&quot;
+			.ReplaceString = chr(8211)
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		
-		oReplace.SearchString = &quot;\&gt;[-&quot; &amp; chr(8209) &amp; &quot;] \&lt;&quot;
-		oReplace.ReplaceString = chr(8211)
+		With oReplace
+			.SearchString = &quot;\&gt;[-&quot; &amp; chr(8209) &amp; &quot;] \&lt;&quot;
+			.ReplaceString = chr(8211)
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		
-		oReplace.SearchString = &quot;\&gt; [-&quot; &amp; chr(8209) &amp; &quot;]\&lt;&quot;
-		oReplace.ReplaceString = chr(8211)
+		With oReplace
+			.SearchString = &quot;\&gt; [-&quot; &amp; chr(8209) &amp; &quot;]\&lt;&quot;
+			.ReplaceString = chr(8211)
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
 	If bPoints = True Then
 		&apos; Упорядочить многоточие
-		oReplace.SearchString = &quot;\.\.\.&quot;
-		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
+		With oReplace
+			.SearchString = &quot;\.\.\.&quot;
+			.ReplaceString = &quot;…&quot;&apos;chr(8230)
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\. \. \.&quot;
-		oReplace.ReplaceString = &quot;…&quot;&apos;chr(8230)
+		With oReplace
+			.SearchString = &quot;\. \. \.&quot;
+			.ReplaceString = &quot;…&quot;&apos;chr(8230)
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
@@ -445,43 +475,59 @@ Sub TextCorrectorDlgOk()
 	End If
 	If bC = True Then
 		&apos; Замена на (c) (r) (TM)
-		oReplace.SearchString = &quot;\(c\)&quot;
-		oReplace.ReplaceString = &quot;©&quot;
+		With oReplace
+			.SearchString = &quot;\(c\)&quot;
+			.ReplaceString = &quot;©&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(с\)&quot;
-		oReplace.ReplaceString = &quot;©&quot;
+		With oReplace
+			.SearchString = &quot;\(с\)&quot;
+			.ReplaceString = &quot;©&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(C\)&quot;
-		oReplace.ReplaceString = &quot;©&quot;
+		With oReplace
+			.SearchString = &quot;\(C\)&quot;
+			.ReplaceString = &quot;©&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(С\)&quot;
-		oReplace.ReplaceString = &quot;©&quot;
+		With oReplace
+			.SearchString = &quot;\(С\)&quot;
+			.ReplaceString = &quot;©&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(r\)&quot;
-		oReplace.ReplaceString = &quot;®&quot;
+		With oReplace
+			.SearchString = &quot;\(r\)&quot;
+			.ReplaceString = &quot;®&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(R\)&quot;
-		oReplace.ReplaceString = &quot;®&quot;
+		With oReplace
+			.SearchString = &quot;\(R\)&quot;
+			.ReplaceString = &quot;®&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(TM\)&quot;
-		oReplace.ReplaceString = &quot;™&quot;
+		With oReplace
+			.SearchString = &quot;\(TM\)&quot;
+			.ReplaceString = &quot;™&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-		oReplace.SearchString = &quot;\(ТМ\)&quot;
-		oReplace.ReplaceString = &quot;™&quot;
+		With oReplace
+			.SearchString = &quot;\(ТМ\)&quot;
+			.ReplaceString = &quot;™&quot;
+		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
@@ -498,8 +544,10 @@ End Sub
 
 Sub DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 	&apos; Удаление мягких переносов
-	oReplace.SearchString = &quot;\x00AD&quot;
-	oReplace.ReplaceString = &quot;&quot;
+	With oReplace
+		.SearchString = &quot;\x00AD&quot;
+		.ReplaceString = &quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -547,10 +595,14 @@ Sub JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBa
 			If IsEmpty( vStartFound.TextTable ) Then &apos; таблицы не обрабатываем
 				&apos; на конец слова с переносом
 				If Not IsNull(vEndFound) Then
-					vEndFound.gotoNextParagraph(False)
-					vEndFound.gotoEndOfWord(False)
-					vR.gotoNextParagraph(False)
-					vR.gotoEndOfWord(False)
+					With vEndFound
+						.gotoNextParagraph(False)
+						.gotoEndOfWord(False)
+					End With
+					With vR
+						.gotoNextParagraph(False)
+						.gotoEndOfWord(False)
+					End With
 					&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 					ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, True, bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, l )
 					&apos; ищем далее
@@ -563,10 +615,14 @@ Sub JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBa
 			Else &apos; обходим строки таблицы
 				vStartFound.gotoNextParagraph(False)
 				vL.gotoNextParagraph(False)
-				vEndFound.gotoNextParagraph(False)
-				vEndFound.gotoEndOfWord(False)
-				vR.gotoNextParagraph(False)
-				vR.gotoEndOfWord(False)
+				With vEndFound
+					.gotoNextParagraph(False)
+					.gotoEndOfWord(False)
+				End With
+				With vR
+					.gotoNextParagraph(False)
+					.gotoEndOfWord(False)
+				End With
 				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
 				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
 				vL = oDoc.findNext( vL.End, vSearch )
@@ -614,10 +670,14 @@ Sub JoinWordDefisParaInTables( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgress
 			vStartFound.gotoStartOfWord(False)
 			vL.gotoStartOfWord(False)
 			If Not IsNull(vEndFound) Then
-				vEndFound.gotoNextParagraph(False)
-				vEndFound.gotoEndOfWord(False)
-				vR.gotoNextParagraph(False)
-				vR.gotoEndOfWord(False)
+				With vEndFound
+					.gotoNextParagraph(False)
+					.gotoEndOfWord(False)
+				End With
+				With vR
+					.gotoNextParagraph(False)
+					.gotoEndOfWord(False)
+				End With
 				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, l )
 				&apos; ищем далее
@@ -671,10 +731,14 @@ Sub JoinWordDefisParaInFENotesAndTextFrames( bDefisWordDelOnlyPara, bDefisWordDe
 			vStartFound.gotoStartOfWord(False)
 			vL.gotoStartOfWord(False)
 			If Not IsNull(vEndFound) Then
-				vEndFound.gotoNextParagraph(False)
-				vEndFound.gotoEndOfWord(False)
-				vR.gotoNextParagraph(False)
-				vR.gotoEndOfWord(False)
+				With vEndFound
+					.gotoNextParagraph(False)
+					.gotoEndOfWord(False)
+				End With
+				With vR
+					.gotoNextParagraph(False)
+					.gotoEndOfWord(False)
+				End With
 				&apos; обработка найденного слова с переносом: (дефис или просто разрыв переноса абзацем)
 				ProcessingHyphen( vStartFound, vEndFound, vL, vR, oDoc, False, bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, l )
 				&apos; ищем далее
@@ -890,177 +954,245 @@ End Function
 &apos;////////////////////////////////////////////////////////////////////
 &apos; Вставка пробела между символами и минусом, тире или дефисом
 Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSynbolCode, oProgressBar, nCur )
-	oReplace.SearchString = &quot;\.&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;. &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;\.&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot;. &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;,&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;, &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;, — &quot;
+	With oReplace
+		.SearchString = &quot;,&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot;, &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;, — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;:&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;: &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;: — &quot;
+	With oReplace
+		.SearchString = &quot;:&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot;: &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;: — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot; &apos;&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot; &apos; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
+	With oReplace
+		.SearchString = &quot; &apos;&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot; &apos; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\!&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;! &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;! — &quot;
+	With oReplace
+		.SearchString = &quot;\!&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot;! &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;! — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\?&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;? &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;? — &quot;
+	With oReplace
+		.SearchString = &quot;\?&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot;? &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;? — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;…&quot; &amp; chr(nSynbolCode)
-	oReplace.ReplaceString = &quot;… &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;… — &quot;
+	With oReplace
+		.SearchString = &quot;…&quot; &amp; chr(nSynbolCode)
+		.ReplaceString = &quot;… &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;… — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
 	&apos; кавычки и тире
-	oReplace.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot;{1,}\&lt;&quot; &apos;&quot;»- \&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot;{1,}\&lt;&quot; &apos;&quot;»- \&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;» {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos; &quot;» -\&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;» {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos; &quot;» -\&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos;&quot;»-\&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos;&quot;»-\&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}«&quot; &apos; &quot;\&gt;- «&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}«&quot; &apos; &quot;\&gt;- «&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot; &apos;&quot;\&gt; -«&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot; &apos;&quot;\&gt; -«&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}«&quot; &apos;&quot;»- «&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	With oReplace
+		.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}«&quot; &apos;&quot;»- «&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;» {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot; &apos;&quot;» -«&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	With oReplace
+		.SearchString = &quot;» {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot; &apos;&quot;» -«&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-		
-	oReplace.SearchString = &quot;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}\&lt;&quot; &apos; &quot;&quot;&quot;- \&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos; &quot;&quot;&quot; -\&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos;&quot;&quot;&quot;-\&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}&quot;&quot;&quot; &apos;&quot;\&gt;- &quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;&quot; &apos; &quot;\&gt; -&quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;&quot; &apos; &quot;\&gt;-&quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}&quot;&quot;&quot; &apos;&quot;&quot;&quot;- &quot;&quot;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;&quot; &apos;&quot;&quot;&quot; -&quot;&quot;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;\&lt;&quot; &apos; &quot;\&gt;&quot;&quot;-&quot;&quot;\&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	With oReplace
+		.SearchString = &quot;»&quot; &amp; chr(nSynbolCode) &amp; &quot;«&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(nSynbolCode) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;”&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}\&lt;&quot; &apos;&quot;”- \&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}\&lt;&quot; &apos; &quot;&quot;&quot;- \&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;” {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos;&quot;” -\&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos; &quot;&quot;&quot; -\&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;”&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos; &quot;”-\&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos;&quot;&quot;&quot;-\&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}“&quot; &apos;&quot;\&gt;- “&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}&quot;&quot;&quot; &apos;&quot;\&gt;- &quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;“&quot; &apos;&quot;\&gt; -“&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;&quot; &apos; &quot;\&gt; -&quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;“&quot; &apos; &quot;\&gt;-“&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;&quot; &apos; &quot;\&gt;-&quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;”&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}“&quot; &apos;&quot;”- “&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}&quot;&quot;&quot; &apos;&quot;&quot;&quot;- &quot;&quot;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;” {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;“&quot; &apos;&quot;” -“&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;&quot; &apos;&quot;&quot;&quot; -&quot;&quot;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;”&quot; &amp; chr(nSynbolCode) &amp; &quot;“\&lt;&quot; &apos; &quot;\&gt;”-“\&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;&quot;&quot;&quot; &amp; chr(nSynbolCode) &amp; &quot;&quot;&quot;\&lt;&quot; &apos; &quot;\&gt;&quot;&quot;-&quot;&quot;\&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	With oReplace
+		.SearchString = &quot;”&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}\&lt;&quot; &apos;&quot;”- \&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;” {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos;&quot;” -\&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;”&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot; &apos; &quot;”-\&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}“&quot; &apos;&quot;\&gt;- “&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;“&quot; &apos;&quot;\&gt; -“&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;“&quot; &apos; &quot;\&gt;-“&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;”&quot; &amp; chr(nSynbolCode) &amp; &quot; {1,}“&quot; &apos;&quot;”- “&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;” {1,}&quot; &amp; chr(nSynbolCode) &amp; &quot;“&quot; &apos;&quot;” -“&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt;”&quot; &amp; chr(nSynbolCode) &amp; &quot;“\&lt;&quot; &apos; &quot;\&gt;”-“\&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(nSynbolCode) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1069,352 +1201,544 @@ End Function
 &apos; Заменить, дефис используемый вместо тире на тире
 &apos;(В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
 Function HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
-	oReplace.SearchString = &quot;^ {1,}-&quot;
-	oReplace.ReplaceString = chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;^ {1,}-&quot;
+		.ReplaceString = chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;^-&quot;
-	oReplace.ReplaceString = chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;^-&quot;
+		.ReplaceString = chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\.-&quot;
-	oReplace.ReplaceString = &quot;. &quot; &amp; chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;\.-&quot;
+		.ReplaceString = &quot;. &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\. {1,}-&quot; &apos;&quot;\. -&quot;
-	oReplace.ReplaceString = &quot;. &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;. — &quot;
+	With oReplace
+		.SearchString = &quot;\. {1,}-&quot; &apos;&quot;\. -&quot;
+		.ReplaceString = &quot;. &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;. — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;,-&quot;
-	oReplace.ReplaceString = &quot;, &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;, — &quot;
+	With oReplace
+		.SearchString = &quot;,-&quot;
+		.ReplaceString = &quot;, &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;, — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;, {1,}-&quot; &apos;&quot;, -&quot;
-	oReplace.ReplaceString = &quot;, &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;, — &quot;
+	With oReplace
+		.SearchString = &quot;, {1,}-&quot; &apos;&quot;, -&quot;
+		.ReplaceString = &quot;, &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;, — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;:-&quot;
-	oReplace.ReplaceString = &quot;: &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;: — &quot;
+	With oReplace
+		.SearchString = &quot;:-&quot;
+		.ReplaceString = &quot;: &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;: — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;: {1,}-&quot; &apos;&quot;: -&quot;
-	oReplace.ReplaceString = &quot;: &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;: — &quot;
+	With oReplace
+		.SearchString = &quot;: {1,}-&quot; &apos;&quot;: -&quot;
+		.ReplaceString = &quot;: &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;: — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot; &apos;-&quot;
-	oReplace.ReplaceString = &quot; &apos; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
+	With oReplace
+		.SearchString = &quot; &apos;-&quot;
+		.ReplaceString = &quot; &apos; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot; &apos; {1,}-&quot;  &apos;&quot; ;-&quot;
-	oReplace.ReplaceString = &quot; &apos; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
+	With oReplace
+		.SearchString = &quot; &apos; {1,}-&quot;  &apos;&quot; ;-&quot;
+		.ReplaceString = &quot; &apos; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; &apos; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\!-&quot;
-	oReplace.ReplaceString = &quot;! &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;! — &quot;
+	With oReplace
+		.SearchString = &quot;\!-&quot;
+		.ReplaceString = &quot;! &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;! — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\! {1,}-&quot; &apos;&quot;\! -&quot;
-	oReplace.ReplaceString = &quot;! &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;! — &quot;
+	With oReplace
+		.SearchString = &quot;\! {1,}-&quot; &apos;&quot;\! -&quot;
+		.ReplaceString = &quot;! &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;! — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\?-&quot;
-	oReplace.ReplaceString = &quot;? &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;? — &quot;
+	With oReplace
+		.SearchString = &quot;\?-&quot;
+		.ReplaceString = &quot;? &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;? — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\? {1,}-&quot; &apos;&quot;\? -&quot;
-	oReplace.ReplaceString = &quot;? &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;? — &quot;
+	With oReplace
+		.SearchString = &quot;\? {1,}-&quot; &apos;&quot;\? -&quot;
+		.ReplaceString = &quot;? &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;? — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;…-&quot;
-	oReplace.ReplaceString = &quot;… &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;… — &quot;
+	With oReplace
+		.SearchString = &quot;…-&quot;
+		.ReplaceString = &quot;… &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;… — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;… {1,}-&quot; &apos;&quot;… -&quot;
-	oReplace.ReplaceString = &quot;… &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;… — &quot;
+	With oReplace
+		.SearchString = &quot;… {1,}-&quot; &apos;&quot;… -&quot;
+		.ReplaceString = &quot;… &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;… — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
 	&apos; кавычки и тире
-	oReplace.SearchString = &quot;» {1,}- {1,}\&lt;&quot; &apos;&quot;» - \&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;» {1,}- {1,}\&lt;&quot; &apos;&quot;» - \&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»- {1,}\&lt;&quot; &apos;&quot;»- \&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;»- {1,}\&lt;&quot; &apos;&quot;»- \&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;» {1,}-\&lt;&quot; &apos; &quot;» -\&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;» {1,}-\&lt;&quot; &apos; &quot;» -\&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»-\&lt;&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	With oReplace
+		.SearchString = &quot;»-\&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;» — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}- {1,}«&quot; &apos; &quot;\&gt; - «&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}- {1,}«&quot; &apos; &quot;\&gt; - «&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;- {1,}«&quot; &apos; &quot;\&gt;- «&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;- {1,}«&quot; &apos; &quot;\&gt;- «&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}-«&quot; &apos;&quot;\&gt; -«&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}-«&quot; &apos;&quot;\&gt; -«&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;-«&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;-«&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot; — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;» {1,}- {1,}«&quot; &apos;&quot;» - «&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	With oReplace
+		.SearchString = &quot;» {1,}- {1,}«&quot; &apos;&quot;» - «&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»- {1,}«&quot; &apos;&quot;»- «&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	With oReplace
+		.SearchString = &quot;»- {1,}«&quot; &apos;&quot;»- «&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;» {1,}-«&quot; &apos;&quot;» -«&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	With oReplace
+		.SearchString = &quot;» {1,}-«&quot; &apos;&quot;» -«&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;»-«&quot;
-	oReplace.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-		
-	oReplace.SearchString = &quot;&quot;&quot; {1,}- {1,}\&lt;&quot; &apos; &quot;&quot;&quot; - \&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot;- {1,}\&lt;&quot; &apos; &quot;&quot;&quot;- \&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot; {1,}-\&lt;&quot; &apos; &quot;&quot;&quot; -\&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot;-\&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}- {1,}&quot;&quot;&quot; &apos;&quot;\&gt; - &quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;- {1,}&quot;&quot;&quot; &apos;&quot;\&gt;- &quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}-&quot;&quot;&quot; &apos; &quot;\&gt; -&quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;-&quot;&quot;&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot; {1,}- {1,}&quot;&quot;&quot; &apos;&quot;&quot;&quot; - &quot;&quot;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot;- {1,}&quot;&quot;&quot; &apos;&quot;&quot;&quot;- &quot;&quot;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;&quot;&quot; {1,}-&quot;&quot;&quot; &apos;&quot;&quot;&quot; -&quot;&quot;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;&quot;&quot;-&quot;&quot;\&lt;&quot;
-	oReplace.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	With oReplace
+		.SearchString = &quot;»-«&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; «&quot; &apos;&quot;» — «&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;” {1,}- {1,}\&lt;&quot; &apos; &quot;” - \&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot; {1,}- {1,}\&lt;&quot; &apos; &quot;&quot;&quot; - \&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;”- {1,}\&lt;&quot; &apos;&quot;”- \&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot;- {1,}\&lt;&quot; &apos; &quot;&quot;&quot;- \&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;” {1,}-\&lt;&quot; &apos;&quot;” -\&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot; {1,}-\&lt;&quot; &apos; &quot;&quot;&quot; -\&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;”-\&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot;-\&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;&quot;&quot; — &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}- {1,}“&quot; &apos;&quot;\&gt; - “&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}- {1,}&quot;&quot;&quot; &apos;&quot;\&gt; - &quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;- {1,}“&quot; &apos;&quot;\&gt;- “&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;- {1,}&quot;&quot;&quot; &apos;&quot;\&gt;- &quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt; {1,}-“&quot; &apos;&quot;\&gt; -“&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}-&quot;&quot;&quot; &apos; &quot;\&gt; -&quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;-“&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;-&quot;&quot;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;” {1,}- {1,}“&quot; &apos;&quot;” - “&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot; {1,}- {1,}&quot;&quot;&quot; &apos;&quot;&quot;&quot; - &quot;&quot;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;”- {1,}“&quot; &apos;&quot;”- “&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot;- {1,}&quot;&quot;&quot; &apos;&quot;&quot;&quot;- &quot;&quot;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;” {1,}-“&quot; &apos;&quot;” -“&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;&quot;&quot; {1,}-&quot;&quot;&quot; &apos;&quot;&quot;&quot; -&quot;&quot;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\&gt;”-“\&lt;&quot;
-	oReplace.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;&quot;&quot;-&quot;&quot;\&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;&quot;&quot; &apos;&quot;&quot;&quot; — &quot;&quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	With oReplace
+		.SearchString = &quot;” {1,}- {1,}\&lt;&quot; &apos; &quot;” - \&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;”- {1,}\&lt;&quot; &apos;&quot;”- \&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;” {1,}-\&lt;&quot; &apos;&quot;” -\&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;”-\&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot;” — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}- {1,}“&quot; &apos;&quot;\&gt; - “&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt;- {1,}“&quot; &apos;&quot;\&gt;- “&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}-“&quot; &apos;&quot;\&gt; -“&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt;-“&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot; — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;” {1,}- {1,}“&quot; &apos;&quot;” - “&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;”- {1,}“&quot; &apos;&quot;”- “&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;” {1,}-“&quot; &apos;&quot;” -“&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\&gt;”-“\&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; “&quot; &apos;&quot;” — “&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
 	&apos; скобки и тире
-	oReplace.SearchString = &quot;\)- &quot;
-	oReplace.ReplaceString = &quot;) &quot; &amp; chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;\)- &quot;
+		.ReplaceString = &quot;) &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\)-&quot;
-	oReplace.ReplaceString = &quot;) &quot; &amp; chr(8212) &amp; &quot; &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	oReplace.SearchString = &quot;- \(&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; (&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;-\(&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; (&quot;
+	With oReplace
+		.SearchString = &quot;\)-&quot;
+		.ReplaceString = &quot;) &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;\}- &quot;
-	oReplace.ReplaceString = &quot;} &quot; &amp; chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;- \(&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; (&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\}-&quot;
-	oReplace.ReplaceString = &quot;} &quot; &amp; chr(8212) &amp; &quot; &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	oReplace.SearchString = &quot;- \{&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; {&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;-\{&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; {&quot;
+	With oReplace
+		.SearchString = &quot;-\(&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; (&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;\]- &quot;
-	oReplace.ReplaceString = &quot;] &quot; &amp; chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;\}- &quot;
+		.ReplaceString = &quot;} &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\]-&quot;
-	oReplace.ReplaceString = &quot;] &quot; &amp; chr(8212) &amp; &quot; &quot;
+	With oReplace
+		.SearchString = &quot;\}-&quot;
+		.ReplaceString = &quot;} &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;- \[&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; [&quot;
+	With oReplace
+		.SearchString = &quot;- \{&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; {&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;-\[&quot;
-	oReplace.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; [&quot;
+	With oReplace
+		.SearchString = &quot;-\{&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; {&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	With oReplace
+		.SearchString = &quot;\]- &quot;
+		.ReplaceString = &quot;] &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;\]-&quot;
+		.ReplaceString = &quot;] &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	With oReplace
+		.SearchString = &quot;- \[&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; [&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;-\[&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; [&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 End Function
 
+&apos;////////////////////////////////////////////////////////////////////////////
 &apos; Работа с пробелами и табуляциями
 Function DelSpace( oDoc, oReplace, oProgressBar, nCur )
+	&apos; Замена множественныз пробелов и табуляций на один пробел
+	DelMSpace( oDoc, oReplace, oProgressBar, nCur )
+	&apos; Удаляем все стартовые пробелы
+	DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
+	&apos; Удаляем все конечные пробелы
+	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
+End Function
+
+&apos; Замена множественныз пробелов и табуляций на один пробел
+Function DelMSpace( oDoc, oReplace, oProgressBar, nCur )
 	&apos; Заменяем одиночную табуляцию на пробел
-	oReplace.SearchString = &quot;\t&quot;
-	oReplace.ReplaceString = &quot; &quot;
+	With oReplace
+		.SearchString = &quot;\t&quot;
+		.ReplaceString = &quot; &quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
+	&apos; Обработка множественных пробелов
+	With oReplace
+		.SearchString = &quot; +&quot; &apos;&quot;  {1,2}&quot;
+		.ReplaceString = &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; Обработка множественных неразрывных пробелов
+	With oReplace
+		.SearchString = &quot; +&quot;
+		.ReplaceString = &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; Обработка оставшихся комбинаций пробелов и неразрывных пробелов
+	With oReplace
+		.SearchString = &quot;   &quot; &apos; неразрывный, простой, неразрывный
+		.ReplaceString = &quot; &quot; &apos; неразрывный
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;   &quot; &apos; простой, неразрывный, простой
+		.ReplaceString = &quot; &quot; &apos; неразрывный
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;  &quot; &apos; неразрывный, простой
+		.ReplaceString = &quot; &quot; &apos; неразрывный
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;  &quot; &apos; простой, неразрывный
+		.ReplaceString = &quot; &quot; &apos; неразрывный
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+End Function
+
+&apos; Удаляем все стартовые пробелы
+Function DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
 	&apos; Удаляем все стартовые табуляции
 	&apos;oReplace.SearchString = &quot;^\t{1,}&quot;
 	&apos;oReplace.ReplaceString = &quot;&quot;
@@ -1428,147 +1752,160 @@ Function DelSpace( oDoc, oReplace, oProgressBar, nCur )
 	&apos;oReplace.ReplaceString = &quot; &quot;
 	&apos;oDoc.ReplaceAll(oReplace)
 	&apos; Удаляем все стартовые пробелы
-	oReplace.SearchString = &quot;^ {1,}&quot;
-	oReplace.ReplaceString = &quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Удаляем все конечные пробелы
-	oReplace.SearchString = &quot; {1,}$&quot;
-	oReplace.ReplaceString = &quot;&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Обработка множественных пробелов
-	oReplace.SearchString = &quot; +&quot; &apos;&quot;  {1,2}&quot;
-	oReplace.ReplaceString = &quot; &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Обработка множественных неразрывных пробелов
-	oReplace.SearchString = &quot; +&quot;
-	oReplace.ReplaceString = &quot; &quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Обработка оставшихся комбинаций пробелов и неразрывных пробелов
-	oReplace.SearchString = &quot;   &quot; &apos; неразрывный, простой, неразрывный
-	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;   &quot; &apos; простой, неразрывный, простой
-	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;  &quot; &apos; неразрывный, простой
-	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;  &quot; &apos; простой, неразрывный
-	oReplace.ReplaceString = &quot; &quot; &apos; неразрывный
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^ {1,}&quot;
+		.ReplaceString = &quot;&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 End Function
 
+&apos; Удаляем все конечные пробелы
+Function DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot; {1,}$&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////
 &apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 Function QuotationMarks( oDoc, oReplace, oProgressBar, nCur )
-	oReplace.SearchString = &quot;^ {1,}[&quot;&quot;“„]&quot;
-	oReplace.ReplaceString = &quot;«&quot;
+	With oReplace
+		.SearchString = &quot;^ {1,}[&quot;&quot;“„]&quot;
+		.ReplaceString = &quot;«&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur) 
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;\&gt;[&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;»&quot;
+	With oReplace
+		.SearchString = &quot;\&gt;[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;[&quot;&quot;“„]\&lt;&quot;
-	oReplace.ReplaceString = &quot;«&quot;
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\&lt;&quot;
+		.ReplaceString = &quot;«&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;…[&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;…»&quot;
+	With oReplace
+		.SearchString = &quot;…[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;…»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;[&quot;&quot;“„]…&quot;
-	oReplace.ReplaceString = &quot;«…&quot;
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]…&quot;
+		.ReplaceString = &quot;«…&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;\![&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;!»&quot;
+	With oReplace
+		.SearchString = &quot;\![&quot;&quot;”]&quot;
+		.ReplaceString = &quot;!»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\?[&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;?»&quot;
+	With oReplace
+		.SearchString = &quot;\?[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;?»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1	
-	oReplace.SearchString = &quot;\.[&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;.»&quot;
+	With oReplace
+		.SearchString = &quot;\.[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;.»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;[&quot;&quot;“„]\(&quot;
-	oReplace.ReplaceString = &quot;«(&quot;
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\(&quot;
+		.ReplaceString = &quot;«(&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\)[&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;)»&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	oReplace.SearchString = &quot;[&quot;&quot;“„]\[&quot;
-	oReplace.ReplaceString = &quot;«[&quot;
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	oReplace.SearchString = &quot;\][&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;]»&quot;
+	With oReplace
+		.SearchString = &quot;\)[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;)»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;[&quot;&quot;“„]\{&quot;
-	oReplace.ReplaceString = &quot;«{&quot;
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\[&quot;
+		.ReplaceString = &quot;«[&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;\}[&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;}»&quot;
+	With oReplace
+		.SearchString = &quot;\][&quot;&quot;”]&quot;
+		.ReplaceString = &quot;]»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	oReplace.SearchString = &quot;[&quot;&quot;“„][\+]&quot;
-	oReplace.ReplaceString = &quot;«+&quot;
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\{&quot;
+		.ReplaceString = &quot;«{&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;[&quot;&quot;“„][\-]&quot;
-	oReplace.ReplaceString = &quot;«-&quot;
+	With oReplace
+		.SearchString = &quot;\}[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;}»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;[\+][&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;+»&quot;
+	
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„][\+]&quot;
+		.ReplaceString = &quot;«+&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	oReplace.SearchString = &quot;[\-][&quot;&quot;”]&quot;
-	oReplace.ReplaceString = &quot;-»&quot;
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„][\-]&quot;
+		.ReplaceString = &quot;«-&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;[\+][&quot;&quot;”]&quot;
+		.ReplaceString = &quot;+»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString = &quot;[\-][&quot;&quot;”]&quot;
+		.ReplaceString = &quot;-»&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1

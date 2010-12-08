@@ -55,8 +55,10 @@ Sub HandWorkingParagraphsStart()
 		.Width	= 350
 		.lbHWPMode.StringItemList = aModeList()
 	End With
-	oHWPDlg.getControl( &quot;lbHWPMode&quot; ).SelectItemPos( 0, True )
-	oHWPDlg.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
+	With oHWPDlg
+		.getControl( &quot;lbHWPMode&quot; ).SelectItemPos( 0, True )
+		.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
+	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
@@ -66,9 +68,10 @@ Sub HandWorkingParagraphsStart()
 	bWorkEnd = False
 	
 	Dim oList : oList = createUnoListener( &quot;HandWorkingParagraphsDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
-	oHWPDlg.addTopWindowListener( oList )
-
-	oHWPDlg.setVisible( True )  
+	With oHWPDlg
+		.addTopWindowListener( oList )
+		.setVisible( True )
+	End With
 	While Not bWorkEnd
 		Wait 200     
 	Wend
@@ -78,19 +81,23 @@ End Sub
 
 Sub lbHWPModeChange()
 	&apos; Изменение Вида обработки при изменении Режима обработки абзацев
-	Dim aModeTypeList() As String
-	Select Case oHWPDlg.GetControl( &quot;lbHWPMode&quot; ).SelectedItemPos
-		Case 0 &apos; Обрыв абзаца (¶)
-			aModeTypeList() = Array( sHWPD.sSpliceReplaceParaToSpace, _
-									sHWPD.sSpliceRemovePara, _
-									sHWPD.sReplaceBreakParaToBR )
-		Case 1 &apos; Разрыв строки (↵)
-			aModeTypeList() = Array( sHWPD.sSpliceReplaceBRToSpace, _
-									sHWPD.sSpliceRemoveBR, _
-									sHWPD.sReplaceBRToBreakPara )
-	End Select
-	oHWPDlg.Model.lbHWPModeType.StringItemList = aModeTypeList()
-	oHWPDlg.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
+	With sHWPD
+		Dim aModeTypeList() As String
+		Select Case oHWPDlg.GetControl( &quot;lbHWPMode&quot; ).SelectedItemPos
+			Case 0 &apos; Обрыв абзаца (¶)
+				aModeTypeList() = Array( .sSpliceReplaceParaToSpace, _
+										.sSpliceRemovePara, _
+										.sReplaceBreakParaToBR )
+			Case 1 &apos; Разрыв строки (↵)
+				aModeTypeList() = Array( .sSpliceReplaceBRToSpace, _
+										.sSpliceRemoveBR, _
+										.sReplaceBRToBreakPara )
+		End Select
+		With oHWPDlg
+			.Model.lbHWPModeType.StringItemList = aModeTypeList()
+			.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
+		End With
+	End With
 End Sub
 
 Sub cmdBtnWorkClick()
