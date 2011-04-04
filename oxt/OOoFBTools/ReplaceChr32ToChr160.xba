@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ReplaceChr32ToChr160" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Sub ReplaceChr32ToChr160()
+	On Local Error GoTo PrintErrMessage
+	
+	&apos; инициализация сообщений инструмента
+	InitReplaceChr32ToChr160Message()
+	
+	Dim l As Long : l = GetSelectionCount()
+	If l =-1 Then &apos; только для выделений Текста!
+		MsgBox sR32TO160D.sSelectParaForWork, 64, sR32TO160D.sMessageTitle
+		Exit Sub
+	End If
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim oCurs() As Object
+	If Not CreateSelectedTextIterator( oDoc, sR32TO160D.sSelectParaForWork &amp; chr(10) &amp; sR32TO160D.sProcessAllDoc, _
+										sR32TO160D.sMessageTitle, oCurs() ) Then Exit Sub
+	Dim i As Integer
+	For i = LBound( oCurs() ) To UBound( oCurs() )
+		ReplaceChr32ToChr160Worker( oDoc, oCurs(i, 0), oCurs(i, 1) )
+	Next i
+	
+	MsgBox sR32TO160D.sEndWork, 64, sR32TO160D.sMessageTitle
+	Exit Sub
+PrintErrMessage:
+	MsgBox sR32TO160D.sNoTableFNTextFrame + chr(10) + sR32TO160D.sSelectParaForWork, 64, sR32TO160D.sMessageTitle
+End Sub
+
+Sub ReplaceChr32ToChr160Worker( oDoc As Object, oLCurs As Object, oRCurs As Object )
+
+	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
+	&apos; Таблицы, Врезки и сноски не обрабатываем
+	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
+				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable )Then
+		Exit Sub
+	End If
+	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+	
+	Dim oPar		As Object &apos;Перебираемый параграф
+	Dim oViewCursor	As Object
+	Dim sPara		As String
+	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
+		oPar = oLCurs.createEnumeration().nextElement()
+		sPara = oPar.getString()
+		
+		oViewCursor = oDoc.getCurrentController().getViewCursor()
+		oViewCursor.gotoRange(oPar, False)
+		oViewCursor.collapseToStart()
+		
+		&apos; ищем пробелы в строке sPara
+		Dim i As Integer, sChar As String
+		For i=0 To Len(sPara)-1
+			sChar = Mid(sPara,i+1,1) 
+			If sChar = chr(32) Then
+				&apos; выделяем найденный пробел
+				oViewCursor.goRight(1, True)
+				&apos; заменяем пробел 32 на неразрывный 160
+				_UnoInsertText(chr(160))
+			Else
+				oViewCursor.goRight(1, False)
+			End If
+		Next i
+		oLCurs.gotoEndOfParagraph(False)
+		oLCurs.gotoNextParagraph(False)
+	Loop
+End Sub
+
+</script:module>
