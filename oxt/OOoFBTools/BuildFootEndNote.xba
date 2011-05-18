@@ -587,6 +587,7 @@ Sub BuildFootNoteComplex( bIsFootNoteMode As Boolean )
 	Dim oBookMarks	As Object	: oBookMarks	= oDoc.getBookmarks()
 	Dim oLCurs		As Object	: oLCurs		= oDoc.Text.createTextCursor()
 	oLCurs.gotoStart( False ) &apos; на начало документа
+	Dim oStartCurs	As Object
 	
 	&apos; удаляем служебные закладки, если они есть
 	DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkFNNumber )
@@ -611,14 +612,20 @@ Sub BuildFootNoteComplex( bIsFootNoteMode As Boolean )
 	
 	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State  Then
 		&apos; режим: 1. Нумерация сквозная; Общий список примечаний - в конце книги.
+		aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+		oStartCurs = oBookMarks.getByName( aLBookMarks(0) ).getAnchor()
+		oLCurs.gotoRange( oStartCurs.getEnd(), False )
+		
 		oRCurs = oBookMarks.getByName( aBookMarks(0) ).getAnchor()
 		lFindCount = lFindCount + ProcessingComplexFootNoteList( bIsFootNoteMode, 0, oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(0), _
 																sConstBookMarkFNNumber, sConstBookMarkFNText, sRegStringNFNInText, sLeft, sRight ) 
 		&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста примечаний ( после закладки sConstBookMarkListNote )
 		GoToViewCursorToBookMark( oViewCursor, aBookMarks(0), False )
 		&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
-		oLCurs.gotoRange( oRCurs.getEnd(), False )
-		oLCurs.goRight( 1, False )
+		With oLCurs
+			.gotoRange( oRCurs.getEnd(), False )
+			.goRight( 1, False )
+		End With
 	ElseIf oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextAfterEachChapter&quot; ).State Then
 		&apos; режим: 2. Список текста примечаний - после каждой главы
 		&apos;проверка - есть ли хоть одна закладка L-зоны
@@ -634,6 +641,9 @@ Sub BuildFootNoteComplex( bIsFootNoteMode As Boolean )
 			Exit Sub	
 		End If
 
+		oStartCurs = oBookMarks.getByName( aLBookMarks(0) ).getAnchor()
+		oLCurs.gotoRange( oStartCurs.getEnd(), False )
+		
 		For nNoteListNumber=0 To UBound( aBookMarks() )
 			oRCurs = oBookMarks.getByName( aBookMarks(nNoteListNumber) ).getAnchor()
 			lFindCount = lFindCount + ProcessingComplexFootNoteList( bIsFootNoteMode, nNoteListNumber, oDoc, oViewCursor, oLCurs, oRCurs, oBookMarks, aBookMarks(nNoteListNumber), _
@@ -641,8 +651,10 @@ Sub BuildFootNoteComplex( bIsFootNoteMode As Boolean )
 			&apos; перемещаем курсор в новую зону поиска - после обработанного блока текста примечаний ( после закладки sConstBookMarkListNote )
 			GoToViewCursorToBookMark( oViewCursor, aBookMarks(nNoteListNumber), False )
 			&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
-			oLCurs.gotoRange( oRCurs.getEnd(), False )
-			oLCurs.goRight( 1, False )
+			With oLCurs
+				.gotoRange( oRCurs.getEnd(), False )
+				.goRight( 1, False )
+			End With
 		Next nNoteListNumber
 	Else
 		&apos; режим 3: Все блоки текста примечаний - в конце книги
@@ -1464,7 +1476,8 @@ Sub FootNoteTest()
 		Dim oRCurs		As Object
 		Dim l As Long
 		oLCurs.gotoStart( False ) &apos; на начало документа
-	
+		Dim oStartCurs	As Object
+
 		&apos; получаем зоны для обработки сносок
 		Dim aRBookMarks() As String : aRBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkListNote )
 		If UBound( aRBookMarks() ) = -1 Then
@@ -1507,11 +1520,15 @@ Sub FootNoteTest()
 			.setEncoding( &quot;utf-8&quot; )
 		End With
 		
-		Dim aLBookMarks() As String &apos; список закладох на главы книги
+		Dim aLBookMarks() As String &apos; список закладок на главы книги
 		Dim oListBookMark As Object &apos; закладка списка примечаний
 		
 		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
 			&apos; Тест для Режима 1: Нумерация - сквозная; Общий список примечаний - в конце книги
+			aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
+			oStartCurs = oBookMarks.getByName( aLBookMarks(0) ).getAnchor()
+			oLCurs.gotoRange( oStartCurs.getEnd(), False )
+			
 			oRCurs = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
 			oListBookMark = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
 			GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
@@ -1556,6 +1573,10 @@ Sub FootNoteTest()
 			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			SaveStartReportText( oTOS, sBTEND.sTestMode2 )
 			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
+			
+			oStartCurs = oBookMarks.getByName( aLBookMarks(0) ).getAnchor()
+			oLCurs.gotoRange( oStartCurs.getEnd(), False )
+			
 			For l=0 To UBound( aRBookMarks() )
 				&apos; печатаем номер очередной тестируемой зоны (глава и ее Список примечаний)
 				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
