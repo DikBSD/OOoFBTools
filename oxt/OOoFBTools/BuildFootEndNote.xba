@@ -1443,11 +1443,14 @@ End Function
 &apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; генерация сносок в зависимости от режима (простой или сложный)
 Sub FootNoteTest()
-	oBuildFootEndNoteDlg.Enable = False
+	&apos;oBuildFootEndNoteDlg.Enable = False
+	oBuildFootEndNoteDlg.endExecute()
+	&apos; сохранение настроек
+	SaveSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg )
 	&apos; проверка, есть ли в Документе Врезки и/или Таблицы
 	If IsTableAndOrTextFrameExistInDocument() Then
 		If MsgBox ( oBuildFootEndNoteDlg.getModel.tfTestHelp.Text &amp; chr(10) &amp; chr(10) &amp; sBTEND.sTestContinueQuery, 32 + 16 + 1, sBTEND.sFootnotesGeneration ) &lt;&gt; 1 Then
-			oBuildFootEndNoteDlg.Enable = True
+			&apos;oBuildFootEndNoteDlg.Enable = True
 			Exit Sub
 		End If
 	End If
@@ -1466,7 +1469,7 @@ Sub FootNoteTest()
 		Dim aRBookMarks() As String : aRBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkListNote )
 		If UBound( aRBookMarks() ) = -1 Then
 			MsgBox sBTEND.sNotFoundBookmarkZoneForNoteList, 64, &quot;Test&quot;
-			oBuildFootEndNoteDlg.Enable = True
+			&apos;oBuildFootEndNoteDlg.Enable = True
 			Exit Sub	
 		End If
 		
@@ -1536,7 +1539,7 @@ Sub FootNoteTest()
 			aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
 			If UBound( aLBookMarks() ) = -1 Then
 				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode2
-				oBuildFootEndNoteDlg.Enable = True
+				&apos;oBuildFootEndNoteDlg.Enable = True
 				Exit Sub	
 			End If
 			
@@ -1545,7 +1548,7 @@ Sub FootNoteTest()
 				MsgBox sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; chr(10) &amp; _
 						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() )+1 &amp; chr(10) &amp; _
 						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aRBookMarks() )+1 &amp; chr(10), 64, sBTEND.sTestMode2
-				oBuildFootEndNoteDlg.Enable = True
+				&apos;oBuildFootEndNoteDlg.Enable = True
 				Exit Sub	
 			End If
 			
@@ -1587,7 +1590,7 @@ Sub FootNoteTest()
 			aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
 			If UBound( aLBookMarks() ) = -1 Then
 				MsgBox sBTEND.sNotFoundBookmarkZoneForNoteNumber, 64, sBTEND.sTestMode3
-				oBuildFootEndNoteDlg.Enable = True
+				&apos;oBuildFootEndNoteDlg.Enable = True
 				Exit Sub	
 			End If
 		
@@ -1596,7 +1599,7 @@ Sub FootNoteTest()
 				MsgBox sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; chr(10) &amp; _
 						sBTEND.sTestBookmarkForStatChapter &amp; &quot;: &quot; &amp; UBound( aLBookMarks() )+1 &amp; chr(10) &amp; _
 						sBTEND.sTestBookmarkForListNotes &amp; &quot;: &quot; &amp; UBound( aRBookMarks() )+1 &amp; chr(10), 64, sBTEND.sTestMode3
-				oBuildFootEndNoteDlg.Enable = True
+				&apos;oBuildFootEndNoteDlg.Enable = True
 				Exit Sub	
 			End If
 			
@@ -1649,7 +1652,7 @@ Sub FootNoteTest()
 		oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
 		oSSE.execute( sReport, &quot;&quot;, 0 )
 	End If
-	oBuildFootEndNoteDlg.Enable = True
+	&apos;oBuildFootEndNoteDlg.Enable = True
 End Sub
 
 &apos; очищение всех рабочих массивов для следующего прохода теста
