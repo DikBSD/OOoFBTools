@@ -89,8 +89,11 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 			Loop
 		Else
 			sString = sString &amp; oSect.getString()		
-			If oSect.TextPortionType = &quot;Footnote&quot; Or oSect.TextPortionType = &quot;Endnote&quot; Then
+			If oSect.TextPortionType = &quot;Footnote&quot; Then
 				&apos; парсер сносок
+				sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
+			ElseIf oSect.TextPortionType = &quot;Endnote&quot; Then
+				&apos; парсер концевых сносок
 				sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
 			Else
 				sFormatPara = sFormatPara &amp; InLineAllParser( oSect )
