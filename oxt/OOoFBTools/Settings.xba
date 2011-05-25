@@ -41,10 +41,17 @@ Sub SetDefaultSettingsInControls()
 	&apos; Настройки По умолчанию - в контролы
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	&apos; Сноски
+	oServiceDlg.Model.obtnFENoteCommon.State = 0
+	oServiceDlg.Model.obtnFENoteSeparately.State = 1
 	oLB = oServiceDlg.getControl(&quot;cmbboxStyle&quot;)
 	oLB.SelectItemPos(1, True)
 	oServiceDlg.Model.cmbboxTitle.Text = sServD.sNotes
 	oServiceDlg.Model.cboxSpace.State = 0
+	&apos; концевые сноски
+	oLB = oServiceDlg.getControl(&quot;cmbboxENStyle&quot;)
+	oLB.SelectItemPos(3, True)
+	oServiceDlg.Model.cmbboxENTitle.Text = sServD.sCommentaries
+	oServiceDlg.Model.cboxENSpace.State = 0
 	&apos; Стихи
 	oServiceDlg.Model.cboxPoemTitle.State = 0
 	oServiceDlg.Model.cboxPoemAuthor.State = 0
@@ -116,6 +123,11 @@ Sub SetSettingsInVars( sCurrentLine )
 &apos;	sSetting(1) = ReplaceInString(s, chr(10), &quot;&quot;, False)
 	Select Case sSetting(0)
 		&apos; Сноски
+		Case &quot;obtnFENoteCommon&quot;
+			bFENoteCommon = sSetting(1)
+		Case &quot;obtnFENoteSeparately&quot;
+			bFENoteSeparately = sSetting(1)
+		
 		Case &quot;cmbboxStyle&quot;
 			Select Case sSetting(1)
 				Case &quot;0&quot;
@@ -147,9 +159,71 @@ Sub SetSettingsInVars( sCurrentLine )
 			bFootnoteSpace = sSetting(1)
 		Case &quot;cmbboxTitle&quot;
 			sFootnoteTitle = sSetting(1)
+		
+		&apos; Концевые Сноски
+		Case &quot;cmbboxENStyle&quot;
+			Select Case sSetting(1)
+				Case &quot;0&quot;
+					sENLeft = &quot;&quot;
+					sENRight = &quot;&quot;
+				Case &quot;1&quot;
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;
+				Case &quot;2&quot;
+					sENLeft = &quot;[ &quot;
+					sENRight = &quot; ]&quot;
+				Case &quot;3&quot;
+					sENLeft = &quot;{&quot;
+					sENRight = &quot;}&quot;
+				Case &quot;4&quot;
+					sENLeft = &quot;{ &quot;
+					sENRight = &quot; }&quot;
+				Case &quot;5&quot;
+					sENLeft = &quot;(&quot;
+					sENRight = &quot;)&quot;
+				Case &quot;6&quot;
+					sENLeft = &quot;( &quot;
+					sENRight = &quot; )&quot;
+				Case Else
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;	
+			End Select
+		Case &quot;cboxENSpace&quot;
+			bENSpace = sSetting(1)
+		Case &quot;cmbboxENTitle&quot;
+			sENTitle = sSetting(1)
+		
 		&apos; аннотация
 		Case &quot;cboxAnnotationSubtitle&quot;
 			bMergeAnnotationSubTitle = sSetting(1)
+			
+		Case &quot;cmbboxENStyle&quot;
+			Select Case sSetting(1)
+				Case &quot;0&quot;
+					sENLeft = &quot;&quot;
+					sENRight = &quot;&quot;
+				Case &quot;1&quot;
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;
+				Case &quot;2&quot;
+					sENLeft = &quot;[ &quot;
+					sENRight = &quot; ]&quot;
+				Case &quot;3&quot;
+					sENLeft = &quot;{&quot;
+					sENRight = &quot;}&quot;
+				Case &quot;4&quot;
+					sENLeft = &quot;{ &quot;
+					sENRight = &quot; }&quot;
+				Case &quot;5&quot;
+					sENLeft = &quot;(&quot;
+					sENRight = &quot;)&quot;
+				Case &quot;6&quot;
+					sENLeft = &quot;( &quot;
+					sENRight = &quot; )&quot;
+				Case Else
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;	
+			End Select
 		&apos; Стихи
 		Case &quot;cboxPoemTitle&quot;
 			bMergePoemTitle = sSetting(1)
@@ -289,11 +363,20 @@ Function GetFormat( sSetting As String) As String
 End Function
 
 Sub SetDefaultSettingsInVars
-	&apos; значения по умолчанию для сносок	
+	&apos; значения по умолчанию для сносок
+	bFENoteCommon = False
+	bFENoteSeparately = True
+	
 	sFootnoteLeft = &quot;[&quot;
 	sFootnoteRight = &quot;]&quot;
 	bFootnoteSpace = False
 	sFootnoteTitle = sServD.sNotes
+	&apos; концевые сноски
+	sENLeft = &quot;{&quot;
+	sENRight = &quot;}&quot;
+	bENSpace = False
+	sENTitle = sServD.sCommentaries
+	
 	&apos; значения по умолчанию для аннотации
 	bMergeAnnotationSubTitle = True
 	&apos; значения по умолчанию для SubTitle

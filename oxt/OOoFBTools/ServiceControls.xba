@@ -27,10 +27,12 @@ Sub ServiceDlgExec()
 	sGraphList()		= Array( &quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot; )
 						
 	With oServiceDlg.Model
-		.Height	= 306
-		.Width	= 368
+		.Height	= 388
+		.Width	= 382
 		.cmbboxStyle.StringItemList		= sFootStyleList()
+		.cmbboxENStyle.StringItemList	= sFootStyleList()
 		.cmbboxTitle.StringItemList		= sFootTitleList()
+		.cmbboxENTitle.StringItemList	= sFootTitleList()
 		.cmbboxHeaderTHV.StringItemList	= sHVList()
 		.cmbboxLineTDV.StringItemList	= sHVList()
 		.cmbboxTextFrame.StringItemList	= sTFList()
@@ -48,8 +50,9 @@ Sub ServiceDlgExec()
 	&apos; Считываем и устанавливаем настройки
 	Dim nX As Integer, nY As Integer
 	ReadSettings( True, nX, nY )
-	oServiceDlg.setPosSize( nX, nY, 306, 368, com.sun.star.awt.PosSize.POS )
+	oServiceDlg.setPosSize( nX, nY, 388, 382, com.sun.star.awt.PosSize.POS )
 	
+	obtnFENoteCommonEnabled()
 	cboxExportGraphicsEnabled()
 	
 	oServiceDlg.execute()
@@ -137,6 +140,26 @@ Sub cboxExportGraphicsEnabled()
 			.GetControl( &quot;lbAnyAs&quot; ).Enable		= False
 			.GetControl( &quot;lblOLE&quot; ).Enable		= False
 			.GetControl( &quot;lbOLEAs&quot; ).Enable		= False
+		End If
+	End With
+End Sub
+
+Sub obtnFENoteCommonEnabled()
+	With oServiceDlg
+		If .GetControl( &quot;obtnFENoteCommon&quot; ).State	= 0 Or .GetControl( &quot;obtnFENoteSeparately&quot; ).State	= 1 Then
+			.GetControl( &quot;fcEN&quot; ).Enable			= True
+			.GetControl( &quot;cboxENSpace&quot; ).Enable		= True
+			.GetControl( &quot;lbEndlNotesTitle&quot; ).Enable= True
+			.GetControl( &quot;lblENStyle&quot; ).Enable		= True
+			.GetControl( &quot;cmbboxENStyle&quot; ).Enable	= True
+			.GetControl( &quot;cmbboxENTitle&quot; ).Enable	= True
+		Else
+			.GetControl( &quot;fcEN&quot; ).Enable			= False
+			.GetControl( &quot;cboxENSpace&quot; ).Enable		= False
+			.GetControl( &quot;lbEndlNotesTitle&quot; ).Enable= False
+			.GetControl( &quot;lblENStyle&quot; ).Enable		= False
+			.GetControl( &quot;cmbboxENStyle&quot; ).Enable	= False
+			.GetControl( &quot;cmbboxENTitle&quot; ).Enable	= False
 		End If
 	End With
 End Sub

@@ -96,37 +96,69 @@ End Function
 
 Sub SaveNotes()
 	lCurrentElement = 0
-	Dim lCount As Long, lParaCount As Long, l As Long
-	Dim sNotePars() As String
-	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
-	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-&apos;	For lCount = 0 To UBound(sFootnoteText())
-	For lCount = 0 To UBound(vFootnoteText())
-		oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; lCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
-		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; lCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-		&apos; по всем абзацам каждой сноски
-		Dim vaFNPara() As Variant
-		Dim sNote As String, sType As String, sBookMark As String
-		vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+	Dim oFootNotes	: oFootNotes	= ThisComponent.getFootnotes()
+	Dim oEndNotes	: oEndNotes		= ThisComponent.getEndnotes()
+	Dim lCount		As Long
+	Dim vaFNPara()	As Variant
+	
+	If bFENoteSeparately = True Then
+		&apos; экспорт сносок и концевых сносок в разные блоки
+		If oFootNotes.getCount() &gt; 0 Then
+			&apos; сохраняем сноски
+			oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+			oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+			For lCount = 0 To UBound(vFootnoteText())
+				vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+				If vaFNPara(0,3) = &quot;FootNote&quot; Then SaveNote( &quot;n&quot;, vaFNPara(), lCount )
+			Next lCount
+			oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+		End If
+		If oEndNotes.getCount() &gt; 0 Then
+			&apos; сохраняем концевые сноски
+			oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;comments&quot;&quot;&gt;&quot; &amp; chr(10))
+			oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sENTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+			For lCount = 0 To UBound(vFootnoteText())
+				vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+				If vaFNPara(0,3) = &quot;EndNote&quot; Then SaveNote( &quot;c&quot;, vaFNPara(), lCount )
+			Next lCount
+			oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		&apos; экспорт сносок и концевых сносок в общий блок
+		oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+		For lCount = 0 To UBound(vFootnoteText())
+			vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+			SaveNote( &quot;n&quot;, vaFNPara(), lCount )
+		Next lCount
+		oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))	
+	End If
+End Sub
 
-		Redim asFNPars() As String
-		For lParaCount = 0 To UBound( vaFNPara() )
-			sNote		= vaFNPara( lParaCount, 0 )
-			sType		= vaFNPara( lParaCount, 1 )
-			sBookMark	= vaFNPara( lParaCount, 2 )
-			AddNewItemToArray3( asFNPars(), sNote, sType, sBookMark )
-		Next lParaCount
-		lCurrentElement = 0
-		&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - Уровень, Эпиграф, Поэма, Цитата (в нарушение схемы)
-		&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
-	 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
-		AddNewItemToArray3( asFNPars(), &quot;&quot;, &quot;end-fn&quot;, &quot;&quot; ) &apos; иначе тип последней строки сноски определяется неверно
-		MakeBody( asFNPars(), False )
+Sub SaveNote( idSymbol As String, ByRef vaFNPara() As Variant, lCount As Long )
+	Dim sNote As String, sType As String, sBookMark As String, sFNType As String
+	oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;&quot; &amp; idSymbol &amp; &quot;&quot; &amp; lCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
+&apos;	oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; lCount+1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; lCount+1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+	&apos; по всем абзацам каждой сноски
+	Redim asFNPars() As String
+	Dim lParaCount As Long
+	For lParaCount = 0 To UBound( vaFNPara() )
+		sNote		= vaFNPara( lParaCount, 0 )
+		sType		= vaFNPara( lParaCount, 1 )
+		sBookMark	= vaFNPara( lParaCount, 2 )
+		sFNType		= vaFNPara( lParaCount, 3 )
+		AddNewItemToArray4( asFNPars(), sNote, sType, sBookMark, sFNType )
+	Next lParaCount
+	lCurrentElement = 0
+	&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - Уровень, Эпиграф, Поэма, Цитата (в нарушение схемы)
+	&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
+ 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
+	AddNewItemToArray4( asFNPars(), &quot;&quot;, &quot;end-fn&quot;, &quot;&quot;, &quot;&quot;) &apos; иначе тип последней строки сноски определяется неверно
+	MakeBody( asFNPars(), False )
 
-		oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
-		oProgressBar.setValue(lCount) &apos; Статусбар
-	Next lCount
-	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+	oProgressBar.setValue(lCount) &apos; Статусбар
 End Sub
 
 &apos; печатаем коды картинок
@@ -201,11 +233,11 @@ Function IsNeededELForAnnot( sArray() As String, ByVal lCurrentElement As Long )
 	IsNeededELForAnnot = False
 End Function
 
-Sub MakeBody( sArray As String, bBody As Boolean )
+Sub MakeBody( sArray() As String, bBody As Boolean )
 	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
 	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
 	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
-	Dim lParaCount			As Long		: lParaCount			= UBound(sArray)
+	Dim lParaCount			As Long		: lParaCount			= UBound(sArray())
 	Dim lIndexOfBookTitle	As Long		: lIndexOfBookTitle		= IndexOfBookTitle( sArray() )
 	&apos; ищем 1-й Заголовой любого Уровня только тот, который после Названия Книги!!!
 	Dim lIndexOf1Section	As Long
