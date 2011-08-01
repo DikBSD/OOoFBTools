@@ -38,18 +38,14 @@ Sub ReplaceChr32ToChr160Worker( oDoc As Object, oLCurs As Object, oRCurs As Obje
 		Exit Sub
 	End If
 	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
-	
-	Dim oPar		As Object &apos;Перебираемый параграф
-	Dim oViewCursor	As Object
+
+	Dim oViewCursor	As Object : oViewCursor = oDoc.getCurrentController().getViewCursor()
 	Dim sPara		As String
 	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
-		oPar = oLCurs.createEnumeration().nextElement()
-		sPara = oPar.getString()
-		
-		oViewCursor = oDoc.getCurrentController().getViewCursor()
-		oViewCursor.gotoRange(oPar, False)
+		&apos; выделяем курсором текущую зону выделения
+		ExtendViewCursorFromStartCursor1ToEndCursor2( oDoc, oViewCursor, oLCurs, oRCurs )
+		sPara = oViewCursor.getString()
 		oViewCursor.collapseToStart()
-		
 		&apos; ищем пробелы в строке sPara
 		Dim i As Integer, sChar As String
 		For i=0 To Len(sPara)-1
