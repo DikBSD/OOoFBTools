@@ -39,28 +39,27 @@ Sub ReplaceChr32ToChr160Worker( oDoc As Object, oLCurs As Object, oRCurs As Obje
 	End If
 	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
 
-	Dim oViewCursor	As Object : oViewCursor = oDoc.getCurrentController().getViewCursor()
-	Dim sPara		As String
+	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+	Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
+	With vSearch
+		.SearchString				= chr(32)
+		.SearchCaseSensitive		= False
+		.SearchRegularExpression	= True
+	End With
+	Dim vFound As Variant
 	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
+		&apos; поиск пробела
+		vFound = oDoc.findNext( oLCurs, vSearch )
+		If IsNull( vFound ) Then Exit Sub
+		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &lt; 0 Then Exit Sub
 		&apos; выделяем курсором текущую зону выделения
 		ExtendViewCursorFromStartCursor1ToEndCursor2( oDoc, oViewCursor, oLCurs, oRCurs )
-		sPara = oViewCursor.getString()
 		oViewCursor.collapseToStart()
-		&apos; ищем пробелы в строке sPara
-		Dim i As Integer, sChar As String
-		For i=0 To Len(sPara)-1
-			sChar = Mid(sPara,i+1,1) 
-			If sChar = chr(32) Then
-				&apos; выделяем найденный пробел
-				oViewCursor.goRight(1, True)
-				&apos; заменяем пробел 32 на неразрывный 160
-				_UnoInsertText(chr(160))
-			Else
-				oViewCursor.goRight(1, False)
-			End If
-		Next i
-		oLCurs.gotoEndOfParagraph(False)
-		oLCurs.gotoNextParagraph(False)
+		&apos; выделяем найденное
+		oViewCursor.gotoRange( vFound, False )
+		oLCurs.gotoRange( vFound, False )
+		&apos; заменяем пробел 32 на неразрывный 160
+		_UnoInsertText(chr(160))
 	Loop
 End Sub
 
