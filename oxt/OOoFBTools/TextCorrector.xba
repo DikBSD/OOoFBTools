@@ -10,13 +10,18 @@ Private oReplace As Object
 
 Public oTextCorrectorDlg As Object
 
-Private bDelSpace As Boolean
+Private bTCDelStartSpace			As Boolean
+Private bTCStartNoBreakSpaceDelete	As Boolean
+Private bTCStartTabDelete			As Boolean
+Private bTCDelSpace					As Boolean
+Private nTCSpaceCount				As Integer
+Private bTCToSpace					As Boolean
 
-Private bOnlyDefisPara
-Private bDefisWordDelOnlyPara
-Private bDefisWordDeAll
+Private bOnlyDefisPara				As Boolean
+Private bDefisWordDelOnlyPara		As Boolean
+Private bDefisWordDeAll				As Boolean
 
-Private bDelEmptyPar As Boolean
+Private bDelEmptyPar				As Boolean
 
 Private bDelMP As Boolean &apos; удаление мягкие переносы
 Private bWordDefisPara As Boolean
@@ -52,7 +57,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 255
+		.Height = 306
 		.Width  = 420
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -74,11 +79,9 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 255, 420, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 306, 420, com.sun.star.awt.PosSize.POS )
 	
-	cboxWordDefisParaEnabled()
-	cboxImagesEnabled()
-	cboxBreakLineEnabled()
+	ControlsEnabled()
 	
 	oTextCorrectorDlg.execute()
 
@@ -91,19 +94,25 @@ Sub SaveCorrectorSettings()
 	
 	&apos; заполняем переменные
 	With oTextCorrectorDlg
-		bWordDefisPara = 		.GetControl(&quot;cboxWordDefisPara&quot;).State
-		bOnlyDefisPara = 		.GetControl(&quot;obtnOnlyDefisPara&quot;).State
-		bDefisWordDelOnlyPara = .GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
-		bDefisWordDeAll = 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State
+		bWordDefisPara			= .GetControl(&quot;cboxWordDefisPara&quot;).State
+		bOnlyDefisPara			= .GetControl(&quot;obtnOnlyDefisPara&quot;).State
+		bDefisWordDelOnlyPara	= .GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
+		bDefisWordDeAll			= .GetControl(&quot;obtnDefisWordDeAll&quot;).State
 		
-		bDelSpace = 	.GetControl(&quot;cboxDelSpace&quot;).State
+		bTCDelStartSpace			= .GetControl(&quot;cbStartSpaceDelete&quot;).State
+		bTCStartNoBreakSpaceDelete	= .GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State
+		bTCStartTabDelete			= .GetControl(&quot;cbStartTabDelete&quot;).State
+		bTCDelSpace					= .GetControl(&quot;cboxDelSpace&quot;).State
+		oLB 						= .getControl(&quot;lbTCSpaceCount&quot;)
+		nTCSpaceCount 				= oLB.SelectedItem
+		bTCToSpace					= .GetControl(&quot;obTCToSpace&quot;).State
 	
-		bDelEmptyPar = 	.GetControl(&quot;cboxDelEmptyPar&quot;).State
+		bDelEmptyPar	= .GetControl(&quot;cboxDelEmptyPar&quot;).State
 	
-		bBreakLine = 	.GetControl(&quot;cboxBreakLine&quot;).State
-		bDel = 			.GetControl(&quot;obtnDel&quot;).State
-		bPar = 			.GetControl(&quot;obtnPar&quot;).State
-		bSpace = 		.GetControl(&quot;obtnSpace&quot;).State
+		bBreakLine		= .GetControl(&quot;cboxBreakLine&quot;).State
+		bDel			= .GetControl(&quot;obtnDel&quot;).State
+		bPar			= .GetControl(&quot;obtnPar&quot;).State
+		bSpace			= .GetControl(&quot;obtnSpace&quot;).State
 	
 		b2HyphenToDash = 			.GetControl(&quot;cbox2HyphenToDash&quot;).State
 		bHyphenToDash = 			.GetControl(&quot;cboxHyphenToDash&quot;).State
@@ -124,9 +133,16 @@ End Sub
 Sub SetCorrectorSettingDefault()
 	&apos; Установка настроек по умолчанию в контролы
 	Dim oLB As Object &apos; Для работы с ListBox`ами
-	&apos; Работа с пробелами и табуляциями
 	With oTextCorrectorDlg
+		&apos; Работа с пробелами и табуляциями
+		.GetControl(&quot;cbStartSpaceDelete&quot;).State = 1
+		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1
+		.GetControl(&quot;cbStartTabDelete&quot;).State = 1
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1
+		oLB = .getControl(&quot;lbTCSpaceCount&quot;)
+		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;
+		.GetControl(&quot;obTCToSpace&quot;).State = 1
+		.GetControl(&quot;obTCToTab&quot;).State = 0
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1
@@ -135,35 +151,37 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxDelEmptyPar&quot;).State = 1
-	
+		.GetControl(&quot;cboxDelEmptyPar&quot;).State = 0
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1
 		.GetControl(&quot;obtnDel&quot;).State = 0
 		.GetControl(&quot;obtnPar&quot;).State = 1
 		.GetControl(&quot;obtnSpace&quot;).State = 0
+		
 		&apos; Кавычки, Дефисы. Разное
-		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1
+		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1
-		.GetControl(&quot;cboxDefis&quot;).State = 1
-		.GetControl(&quot;cboxKav&quot;).State = 1
+		.GetControl(&quot;cboxDefis&quot;).State = 1		
+		.GetControl(&quot;cboxKav&quot;).State = 0
 		.GetControl(&quot;cboxPoints&quot;).State = 1
 		.GetControl(&quot;cboxC&quot;).State = 0
+		
 		&apos; Картинки
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
 		&apos; мягкие переносы
 		.GetControl(&quot;cboxMP&quot;).State = 1
+		
 		&apos; разрывы страниц
 		.GetControl(&quot;cboDelPB&quot;).State = 0
+		
 		&apos; удаление из текста всех векторных линий
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0
 	End With
 	
-	cboxWordDefisParaEnabled()
-	cboxImagesEnabled()
-	cboxBreakLineEnabled()
+	ControlsEnabled()
 End Sub
 
 Sub CheckAllOptions()
@@ -174,9 +192,7 @@ Sub CheckAllOptions()
 			ctrl(i).State = 1	
 		End If
 	Next i
-	cboxWordDefisParaEnabled()
-	cboxImagesEnabled()
-	cboxBreakLineEnabled()
+	ControlsEnabled()
 End Sub
 
 Sub UnCheckAllOptions()
@@ -187,9 +203,14 @@ Sub UnCheckAllOptions()
 			ctrl(i).State = 0	
 		End If
 	Next i
+	ControlsEnabled()
+End Sub
+
+Sub ControlsEnabled()
 	cboxWordDefisParaEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
+	cboxDelSpaceEnabled()
 End Sub
 
 Sub cboxWordDefisParaEnabled()
@@ -228,6 +249,20 @@ Sub cboxBreakLineEnabled()
 			.GetControl(&quot;obtnDel&quot;).Enable	= False
 			.GetControl(&quot;obtnPar&quot;).Enable	= False
 			.GetControl(&quot;obtnSpace&quot;).Enable	= False
+		End If
+	End With
+End Sub
+
+Sub cboxDelSpaceEnabled()
+	With oTextCorrectorDlg
+		If .GetControl(&quot;cboxDelSpace&quot;).State = 1 Then
+			.GetControl(&quot;obTCToSpace&quot;).Enable	= True
+			.GetControl(&quot;obTCToTab&quot;).Enable		= True
+			.GetControl(&quot;lbTCSpaceCount&quot;).Enable= True
+		Else
+			.GetControl(&quot;obTCToSpace&quot;).Enable	= False
+			.GetControl(&quot;obTCToTab&quot;).Enable		= False
+			.GetControl(&quot;lbTCSpaceCount&quot;).Enable= False
 		End If
 	End With
 End Sub
@@ -527,8 +562,21 @@ Sub TextCorrectorDlgOk()
 	End If
 	
 	&apos; Работа с пробелами и табуляциями
-	If bDelSpace = True Then
-		DelSpace( oDoc, oReplace, oProgressBar, nCur )
+	If bTCDelStartSpace = True Then
+		&apos; Удаляем все стартовые простые пробелы
+		DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	If bTCStartNoBreakSpaceDelete = True Then
+		&apos; Удаляем все неразрывные стартовые пробелы
+		DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	If bTCStartTabDelete = True Then
+		&apos; Удаляем все стартовые табуляции
+		DelStartTab( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	If bTCDelSpace = True Then
+		&apos; Удаляем все множественные пробелы и табуляции между слов и конечные
+		DelSpace( oDoc, oReplace, oProgressBar, nTCSpaceCount, bTCToSpace, nCur )
 	End If
 	
 	MsgBox sTCD.sEndWork, 64, sCorrectorName
@@ -1664,66 +1712,27 @@ End Function
 
 &apos;////////////////////////////////////////////////////////////////////////////
 &apos; Работа с пробелами и табуляциями
-Function DelSpace( oDoc, oReplace, oProgressBar, nCur )
-	&apos; Замена множественныз пробелов и табуляций на один пробел
-	DelMSpace( oDoc, oReplace, oProgressBar, nCur )
-	&apos; Удаляем все стартовые пробелы
-	DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
+Function DelSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
+	&apos; Замена множественныз пробелов на один пробел
+	DelMSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
 	&apos; Удаляем все конечные пробелы
 	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 End Function
 
-&apos; Замена множественныз пробелов и табуляций на один пробел
-Function DelMSpace( oDoc, oReplace, oProgressBar, nCur )
-	&apos; Заменяем одиночную табуляцию на пробел
+&apos; Удаляем все множественные пробелы (простые и неразрывные) между слов и конечные
+Function DelMSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
+	Dim sReplaceStr As String
+	If bTCToSpace = True Then
+		sReplaceStr = Space(nReplaceCount)
+	Else
+		Dim i As Integer
+		For i=0 To nReplaceCount-1
+			sReplaceStr = sReplaceStr + &quot;\t&quot;
+		Next i
+	End If
 	With oReplace
-		.SearchString = &quot;\t&quot;
-		.ReplaceString = &quot; &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Обработка множественных пробелов
-	With oReplace
-		.SearchString = &quot; +&quot; &apos;&quot;  {1,2}&quot;
-		.ReplaceString = &quot; &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Обработка множественных неразрывных пробелов
-	With oReplace
-		.SearchString = &quot; +&quot;
-		.ReplaceString = &quot; &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Обработка оставшихся комбинаций пробелов и неразрывных пробелов
-	With oReplace
-		.SearchString = &quot;   &quot; &apos; неразрывный, простой, неразрывный
-		.ReplaceString = &quot; &quot; &apos; неразрывный
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;   &quot; &apos; простой, неразрывный, простой
-		.ReplaceString = &quot; &quot; &apos; неразрывный
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;  &quot; &apos; неразрывный, простой
-		.ReplaceString = &quot; &quot; &apos; неразрывный
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;  &quot; &apos; простой, неразрывный
-		.ReplaceString = &quot; &quot; &apos; неразрывный
+		.SearchString = &quot;([:alnum:]|[\.:;…?\!)}\]»&apos;”\&quot;&quot;\&gt;%=\-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alnum:]|[…\({\[«&apos;”\&quot;&quot;\&lt;])&quot;
+		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
@@ -1732,18 +1741,6 @@ End Function
 
 &apos; Удаляем все стартовые пробелы
 Function DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
-	&apos; Удаляем все стартовые табуляции
-	&apos;oReplace.SearchString = &quot;^\t{1,}&quot;
-	&apos;oReplace.ReplaceString = &quot;&quot;
-	&apos;oDoc.ReplaceAll(oReplace)
-	&apos; Удаляем все конечные табуляции
-	&apos;oReplace.SearchString = &quot;\t{1,}$&quot;
-	&apos;oReplace.ReplaceString = &quot;&quot;
-	&apos;oDoc.ReplaceAll(oReplace)
-	&apos; Заменяем все множественные табуляции:
-	&apos;oReplace.SearchString = &quot;\t{2,}&quot;
-	&apos;oReplace.ReplaceString = &quot; &quot;
-	&apos;oDoc.ReplaceAll(oReplace)
 	&apos; Удаляем все стартовые пробелы
 	With oReplace
 		.SearchRegularExpression = True
@@ -1755,7 +1752,38 @@ Function DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
 	nCur = nCur+1
 End Function
 
-&apos; Удаляем все конечные пробелы
+&apos; Удаляем все неразрывные стартовые пробелы
+Function DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
+	&apos; Удаляем все неразрывные стартовые пробелы
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^&quot;&amp;Chr(160)&amp;&quot;{1,}&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+End Function
+
+&apos; Удаляем все стартовые табуляции
+Function DelStartTab( oDoc, oReplace, oProgressBar, nCur )
+	&apos; Удаляем все стартовые табуляции
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^\t{1,}&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	&apos; Заменяем все множественные табуляции:
+	&apos;oReplace.SearchString = &quot;\t{2,}&quot;
+	&apos;oReplace.ReplaceString = &quot; &quot;
+	&apos;oDoc.ReplaceAll(oReplace)
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+End Function
+
+&apos; Удаляем все конечные пробелы и табуляции
 Function DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 	With oReplace
 		.SearchRegularExpression = True
@@ -1764,6 +1792,14 @@ Function DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; Удаляем все конечные табуляции
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;\t{1,}$&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
 	nCur = nCur+1
 End Function
 

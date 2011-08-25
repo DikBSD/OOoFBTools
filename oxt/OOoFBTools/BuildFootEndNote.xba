@@ -197,7 +197,7 @@ Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks
 	&apos; переход курсора на временную закладку
 	GoToViewCursorToBookMark( oViewCursor, sConstBookMarkSimple, True )
 	&apos; очистить стиль - на случай верхнего регистра и т.д.
-	ClearParaStyle()
+	ClearParaStyleToBase()
 	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
 	_UnoDelete() : _UnoInsertFootnote() : _UnoPaste()
 	If oBookMarks.hasByName( sConstBookMarkSimple ) Then _UnoDeleteBookMark( sConstBookMarkSimple )
@@ -561,7 +561,7 @@ Sub InsertCurrentFootNote( oViewCursor As Object, sConstBookMarkFNNumber As Stri
 	&apos; переход курсора на закладку - номер примечания
 	GoToViewCursorToBookMark( oViewCursor, sConstBookMarkFNNumber, True )
 	&apos; очистить стиль - на случай верхнего регистра и т.д.
-	ClearParaStyle()
+	ClearParaStyleToBase()
 	&apos; удалить выделенный номер примечания, вставить очередную сноску, вставить текст сноски и удаляем последний пустой абзац
 	_UnoDelete() : _UnoInsertFootnote() : _UnoPaste() : 
 	If oViewCursor.isAtStartOfLine() Then _UnoSwBackspace()

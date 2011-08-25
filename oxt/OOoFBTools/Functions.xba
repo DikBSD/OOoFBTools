@@ -481,22 +481,6 @@ Function GetSubStrCount(sStr As String, sSubStr As String) As Integer
 	GetSubStrCount = UBound(sArray)
 End Function
 
-&apos; очистка всех стилей в абзаце
-Sub ClearParaStyle()
-	Dim document   As Object, dispatcher As Object
-	document   = ThisComponent.CurrentController.Frame
-	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	dispatcher.executeDispatch(document, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array())
-	
-	Dim args2(1) As New com.sun.star.beans.PropertyValue
-	args2(0).Name = &quot;Template&quot;
-	args2(0).Value = &quot;&quot;
-	args2(1).Name = &quot;Family&quot;
-	args2(1).Value = 2
-
-	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2())
-End Sub
-
 &apos; транслитерация строки (только для русских букв)
 Function RusTransliterationString( saTranslitLetters() As String, sString As String ) As String
 	RusTransliterationString = sString
@@ -827,6 +811,124 @@ Function WorkingFiguredBracket(sSource As String, iResult As Integer)
 	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
 	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;}&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;}&quot;)
 End Function
+
+&apos; Замена апострофа справа от гласной на U0769 - Ударная гласная
+Sub ApostrofToU0769()
+	Dim oDoc, oReplace
+	oDoc = ThisComponent
+	oReplace = oDoc.createReplaceDescriptor
+	oReplace.SearchRegularExpression	= True
+	oReplace.SearchCaseSensitive		= True
+
+	With oReplace
+		.SearchString = &quot;А&apos;&quot;
+		.ReplaceString = &quot;А́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;а&apos;&quot;
+		.ReplaceString = &quot;а́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;У&apos;&quot;
+		.ReplaceString = &quot;У́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;у&apos;&quot;
+		.ReplaceString = &quot;у́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;Е&apos;&quot;
+		.ReplaceString = &quot;Е́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;е&apos;&quot;
+		.ReplaceString = &quot;е́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;Ы&apos;&quot;
+		.ReplaceString = &quot;Ы́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;ы&apos;&quot;
+		.ReplaceString = &quot;ы́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;О&apos;&quot;
+		.ReplaceString = &quot;О́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;о&apos;&quot;
+		.ReplaceString = &quot;о́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;Э&apos;&quot;
+		.ReplaceString = &quot;Э́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;э&apos;&quot;
+		.ReplaceString = &quot;э́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;Я&apos;&quot;
+		.ReplaceString = &quot;Я́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;я&apos;&quot;
+		.ReplaceString = &quot;я́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;И&apos;&quot;
+		.ReplaceString = &quot;И́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;и&apos;&quot;
+		.ReplaceString = &quot;и́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;Ю&apos;&quot;
+		.ReplaceString = &quot;Ю́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	With oReplace
+		.SearchString = &quot;ю&apos;&quot;
+		.ReplaceString = &quot;ю́&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+End Sub
 
 &apos; /// Для таблиц ///
 
@@ -1625,6 +1727,8 @@ Sub Validate( sFB2File As String )
 	oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
 End Sub
 
+&apos;///  Работа со стилями ///
+&apos;  очистка всех стилей в абзаце
 Sub ClearParaStyleToBase()
 	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
 	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )

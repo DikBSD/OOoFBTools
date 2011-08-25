@@ -15,6 +15,8 @@ Private bDefisWordDelOnlyPara		As Boolean
 Private bDefisWordDeAll				As Boolean
 
 Private bStartSpaceDelete			As Boolean
+Private bStartNoBreakSpaceDelete	As Boolean
+Private bStartTabDelete				As Boolean
 Private bDelSpace					As Boolean
 
 Sub JoinBreakLines()
@@ -28,13 +30,13 @@ Sub JoinBreakLines()
 	InitJoinBreakLinesDlg()
 	
 	With oJoinBreakLinesDlg.Model
-		.Height = 132
+		.Height = 153
 		.Width  = 305
 	End With
 	
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg, nX, nY )
-	oJoinBreakLinesDlg.setPosSize( nX, nY, 132, 305, com.sun.star.awt.PosSize.POS )
+	oJoinBreakLinesDlg.setPosSize( nX, nY, 153, 305, com.sun.star.awt.PosSize.POS )
 	
 	oJoinBreakLinesDlg.execute()
 
@@ -53,6 +55,8 @@ Sub SaveJoinBreakLinesDlgSettings()
 		bDefisWordDeAll				= .GetControl(&quot;obtnDefisWordDeAll&quot;).State
 	
 		bStartSpaceDelete			= .GetControl(&quot;cboxStartSpaceDelete&quot;).State
+		bStartNoBreakSpaceDelete	= .GetControl(&quot;cboxStartNoBreakSpaceDel&quot;).State
+		bStartTabDelete				= .GetControl(&quot;cboxStartTabDel&quot;).State
 		bDelSpace					= .GetControl(&quot;cboxDelSpace&quot;).State
 	End With
 End Sub
@@ -87,7 +91,7 @@ Sub JoinBreakLinesDlgOkClick()
 	oDoc.ReplaceAll(oReplace)
 	nCur = nCur+1
 	oProgressBar.setValue(nCur)
-	&apos; Удаляем все конечные пробелы, иначе результат будет неверным
+	&apos; Удаляем все конечные пробелы и табуляции, иначе результат будет неверным
 	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 	&apos; удаляем мягкие переносы, иначе результат будет неверным
 	DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
@@ -112,6 +116,8 @@ Sub JoinBreakLinesDlgOkClick()
 	Dim i As Integer : i = 2
 	nCur = 1
 	If bStartSpaceDelete = True Then i = i + 1
+	If bStartNoBreakSpaceDelete = True Then i = i + 1
+	If bStartTabDelete = True Then i = i + 1
 	If bDelSpace = True Then i = i + 1
 
 	With oProgressBar
@@ -120,17 +126,24 @@ Sub JoinBreakLinesDlgOkClick()
 	End With
 	nCur = nCur+1
 	
-	&apos; Удаляем все конечные пробелы
+	&apos; Удаляем все конечные пробелы и табуляции
 	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 
 	If bStartSpaceDelete = True Then
 		&apos; Удаляем все стартовые пробелы
 		DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
 	End If
-	
+	If bStartNoBreakSpaceDelete = True Then
+		&apos; Удаляем все стартовые неразрывные пробелы
+		DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	If bStartTabDelete = True Then
+		&apos; Удаляем все стартовые табуляции
+		DelStartTab( oDoc, oReplace, oProgressBar, nCur )
+	End If
 	If bDelSpace = True Then
-		&apos; Замена множественныз пробелов и табуляций на один пробел
-		DelMSpace( oDoc, oReplace, oProgressBar, nCur )
+		&apos; Замена множественныз пробелов и табуляций на один пробел между словами
+		DelMSpace( oDoc, oReplace, oProgressBar, 1, True, nCur )
 	End If
 	
 	MsgBox sJBLD.sEndWork, 64, sMessageTitle

@@ -12,7 +12,7 @@ Private oDLDlg As Object
 &apos; создание абзаца заданного абзацевого стиля с текстом и выделенными заданными симольными стилями словами
 Sub InsertDataAndStyle( sParaStyle, sDataPara, sData1Name, sData2Name, sData1NameStyle, sData2NameStyle )
 	&apos; очистка стиля исходного абзаца - на всякий случай
-	ClearParaStyle()
+	ClearParaStyleToBase()
 	
 	Dim oText, oVCurs
 	oText = ThisComponent.getText()
@@ -24,7 +24,7 @@ Sub InsertDataAndStyle( sParaStyle, sDataPara, sData1Name, sData2Name, sData1Nam
 	
 	&apos; ищем данные и помечаем его &quot;его&quot; стилем
 	If Not SetSymbolStyle( oTCurs, sData1Name, sData1NameStyle ) Then Exit Sub
-	If sData2Name &lt;&gt; &quot;&quot; Then
+	If Trim(sData2Name) &lt;&gt; &quot;&quot; Then
 		If Not SetSymbolStyle( oTCurs, sData2Name, sData2NameStyle ) Then Exit Sub
 	End If
 
@@ -38,7 +38,7 @@ Sub InsertDataAndStyle( sParaStyle, sDataPara, sData1Name, sData2Name, sData1Nam
 	oVCurs.goRight(0, False)
 
 	&apos; очистка стиля абзаца
-	ClearParaStyle()
+	ClearParaStyleToBase()
 End Sub
 
 &apos; задание абзацу стиля
@@ -60,6 +60,7 @@ End Function
 
 &apos; придание заданным словам символьного стиля
 Function SetSymbolStyle( oCursor, sName, sStyle )
+	If Trim(sName)=&quot;&quot; Then Exit Function
 	SetSymbolStyle = False
 On Error GoTo Errorhandler
 	Dim oDocControl : oDocControl = ThisComponent.getCurrentController()
@@ -314,8 +315,9 @@ Sub ViewDescLangDlg()
 	oDLDlg.execute()
 End Sub
 
+&apos; читаем стили из файла и заносим их в переменные
 Sub InsertDescLang()
-	&apos; читаем стили из файла и заносим их в переменные
+	oDLDlg.endExecute()
 	&apos; записываем настройки диалога
 	SaveSettings( getUserPath() &amp; sConstDescLang, oDLDlg )
 	&apos; загрузка стилей по-умолчанию в переменные
@@ -331,7 +333,6 @@ Sub InsertDescLang()
 		sLangPara = sLangPara &amp; &quot;, Original: &quot; &amp; sLangOriginal
 	End If
 	InsertDataAndStyle( sStyle_Lang, sLangPara, sLangBook, sLangOriginal, sStyle_LangBook, sStyle_LangOriginal  )
-	oDLDlg.endExecute()
 End Sub
 
 </script:module>
