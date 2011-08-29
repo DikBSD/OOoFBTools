@@ -441,22 +441,44 @@ Sub TextCorrectorDlgOk()
 	
 	If bDelEmptyPar = True Then
 		&apos; Удаляем все множественные пустые абзацы
-		Dim oDoc As Object : oDoc = ThisComponent
-		Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-		With vSearch
-			.SearchRegularExpression = True
-			.SearchString = &quot;^$&quot;
+		With oReplace
+			.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
+			.ReplaceString = &quot;&quot;
 		End With
-		Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
-		Do While Not IsNull( vFound )
-			If Not IsNull( vFound ) Then
-				vFound.setString(&quot;&quot;)
-				&apos; ищем далее
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-			End If
-		Loop
-		oProgressBar.setValue( nCur )
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(nCur)
 		nCur = nCur+1
+	
+		With oReplace
+			.SearchString = &quot;^$&quot;
+			.ReplaceString = &quot;&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(nCur)
+		nCur = nCur+1
+		
+&apos;		With oReplace
+&apos;			.SearchString = &quot;^$&quot;
+&apos;			.ReplaceString = &quot;&quot;
+&apos;		End With
+&apos;	
+&apos;		Dim oDoc As Object : oDoc = ThisComponent
+&apos;		Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+&apos;		With vSearch
+&apos;			.SearchRegularExpression = True
+&apos;			.SearchString = &quot;^$&quot;
+&apos;		End With
+&apos;		Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
+&apos;		Do While Not IsNull( vFound )
+&apos;			If Not IsNull( vFound ) Then
+&apos;				vFound.setString(&quot;&quot;)
+&apos;				&apos; ищем далее
+&apos;				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+&apos;			End If
+&apos;		Loop
+&apos;		oDoc.ReplaceAll(oReplace)
+&apos;		oProgressBar.setValue(nCur)
+&apos;		nCur = nCur+1
 	End If
 	
 	&apos; Кавычки, Дефисы, Разное
@@ -464,14 +486,21 @@ Sub TextCorrectorDlgOk()
 		&apos; Заменить двойной дефис (--) на тире
 		With oReplace
 			.SearchString = &quot;--&quot;
-			.ReplaceString = &quot; — &quot;
+			.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 		With oReplace
 			.SearchString = chr(8211) &amp; chr(8211)
-			.ReplaceString = &quot; — &quot;
+			.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		oProgressBar.setValue(nCur)
+		nCur = nCur+1
+		With oReplace
+			.SearchString = chr(8209) &amp; chr(8209)
+			.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
@@ -486,7 +515,7 @@ Sub TextCorrectorDlgOk()
 		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
 	End If
 	
-	&apos; втавка пробела между слипшимися символами ( слова, кавычки) и минусом, тире или дефисом
+	&apos; Вставка пробела между слипшимися символами ( слова, кавычки) и минусом, тире или дефисом
 	If bInsertSpaceBSymAndMDH Then
 		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )	&apos; минус
 		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
@@ -646,7 +675,7 @@ End Sub
 
 &apos; ////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
-&apos; в тексте, таблицаъ, сносках и врезках
+&apos; в тексте, таблицах, сносках и врезках)
 Sub JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
 	JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
@@ -658,7 +687,7 @@ Sub JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgre
 End Sub
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////
-&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
+&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте)
 Sub JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
@@ -1063,9 +1092,9 @@ Function InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSynbolCode,
 End Function
 
 &apos;////////////////////////////////////////////////////////////////////
-&apos; Вставка пробела между символами и минусом, тире или дефисом
+&apos; Вставка пробела между символами, кавычками и минусом, тире или дефисом
 Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSynbolCode, oProgressBar, nCur )
-	&apos; кавычки и дефис, тире или минус
+	&apos; слово в кавычках, и дефис, тире или минус, слово в кавычках
 	With oReplace
 		.SearchString = &quot;\&gt;([”\&quot;&quot;»])&quot; &amp; chr(nSynbolCode) &amp; &quot;([“\&quot;&quot;«])\&lt;&quot;	&apos; слово&quot;-“слово
 		.ReplaceString = &quot;$1 &quot; &amp; chr(nSynbolCode) &amp; &quot; $2&quot; 					&apos; слово&quot; - “слово
@@ -1088,6 +1117,7 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSynbolCode
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
+	&apos; слово в кавычках, и дефис, тире или минус, слово
 	With oReplace
 		.SearchString = &quot;\&gt;([”\&quot;&quot;»])&quot; &amp; chr(nSynbolCode) &amp; &quot;\&lt;&quot;	&apos; слово&quot;-слово
 		.ReplaceString = &quot;$1&quot; &amp; &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; &quot;	&apos; слово&quot; - слово
@@ -1110,6 +1140,7 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSynbolCode
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
+	&apos; слово, и дефис, тире или минус, слово в кавычках
 	With oReplace
 		.SearchString = &quot;\&gt;&quot; &amp; chr(nSynbolCode) &amp; &quot;([“\&quot;&quot;«])\&lt;&quot;	&apos; слово-“слово ИЛИ
 		.ReplaceString = &quot; &quot; &amp; chr(nSynbolCode) &amp; &quot; $1&quot;			&apos; слово - “слово
