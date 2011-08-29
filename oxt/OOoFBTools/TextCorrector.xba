@@ -397,22 +397,63 @@ Sub TextCorrectorDlgOk()
 		DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
 	End If
 
-	&apos; /////////////// Работа с абзацами и разрывами //////////////
-	
-	If bWordDefisPara = True Then
-		&apos; Удаление мягких переносов, иначе результат будет неверен
-		If bDelMP = False Then
-			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
-		End If
-		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках
-		oProgressBar.start( sTCD.sDelWordBreak, 100 )
-		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
-	End If
 
 	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 144 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
+	&apos; /////////////// Работа с пробелами и табуляциями /////////////////
+	&apos; Удаляем все стартовые ПРОСТЫЕ пробелы
+	If bTCDelStartSpace = True Then
+		DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	&apos; Удаляем все НЕРАЗРЫВНЫЕ стартовые пробелы
+	If bTCStartNoBreakSpaceDelete = True Then
+		DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	&apos; Удаляем все стартовые табуляции
+	If bTCStartTabDelete = True Then
+		DelStartTab( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	&apos; Удаляем все множественные пробелы (ПРОСТЫЕ, НЕРАЗРЫВНЫЕ и их комбинация) и табуляции между слов и конечные
+	If bTCDelSpace = True Then
+		DelSpace( oDoc, oReplace, oProgressBar, nTCSpaceCount, bTCToSpace, nCur )
+	End If
+	&apos; Удаляем ПРОСТЫЕ пробелы перед знаком препинания
+	If bRemoveSpaceBeforePunct = True Then
+		RemoveSpaceBeforePunct( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	&apos; Вставляем ПРОСТОЙ пробел после знака препинания
+	If bInsertSpaceBPunctAndSym = True Then
+		InsertSpaceBPunctAndSymbol( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	&apos; Вставка ПРОСТОГО пробела между знаком препинания и минусом, тире или дефисом
+	If bInsertSpaceBPunctAndMDH Then
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )		&apos; минус
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
+	End If
+	&apos; Вставка ПРОСТОГО пробела между словами, кавычками и минусом, тире или дефисом
+	If bInsertSpaceBSymAndMDH Then
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )	&apos; минус
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
+	End If
+	
+	&apos; /////////////// Работа с абзацами и разрывами //////////////
+	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
+	If bWordDefisPara = True Then
+		&apos; Удаление мягких переносов, иначе результат будет неверен
+		If bDelMP = False Then
+			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+		End If
+		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
+		oProgressBar.start( sTCD.sDelWordBreak, 100 )
+		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	End If
+
 	&apos; Разрывы строк
 	If bBreakLine = True Then
 		If bDel = True Then
@@ -439,8 +480,8 @@ Sub TextCorrectorDlgOk()
 		nCur = nCur+1
 	End If
 	
+	&apos; Удаляем все множественные пустые абзацы
 	If bDelEmptyPar = True Then
-		&apos; Удаляем все множественные пустые абзацы
 		With oReplace
 			.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
 			.ReplaceString = &quot;&quot;
@@ -481,9 +522,9 @@ Sub TextCorrectorDlgOk()
 &apos;		nCur = nCur+1
 	End If
 	
-	&apos; Кавычки, Дефисы, Разное
+	&apos; /////////////// Дефисы, тире и минусы, разное /////////////////
+	&apos; Заменить двойной дефис (--) на тире
 	If b2HyphenToDash = True Then
-		&apos; Заменить двойной дефис (--) на тире
 		With oReplace
 			.SearchString = &quot;--&quot;
 			.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
@@ -507,24 +548,7 @@ Sub TextCorrectorDlgOk()
 		nCur = nCur+1
 	End If
 	
-	&apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
-	If bInsertSpaceBPunctAndMDH Then
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )		&apos; минус
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
-	End If
-	
-	&apos; Вставка пробела между слипшимися символами ( слова, кавычки) и минусом, тире или дефисом
-	If bInsertSpaceBSymAndMDH Then
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )	&apos; минус
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
-	End If
-	
-	&apos; Заменить, дефис используемый вместо тире на тире
-		&apos; (В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
+	&apos; Заменить, дефис используемый вместо тире на тире (В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
 	If bHyphenToDash = True Then
 		HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
 	End If
@@ -565,6 +589,11 @@ Sub TextCorrectorDlgOk()
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
 	End If
+
+	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
+	If bKav = True Then
+		QuotationMarks( oDoc, oReplace, oProgressBar, nCur )
+	End If
 	
 	&apos; Упорядочить многоточие
 	If bPoints = True Then
@@ -575,11 +604,6 @@ Sub TextCorrectorDlgOk()
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
-	End If
-	
-	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
-	If bKav = True Then
-		QuotationMarks( oDoc, oReplace, oProgressBar, nCur )
 	End If
 	
 	&apos; Замена на (c) (r) (TM)
@@ -607,32 +631,6 @@ Sub TextCorrectorDlgOk()
 		nCur = nCur+1
 	End If
 	
-	&apos; Работа с пробелами и табуляциями
-	If bTCDelStartSpace = True Then
-		&apos; Удаляем все стартовые простые пробелы
-		DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
-	End If
-	If bTCStartNoBreakSpaceDelete = True Then
-		&apos; Удаляем все неразрывные стартовые пробелы
-		DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
-	End If
-	If bTCStartTabDelete = True Then
-		&apos; Удаляем все стартовые табуляции
-		DelStartTab( oDoc, oReplace, oProgressBar, nCur )
-	End If
-	If bTCDelSpace = True Then
-		&apos; Удаляем все множественные пробелы и табуляции между слов и конечные
-		DelSpace( oDoc, oReplace, oProgressBar, nTCSpaceCount, bTCToSpace, nCur )
-	End If
-	If bRemoveSpaceBeforePunct = True Then
-		&apos; Удаляем пробел перед знаком препинания
-		RemoveSpaceBeforePunct( oDoc, oReplace, oProgressBar, nCur )
-	End If
-	
-	&apos; Вставляем пробел после знака препинания
-	If bInsertSpaceBPunctAndSym = True Then
-		InsertSpaceBPunctAndSymbol( oDoc, oReplace, oProgressBar, nCur )
-	End If
 	MsgBox sTCD.sEndWork, 64, sCorrectorName
 	oProgressBar.end
 End Sub
@@ -1638,9 +1636,9 @@ End Function
 &apos;////////////////////////////////////////////////////////////////////////////
 &apos; Работа с пробелами и табуляциями
 Function DelSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
-	&apos; Замена множественныз пробелов на один пробел
+	&apos; Замена множественныз пробелов на заданное число простых пробелов или табуляций
 	DelMSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
-	&apos; Удаляем все конечные пробелы
+	&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
 	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 End Function
 
@@ -1708,23 +1706,15 @@ Function DelStartTab( oDoc, oReplace, oProgressBar, nCur )
 	nCur = nCur+1
 End Function
 
-&apos; Удаляем все конечные пробелы и табуляции
+&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
 Function DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
 	With oReplace
 		.SearchRegularExpression = True
-		.SearchString = &quot; {1,}$&quot;
+		.SearchString = &quot;[:space:]{1,}$|\t{1,}$&quot;
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; Удаляем все конечные табуляции
-	With oReplace
-		.SearchRegularExpression = True
-		.SearchString = &quot;\t{1,}$&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
 	nCur = nCur+1
 End Function
 
