@@ -50,6 +50,10 @@ Private bImages As Boolean
 Private nAnchor As String
 Private bDeleteAllLineShape As Boolean
 
+Private bDirectSpeech		As Boolean
+Private bDirectSpeechHyphen	As Boolean
+Private bDirectSpeechBlank	As Boolean
+
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
@@ -63,7 +67,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 380
+		.Height = 399
 		.Width  = 420
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -85,7 +89,7 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 380, 420, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 399, 420, com.sun.star.awt.PosSize.POS )
 	
 	ControlsEnabled()
 	
@@ -122,12 +126,16 @@ Sub SaveCorrectorSettings()
 		bSpace			= .GetControl(&quot;obtnSpace&quot;).State
 	
 		b2HyphenToDash = 			.GetControl(&quot;cbox2HyphenToDash&quot;).State
+		bDirectSpeech = 			.GetControl(&quot;cboxDirectSpeech&quot;).State
+		bDirectSpeechHyphen = 		.GetControl(&quot;obDirectSpeechHyphen&quot;).State
+		bDirectSpeechBlank = 		.GetControl(&quot;cboxDirectSpeechBlank&quot;).State
+		
 		bHyphenToDash = 			.GetControl(&quot;cboxHyphenToDash&quot;).State
 		bInsertSpaceBSymAndMDH = 	.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State
 		bInsertSpaceBPunctAndMDH = 	.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State
 		bInsertSpaceBPunctAndSym = 	.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State
-		bDefis = 					.GetControl(&quot;cboxDefis&quot;).State
-		bNoBreakDefis = 			.GetControl(&quot;obNoBreakDefis&quot;).State
+		bDefis = 					.GetControl(&quot;cboxHyphen&quot;).State
+		bNoBreakDefis = 			.GetControl(&quot;obSimpleHyphen&quot;).State
 		bKav = 						.GetControl(&quot;cboxKav&quot;).State
 		bPoints = 					.GetControl(&quot;cboxPoints&quot;).State
 		bC = 						.GetControl(&quot;cboxC&quot;).State
@@ -170,13 +178,18 @@ Sub SetCorrectorSettingDefault()
 		
 		&apos; Разное
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0
+		.GetControl(&quot;cboxDirectSpeech&quot;).State = 1
+		.GetControl(&quot;obDirectSpeechDash&quot;).State = 1
+		.GetControl(&quot;obDirectSpeechHyphen&quot;).State = 0
+		.GetControl(&quot;cboxDirectSpeechBlank&quot;).State = 1
+		
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1
-		.GetControl(&quot;cboxDefis&quot;).State = 1
-		.GetControl(&quot;obNoBreakDefis&quot;).State = 1
-		.GetControl(&quot;obSimpleDefis&quot;).State = 0
+		.GetControl(&quot;cboxHyphen&quot;).State = 1
+		.GetControl(&quot;obSimpleHyphen&quot;).State = 1
+		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0
 		.GetControl(&quot;cboxKav&quot;).State = 0
 		.GetControl(&quot;cboxPoints&quot;).State = 1
 		.GetControl(&quot;cboxC&quot;).State = 0
@@ -227,6 +240,7 @@ Sub ControlsEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
 	cboxDelSpaceEnabled()
+	cboxDirectSpeechEnabled()
 End Sub
 
 Sub cboxWordDefisParaEnabled()
@@ -285,16 +299,29 @@ End Sub
 
 Sub cboxDefisPartEnabled()
 	With oTextCorrectorDlg
-		If .GetControl(&quot;cboxDefis&quot;).State = 1 Then
-			.GetControl(&quot;obNoBreakDefis&quot;).Enable	= True
-			.GetControl(&quot;obSimpleDefis&quot;).Enable		= True
+		If .GetControl(&quot;cboxHyphen&quot;).State = 1 Then
+			.GetControl(&quot;obSimpleHyphen&quot;).Enable	= True
+			.GetControl(&quot;obNoBreakHyphen&quot;).Enable	= True
 		Else
-			.GetControl(&quot;obNoBreakDefis&quot;).Enable	= False
-			.GetControl(&quot;obSimpleDefis&quot;).Enable		= False
+			.GetControl(&quot;obSimpleHyphen&quot;).Enable	= False
+			.GetControl(&quot;obNoBreakHyphen&quot;).Enable	= False
 		End If
 	End With
 End Sub
 
+Sub cboxDirectSpeechEnabled()
+	With oTextCorrectorDlg
+		If .GetControl(&quot;cboxDirectSpeech&quot;).State = 1 Then
+			.GetControl(&quot;obDirectSpeechHyphen&quot;).Enable	= True
+			.GetControl(&quot;obDirectSpeechDash&quot;).Enable	= True
+			.GetControl(&quot;cboxDirectSpeechBlank&quot;).Enable	= True
+		Else
+			.GetControl(&quot;obDirectSpeechHyphen&quot;).Enable	= False
+			.GetControl(&quot;obDirectSpeechDash&quot;).Enable	= False
+			.GetControl(&quot;cboxDirectSpeechBlank&quot;).Enable	= False
+		End If
+	End With
+End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////
 &apos; запуск корректировки
 Sub TextCorrectorDlgOk()
@@ -546,6 +573,11 @@ Sub TextCorrectorDlgOk()
 		oDoc.ReplaceAll(oReplace)
 		oProgressBar.setValue(nCur)
 		nCur = nCur+1
+	End If
+	
+	&apos; Прямая речь: Заменить минус, тире или дефис в начале абзаца на дефис или 
+	If bDirectSpeech = True Then
+		WorkDirectSpeech( oDoc, oReplace, oProgressBar, bDirectSpeechHyphen, bDirectSpeechBlank, nCur )
 	End If
 	
 	&apos; Заменить, дефис используемый вместо тире на тире (В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
@@ -1162,23 +1194,28 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSynbolCode
 	nCur = nCur+1
 End Function
 
-&apos; Заменить, дефис используемый вместо тире на тире
-&apos;(В прямой речи, между слов, но не в &quot;какой-то, где-то...&quot;)
+&apos; Прямая речь: Заменить минус, тире или дефис в начале абзаца на дефис или тире
+Function WorkDirectSpeech( oDoc, oReplace, oProgressBar, bDirectSpeechHyphen, bDirectSpeechBlank, nCur )
+	Dim SearchStr As String, ReplaceStr As String
+	If bDirectSpeechHyphen = True Then &apos; Заменить на Дефис
+		SearchStr = &quot;^[-&quot; &amp; chr(8212) &amp; chr(8209) &amp; &quot;]&quot;
+		ReplaceStr = chr(8211)
+	Else &apos; Заменить на Тире
+		SearchStr = &quot;^[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]&quot;
+		ReplaceStr = chr(8212)
+	End If
+	If bDirectSpeechBlank = True Then ReplaceStr = ReplaceStr + &quot; &quot;
+	With oReplace
+		.SearchString = SearchStr
+		.ReplaceString = ReplaceStr
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+End Function
+
+&apos; Заменить, дефис используемый вместо тире на тире (между слов, но не в &quot;какой-то, где-то...&quot;)
 Function HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
-	With oReplace
-		.SearchString = &quot;^ {1,}-&quot;
-		.ReplaceString = chr(8212) &amp; &quot; &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;^-&quot;
-		.ReplaceString = chr(8212) &amp; &quot; &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 	With oReplace
 		.SearchString = &quot;\.-&quot;
 		.ReplaceString = &quot;. &quot; &amp; chr(8212) &amp; &quot; &quot;
