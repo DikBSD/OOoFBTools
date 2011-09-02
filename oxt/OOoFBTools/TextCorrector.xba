@@ -53,6 +53,9 @@ Private bDeleteAllLineShape As Boolean
 Private bRemoveSpaceInBracket	As Boolean
 Private bRemoveSpaceInQuote		As Boolean
 
+Private bInsertNoBreakBlankToFIO	As Boolean
+
+
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
@@ -132,6 +135,7 @@ Sub SaveCorrectorSettings()
 		bInsertSpaceBSymAndMDH = 	.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State
 		bInsertSpaceBPunctAndMDH = 	.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State
 		bInsertSpaceBPunctAndSym = 	.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State
+		bInsertNoBreakBlankToFIO =	.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State
 		bDefis = 					.GetControl(&quot;cboxHyphen&quot;).State
 		bNoBreakDefis = 			.GetControl(&quot;obSimpleHyphen&quot;).State
 		bKav = 						.GetControl(&quot;cboxKav&quot;).State
@@ -264,6 +268,7 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 0	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -323,6 +328,7 @@ Sub SetDocumentType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -381,6 +387,7 @@ Sub SetFictionType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -439,6 +446,7 @@ Sub SetPublicismType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -497,6 +505,7 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -555,6 +564,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -613,6 +623,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -671,6 +682,7 @@ Sub SetReligionType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -707,9 +719,6 @@ Sub SetReligionType()
 	End With
 	ControlsEnabled()
 End Sub
-
-
-
 
 &apos; //////////////////////////////////////////////////////////////////////////////////
 &apos; запуск корректировки
