@@ -48,13 +48,12 @@ Private bPoints As Boolean
 Private bC As Boolean
 Private bImages As Boolean
 Private nAnchor As String
-Private bDeleteAllLineShape As Boolean
-
+Private bDeleteAllLineShape		As Boolean
 Private bRemoveSpaceInBracket	As Boolean
 Private bRemoveSpaceInQuote		As Boolean
 
-Private bInsertNoBreakBlankToFIO	As Boolean
-
+Private bInsertNoBreakBlankToFIO		As Boolean
+Private bInsertNoBreakBlankToShortening	As Boolean
 
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -69,7 +68,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 401
+		.Height = 420
 		.Width  = 423
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -91,7 +90,7 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 401, 423, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 420, 423, com.sun.star.awt.PosSize.POS )
 	
 	ControlsEnabled()
 		
@@ -136,6 +135,7 @@ Sub SaveCorrectorSettings()
 		bInsertSpaceBPunctAndMDH = 	.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State
 		bInsertSpaceBPunctAndSym = 	.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State
 		bInsertNoBreakBlankToFIO =	.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State
+		bInsertNoBreakBlankToShortening = .GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State
 		bDefis = 					.GetControl(&quot;cboxHyphen&quot;).State
 		bNoBreakDefis = 			.GetControl(&quot;obSimpleHyphen&quot;).State
 		bKav = 						.GetControl(&quot;cboxKav&quot;).State
@@ -268,7 +268,8 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 0	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -329,6 +330,7 @@ Sub SetDocumentType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -387,7 +389,8 @@ Sub SetFictionType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 0	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -447,6 +450,7 @@ Sub SetPublicismType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -506,6 +510,7 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -565,6 +570,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -624,6 +630,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -683,6 +690,7 @@ Sub SetReligionType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -874,6 +882,16 @@ Sub TextCorrectorDlgOk()
 		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
 		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
 		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
+	End If
+	
+	&apos; Вставить неразрывные пробелы между фамилией и инициалами
+	If bInsertNoBreakBlankToFIO = True Then
+		InsertNoBreakBlankToFIO( oDoc, oReplace, oProgressBar, nCur )
+	End If
+	
+	&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+	If bInsertNoBreakBlankToShortening = True Then
+		InsertNoBreakBlankToShortening( oDoc, oReplace, oProgressBar, nCur )
 	End If
 	
 	&apos; /////////////// Работа с абзацами и разрывами //////////////
@@ -1575,6 +1593,132 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 End Function
+
+&apos;////////////////////////////////////////////////////////////////////
+&apos; Вставить неразрывные пробелы между фамилией и инициалами
+Sub InsertNoBreakBlankToFIO( oDoc, oReplace, oProgressBar, nCur )
+	Dim bReplCase As Boolean : bReplCase = oReplace.SearchCaseSensitive
+	&apos; регулярные выражения задавать именно в такой последовательности!
+	
+	With oReplace
+		.SearchRegularExpression=True
+		.SearchCaseSensitive = True		&apos; Учитывать регистр при поиске
+		.searchAll=True
+	End With
+	&apos; Для русских Фамилий
+	&apos; 1. слово И.О. Фамилия
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; 2. слово Фамилия И.О.
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; 3. С начала абзаца И.О.Фамилия
+	With oReplace
+		.SearchString = &quot;^\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; 4. С начала абзаца И.О.Фамилия
+	With oReplace
+		.SearchString = &quot;^\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Для иностранных Фамилий
+	&apos; 1. word N.P. Family
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; 2. word Family N.P.
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; 3. С начала абзаца N.P.Family
+	With oReplace
+		.SearchString = &quot;^\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	&apos; 4. С начала абзаца N.P.Family
+	With oReplace
+		.SearchString = &quot;^\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Теперь восстанавливаем значение учета регистра при поиске и замене
+	oReplace.SearchCaseSensitive=bReplCase
+End Sub
+
+&apos;////////////////////////////////////////////////////////////////////
+&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+Sub InsertNoBreakBlankToShortening( oDoc, oReplace, oProgressBar, nCur )
+	&apos; для русского языка
+	With oReplace
+		.SearchString	= &quot;([^а-яА-ЯёЁ]т\.)\x20*([д|п|к|е|н|ч|о]{1}\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString	= &quot;(по|после|до|между)\x20+([н|Р]{1}\.)\x20*([э|Х]{1}\.)&quot;
+		.ReplaceString	= &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; для английского языка
+	With oReplace
+		.SearchString	= &quot;(B\.)\x20*(C\.)\x20*(E\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString	= &quot;(A\.)\x20*(D\.)|(B\.)\x20*(C\.)|(C\.)\x20*(E\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	With oReplace
+		.SearchString	= &quot;([a|p]\.)\x20*(m\.)|(e\.)\x20*(g\.)|(i\.)\x20*(e\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+End Sub
 
 &apos;////////////////////////////////////////////////////////////////////
 &apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
