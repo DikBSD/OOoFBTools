@@ -816,9 +816,11 @@ Sub TextCorrectorDlgOk()
 			oProgressBar.setValue(i)
 		Next i
 	End If
-	
 
 	Dim nCur As Integer : nCur = 0
+	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 13 )
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; удаление разрывов страниц
 	If bDelPB Then
@@ -827,245 +829,150 @@ Sub TextCorrectorDlgOk()
 	
 	&apos; Удаление мягких переносов
 	If bDelMP = True Then
-		DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+		DeleteMPer( oDoc, oReplace )
 	End If
-
-
-	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 144 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
-	
+
+
 	&apos; //////////////////////////////////////// Работа с пробелами и табуляциями /////////////////////////////////
 	&apos; Удаляем все стартовые ПРОСТЫЕ пробелы
 	If bTCDelStartSpace = True Then
-		DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
+		DelStartSpace( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Удаляем все НЕРАЗРЫВНЫЕ стартовые пробелы
 	If bTCStartNoBreakSpaceDelete = True Then
-		DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
+		DelStartNoBreakSpace( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Удаляем все стартовые табуляции
 	If bTCStartTabDelete = True Then
-		DelStartTab( oDoc, oReplace, oProgressBar, nCur )
+		DelStartTab( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Удалить пробелы в начале и в конце скобок
 	If bRemoveSpaceInBracket = True Then
-		RemoveSpaceInBrackets( oDoc, oReplace, oProgressBar, nCur )
+		RemoveSpaceInBrackets( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Удалить пробелы внутри кавычек (« слово » -&gt; «слово»)
 	If bRemoveSpaceInQuote = True Then
-		RemoveSpaceInQuote( oDoc, oReplace, oProgressBar, nCur )
+		RemoveSpaceInQuote( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Удаляем ПРОСТЫЕ пробелы перед знаком препинания
 	If bRemoveSpaceBeforePunct = True Then
-		RemoveSpaceBeforePunct( oDoc, oReplace, oProgressBar, nCur )
+		RemoveSpaceBeforePunct( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Заменить все множественные пробелы (ПРОСТЫЕ, НЕРАЗРЫВНЫЕ и их комбинация) и табуляции между слов на пробел или табуляцию
 	If bTCDelSpace = True Then
-		DelSpace( oDoc, oReplace, oProgressBar, nTCSpaceCount, bTCToSpace, nCur )
+		DelSpace( oDoc, oReplace, nTCSpaceCount, bTCToSpace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 		
 	&apos; Вставляем ПРОСТОЙ пробел после знака препинания
 	If bInsertSpaceBPunctAndSym = True Then
-		InsertSpaceBPunctAndSymbol( oDoc, oReplace, oProgressBar, nCur )
+		InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Вставка ПРОСТОГО пробела между знаком препинания и минусом, тире или дефисом
 	If bInsertSpaceBPunctAndMDH Then
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )		&apos; минус
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
-		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 45 )		&apos; минус
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8211 )	&apos; дефис
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8209 )	&apos; неразрывный дефис
+		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 8212 )	&apos; тире
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Вставка ПРОСТОГО пробела между словами, кавычками и минусом, тире или дефисом
 	If bInsertSpaceBSymAndMDH Then
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 45, oProgressBar, nCur )	&apos; минус
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8211, oProgressBar, nCur )	&apos; дефис
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8209, oProgressBar, nCur )	&apos; неразрывный дефис
-		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8212, oProgressBar, nCur )	&apos; тире
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 45 )	&apos; минус
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8211 )	&apos; дефис
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8209 )	&apos; неразрывный дефис
+		InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, 8212 )	&apos; тире
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; Вставить неразрывные пробелы между фамилией и инициалами
 	If bInsertNoBreakBlankToFIO = True Then
-		InsertNoBreakBlankToFIO( oDoc, oReplace, oProgressBar, nCur )
+		InsertNoBreakBlankToFIO( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 	If bInsertNoBreakBlankToShortening = True Then
-		InsertNoBreakBlankToShortening( oDoc, oReplace, oProgressBar, nCur )
+		InsertNoBreakBlankToShortening( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; /////////////// Работа с абзацами и разрывами //////////////
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
 	If bWordDefisPara = True Then
 		&apos; Удаление мягких переносов, иначе результат будет неверен
 		If bDelMP = False Then
-			DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+			DeleteMPer( oDoc, oReplace )
 		End If
 		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
-		oProgressBar.start( sTCD.sDelWordBreak, 100 )
+		oProgressBar.start( sTCD.sTextCorrecting, 100 )
 		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
 	End If
 
+	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 13 )
 	&apos; Разрывы строк
 	If bBreakLine = True Then
-		If bDel = True Then
-			&apos; Удаляем разрыв строки
-			With oReplace
-				.SearchString = chr(10)
-				.ReplaceString = &quot;&quot;
-			End With
-		ElseIf bPar = True Then
-			&apos; Заменяем разрыв строки на абзац
-			With oReplace
-				.SearchString = chr(10)
-				.ReplaceString = &quot;\n&quot;
-			End With
-		ElseIf bSpace = True Then
-			&apos; Заменяем разрыв строки на 1 пробел
-			With oReplace
-				.SearchString = chr(10)
-				.ReplaceString = &quot; &quot;
-			End With
-		End If
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
+		BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; Удаляем все множественные пустые абзацы
 	If bDelEmptyPar = True Then
-		With oReplace
-			.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
-			.ReplaceString = &quot;&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-	
-		With oReplace
-			.SearchString = &quot;^$&quot;
-			.ReplaceString = &quot;&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-		
-&apos;		With oReplace
-&apos;			.SearchString = &quot;^$&quot;
-&apos;			.ReplaceString = &quot;&quot;
-&apos;		End With
-&apos;	
-&apos;		Dim oDoc As Object : oDoc = ThisComponent
-&apos;		Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-&apos;		With vSearch
-&apos;			.SearchRegularExpression = True
-&apos;			.SearchString = &quot;^$&quot;
-&apos;		End With
-&apos;		Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
-&apos;		Do While Not IsNull( vFound )
-&apos;			If Not IsNull( vFound ) Then
-&apos;				vFound.setString(&quot;&quot;)
-&apos;				&apos; ищем далее
-&apos;				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-&apos;			End If
-&apos;		Loop
-&apos;		oDoc.ReplaceAll(oReplace)
-&apos;		oProgressBar.setValue(nCur)
-&apos;		nCur = nCur+1
+		DelEmptyPar( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; /////////////// Дефисы, тире и минусы, разное /////////////////
 	&apos; Заменить двойной минус двойной дефис (--) на тире
 	If b2HyphenToDash = True Then
-		With oReplace
-			.SearchString = &quot;[:space:]{1,}(-|&quot; &amp; chr(8211) &amp; &quot;|&quot; &amp; chr(8209) &amp; &quot;){2}[:space:]{1,}&quot;
-			.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-
-		With oReplace
-			.SearchString	= &quot;^ *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *([а-яА-ЯёЁ])&quot;
-			.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-		
-		&apos; Прямая речь: Заменить минус или дефис в начале абзаца на тире 
-		With oReplace
-			.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁ])&quot;
-			.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-		
-		&apos; для русских слов обработку &quot; --пример&quot;, но не &quot; --i&quot;
-		With oReplace
-			.SearchString	= &quot; *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}([а-яА-ЯёЁ])&quot;
-			.ReplaceString	= &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-		&apos; для русских слов обработку &quot;пример-- &quot;, но не &quot;i-- &quot;
-		With oReplace
-			.SearchString	= &quot;([а-яА-ЯёЁ])[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *&quot;
-			.ReplaceString	= &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
+		Replace2HyphenToDash( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 
 	&apos; Заменить дефис или минус, используемый вместо тире на тире между слов (но не в &quot;какой-то, где-то...&quot;)
 	If bHyphenToDash = True Then
-		HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
+		HyphenToDash( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
 	If bDefis = True Then
-		&apos; обрабатываем русские слова
-		If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
-			With oReplace
-				.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; chr(32) &amp; &quot;*&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; chr(32) &amp; &quot;*&quot; &amp;_
-								&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)&quot;
-				.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
-			End With
-		Else &apos; заменить на простой дефис
-			With oReplace
-				.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; chr(32) &amp; &quot;*&quot; &amp; &quot;[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; chr(32) &amp; &quot;*&quot; &amp;_
-								&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)&quot;
-				.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
-			End With
-		End If
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
-
-		&apos; обрабатываем иностранные слова
-		If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
-			With oReplace
-				.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
-				.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
-			End With
-		Else &apos; заменить на простой дефис
-			With oReplace
-				.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
-				.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
-			End With
-		End If
-		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
+		ReplaceMinusToDefis( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 
 	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 	If bKav = True Then
-		QuotationMarks( oDoc, oReplace, oProgressBar, nCur )
+		QuotationMarks( oDoc, oReplace )
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; Упорядочить многоточие
 	If bPoints = True Then
@@ -1074,9 +981,9 @@ Sub TextCorrectorDlgOk()
 			.ReplaceString = &quot;…&quot;&apos;chr(8230)
 		End With
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	&apos; Замена на (c) (r) (TM)
 	If bC = True Then
@@ -1085,87 +992,572 @@ Sub TextCorrectorDlgOk()
 			.ReplaceString = &quot;©&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
 		With oReplace
 			.SearchString = &quot;\( *[R|r]{1} *\)&quot;
 			.ReplaceString = &quot;®&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
 		With oReplace
 			.SearchString = &quot;\( *[TtТт]{1}[MmМм]{1} *\)&quot;
 			.ReplaceString = &quot;™&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
-		oProgressBar.setValue(nCur)
-		nCur = nCur+1
 	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	
 	MsgBox sTCD.sEndWork, 64, sCorrectorName
 	oProgressBar.end
 End Sub
 
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; замена разрыва строки на
+Sub BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
+	If bDel = True Then
+		&apos; Удаляем разрыв строки
+		With oReplace
+			.SearchString = chr(10)
+			.ReplaceString = &quot;&quot;
+		End With
+	ElseIf bPar = True Then
+		&apos; Заменяем разрыв строки на абзац
+		With oReplace
+			.SearchString = chr(10)
+			.ReplaceString = &quot;\n&quot;
+		End With
+	ElseIf bSpace = True Then
+		&apos; Заменяем разрыв строки на 1 пробел
+		With oReplace
+			.SearchString = chr(10)
+			.ReplaceString = &quot; &quot;
+		End With
+	End If
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Удаляем все множественные пустые абзацы
+Sub DelEmptyPar( oDoc, oReplace )
+	With oReplace
+		.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;^$&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+		
+&apos;	With oReplace
+&apos;		.SearchString = &quot;^$&quot;
+&apos;		.ReplaceString = &quot;&quot;
+&apos;	End With
+&apos;	
+&apos;	Dim oDoc As Object : oDoc = ThisComponent
+&apos;	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+&apos;	With vSearch
+&apos;		.SearchRegularExpression = True
+&apos;		.SearchString = &quot;^$&quot;
+&apos;	End With
+&apos;	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
+&apos;	Do While Not IsNull( vFound )
+&apos;		If Not IsNull( vFound ) Then
+&apos;			vFound.setString(&quot;&quot;)
+&apos;			&apos; ищем далее
+&apos;			vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+&apos;		End If
+&apos;	Loop
+&apos;	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Заменить двойной минус двойной дефис (--) на тире
+Sub Replace2HyphenToDash( oDoc, oReplace )
+	With oReplace
+		.SearchString = &quot;[:space:]{1,}(-|&quot; &amp; chr(8211) &amp; &quot;|&quot; &amp; chr(8209) &amp; &quot;){2}[:space:]{1,}&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;^ *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *([а-яА-ЯёЁ])&quot;
+		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+		
+	&apos; Прямая речь: Заменить минус или дефис в начале абзаца на тире 
+	With oReplace
+		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁ])&quot;
+		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+		
+	&apos; для русских слов обработку &quot; --пример&quot;, но не &quot; --i&quot;
+	With oReplace
+		.SearchString	= &quot; *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}([а-яА-ЯёЁ])&quot;
+		.ReplaceString	= &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	&apos; для русских слов обработку &quot;пример-- &quot;, но не &quot;i-- &quot;
+	With oReplace
+		.SearchString	= &quot;([а-яА-ЯёЁ])[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *&quot;
+		.ReplaceString	= &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
+Sub ReplaceMinusToDefis( oDoc, oReplace )
+	&apos; обрабатываем русские слова
+	If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
+		With oReplace
+			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; chr(32) &amp; &quot;*&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; chr(32) &amp; &quot;*&quot; &amp;_
+							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+		End With
+	Else &apos; заменить на простой дефис
+		With oReplace
+			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; chr(32) &amp; &quot;*&quot; &amp; &quot;[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; chr(32) &amp; &quot;*&quot; &amp;_
+							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+		End With
+	End If
+	oDoc.ReplaceAll(oReplace)
+
+	&apos; обрабатываем иностранные слова
+	If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
+		With oReplace
+			.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+		End With
+	Else &apos; заменить на простой дефис
+		With oReplace
+			.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+		End With
+	End If
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
 &apos; Удалить пробелы в начале и в конце скобок
-Sub RemoveSpaceInBrackets( oDoc, oReplace, oProgressBar, nCur )
+Sub RemoveSpaceInBrackets( oDoc, oReplace )
 	With oReplace
 		.SearchString = &quot;(\[|\(|\{)\x20+|\x20+(\]|\)|\})&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 End Sub
 
 &apos; Удалить пробелы внутри кавычек (« слово » -&gt; «слово»)
-Sub	RemoveSpaceInQuote( oDoc, oReplace, oProgressBar, nCur )
+Sub	RemoveSpaceInQuote( oDoc, oReplace )
 	With oReplace
 		.SearchString = &quot;([\&gt;“\&quot;&quot;«])\x20+|\x20+([”\&quot;&quot;»\&lt;])&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 End Sub
 	
 &apos; Удаление пробелов перед знаком препинания
-Sub RemoveSpaceBeforePunct( oDoc, oReplace, oProgressBar, nCur )
+Sub RemoveSpaceBeforePunct( oDoc, oReplace )
 	With oReplace
 		.SearchString = &quot;[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]+([.,:;!?…])&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 End Sub
 
 &apos;/////////////////////////////////////////////////////
 &apos; Вставляем пробел после знака препинания
-Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace, oProgressBar, nCur )
+Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 	With oReplace
 		.SearchString = &quot;([.,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
 		.ReplaceString = &quot;$1 $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 End Sub
 
 &apos;/////////////////////////////////////////////////////
 &apos; Удаление мягких переносов
-Sub DeleteMPer( oDoc, oReplace, oProgressBar, nCur )
+Sub DeleteMPer( oDoc, oReplace )
 	With oReplace
 		.SearchString = &quot;\x00AD&quot;
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 End Sub
 
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; Вставка ПРОБЕЛА между символами, кавычками и минусом, тире или дефисом
+Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
+	&apos; кавычки, дефис, тире или минус, кавычки
+	With oReplace
+		.SearchString = &quot;([”\&quot;&quot;»])&quot; &amp; chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])&quot;	&apos; &quot;&quot;-“&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(nSymbolCode) &amp; &quot; $2&quot; 				&apos; &quot;&quot; - “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	&apos; кавычки, дефис, тире или минус
+	With oReplace
+		.SearchString = &quot;([”\&quot;&quot;»])&quot; &amp; chr(nSymbolCode)	&apos; &quot;»-&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(nSymbolCode)		&apos; &quot;» -&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; дефис, тире или минус, кавычки
+	With oReplace
+		.SearchString = chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])\&lt;&quot;	&apos; &quot;-“&quot;
+		.ReplaceString = chr(nSymbolCode) &amp; &quot; $1&quot;			&apos; &quot; - “&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////
+&apos; Вставить неразрывные пробелы между фамилией и инициалами
+Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
+	Dim bReplCase As Boolean : bReplCase = oReplace.SearchCaseSensitive
+	&apos; регулярные выражения задавать именно в такой последовательности!
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchCaseSensitive = True		&apos; Учитывать регистр при поиске
+		.searchAll=True
+	End With
+	&apos; Для русских Фамилий
+	&apos; 1. слово И.О. Фамилия
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	&apos; 2. слово Фамилия И.О.
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	&apos; 3. С начала абзаца И.О.Фамилия
+	With oReplace
+		.SearchString = &quot;^\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	&apos; 4. С начала абзаца И.О.Фамилия
+	With oReplace
+		.SearchString = &quot;^\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	
+	&apos; Для иностранных Фамилий
+	&apos; 1. word N.P. Family
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	&apos; 2. word Family N.P.
+	With oReplace
+		.SearchString = &quot;(\&gt;)\x20+([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
+		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	&apos; 3. С начала абзаца N.P.Family
+	With oReplace
+		.SearchString = &quot;^\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	&apos; 4. С начала абзаца N.P.Family
+	With oReplace
+		.SearchString = &quot;^\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+
+	&apos; Теперь восстанавливаем значение учета регистра при поиске и замене
+	oReplace.SearchCaseSensitive=bReplCase
+End Sub
+
+&apos;////////////////////////////////////////////////////////////////////
+&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
+	&apos; для русского языка
+	With oReplace
+		.SearchString	= &quot;([^а-яА-ЯёЁ]т\.)\x20*([д|п|к|е|н|ч|о]{1}\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;(по|после|до|между)\x20+([н|Р]{1}\.)\x20*([э|Х]{1}\.)&quot;
+		.ReplaceString	= &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; для английского языка
+	With oReplace
+		.SearchString	= &quot;(B\.)\x20*(C\.)\x20*(E\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;(A\.)\x20*(D\.)|(B\.)\x20*(C\.)|(C\.)\x20*(E\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;([a|p]\.)\x20*(m\.)|(e\.)\x20*(g\.)|(i\.)\x20*(e\.)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos;////////////////////////////////////////////////////////////////////
+&apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
+Function InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
+	With oReplace
+		.SearchString	= &quot;([\.,:…\?\!&apos;])&quot; &amp; chr(nSymbolCode)	&apos; &quot;.—&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; &quot; &quot; &amp; chr(nSymbolCode)			&apos; &quot;. —&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos; Заменить дефис или минус, используемый вместо тире на тире между слов (но не в &quot;какой-то, где-то...&quot;)
+Function HyphenToDash( oDoc, oReplace )
+	&apos; Между слов
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+		
+	&apos; После знаков препинания
+	With oReplace
+		.SearchString = &quot;([\.,:\!\?…]) *-&quot; 			&apos;&quot;\.-&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;. — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;( &apos;) *-&quot;					&apos;&quot; &apos;-&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; кавычки и тире
+	With oReplace
+		.SearchString = &quot;([»&quot;&quot;”]) *- *([«&quot;&quot;“])&quot;		&apos;&quot;» - «&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;([»&quot;&quot;”]) *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\&gt; *- *([«&quot;&quot;“])&quot;			&apos;&quot;\&gt; - «&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; скобки и тире
+	With oReplace
+		.SearchString = &quot;([\]\)\}])- *&quot;				&apos;&quot;)- &quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;) — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;- *([\[\(\{])&quot;				&apos;&quot;) -&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot;) — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////
+&apos; Работа с пробелами и табуляциями
+Function DelSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
+	&apos; Замена множественныз пробелов на заданное число простых пробелов или табуляций
+	DelMSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
+	&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
+	DelEndSpace( oDoc, oReplace )
+End Function
+
+&apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на залданное число пробелов или табуляций
+Function DelMSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
+	Dim sReplaceStr As String
+	If bTCToSpace = True Then
+		sReplaceStr = Space(nReplaceCount)
+	Else
+		Dim i As Integer
+		For i=0 To nReplaceCount-1
+			sReplaceStr = sReplaceStr + &quot;\t&quot;
+		Next i
+	End If
+	With oReplace
+&apos;		.SearchString = &quot;([:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alnum:]|[…\({\[«&apos;“\&quot;&quot;\&lt;])&quot;
+		.SearchString = &quot;(\&gt;[:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
+		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos; Удаляем все стартовые пробелы
+Function DelStartSpace( oDoc, oReplace )
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^ {1,}&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos; Удаляем все неразрывные стартовые пробелы
+Function DelStartNoBreakSpace( oDoc, oReplace )
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^&quot; &amp; Chr(160) &amp; &quot;{1,}&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos; Удаляем все стартовые табуляции
+Function DelStartTab( oDoc, oReplace )
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^\t{1,}&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
+Function DelEndSpace( oDoc, oReplace )
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;[:space:]{1,}$|\t{1,}$&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////
+&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
+Function QuotationMarks( oDoc, oReplace )
+	With oReplace
+		.SearchString = &quot;^ {1,}[&quot;&quot;“„]&quot;
+		.ReplaceString = &quot;«&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	With oReplace
+		.SearchString = &quot;\&gt;[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\&lt;&quot;
+		.ReplaceString = &quot;«&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;…[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;…»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]…&quot;
+		.ReplaceString = &quot;«…&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	With oReplace
+		.SearchString = &quot;\![&quot;&quot;”]&quot;
+		.ReplaceString = &quot;!»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\?[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;?»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\.[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;.»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\(&quot;
+		.ReplaceString = &quot;«(&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\)[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;)»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\[&quot;
+		.ReplaceString = &quot;«[&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\][&quot;&quot;”]&quot;
+		.ReplaceString = &quot;]»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„]\{&quot;
+		.ReplaceString = &quot;«{&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\}[&quot;&quot;”]&quot;
+		.ReplaceString = &quot;}»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„][\+]&quot;
+		.ReplaceString = &quot;«+&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;[&quot;&quot;“„][\-]&quot;
+		.ReplaceString = &quot;«-&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;[\+][&quot;&quot;”]&quot;
+		.ReplaceString = &quot;+»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;[\-][&quot;&quot;”]&quot;
+		.ReplaceString = &quot;-»&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Function
+
+&apos; Удаляем все разрывы страниц
+Function DeleteAllPageBreaks() As Integer 
+	Dim lCount As Integer : lCount = 0
+	Dim oText As Variant : oText = ThisComponent.Text
+	Dim oCursor As Variant
+	oCursor = oText.CreateTextCursor()
+	oCursor.GoToStart(False)
+	Do
+		If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do
+		If NOT IsEmpty(oCursor.PageDescName) Then oCursor.PageDescName = &quot;&quot;
+		If oCursor.BreakType &lt;&gt; com.sun.star.style.BreakType.NONE Then
+			oCursor.BreakType = com.sun.star.style.BreakType.NONE
+			lCount = lCount + 1
+		End If
+	Loop Until NOT oCursor.gotoNextParagraph(False)
+	DeleteAllPageBreaks = lCount
+End Function
+
+&apos;///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
 &apos; в тексте, таблицах, сносках и врезках)
 Sub JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
@@ -1561,475 +1953,6 @@ Function DeletePunctMarkInString( byval sString As String ) As String
 			Exit Function
 		End If
 	Next i
-End Function
-
-&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos; Вставка ПРОБЕЛА между символами, кавычками и минусом, тире или дефисом
-Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode, oProgressBar, nCur )
-	&apos; кавычки, дефис, тире или минус, кавычки
-	With oReplace
-		.SearchString = &quot;([”\&quot;&quot;»])&quot; &amp; chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])&quot;	&apos; &quot;&quot;-“&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(nSymbolCode) &amp; &quot; $2&quot; 				&apos; &quot;&quot; - “&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-
-	&apos; кавычки, дефис, тире или минус
-	With oReplace
-		.SearchString = &quot;([”\&quot;&quot;»])&quot; &amp; chr(nSymbolCode)	&apos; &quot;»-&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(nSymbolCode)		&apos; &quot;» -&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; дефис, тире или минус, кавычки
-	With oReplace
-		.SearchString = chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])\&lt;&quot;	&apos; &quot;-“&quot;
-		.ReplaceString = chr(nSymbolCode) &amp; &quot; $1&quot;			&apos; &quot; - “&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos;////////////////////////////////////////////////////////////////////
-&apos; Вставить неразрывные пробелы между фамилией и инициалами
-Sub InsertNoBreakBlankToFIO( oDoc, oReplace, oProgressBar, nCur )
-	Dim bReplCase As Boolean : bReplCase = oReplace.SearchCaseSensitive
-	&apos; регулярные выражения задавать именно в такой последовательности!
-	
-	With oReplace
-		.SearchRegularExpression=True
-		.SearchCaseSensitive = True		&apos; Учитывать регистр при поиске
-		.searchAll=True
-	End With
-	&apos; Для русских Фамилий
-	&apos; 1. слово И.О. Фамилия
-	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; 2. слово Фамилия И.О.
-	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; 3. С начала абзаца И.О.Фамилия
-	With oReplace
-		.SearchString = &quot;^\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; 4. С начала абзаца И.О.Фамилия
-	With oReplace
-		.SearchString = &quot;^\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; Для иностранных Фамилий
-	&apos; 1. word N.P. Family
-	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; 2. word Family N.P.
-	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; 3. С начала абзаца N.P.Family
-	With oReplace
-		.SearchString = &quot;^\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	&apos; 4. С начала абзаца N.P.Family
-	With oReplace
-		.SearchString = &quot;^\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; Теперь восстанавливаем значение учета регистра при поиске и замене
-	oReplace.SearchCaseSensitive=bReplCase
-End Sub
-
-&apos;////////////////////////////////////////////////////////////////////
-&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
-Sub InsertNoBreakBlankToShortening( oDoc, oReplace, oProgressBar, nCur )
-	&apos; для русского языка
-	With oReplace
-		.SearchString	= &quot;([^а-яА-ЯёЁ]т\.)\x20*([д|п|к|е|н|ч|о]{1}\.)&quot;
-		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString	= &quot;(по|после|до|между)\x20+([н|Р]{1}\.)\x20*([э|Х]{1}\.)&quot;
-		.ReplaceString	= &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; для английского языка
-	With oReplace
-		.SearchString	= &quot;(B\.)\x20*(C\.)\x20*(E\.)&quot;
-		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString	= &quot;(A\.)\x20*(D\.)|(B\.)\x20*(C\.)|(C\.)\x20*(E\.)&quot;
-		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString	= &quot;([a|p]\.)\x20*(m\.)|(e\.)\x20*(g\.)|(i\.)\x20*(e\.)&quot;
-		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Sub
-
-&apos;////////////////////////////////////////////////////////////////////
-&apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
-Function InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode, oProgressBar, nCur )
-	With oReplace
-		.SearchString	= &quot;([\.,:…\?\!&apos;])&quot; &amp; chr(nSymbolCode)	&apos; &quot;.—&quot;
-		.ReplaceString	= &quot;$1&quot; &amp; &quot; &quot; &amp; chr(nSymbolCode)			&apos; &quot;. —&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos; Заменить дефис или минус, используемый вместо тире на тире между слов (но не в &quot;какой-то, где-то...&quot;)
-Function HyphenToDash( oDoc, oReplace, oProgressBar, nCur )
-	&apos; Между слов
-	With oReplace
-		.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-		
-	&apos; После знаков препинания
-	With oReplace
-		.SearchString = &quot;([\.,:\!\?…]) *-&quot; 			&apos;&quot;\.-&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;. — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;( &apos;) *-&quot;					&apos;&quot; &apos;-&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; кавычки и тире
-	With oReplace
-		.SearchString = &quot;([»&quot;&quot;”]) *- *([«&quot;&quot;“])&quot;		&apos;&quot;» - «&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;([»&quot;&quot;”]) *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;\&gt; *- *([«&quot;&quot;“])&quot;			&apos;&quot;\&gt; - «&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; скобки и тире
-	With oReplace
-		.SearchString = &quot;([\]\)\}])- *&quot;				&apos;&quot;)- &quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;) — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;- *([\[\(\{])&quot;				&apos;&quot;) -&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot;) — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos;////////////////////////////////////////////////////////////////////////////
-&apos; Работа с пробелами и табуляциями
-Function DelSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
-	&apos; Замена множественныз пробелов на заданное число простых пробелов или табуляций
-	DelMSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
-	&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
-	DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
-End Function
-
-&apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на залданное число пробелов или табуляций
-Function DelMSpace( oDoc, oReplace, oProgressBar, nReplaceCount, bTCToSpace, nCur )
-	Dim sReplaceStr As String
-	If bTCToSpace = True Then
-		sReplaceStr = Space(nReplaceCount)
-	Else
-		Dim i As Integer
-		For i=0 To nReplaceCount-1
-			sReplaceStr = sReplaceStr + &quot;\t&quot;
-		Next i
-	End If
-	With oReplace
-&apos;		.SearchString = &quot;([:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alnum:]|[…\({\[«&apos;“\&quot;&quot;\&lt;])&quot;
-		.SearchString = &quot;(\&gt;[:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
-		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos; Удаляем все стартовые пробелы
-Function DelStartSpace( oDoc, oReplace, oProgressBar, nCur )
-	With oReplace
-		.SearchRegularExpression = True
-		.SearchString = &quot;^ {1,}&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos; Удаляем все неразрывные стартовые пробелы
-Function DelStartNoBreakSpace( oDoc, oReplace, oProgressBar, nCur )
-	With oReplace
-		.SearchRegularExpression = True
-		.SearchString = &quot;^&quot; &amp; Chr(160) &amp; &quot;{1,}&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos; Удаляем все стартовые табуляции
-Function DelStartTab( oDoc, oReplace, oProgressBar, nCur )
-	With oReplace
-		.SearchRegularExpression = True
-		.SearchString = &quot;^\t{1,}&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
-Function DelEndSpace( oDoc, oReplace, oProgressBar, nCur )
-	With oReplace
-		.SearchRegularExpression = True
-		.SearchString = &quot;[:space:]{1,}$|\t{1,}$&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos;////////////////////////////////////////////////////////////////////////////
-&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
-Function QuotationMarks( oDoc, oReplace, oProgressBar, nCur )
-	With oReplace
-		.SearchString = &quot;^ {1,}[&quot;&quot;“„]&quot;
-		.ReplaceString = &quot;«&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur) 
-	nCur = nCur+1
-	
-	With oReplace
-		.SearchString = &quot;\&gt;[&quot;&quot;”]&quot;
-		.ReplaceString = &quot;»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„]\&lt;&quot;
-		.ReplaceString = &quot;«&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;…[&quot;&quot;”]&quot;
-		.ReplaceString = &quot;…»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„]…&quot;
-		.ReplaceString = &quot;«…&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	With oReplace
-		.SearchString = &quot;\![&quot;&quot;”]&quot;
-		.ReplaceString = &quot;!»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;\?[&quot;&quot;”]&quot;
-		.ReplaceString = &quot;?»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1	
-	With oReplace
-		.SearchString = &quot;\.[&quot;&quot;”]&quot;
-		.ReplaceString = &quot;.»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„]\(&quot;
-		.ReplaceString = &quot;«(&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;\)[&quot;&quot;”]&quot;
-		.ReplaceString = &quot;)»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„]\[&quot;
-		.ReplaceString = &quot;«[&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;\][&quot;&quot;”]&quot;
-		.ReplaceString = &quot;]»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„]\{&quot;
-		.ReplaceString = &quot;«{&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;\}[&quot;&quot;”]&quot;
-		.ReplaceString = &quot;}»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„][\+]&quot;
-		.ReplaceString = &quot;«+&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;[&quot;&quot;“„][\-]&quot;
-		.ReplaceString = &quot;«-&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;[\+][&quot;&quot;”]&quot;
-		.ReplaceString = &quot;+»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	With oReplace
-		.SearchString = &quot;[\-][&quot;&quot;”]&quot;
-		.ReplaceString = &quot;-»&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-End Function
-
-&apos; Удаляем все разрывы страниц
-Function DeleteAllPageBreaks() As Long 
-	Dim lCount As Long : lCount = 0
-	Dim oText As Variant : oText = ThisComponent.Text
-	Dim oCursor as Variant
-	oCursor = oText.CreateTextCursor()
-	oCursor.GoToStart(False)
-	Do
-		If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do
-		If NOT IsEmpty(oCursor.PageDescName) Then oCursor.PageDescName = &quot;&quot;
-		If oCursor.BreakType &lt;&gt; com.sun.star.style.BreakType.NONE Then
-			oCursor.BreakType = com.sun.star.style.BreakType.NONE
-			lCount = lCount + 1
-		End If
-	Loop Until NOT oCursor.gotoNextParagraph(False)
-	DeleteAllPageBreaks = lCount
 End Function
 
 </script:module>
