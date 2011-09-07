@@ -1110,14 +1110,14 @@ Sub ReplaceMinusToDefis( oDoc, oReplace )
 	If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
 		With oReplace
 			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; chr(32) &amp; &quot;*&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; chr(32) &amp; &quot;*&quot; &amp;_
-							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)&quot;
-			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)([^а-яА-ЯёЁ])&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2$3&quot;
 		End With
 	Else &apos; заменить на простой дефис
 		With oReplace
 			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; chr(32) &amp; &quot;*&quot; &amp; &quot;[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; chr(32) &amp; &quot;*&quot; &amp;_
-							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)&quot;
-			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)([^а-яА-ЯёЁ])&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2$3&quot;
 		End With
 	End If
 	oDoc.ReplaceAll(oReplace)
