@@ -139,13 +139,6 @@ NextWord:
 	&apos; поиск и обработка искомого слова
 	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
 		oDocControl.Select( otxtCurs ) &apos; выделяем найденное
-		&apos; проверяем, не соответствует ли найденное одному из запомненных дефисных слов
-		Dim i As Integer
-		For i=0 To UBound( asWords() )
-			If StrComp( LCase( otxtCurs.String ), LCase( asWords(i) ) )=0 Then
-				GoTo NextWord
-			End If
-		Next i
 	Else &apos; конец документа
 		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
 		Dim oViewCursor	As Object : oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
