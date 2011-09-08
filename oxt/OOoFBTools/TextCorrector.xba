@@ -874,7 +874,10 @@ Sub TextCorrectorDlgOk()
 	nCur = nCur+1
 	&apos; Заменить все множественные пробелы (ПРОСТЫЕ, НЕРАЗРЫВНЫЕ и их комбинация) и табуляции между слов на пробел или табуляцию
 	If bTCDelSpace = True Then
-		DelSpace( oDoc, oReplace, nTCSpaceCount, bTCToSpace )
+		&apos; Замена множественных пробелов на заданное число простых пробелов или табуляций
+		DelMSpace( oDoc, nTCSpaceCount, bTCToSpace )
+		&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
+		DelEndSpace( oDoc, oReplace )
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1376,15 +1379,14 @@ End Function
 
 &apos;////////////////////////////////////////////////////////////////////////////
 &apos; Работа с пробелами и табуляциями
-Function DelSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
-	&apos; Замена множественныз пробелов на заданное число простых пробелов или табуляций
-	DelMSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
-	&apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
-	DelEndSpace( oDoc, oReplace )
-End Function
 
 &apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на залданное число пробелов или табуляций
-Function DelMSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
+Function DelMSpace( oDoc, nReplaceCount, bTCToSpace )
+	&apos; в условие поиска игнорируем цифры в верхнем или нижнем индексе
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
+	SrchAttributes(0).Value	= False
+  
 	Dim sReplaceStr As String
 	If bTCToSpace = True Then
 		sReplaceStr = Space(nReplaceCount)
@@ -1394,12 +1396,16 @@ Function DelMSpace( oDoc, oReplace, nReplaceCount, bTCToSpace )
 			sReplaceStr = sReplaceStr + &quot;\t&quot;
 		Next i
 	End If
-	With oReplace
+	
+	Dim oDesc : oDesc = oDoc.createSearchDescriptor()
+	With oDesc
+		.SearchRegularExpression = True
+		.SetSearchAttributes(SrchAttributes())
 &apos;		.SearchString = &quot;([:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alnum:]|[…\({\[«&apos;“\&quot;&quot;\&lt;])&quot;
 		.SearchString = &quot;([:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
 		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
 	End With
-	oDoc.ReplaceAll(oReplace)
+	oDoc.ReplaceAll(oDesc)
 End Function
 
 &apos; Удаляем все стартовые пробелы
