@@ -4,8 +4,46 @@
 Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
-&apos; /// Работа с файлами ///
+&apos; //////////////////////// Определение типа или языка символа ///////////////////////////
+&apos; Проверка является ли sVal русской буквой
+Function IsRussianLetter( sVal As String ) As Boolean
+	&apos;А-Я, а-я, Ё,ё : 1040-1071, 1072-1103, 1025,1105
+	IsRussianLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=1040 And s&lt;=1103) Or s=1025 Or s=1105 Then
+		IsRussianLetter = True
+	End If
+End Function
 
+&apos; Проверка является ли sVal английской буквой
+Function IsEnglishLetter( sVal As String ) As Boolean
+	&apos;A-Z, a-z : 65-90, 97-122
+	IsEnglishLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=65 And s&lt;=90) Or (s&gt;=97 And s&lt;=122) Then
+		IsEnglishLetter = True
+	End If
+End Function
+
+&apos; какой язык у символа sVal
+Function GetLang( sVal As String ) As String
+	GetLang = &quot;Unknow&quot;
+	If IsRussianLetter(sVal)=True Then
+		GetLang = &quot;Russian&quot;
+	ElseIf IsEnglishLetter(sVal)=True Then
+		GetLang = &quot;English&quot;
+	End If
+End Function
+
+&apos; является ли sVal буквой
+Function IsLetter( sVal As String ) As Boolean
+	IsLetter = False
+	If IsRussianLetter(sVal)=True Or IsEnglishLetter(sVal)=True Then
+		IsLetter = True
+	End If
+End Function
+
+&apos; //////////////////// Работа с файлами ////////////////////
 &apos; Пуст ли файл
 Function IsFileEmpty( sFileInput As String ) As Boolean
 	Dim bFileEmpty As Boolean : bFileEmpty = False

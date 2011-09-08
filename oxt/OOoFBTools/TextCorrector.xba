@@ -1768,26 +1768,54 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, bDefisWord
 	End If
 	vL.gotoRange(vR, True)
 	
-	&apos; обрабатываем разорванные дефисы
-	If IsHyphen( vL.getString() ) = True Then
-		&apos; Слово с дефисом - просто удаляем разрыв
-		RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
-	Else
-		If bDefisWordDelOnlyPara Then
-			&apos; еще и для слов удаляем только символ абзаца без переноса
-			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
-		ElseIf bDefisWordDeAll Then
-			&apos; еще и для слов удаляем и перенос, и символ абзаца
-			RegReplaceSymbol( &quot;[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
-			RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
-		End If
+	&apos; проверка, какой символ стоит после конца абзаца $. Если цифра, то выходим, т.к. это может быть страничная сноска
+	&apos; проверку делаем так: если до - русский символ, то проверяем 1-й после $ на русский символ. Если - английский, то проверяем на английский
+	&apos; если до - стоит не рус. и не англ. буква, то выходим - склейка не нужна
+	Dim s As String		: s = vL.GetString()
+	&apos; определяем тип символа переноса
+	Dim sPer As String	: sPer = &quot;-&quot;
+	If InStr(s,&quot;-&quot; )&gt;0 Then
+		sPer = &quot;-&quot;
+	ElseIf InStr(s,chr(8211) )&gt;0 Then
+		sPer = chr(8211)
+	ElseIf InStr(s,chr(8209) )&gt;0 Then
+		sPer = chr(8209)
 	End If
 	
+	&apos; определяем язык символа слева от знака переноса
+	Dim c As String : c = Trim( Mid( s, InStr(s,sPer )-1, 1 )
+	Dim sLeftLang As String, sRightLang As String
+	If IsLetter(c) = True Then
+		&apos; определяем язык буквы слева от переноса
+		sLeftLang = GetLang(c)
+		&apos; смотрим, является ли буквой символ справа от переноса и обрыва абзаца в следующем обзаце
+		c = Trim( Mid( s, InStr(s,chr(10))+1 ) ) : c = Mid( c, 1, 1 )
+		If IsLetter(c) = True Then
+			&apos; определяем язык буквы справа от переноса и обрыва абзаца в следующем обзаце
+			sRightLang = GetLang(c)
+			If sLeftLang = sRightLang Then
+				&apos; обрабатываем разорванные дефисы
+				If IsHyphen( vL.getString() ) = True Then
+					&apos; Слово с дефисом - просто удаляем разрыв
+					RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+				Else
+					If bDefisWordDelOnlyPara Then
+						&apos; еще и для слов удаляем только символ абзаца без переноса
+						RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+					ElseIf bDefisWordDeAll Then
+						&apos; еще и для слов удаляем и перенос, и символ абзаца
+						RegReplaceSymbol( &quot;[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+						RegReplaceSymbol( &quot;$&quot;, &quot;&quot;, oLCurs, oRCurs, oDoc, bText, oProgressBar, l )
+					End If
+				End If
+			End If
+		End If
+	End If
+
+ErrorHandler:
 	&apos; &quot;подтягиваем&quot; позиции курсора для обработки слов к позиции курсора для сравнения слов (для согласования поиска)
 	oLCurs.gotoRange( vL, False )
 	oRCurs.gotoRange( vR, False )
-	
-	ErrorHandler:
 End Sub
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1942,8 +1970,8 @@ End Function
 Function DeletePunctMarkInString( byval sString As String ) As String
 	Dim aPunctMarks() As String
 	Dim i As Integer, c As Integer
-	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot; &apos;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;,&quot;…&quot;, _
-						&quot;(&quot;,&quot;)&quot;,&quot;[&quot;,&quot;]&quot;,&quot;{&quot;,&quot;}&quot;,&quot;|&quot;,&quot;№&quot;,&quot;`&quot;,&quot;~&quot;,&quot;@&quot;,&quot;#&quot;,&quot;$&quot;,&quot;%&quot;,&quot;^&quot;,&quot;&lt;&quot;,&quot;&gt;&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;»&quot; )
+	aPunctMarks = Array( &quot;.&quot;,&quot;,&quot;,&quot;:&quot;,&quot;&apos;&quot;,&quot;!&quot;,&quot;?&quot;,&quot;\&quot;,&quot;/&quot;,&quot;=&quot;,&quot;+&quot;,&quot;-&quot;,&quot;*&quot;,&quot;&amp;&quot;,&quot;…&quot;, _
+						&quot;(&quot;,&quot;)&quot;,&quot;[&quot;,&quot;]&quot;,&quot;{&quot;,&quot;}&quot;,&quot;|&quot;,&quot;№&quot;,&quot;`&quot;,&quot;~&quot;,&quot;@&quot;,&quot;#&quot;,&quot;$&quot;,&quot;%&quot;,&quot;^&quot;,&quot;&lt;&quot;,&quot;&gt;&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;»&quot;,&quot;“&quot;,&quot;„&quot;,&quot;”&quot; )
 	For i=0 To UBound( aPunctMarks() )
 		c = InStr( sString, aPunctMarks(i) )
 		If c &gt; 0 Then &apos; нашли что-то
