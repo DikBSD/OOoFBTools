@@ -833,6 +833,17 @@ Sub TextCorrectorDlgOk()
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
+	
+	&apos; Упорядочить многоточие
+	If bPoints = True Then
+		With oReplace
+			.SearchString = &quot;\. *\. *\.&quot;
+			.ReplaceString = &quot;…&quot;&apos;chr(8230)
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 
 
 	&apos; //////////////////////////////////////// Работа с пробелами и табуляциями /////////////////////////////////
@@ -973,17 +984,6 @@ Sub TextCorrectorDlgOk()
 	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 	If bKav = True Then
 		QuotationMarks( oDoc, oReplace )
-	End If
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
-	
-	&apos; Упорядочить многоточие
-	If bPoints = True Then
-		With oReplace
-			.SearchString = &quot;\. ?\. ?\.&quot;
-			.ReplaceString = &quot;…&quot;&apos;chr(8230)
-		End With
-		oDoc.ReplaceAll(oReplace)
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1320,7 +1320,7 @@ End Sub
 &apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
 Function InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	With oReplace
-		.SearchString	= &quot;([\.,:…\?\!&apos;])&quot; &amp; chr(nSymbolCode)	&apos; &quot;.—&quot;
+		.SearchString	= &quot;([\.,:…\?\!])&quot; &amp; chr(nSymbolCode)	&apos; &quot;.—&quot;
 		.ReplaceString	= &quot;$1&quot; &amp; &quot; &quot; &amp; chr(nSymbolCode)			&apos; &quot;. —&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
