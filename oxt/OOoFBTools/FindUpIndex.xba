@@ -10,7 +10,11 @@ Option Explicit
 Public oFUI As Object
 Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
 
-Private oDocControl, otxtCurs &apos; текстовый курсор
+Private oDocControl
+Private ovCurs		&apos; видимый курсор
+Private otxtCurs	&apos; текстовый курсор для перебора найденного
+Private oPosTxtCurs	&apos; текстовый курсор - хранение текущей позиции найденного символа по заданному условию
+Private bEnd As Boolean
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub FindUpIndexDlg_windowActivated(oEv)
@@ -44,6 +48,14 @@ End Sub
 Sub FindUpIndexFinderStart()
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	oFUI = LoadDialog( &quot;OOoFBTools&quot;, &quot;FindUpIndexDlg&quot; )
+	
+	&apos; создание и инициализация курсоров
+	oDocControl = ThisComponent.getCurrentController()
+	&apos; инициализация позиции видимого курсора
+	ovCurs = oDocControl.getViewCursor()
+	&apos; создаем текстовый курсор - хранение текущей позиции найденного символа по заданному условию
+	oPosTxtCurs = ovCurs.Text.createTextCursor()
+	otxtCurs = ovCurs.Text.createTextCursor() 
 	
 	&apos; инициализация диалога Поиска символов верхнего индекса в зависимости от локали
 	InitFindUpIndexDlg()
@@ -110,20 +122,18 @@ End Sub
 &apos; Поиск по заданному режиму
 Sub FUIFind()
 	Dim sFind As String
+	bEnd = False &apos; признак конца документа
 	If oFUI.getControl( &quot;obtnOnlyNumbers&quot; ).State = True Then
 		sFind = &quot;[:digit:]+&quot;
 	Else
 		sFind = &quot;.+&quot;
 	End If
 	Dim sTitle	As String : sTitle	=  sFUID.sTitle
-	oDocControl = ThisComponent.getCurrentController()
+
 	&apos; проверка, является ли объект, где производится поиск - текстом
 	If Not IsSelTextRange( oDocControl, sTitle ) Then Exit Sub
-
-	&apos; инициализация позиции курсора
-	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
 	
-	otxtCurs = ovCurs.Text.createTextCursor() 
+	&apos; переместить курсор на позицию видимого курсора
 	otxtCurs.gotoRange( ovCurs.getStart(), False )
 
 	&apos; ищем заданное регулярное выражение
@@ -147,6 +157,8 @@ NextWord:
 				oViewCursor.collapseToEnd()
 				oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
 				FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
+			Else
+				oPosTxtCurs.GotoRange( otxtCurs, False )
 			End If
 		ElseIf oFUI.getControl( &quot;obtnOnlyDonwIndex&quot; ).State = True Then
 			&apos; только для символов верхнего индекса
@@ -158,12 +170,18 @@ NextWord:
 				FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
 			End If
 		End If
-		oDocControl.Select( otxtCurs ) &apos; выделяем найденное
+		If bEnd = False Then
+			oDocControl.Select( otxtCurs )
+		Else
+			oDocControl.Select( oPosTxtCurs )
+		End If
 	Else &apos; конец документа
 		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
 		oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
 		oViewCursor.collapseToEnd()
-		If MsgBox( sFUID.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
+		If MsgBox( sFUID.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then
+			bEnd = True : Exit Sub
+		End If
 		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
 		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
 	End If
@@ -181,7 +199,7 @@ Function FindNextInText( sFind ) As Boolean
 		.SearchRegularExpression = True
 		.SetSearchAttributes(SrchAttributes())
 		.SearchString = sFind
-		.SearchStyles = True
+&apos;		.SearchStyles = True
 		.ValueSearch = False
 	End With
 	
