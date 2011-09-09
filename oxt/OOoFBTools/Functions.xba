@@ -5,40 +5,91 @@ Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
 
 &apos; //////////////////////// Определение типа или языка символа ///////////////////////////
-&apos; Проверка является ли sVal русской буквой
-Function IsRussianLetter( sVal As String ) As Boolean
-	&apos;А-Я, а-я, Ё,ё : 1040-1071, 1072-1103, 1025,1105
-	IsRussianLetter = False
+&apos; Проверка является ли sVal кирилической буквой
+Function IsCirillicLetter( sVal As String ) As Boolean
+	&apos;А-Я, а-я, Ё,ё : 1040-1071, 1072-1103, 1025,1105 &apos; (s&gt;=1040 And s&lt;=1103) Or s=1025 Or s=1105
+	&apos; Кирилица основная : 1024-1171, 1174,1175, 1178-1181, 1186,1187, 1198-1203, 1208-1211, 1240,1241, 1256,1257
+	IsCirillicLetter = False
 	Dim s : s = Asc(sVal)
-	If (s&gt;=1040 And s&lt;=1103) Or s=1025 Or s=1105 Then
-		IsRussianLetter = True
+	If (s&gt;=1024 And s&lt;=1171) Or s=1174 Or s=1175 Or (s&gt;=1178 And s&lt;=1181) Or s=1186 Or s=1187 Or _
+		(s&gt;=1198 And s&lt;=1203) Or (s&gt;=1208 And s&lt;=1211) Or s=1240 Or s=1241 Or s=1256 Or s=1257 Then
+		IsCirillicLetter = True
 	End If
 End Function
 
-&apos; Проверка является ли sVal английской буквой
-Function IsEnglishLetter( sVal As String ) As Boolean
-	&apos;A-Z, a-z : 65-90, 97-122
-	IsEnglishLetter = False
+&apos; Проверка является ли sVal латинской буквой
+Function IsLatinLetter( sVal As String ) As Boolean
+	&apos; Основная латиница A-Z, a-z : 65-90, 97-122
+	&apos; Латиница-1 : 192-255
+	&apos; Расширенная латиница-A : 256-383
+	&apos; Расширенная латиница-B : 399-539, 552,553,601,658
+	&apos; Расширенные латинские дополнения : 7680-7929
+	IsLatinLetter = False
 	Dim s : s = Asc(sVal)
-	If (s&gt;=65 And s&lt;=90) Or (s&gt;=97 And s&lt;=122) Then
-		IsEnglishLetter = True
+	If (s&gt;=65 And s&lt;=90) Or (s&gt;=97 And s&lt;=122) Or _
+		(s&gt;=256 And s&lt;=383) Or (s&gt;=399 And s&lt;=539) Or s=552 Or s=553 Or s=601 Or s=658 Or _
+		(s&gt;=7680 And s&lt;=7929) Then
+		IsLatinLetter = True
+	End If
+End Function
+
+&apos; Проверка является ли sVal греческой буквой
+Function IsGreekLetter( sVal As String ) As Boolean
+	&apos; Греческий основной : 902-974
+	&apos; Греческий расширенный : 7936-8190
+	IsGreekLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=902 And s&lt;=974) Or (s&gt;=7936 And s&lt;=8190) Then
+		IsGreekLetter = True
+	End If
+End Function
+
+&apos; Проверка является ли sVal еврейской буквой
+Function IsHebrewLetter( sVal As String ) As Boolean
+	&apos; Иврит основной : 1456-1524
+	&apos; Иврит расширенный : 64288-64335
+	IsHebrewLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=1456 And s&lt;=1524) Or (s&gt;=64288 And s&lt;=64335) Then
+		IsHebrewLetter = True
+	End If
+End Function
+
+&apos; Проверка является ли sVal арабским буквой
+Function IsArabicLetter( sVal As String ) As Boolean
+	&apos; Арабский основной : 1548-1621
+	&apos; Арабский расширенный : 1632-1790
+	&apos; Арабский декоративный-A : 64336-65010
+	&apos; Арабский декоративный-B : 65152-65276
+	IsArabicLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=1548 And s&lt;=1621) Or (s&gt;=1632 And s&lt;=1790) Or _
+		(s&gt;=64336 And s&lt;=65010) Or (s&gt;=65152 And s&lt;=65276) Then
+		IsArabicLetter = True
 	End If
 End Function
 
 &apos; какой язык у символа sVal
 Function GetLang( sVal As String ) As String
 	GetLang = &quot;Unknow&quot;
-	If IsRussianLetter(sVal)=True Then
-		GetLang = &quot;Russian&quot;
-	ElseIf IsEnglishLetter(sVal)=True Then
-		GetLang = &quot;English&quot;
+	If IsCirillicLetter(sVal)=True Then
+		GetLang = &quot;Cirillic&quot;
+	ElseIf IsLatinLetter(sVal)=True Then
+		GetLang = &quot;Latin&quot;
+	ElseIf IsGreekLetter(sVal)=True Then
+		GetLang = &quot;Greek&quot;
+	ElseIf IsHebrewLetter(sVal)=True Then
+		GetLang = &quot;Hebrew&quot;
+	ElseIf IsArabicLetter(sVal)=True Then
+		GetLang = &quot;Arabic&quot;
 	End If
 End Function
 
 &apos; является ли sVal буквой
 Function IsLetter( sVal As String ) As Boolean
 	IsLetter = False
-	If IsRussianLetter(sVal)=True Or IsEnglishLetter(sVal)=True Then
+	If IsCirillicLetter(sVal)=True Or IsLatinLetter(sVal)=True Or _
+		IsGreekLetter(sVal)=True Or IsHebrewLetter(sVal)=True Or IsArabicLetter(sVal)=True Then
 		IsLetter = True
 	End If
 End Function
