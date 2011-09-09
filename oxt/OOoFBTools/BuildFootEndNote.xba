@@ -219,43 +219,55 @@ End Function
 &apos; поиск следующей цифры в верхнем индексе в документе
 Function FindNumbersUpIndexText( oLCurs ) As Variant
 	&apos; задаем поиск верхнего индекса
-	Dim SrchAttributes(2) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
-	SrchAttributes(0).Value	= True
-	SrchAttributes(1).Name	= &quot;CharEscapementHeight&quot;
-	SrchAttributes(1).Value	= 58
-	SrchAttributes(2).Name	= &quot;CharEscapement&quot;
-	SrchAttributes(2).Value	= 101
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharEscapement&quot;
   
 	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
 	With oDesc
 		.SearchRegularExpression = True
 		.SetSearchAttributes(SrchAttributes())
+		.SearchStyles = True
+		.ValueSearch = False
 		.SearchString = &quot;[:digit:]+&quot;
 	End With
 	
-	FindNumbersUpIndexText = ThisComponent.findNext( oLCurs, oDesc )
+	Dim vFound : vFound = ThisComponent.findNext( oLCurs, oDesc )
+	If Not IsNull(vFound) Then
+		If vFound.CharEscapement &lt; 0 Then
+			Do
+				vFound = ThisComponent.findNext( vFound.getEnd(), oDesc )
+				If IsNull( vFound ) Then Exit Do
+			Loop While ( vFound.CharEscapement &lt; 0 )
+		End If
+	End If
+	FindNumbersUpIndexText = vFound
 End Function
 
 &apos; поиск следующей цифры в верхнем индексе в Списке примечаний
 Function FindNumbersUpIndexList( oLCurs ) As Variant
 	&apos; задаем поиск верхнего индекса
-	Dim SrchAttributes(2) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
-	SrchAttributes(0).Value	= True
-	SrchAttributes(1).Name	= &quot;CharEscapementHeight&quot;
-	SrchAttributes(1).Value	= 58
-	SrchAttributes(2).Name	= &quot;CharEscapement&quot;
-	SrchAttributes(2).Value	= 101
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharEscapement&quot;
   
 	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
 	With oDesc
 		.SearchRegularExpression = True
 		.SetSearchAttributes(SrchAttributes())
+		.SearchStyles = True
+		.ValueSearch = False
 		.SearchString = &quot;^[:digit:]+&quot;
 	End With
 	
-	FindNumbersUpIndexList = ThisComponent.findNext( oLCurs, oDesc )
+	Dim vFound : vFound = ThisComponent.findNext( oLCurs, oDesc )
+	If Not IsNull(vFound) Then
+		If vFound.CharEscapement &lt; 0 Then
+			Do
+				vFound = ThisComponent.findNext( vFound.getEnd(), oDesc )
+				If IsNull( vFound ) Then Exit Do
+			Loop While ( vFound.CharEscapement &lt; 0 )
+		End If
+	End If
+	FindNumbersUpIndexList = vFound
 End Function
 
 &apos; вставка закладки на место номера очередного примечания в Тексте
