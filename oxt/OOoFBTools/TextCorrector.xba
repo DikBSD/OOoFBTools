@@ -1062,6 +1062,17 @@ End Sub
 &apos; ////////////////////////////////////////// Функции обработки ///////////////////////////////////////
 &apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+&apos; //////////////////////////////// Разрывы и абзацы ////////////////////////////////////
+
+&apos; Удаление мягких переносов
+Sub DeleteMPer( oDoc, oReplace )
+	With oReplace
+		.SearchString = &quot;\x00AD&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
 &apos; замена разрыва строки на
 Sub BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
 	If bDel = True Then
@@ -1121,6 +1132,7 @@ Sub DelEmptyPar( oDoc, oReplace )
 &apos;	oDoc.ReplaceAll(oReplace)
 End Sub
 
+&apos;  /////////////////////////////////// Минус, Тире и Дефис ///////////////////////////////
 &apos; Заменить двойной минус двойной дефис (--) на тире
 Sub Replace2HyphenToDash( oDoc, oReplace )
 	With oReplace
@@ -1264,6 +1276,7 @@ Sub ReplaceMinusToDashBetweenNumbers( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
+&apos;/////////////////////////////////////// Работа с пробелами и табуляциями ////////////////////////////////////////
 &apos; Удалить пробелы в начале и в конце скобок
 Sub RemoveSpaceInBrackets( oDoc, oReplace )
 	With oReplace
@@ -1291,7 +1304,6 @@ Sub RemoveSpaceBeforePunct( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos;/////////////////////////////////////////////////////
 &apos; Вставляем пробел после знака препинания
 Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 	With oReplace
@@ -1301,17 +1313,6 @@ Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos;/////////////////////////////////////////////////////
-&apos; Удаление мягких переносов
-Sub DeleteMPer( oDoc, oReplace )
-	With oReplace
-		.SearchString = &quot;\x00AD&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-End Sub
-
-&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; Вставка ПРОБЕЛА между символами, кавычками и минусом, тире или дефисом
 Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	&apos; кавычки, дефис, тире или минус, кавычки
@@ -1336,7 +1337,6 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode
 	oDoc.ReplaceAll(oReplace)
 End Function
 
-&apos;////////////////////////////////////////////////////////////////////
 &apos; Вставить неразрывные пробелы между фамилией и инициалами
 Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	Dim bReplCase As Boolean : bReplCase = oReplace.SearchCaseSensitive
@@ -1402,7 +1402,6 @@ Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	oReplace.SearchCaseSensitive=bReplCase
 End Sub
 
-&apos;////////////////////////////////////////////////////////////////////
 &apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
 	&apos; для русского языка
@@ -1435,20 +1434,17 @@ Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos;////////////////////////////////////////////////////////////////////
 &apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
-Function InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
+Sub InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	With oReplace
 		.SearchString	= &quot;([\.,:…\?\!])&quot; &amp; chr(nSymbolCode)	&apos; &quot;.—&quot;
 		.ReplaceString	= &quot;$1&quot; &amp; &quot; &quot; &amp; chr(nSymbolCode)			&apos; &quot;. —&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
-
-&apos;/////////////////////////////////////// Работа с пробелами и табуляциями ////////////////////////////////////////
 &apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на залданное число пробелов или табуляций
-Function ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
+Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 	Dim sReplaceStr As String
 	If bTCToSpace = True Then
 		sReplaceStr = Space(nReplaceCount)
@@ -1473,51 +1469,51 @@ Function ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
 	End With
 	oDoc.ReplaceAll(oDesc)
-End Function
+End Sub
 
 &apos; Удаляем все стартовые пробелы
-Function DelStartSpace( oDoc, oReplace )
+Sub DelStartSpace( oDoc, oReplace )
 	With oReplace
 		.SearchRegularExpression = True
 		.SearchString = &quot;^ {1,}&quot;
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
 &apos; Удаляем все неразрывные стартовые пробелы
-Function DelStartNoBreakSpace( oDoc, oReplace )
+Sub DelStartNoBreakSpace( oDoc, oReplace )
 	With oReplace
 		.SearchRegularExpression = True
 		.SearchString = &quot;^&quot; &amp; Chr(160) &amp; &quot;{1,}&quot;
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
 &apos; Удаляем все стартовые табуляции
-Function DelStartTab( oDoc, oReplace )
+Sub DelStartTab( oDoc, oReplace )
 	With oReplace
 		.SearchRegularExpression = True
 		.SearchString = &quot;^\t{1,}&quot;
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
 &apos; Удаляем все конечные ПРОСТЫЕ и НЕРАЗРЫВНЫЕ пробелы, их комбинацию и табуляции
-Function DelEndSpace( oDoc, oReplace )
+Sub DelEndSpace( oDoc, oReplace )
 	With oReplace
 		.SearchRegularExpression = True
 		.SearchString = &quot;[:space:]{1,}$|\t{1,}$&quot;
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
-&apos;////////////////////////////////////////////////////////////////////////////
+&apos;////////////////////////////////// Разное /////////////////////////////// 
 &apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
-Function QuotationMarks( oDoc, oReplace )
+Sub QuotationMarks( oDoc, oReplace )
 	With oReplace
 		.SearchString = &quot;^ {1,}[&quot;&quot;“„]&quot;
 		.ReplaceString = &quot;«&quot;
@@ -1614,10 +1610,10 @@ Function QuotationMarks( oDoc, oReplace )
 		.ReplaceString = &quot;-»&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
 &apos; Удаляем все разрывы страниц
-Function DeleteAllPageBreaks() As Integer 
+Sub DeleteAllPageBreaks() As Integer 
 	Dim lCount As Integer : lCount = 0
 	Dim oText As Variant : oText = ThisComponent.Text
 	Dim oCursor As Variant
@@ -1632,9 +1628,8 @@ Function DeleteAllPageBreaks() As Integer
 		End If
 	Loop Until NOT oCursor.gotoNextParagraph(False)
 	DeleteAllPageBreaks = lCount
-End Function
+End Sub
 
-&apos;///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
 &apos; в тексте, таблицах, сносках и врезках)
