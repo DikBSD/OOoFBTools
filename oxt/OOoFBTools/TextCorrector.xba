@@ -34,11 +34,14 @@ Private bDel As Boolean
 Private bPar As Boolean
 Private bSpace As Boolean
 
-Private b2HyphenToDash As Boolean
-Private bHyphenToDash As Boolean
-Private bInsertSpaceBSymAndMDH	As Boolean
-Private bInsertSpaceBPunctAndMDH As Boolean
-Private bInsertSpaceBPunctAndSym As Boolean
+Private b2HyphenToDash				As Boolean
+Private bHyphenToDashBetweenWords	As Boolean
+Private bMinusToDash				As Boolean
+Private bMinusToDashBetweenNumbers	As Boolean
+
+Private bInsertSpaceBSymAndMDH		As Boolean
+Private bInsertSpaceBPunctAndMDH	As Boolean
+Private bInsertSpaceBPunctAndSym	As Boolean
 
 Private bDefis			As Boolean
 Private bNoBreakDefis	As Boolean
@@ -68,7 +71,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 420
+		.Height = 439
 		.Width  = 423
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -90,7 +93,7 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 420, 423, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 439, 423, com.sun.star.awt.PosSize.POS )
 	
 	ControlsEnabled()
 		
@@ -128,9 +131,11 @@ Sub SaveCorrectorSettings()
 		bPar			= .GetControl(&quot;obtnPar&quot;).State
 		bSpace			= .GetControl(&quot;obtnSpace&quot;).State
 	
-		b2HyphenToDash = 			.GetControl(&quot;cbox2HyphenToDash&quot;).State
+		b2HyphenToDash				= .GetControl(&quot;cbox2HyphenToDash&quot;).State
+		bHyphenToDashBetweenWords	= .GetControl(&quot;cboxHyphenToDash&quot;).State
+		bMinusToDash				= .GetControl(&quot;cboxMinusToDash&quot;).State
+		bMinusToDashBetweenNumbers	= .GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State
 		
-		bHyphenToDash = 			.GetControl(&quot;cboxHyphenToDash&quot;).State
 		bInsertSpaceBSymAndMDH = 	.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State
 		bInsertSpaceBPunctAndMDH = 	.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State
 		bInsertSpaceBPunctAndSym = 	.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State
@@ -286,10 +291,12 @@ Sub SetCorrectorSettingDefault()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 1	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -347,10 +354,12 @@ Sub SetDocumentType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 0	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -407,10 +416,12 @@ Sub SetFictionType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 1	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -467,10 +478,12 @@ Sub SetPublicismType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 1	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -527,10 +540,12 @@ Sub SetScientificType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 0	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -587,10 +602,12 @@ Sub SetTechnicType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 0	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -647,10 +664,12 @@ Sub SetProgrammingType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 0	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -707,10 +726,12 @@ Sub SetReligionType()
 		
 		&apos; Минусы, дефисы и тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0	&apos; умная замена 2 минусов на тире
-		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый вместо тире на тире
+		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
 		.GetControl(&quot;obSimpleHyphen&quot;).State = 1		&apos; Неразрывный дефис
 		.GetControl(&quot;obNoBreakHyphen&quot;).State = 0	&apos; Простой дефис
+		.GetControl(&quot;cboxMinusToDash&quot;).State = 1	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+		.GetControl(&quot;cboxMinusToDashBetweenNumbers&quot;).State = 1	&apos; Заменить минус на дефис между цифрами
 		
 		&apos; Разное
 		.GetControl(&quot;cboxMP&quot;).State = 1		&apos; мягкие переносы
@@ -755,7 +776,9 @@ Sub TextCorrectorDlgOk()
 
 	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	
-	&apos; /////////////// Очистка текста //////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; //////////////////////////////////////////// Очистка текста ///////////////////////////////////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	oDoc = ThisComponent
 	oReplace = oDoc.createReplaceDescriptor
 	oReplace.SearchRegularExpression = True
@@ -845,8 +868,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
-
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	&apos; //////////////////////////////////////// Работа с пробелами и табуляциями /////////////////////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	&apos; Удаляем все стартовые ПРОСТЫЕ пробелы
 	If bTCDelStartSpace = True Then
 		DelStartSpace( oDoc, oReplace )
@@ -932,7 +956,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	&apos; /////////////// Работа с абзацами и разрывами //////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; //////////////////////////////////////////// Работа с абзацами и разрывами ////////////////////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
 	If bWordDefisPara = True Then
 		&apos; Удаление мягких переносов, иначе результат будет неверен
@@ -959,7 +985,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	&apos; /////////////// Дефисы, тире и минусы, разное /////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; //////////////////////////////////// Дефисы, тире и минусы ////////////////////////////////////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	&apos; Заменить двойной минус двойной дефис (--) на тире
 	If b2HyphenToDash = True Then
 		Replace2HyphenToDash( oDoc, oReplace )
@@ -967,9 +995,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
-	&apos; Заменить дефис или минус, используемый вместо тире на тире между слов (но не в &quot;какой-то, где-то...&quot;)
-	If bHyphenToDash = True Then
-		HyphenToDash( oDoc, oReplace )
+	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
+	If bHyphenToDashBetweenWords = True Then
+		HyphenToDashBetweenWords( oDoc, oReplace )
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -980,7 +1008,24 @@ Sub TextCorrectorDlgOk()
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
+	
+	&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+	If bMinusToDash = True Then
+		ReplaceMinusToDash( oDoc, oReplace )
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Заменить минус на дефис между цифрами
+	If bMinusToDashBetweenNumbers = True Then
+		ReplaceMinusToDashBetweenNumbers( oDoc, oReplace )
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; /////////////////////////////////////////////// Разное ////////////////////////////////////////////////////
+	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 	If bKav = True Then
 		QuotationMarks( oDoc, oReplace )
@@ -1013,7 +1058,10 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.end
 End Sub
 
-&apos;////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ////////////////////////////////////////// Функции обработки ///////////////////////////////////////
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
+
 &apos; замена разрыва строки на
 Sub BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
 	If bDel = True Then
@@ -1107,7 +1155,58 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos; Вместо минуса - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
+&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
+Sub HyphenToDashBetweenWords( oDoc, oReplace )
+	&apos; Между слов
+	With oReplace
+		.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+		
+	&apos; После знаков препинания
+	With oReplace
+		.SearchString = &quot;([\.,:\!\?…]) *-&quot; 			&apos;&quot;\.-&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;. — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;( &apos;) *-&quot;					&apos;&quot; &apos;-&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; кавычки и тире
+	With oReplace
+		.SearchString = &quot;([»&quot;&quot;”]) *- *([«&quot;&quot;“])&quot;		&apos;&quot;» - «&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;([»&quot;&quot;”]) *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;\&gt; *- *([«&quot;&quot;“])&quot;			&apos;&quot;\&gt; - «&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; скобки и тире
+	With oReplace
+		.SearchString = &quot;([\]\)\}])- *&quot;				&apos;&quot;)- &quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;) — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;- *([\[\(\{])&quot;				&apos;&quot;) -&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot;) — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Вместо минуса или тире - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
 Sub ReplaceMinusToDefis( oDoc, oReplace )
 	Dim bReplCase As Boolean : bReplCase = oReplace.SearchCaseSensitive
 	&apos; обрабатываем русские слова
@@ -1115,14 +1214,14 @@ Sub ReplaceMinusToDefis( oDoc, oReplace )
 		With oReplace
 			.SearchCaseSensitive = True
 			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp;_
-							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)([^а-яА-ЯёЁ])&quot;
+							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой|кто|что|как|ли)([^а-яА-ЯёЁ])&quot;
 			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2$3&quot;
 		End With
 	Else &apos; заменить на простой дефис
 		With oReplace
 			.SearchCaseSensitive = True
 			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; &quot;[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp;_
-							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой)([^а-яА-ЯёЁ])&quot;
+							&quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой|кто|что|как|ли)([^а-яА-ЯёЁ])&quot;
 			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2$3&quot;
 		End With
 	End If
@@ -1142,6 +1241,26 @@ Sub ReplaceMinusToDefis( oDoc, oReplace )
 			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
 		End With
 	End If
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)
+Sub ReplaceMinusToDash( oDoc, oReplace )
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:alpha:])-([:alpha:])&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Заменить минус на дефис между цифрами
+Sub ReplaceMinusToDashBetweenNumbers( oDoc, oReplace )
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])-([:digit:])&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
@@ -1326,60 +1445,8 @@ Function InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode 
 	oDoc.ReplaceAll(oReplace)
 End Function
 
-&apos; Заменить дефис или минус, используемый вместо тире на тире между слов (но не в &quot;какой-то, где-то...&quot;)
-Function HyphenToDash( oDoc, oReplace )
-	&apos; Между слов
-	With oReplace
-		.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-		
-	&apos; После знаков препинания
-	With oReplace
-		.SearchString = &quot;([\.,:\!\?…]) *-&quot; 			&apos;&quot;\.-&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;. — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;( &apos;) *-&quot;					&apos;&quot; &apos;-&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	
-	&apos; кавычки и тире
-	With oReplace
-		.SearchString = &quot;([»&quot;&quot;”]) *- *([«&quot;&quot;“])&quot;		&apos;&quot;» - «&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;([»&quot;&quot;”]) *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;\&gt; *- *([«&quot;&quot;“])&quot;			&apos;&quot;\&gt; - «&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	
-	&apos; скобки и тире
-	With oReplace
-		.SearchString = &quot;([\]\)\}])- *&quot;				&apos;&quot;)- &quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;) — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;- *([\[\(\{])&quot;				&apos;&quot;) -&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot;) — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-End Function
 
-&apos;////////////////////////////////////////////////////////////////////////////
-&apos; Работа с пробелами и табуляциями
-
+&apos;/////////////////////////////////////// Работа с пробелами и табуляциями ////////////////////////////////////////
 &apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на залданное число пробелов или табуляций
 Function ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 	Dim sReplaceStr As String
