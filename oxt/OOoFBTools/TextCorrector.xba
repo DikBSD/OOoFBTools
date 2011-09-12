@@ -1314,7 +1314,7 @@ Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 End Sub
 
 &apos; Вставка ПРОБЕЛА между символами, кавычками и минусом, тире или дефисом
-Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
+Sub InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	&apos; кавычки, дефис, тире или минус, кавычки
 	With oReplace
 		.SearchString = &quot;([”\&quot;&quot;»])&quot; &amp; chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])&quot;	&apos; &quot;&quot;-“&quot;
@@ -1335,7 +1335,7 @@ Function InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode
 		.ReplaceString = chr(nSymbolCode) &amp; &quot; $1&quot;			&apos; &quot; - “&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Function
+End Sub
 
 &apos; Вставить неразрывные пробелы между фамилией и инициалами
 Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
@@ -1443,7 +1443,7 @@ Sub InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на залданное число пробелов или табуляций
+&apos; Заменяем все множественные пробелы (простые и неразрывные) между слов на заданное число пробелов или табуляций
 Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 	Dim sReplaceStr As String
 	If bTCToSpace = True Then
@@ -1455,17 +1455,18 @@ Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 		Next i
 	End If
 	
-	&apos; в условие поиска игнорируем цифры в верхнем или нижнем индексе
-	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
-	SrchAttributes(0).Value	= False
+&apos;	&apos; в условие поиска игнорируем цифры в верхнем или нижнем индексе
+&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+&apos;	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
+&apos;	SrchAttributes(0).Value	= False
 	
 	Dim oDesc : oDesc = oDoc.createSearchDescriptor()
 	With oDesc
 		.SearchRegularExpression = True
-		.SetSearchAttributes(SrchAttributes())
-&apos;		.SearchString = &quot;([:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alnum:]|[…\({\[«&apos;“\&quot;&quot;\&lt;])&quot;
-		.SearchString = &quot;([:alnum:]|[\.:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
+&apos;		.SetSearchAttributes(SrchAttributes())
+&apos;&apos;		.SearchString = &quot;([:alnum:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
+&apos;		.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alpha:]|[\({\[«&apos;“\&quot;&quot;])&quot;
+		.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-\+&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alpha:]|[({\[«&apos;“\&quot;&quot;\&lt;])&quot;
 		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
 	End With
 	oDoc.ReplaceAll(oDesc)
