@@ -1154,6 +1154,11 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
+	&apos; только для русских слов:
+	&apos; .SearchString = &quot;([а-яА-ЯёЁ])\&gt; {1,}- *\&lt;([а-яА-ЯёЁ])&quot;
+	&apos; .ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
+	&apos; .SearchString = &quot;([а-яА-ЯёЁ])\&gt; *- {1,}\&lt;([а-яА-ЯёЁ])&quot;
+	&apos; .ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
 		
 	&apos; После знаков препинания
 	With oReplace
