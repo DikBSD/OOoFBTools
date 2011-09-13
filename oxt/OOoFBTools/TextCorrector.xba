@@ -1109,27 +1109,6 @@ Sub DelEmptyPar( oDoc, oReplace )
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-		
-&apos;	With oReplace
-&apos;		.SearchString = &quot;^$&quot;
-&apos;		.ReplaceString = &quot;&quot;
-&apos;	End With
-&apos;	
-&apos;	Dim oDoc As Object : oDoc = ThisComponent
-&apos;	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-&apos;	With vSearch
-&apos;		.SearchRegularExpression = True
-&apos;		.SearchString = &quot;^$&quot;
-&apos;	End With
-&apos;	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
-&apos;	Do While Not IsNull( vFound )
-&apos;		If Not IsNull( vFound ) Then
-&apos;			vFound.setString(&quot;&quot;)
-&apos;			&apos; ищем далее
-&apos;			vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-&apos;		End If
-&apos;	Loop
-&apos;	oDoc.ReplaceAll(oReplace)
 End Sub
 
 &apos;  /////////////////////////////////// Минус, Тире и Дефис ///////////////////////////////
@@ -1212,8 +1191,8 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;- *([\[\(\{])&quot;				&apos;&quot;) -&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot;) — &quot;
+		.SearchString = &quot; *- *([\[\(\{])&quot;			&apos;&quot;-(&quot;
+		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — (&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
