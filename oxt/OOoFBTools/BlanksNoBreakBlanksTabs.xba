@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="BlanksNoBreakBlanksTabs" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ///////////////////////////////////////////////////////////////////////////////////////
+&apos; модуль инструмента поиска и замены множества пробелов, неразрывных пробелов и табуляций
+&apos; в заданом месте текста
+&apos; ///////////////////////////////////////////////////////////////////////////////////////
+
+Option Explicit
+
+Private oBNBBTDlg As Object
+Private bWorkEnd As Boolean &apos; флаг конца обработки - закрытия диалога (True)
+
+Private sBNBBTSettingsFilename As String &apos; файл настроек
+
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub BlanksNoBreakBlanksTabsDlg_windowActivated(oEv)
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_windowDeactivated(oEv)
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_windowOpened(oEv)
+	ReplaceInControllsChange()
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_windowClosing(oEv)
+	bWorkEnd = True
+	&apos; записываем настройки диалога
+ 	SaveSettings( sBNBBTSettingsFilename, oBNBBTDlg )
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_windowClosed(oEv)
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_windowMinimized(oEv)
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_windowNormalized(oEv)
+End Sub
+
+Sub BlanksNoBreakBlanksTabsDlg_disposing(oEv)
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация и запуск диалога поиска и замены
+Sub BlanksNoBreakBlanksTabsDlgStart()
+	&apos; файл настроек
+	sBNBBTSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/BlanksNoBreakBlanksTabs.txt&quot;
+
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
+	oBNBBTDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;BlanksNoBreakBlanksTabsDlg&quot; )
+	
+	&apos; инициализация диалога в зависимости от локали
+	InitBlanksNoBreakBlanksTabsDlg()
+
+	Dim aModeList() As String : aModeList() = Array( sBNBBTD.sBlanks, sBNBBTD.sNoBreakBlanks, sBNBBTD.sTabs )
+											
+	With oBNBBTDlg.Model
+		.Height	= 97
+		.Width	= 269
+		.lbSearch.StringItemList	= aModeList()
+		.lbReplace.StringItemList	= aModeList()
+	End With
+	With oBNBBTDlg
+		.getControl( &quot;lbSearch&quot; ).SelectItemPos( 0, True )
+		.getControl( &quot;lbReplace&quot; ).SelectItemPos( 1, True )
+	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( sBNBBTSettingsFilename, oBNBBTDlg, nX, nY )
+	oBNBBTDlg.setPosSize( nX, nY, 97, 269, com.sun.star.awt.PosSize.POS )
+
+	bWorkEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;BlanksNoBreakBlanksTabsDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	With oBNBBTDlg
+		.addTopWindowListener( oList )
+		.setVisible( True )
+	End With
+	While Not bWorkEnd
+		Wait 200     
+	Wend
+	
+	oBNBBTDlg.setVisible( False )
+End Sub
+
+Sub ReplaceInControllsChange()
+	With oBNBBTDlg
+		If .getControl( &quot;obReplaceInSelect&quot; ).State = True Then
+			.getControl( &quot;obReplaceInAllTextStartPara&quot; ).Enable	= False
+			.getControl( &quot;obReplaceInAllTextAny&quot; ).Enable		= False
+		Else
+			.getControl( &quot;obReplaceInAllTextStartPara&quot; ).Enable	= True
+			.getControl( &quot;obReplaceInAllTextAny&quot; ).Enable		= True
+		End If
+	End With
+End Sub
+
+&apos; запуск обработки текста
+Sub SearchAndReplaceStart()
+	&apos; проверка, не совпадают ли объекты поиска и замены
+	If oBNBBTDlg.getControl( &quot;lbSearch&quot; ).SelectedItemPos = oBNBBTDlg.getControl( &quot;lbReplace&quot; ).SelectedItemPos Then
+		MsgBox sBNBBTD.sSearchIsReplace, 64, sBNBBTD.sTitleAllText
+		Exit Sub
+	End If
+	
+	&apos; сохранение настроек
+	SaveSettings( sBNBBTSettingsFilename, oBNBBTDlg )
+	bWorkEnd = True
+	oBNBBTDlg.endExecute()
+	oBNBBTDlg.setVisible( False )
+	
+	If oBNBBTDlg.GetControl( &quot;obReplaceInSelect&quot; ).State Then
+		&apos; В выделенных фрагментах текста
+		ReplaceBlanksTabsToBlankOrTabsInSelections( GetObject( &quot;lbSearch&quot; ), GetObject( &quot;lbReplace&quot; ) )
+		&apos;ReplaceChr32ToChr160(GetObject( &quot;lbSearch&quot; ), GetObject( &quot;lbReplace&quot; ))
+	ElseIf oBNBBTDlg.GetControl( &quot;obReplaceInAllText&quot; ).State Then
+		&apos; Во всем тексте
+		If oBNBBTDlg.GetControl( &quot;obReplaceInAllTextStartPara&quot; ).State Then
+			&apos; В начале абзаца
+			ReplaceBlanksTabsToBlankOrTabsInAllText( True, GetObject( &quot;lbSearch&quot; ), GetObject( &quot;lbReplace&quot; ) )
+		ElseIf oBNBBTDlg.GetControl( &quot;obReplaceInAllTextAny&quot; ).State Then
+			&apos; В любом месте текста
+			ReplaceBlanksTabsToBlankOrTabsInAllText( False, GetObject( &quot;lbSearch&quot; ), GetObject( &quot;lbReplace&quot; ) )
+		End If
+		MsgBox sBNBBTD.sEndWork, 64, sBNBBTD.sTitleAllText
+	End If
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; замена N множественных простых пробелов или неразрывных пробелов или табуляций
+&apos; на N простых пробелов или неразрывных пробелов или табуляций в заданном месте документа
+Sub ReplaceBlanksTabsToBlankOrTabsInAllText( bInStart As Boolean, sSearch As String, sReplaceTo As String )
+	&apos; bInStart=True - поиск только в начале абзацев. bInStart=False - поиск в любом месте текста
+	&apos; sSearch и sReplaceTo:  &quot;b&quot; - простые пробелы; &quot;nbb&quot; - неразрывные проблеы; &quot;tabs&quot; - табуляции
+	Dim oDoc		As Object	: oDoc = ThisComponent
+	Dim vSearch		As Variant	: vSearch = oDoc.createSearchDescriptor()
+	Dim oEndCurs	As Object &apos; окончание документа
+	Dim oCurCurs	As Object &apos; для перебора абзацев
+	Dim sCurCurs	As String &apos; для просмотра строки
+	
+	&apos; задаем курсоры
+	oCurCurs = oDoc.getText().createTextCursor()
+	oCurCurs.gotoStart( False )
+	oEndCurs = oDoc.getText().createTextCursor()
+	oEndCurs.gotoEnd( False )
+	
+	&apos; ищем заданное
+	With vSearch
+		.SearchRegularExpression = True
+		.SearchString = MakeSearchStr( sSearch )&apos; в любом месте текста
+		If bInStart = True Then
+			.SearchString = &quot;^&quot; &amp; .SearchString	&apos; только в начале абзаца
+		End If
+	End With
+	
+	&apos; ищем 1-й блок множественных простых пробелов
+	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
+	If IsNull( vFound ) Then Exit Sub
+	oCurCurs.gotoRange( vFound, False )
+	sCurCurs = oCurCurs.getString()
+	&apos; строка для замены найденных простых множественных пробелов
+	oCurCurs.setString( MakeReplaceStr( sCurCurs, sReplaceTo ) )
+	
+	&apos;продолжаем поиск
+	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
+		vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+		If IsNull( vFound ) Then Exit Do
+		If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
+				Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable )Then
+			Exit Do
+		End If
+		oCurCurs.gotoRange( vFound, False )
+		sCurCurs = oCurCurs.getString()
+		&apos; строка для замены найденных простых множественных пробелов
+		oCurCurs.setString( MakeReplaceStr( sCurCurs, sReplaceTo ) )
+	Loop
+End Sub
+
+&apos; возвращает тип объекта для поиска или замены
+Function GetObject( ListBoxName As String ) As String
+	GetObject = &quot;b&quot;
+	Select Case oBNBBTDlg.GetControl( ListBoxName ).SelectedItemPos
+		Case 0 &apos; простые пробелы
+			GetObject = &quot;b&quot;
+		Case 1 &apos; неразрывные пробелы
+			GetObject = &quot;nbb&quot;
+		Case 2 &apos; табуляции
+			GetObject = &quot;tabs&quot;
+	End Select
+End Function
+
+&apos; генерация строки для поиска заданного объекта
+Function MakeSearchStr( sSearch As String ) As String
+	If sSearch = &quot;nbb&quot; Then
+		MakeSearchStr = &quot;\xA0{2,}&quot;	&apos; неразрывные пробелы
+	ElseIf sSearch = &quot;tabs&quot; Then
+		MakeSearchStr = &quot;\x9{2,}&quot;	&apos; табуляции
+	ElseIf sSearch = &quot;b&quot; Then
+		MakeSearchStr = &quot;\x20{2,}&quot;	&apos; простые пробелы
+	End If
+End Function
+
+&apos; строка для замены найденных объектов
+Function MakeReplaceStr( sCurCurs As String, sReplaceTo As String ) As String
+	Dim i As Integer
+	If sReplaceTo = &quot;nbb&quot; Then
+		For i=0 To Len( sCurCurs )-1
+			MakeReplaceStr = MakeReplaceStr &amp; chr(160)	&apos; неразрывные пробелы
+		Next i
+	ElseIf sReplaceTo = &quot;tabs&quot; Then
+		For i=0 To Len( sCurCurs )-1
+			MakeReplaceStr = MakeReplaceStr &amp; chr(9)	&apos; табуляции
+		Next i
+	ElseIf sReplaceTo = &quot;b&quot; Then
+		For i=0 To Len( sCurCurs )-1
+			MakeReplaceStr = MakeReplaceStr &amp; chr(32)	&apos; простые пробелы
+		Next i
+	End If
+End Function
+
+&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; замена N множественных простых пробелов или неразрывных пробелов или табуляций
+&apos; на N простых пробелов или неразрывных пробелов или табуляций в выделенных фрагментах текста
+Sub ReplaceBlanksTabsToBlankOrTabsInSelections( sSearch As String, sReplaceTo As String )
+	&apos; sSearch и sReplaceTo:  &quot;b&quot; - простые пробелы; &quot;nbb&quot; - неразрывные проблеы; &quot;tabs&quot; - табуляции
+	On Local Error GoTo PrintErrMessage
+	
+	Dim l As Long : l = GetSelectionCount()
+	If l =-1 Then &apos; только для выделений Текста!
+		MsgBox sBNBBTD.sSelectParaForWork, 64, sBNBBTD.sMessageTitle
+		Exit Sub
+	End If
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim oCurs() As Object
+	If Not CreateSelectedTextIterator( oDoc, sBNBBTD.sProcessAllDoc, sBNBBTD.sTitleSelText, oCurs() ) Then Exit Sub
+	Dim i As Integer
+	For i = LBound( oCurs() ) To UBound( oCurs() )
+		ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc, oCurs(i, 0), oCurs(i, 1), sSearch, sReplaceTo )
+	Next i
+	
+	MsgBox sBNBBTD.sEndWork, 64, sBNBBTD.sTitleSelText
+	Exit Sub
+PrintErrMessage:
+	MsgBox sBNBBTD.sNoTableFNTextFrame + chr(10) + sBNBBTD.sSelectParaForWork, 64, sBNBBTD.sTitleSelText
+End Sub
+
+Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As Object, oRCurs As Object, sSearch As String, sReplaceTo As String )
+	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
+	&apos; Таблицы, Врезки и сноски не обрабатываем
+	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
+				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable ) Then
+		Exit Sub
+	End If
+	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+
+	&apos; ищем заданное
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+	With vSearch
+		.SearchString				= MakeSearchStr( sSearch )
+		.SearchRegularExpression	= True
+	End With
+	Dim vFound As Variant
+	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
+		&apos; поиск пробела
+		vFound = oDoc.findNext( oLCurs, vSearch )
+		If IsNull( vFound ) Then Exit Sub
+		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &lt; 0 Then Exit Sub
+		vFound.setString( MakeReplaceStr( vFound.getString(), sReplaceTo ) )
+	Loop
+End Sub
+
+</script:module>
