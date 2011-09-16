@@ -683,7 +683,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
 		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
@@ -747,7 +747,7 @@ Sub SetReligionType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
 		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
@@ -1011,6 +1011,12 @@ Sub TextCorrectorDlgOk()
 	
 	&apos; Обрабатываем пустые абзацы ¶
 	If bWorkEmptyPar = True Then
+		&apos; удаляем все пробелы в пустых абзацах
+		With oReplace
+			.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
+			.ReplaceString = &quot;&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
 		If bDelEmptyPar = True Then
 			&apos; Удаляем все пустые абзацы
 			DelEmptyPar( oDoc, oReplace )
@@ -1137,11 +1143,6 @@ End Sub
 &apos; Удаляем все множественные пустые абзацы
 Sub DelEmptyPar( oDoc, oReplace )
 	With oReplace
-		.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
 		.SearchString = &quot;^$&quot;
 		.ReplaceString = &quot;&quot;
 	End With
@@ -1163,14 +1164,6 @@ Sub ReplacePluarEmptyParToOnePar( oDoc, oReplace )
 	oEndCurs.gotoEnd( False )
 	oCurCurs = oDoc.getText().createTextCursor()
 	oCurCurs.gotoStart( False )
-	
-	&apos; убираем пробелы в пустых абзацах
-	With oReplace
-		.SearchRegularExpression = True
-		.SearchString = &quot;^[&quot; &amp; chr(32) &amp; chr(160) &amp; &quot;]+$|^$&quot;
-		.ReplaceString = &quot;&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
 
 	With vSearch
 		.SearchRegularExpression = True

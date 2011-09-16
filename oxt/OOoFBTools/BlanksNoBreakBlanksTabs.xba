@@ -150,9 +150,10 @@ Sub ReplaceBlanksTabsToBlankOrTabsInAllText( bInStart As Boolean, sSearch As Str
 	&apos; ищем заданное
 	With vSearch
 		.SearchRegularExpression = True
-		.SearchString = MakeSearchStr( sSearch )&apos; в любом месте текста
 		If bInStart = True Then
-			.SearchString = &quot;^&quot; &amp; .SearchString	&apos; только в начале абзаца
+			.SearchString = MakeStartSearchStr( sSearch )	&apos; только в начале абзаца
+		Else
+			.SearchString = MakeSearchStr( sSearch )&apos; в любом месте текста
 		End If
 	End With
 	
@@ -200,6 +201,17 @@ Function MakeSearchStr( sSearch As String ) As String
 		MakeSearchStr = &quot;\x9{2,}&quot;	&apos; табуляции
 	ElseIf sSearch = &quot;b&quot; Then
 		MakeSearchStr = &quot;\x20{2,}&quot;	&apos; простые пробелы
+	End If
+End Function
+
+&apos; генерация строки для поиска заданного объекта - только для стfhnjds[ ghj,tkjd b nf,ekzwbq
+Function MakeStartSearchStr( sSearch As String ) As String
+	If sSearch = &quot;nbb&quot; Then
+		MakeStartSearchStr = &quot;^\xA0+&quot;	&apos; неразрывные пробелы
+	ElseIf sSearch = &quot;tabs&quot; Then
+		MakeStartSearchStr = &quot;^\x9+&quot;	&apos; табуляции
+	ElseIf sSearch = &quot;b&quot; Then
+		MakeStartSearchStr = &quot;^\x20+&quot;	&apos; простые пробелы
 	End If
 End Function
 
