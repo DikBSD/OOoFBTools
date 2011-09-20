@@ -1173,6 +1173,16 @@ Sub ReplacePluarEmptyParToOnePar( oDoc, oReplace )
 	&apos; ищем 1-й пустой абзац
 	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
 	If IsNull( vFound ) Then Exit Sub
+	&apos; Таблицы, Врезки и сноски не обрабатываем
+	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
+		If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
+					Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable ) Then
+			vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+			If IsNull( vFound ) Then Exit Sub
+		Else
+			Exit Do
+		End If
+	Loop
 	oStartCurs.gotoRange( vFound, False )
 	oCurCurs.gotoRange( vFound, False )
 	
@@ -1184,7 +1194,6 @@ Sub ReplacePluarEmptyParToOnePar( oDoc, oReplace )
 			&apos; идем на абзац вниз - это пустой абзац?
 			If Not oCurCurs.gotoNextParagraph( True ) Then Exit Do &apos; конец документа
 			sCurCurs = oCurCurs.getString()
-			&apos; TODO для разных ОС сделать разную проверку If Asc(Right(s,3)) = 10 Then, в зависимости от символов абзаца.
 			If Asc(Right(sCurCurs,3)) = 10 Then &apos; нашли пустой абзац
 				nCount = nCount + 1
 				b = False
@@ -1207,10 +1216,23 @@ Sub ReplacePluarEmptyParToOnePar( oDoc, oReplace )
 
 		&apos; ищем далее
 		nCount = 0
+		If IsNull( vFound ) Then Exit Do
 		vFound = oDoc.findNext( vFound.getEnd(), vSearch )
 		If IsNull( vFound ) Then Exit Do
-		oCurCurs.gotoRange( vFound, False )
-		oStartCurs.gotoRange( vFound, False )
+		&apos; Таблицы, Врезки и сноски не обрабатываем
+		Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
+			If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
+						Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable ) Then
+				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+				If IsNull( vFound ) Then Exit Do
+			Else
+				Exit Do
+			End If
+		Loop
+		If Not IsNull( vFound ) Then
+			oCurCurs.gotoRange( vFound, False )
+			oStartCurs.gotoRange( vFound, False )
+		End If
 	Loop
 	
 	&apos; убираем множесмтвенные абзацы в самом конце документа

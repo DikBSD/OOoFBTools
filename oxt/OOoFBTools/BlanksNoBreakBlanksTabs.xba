@@ -160,6 +160,16 @@ Sub ReplaceBlanksTabsToBlankOrTabsInAllText( bInStart As Boolean, sSearch As Str
 	&apos; ищем 1-й блок множественных простых пробелов
 	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
 	If IsNull( vFound ) Then Exit Sub
+	&apos; Таблицы, Врезки и сноски не обрабатываем
+	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
+		If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
+					Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable ) Then
+			vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+			If IsNull( vFound ) Then Exit Sub
+		Else
+			Exit Do
+		End If
+	Loop
 	oCurCurs.gotoRange( vFound, False )
 	sCurCurs = oCurCurs.getString()
 	&apos; строка для замены найденных простых множественных пробелов
