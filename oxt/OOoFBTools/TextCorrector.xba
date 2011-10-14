@@ -59,6 +59,16 @@ Private bRemoveSpaceInQuote		As Boolean
 Private bInsertNoBreakBlankToFIO		As Boolean
 Private bInsertNoBreakBlankToShortening	As Boolean
 
+Private sWorkType				As String
+Private Const DEFAULT_TYPE		As String = &quot;DefaultType&quot;
+Private Const DOCUMENT_TYPE		As String = &quot;DocumentType&quot;
+Private Const FICTION_TYPE		As String = &quot;FictionType&quot;
+Private Const PUBLICISM_TYPE	As String = &quot;PublicismType&quot;
+Private Const SCIENTIFIC_TYPE	As String = &quot;ScientificType&quot;
+Private Const TECHNIC_TYPE		As String = &quot;TechnicType&quot;
+Private Const PROGRAMMING_TYPE	As String = &quot;ProgrammingType&quot;
+Private Const RELIGION_TYPE		As String = &quot;ReligionType&quot;
+
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
 	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
@@ -328,7 +338,7 @@ Sub SetCorrectorSettingDefault()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	
+	sWorkType = DEFAULT_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -393,6 +403,7 @@ Sub SetDocumentType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = DOCUMENT_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -457,6 +468,7 @@ Sub SetFictionType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = FICTION_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -521,6 +533,7 @@ Sub SetPublicismType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = PUBLICISM_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -585,6 +598,7 @@ Sub SetScientificType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = SCIENTIFIC_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -649,6 +663,7 @@ Sub SetTechnicType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = TECHNIC_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -713,6 +728,7 @@ Sub SetProgrammingType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = PROGRAMMING_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -777,6 +793,7 @@ Sub SetReligionType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
+	sWorkType = RELIGION_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -1019,10 +1036,21 @@ Sub TextCorrectorDlgOk()
 		oDoc.ReplaceAll(oReplace)
 		If bDelEmptyPar = True Then
 			&apos; Удаляем все пустые абзацы
-			DelEmptyPar( oDoc, oReplace )
+			If oDoc.getTextTables().getCount() = 0 Then
+				&apos; TODO
+				&apos; Если в таблице есть пустой абзац, то при его удалении OpenOffice и LibreOffice &quot;зависают&quot; намертво - баг офиса.
+				&apos; Если в тексте есть хоть одна Таблица, то не обрабатываем абзацы.
+				DelEmptyPar( oDoc, oReplace )
+			End If
 		Else
 			&apos; Заменяем множественные пустые абзацы одним ¶
-			ReplacePluarEmptyParToOnePar( oDoc, oReplace )
+			If oDoc.getTextTables().getCount() = 0 And oDoc.getTextFrames().getCount() = 0 Then
+				&apos; TODO
+				&apos; Из-за несовершенства алгоритма, если в тексте есть Таблица или Текстовая Врезка, то в некоторых случаях они могу удалиться.
+				&apos; Поэтому поставлена защита - если в тексте есть Таблица или Текстовая Врезка, то обработка не происходит.
+				&apos; Со временем надеюь переписать алгоритм заново без этих ограничений.
+				ReplacePluarEmptyParToOnePar( oDoc, oReplace )
+			End If
 		End If
 	End If
 	oProgressBar.setValue(nCur)
@@ -1244,7 +1272,6 @@ Sub ReplacePluarEmptyParToOnePar( oDoc, oReplace )
 		&apos; идем вверх по абзацам до ближайшего текста
 		If Not oCurCurs.gotoPreviousParagraph( True ) Then Exit Do &apos; достигли начало документа
 		sCurCurs = oCurCurs.getString()
-		&apos; TODO для разных ОС сделать разную проверку If Asc(Right(s,3)) = 10 Then, в зависимости от символов абзаца.
 		&apos; что за система: 0 - Windows, 1 - Mac OS X, 2 - Linux, FreeBSD и т.д.
 		If GetOS() = 0 Then &apos; для Windows-системы
 			sEOF = 13
@@ -1446,11 +1473,25 @@ End Sub
 
 &apos; Вставляем пробел после знака препинания
 Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
-	With oReplace
-		.SearchString = &quot;([.,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
-		.ReplaceString = &quot;$1 $2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
+	If sWorkType = PROGRAMMING_TYPE Then
+		&apos; чтобы не портились интернет-адреса, не обрабатываем точку и латинские символы
+		With oReplace
+			.SearchString = &quot;([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+			.ReplaceString = &quot;$1 $2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([\.])([а-яА-ЯёЁ])&quot;
+			.ReplaceString = &quot;$1 $2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	Else
+		With oReplace
+			.SearchString = &quot;([.,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+			.ReplaceString = &quot;$1 $2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
 End Sub
 
 &apos; Вставка ПРОБЕЛА между символами, кавычками и минусом, тире или дефисом
