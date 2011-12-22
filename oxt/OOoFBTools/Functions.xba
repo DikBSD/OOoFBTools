@@ -1716,4 +1716,39 @@ Sub ClearParaStyleToBase()
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
 End Sub
 
+&apos;//////////////////// Удаление всех объектов /////////////////////
+&apos; удаление всех закладок
+Sub DeleteAllBookMarks()
+	Dim oBookMarks() : oBookMarks = thisComponent.getBookmarks()
+	Dim i As Integer, b As Integer
+	b = oBookMarks.getCount()
+	For i=0 To b-1
+		_UnoDeleteBookMark( oBookMarks.getByIndex(0).getName() )
+	Next i
+End Sub
+
+&apos; удаление всех врезок
+Sub DeleteAllTextFrames()
+	Dim oTextFrames() : oTextFrames = thisComponent.getTextFrames()
+	Dim i As Integer, f As Integer
+	f = oTextFrames.getCount()
+	For i=0 To f-1
+		oTextFrames.getByIndex(0).removeTextContent(oTextFrames.getByIndex(0))
+	Next i
+End Sub
+
+&apos; удаление всех таблиц
+Sub DeleteAllTables()
+	Dim enum, txtcontent
+	enum = thisComponent.getText().createEnumeration
+	While enum.hasMoreElements()
+		txtcontent = enum.nextElement()
+		If txtcontent.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+			thisComponent.Text.removetextcontent(txtcontent)
+		End If
+	Wend
+End Sub
+&apos;///////////////////////////////////////////////////////
+
+
 </script:module>

@@ -298,7 +298,7 @@ Function FootEndNoteParser( oSect As Object ) As String
 	
 	If bFENoteSeparately = True Then
 		&apos; раздельный вывод сносок и концевых сносок в разные блоки
-		If FNType( oFootnoteCursor.PageStyleName ) = &quot;FootNote&quot; Then
+		If FNType( oFootnoteCursor.ParaStyleName ) = &quot;FootNote&quot; Then
 			If bFootnoteSpace = True Then sNote = sNote &amp; &quot; &quot;
 			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; j &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; j &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
 		Else
@@ -401,13 +401,13 @@ Function FootEndNoteParser( oSect As Object ) As String
 			End If
 			
 			If InStr(sParagFN,  &quot;__fn__OOo_graphics__&quot; ) = 0 Then
-				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor.ParaStyleName, sBookMark, oFootnoteCursor.PageStyleName, asFNPart() )
+				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
 			Else
 				Dim i As Integer, sStr As String : sStr = &quot;&quot;
 				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot;)
 				For i=0 To UBound( aStr() )
 					If aStr(i) &lt;&gt; &quot;&quot; Then
-						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor.ParaStyleName, sBookMark, oFootnoteCursor.PageStyleName,  asFNPart() )
+						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
 					End If
 				Next i
 			End If
@@ -434,12 +434,12 @@ Function FNType( sNoteType As String )
 	If LCase(sNoteType) = &quot;endnote&quot; Then FNType = &quot;EndNote&quot;
 End Function
 
-Function MakeTextArray( sStr As String, sParaStyleName As String, sBookMark As String, sNoteType As String, asFNPart() As String )
+Function MakeTextArray( sStr As String, sParaStyleName As String, sBookMark As String, asFNPart() As String )
 	Dim sTemp() As String
 	&apos; парсер стилей сносок
 	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), sParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
 	Dim sNoteText	As String : sNoteText = sTemp( UBound( sTemp() )
-	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType(sNoteType) )
+	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType(sParaStyleName) )
 
 	MakeTextArray = asFNPart()
 End Function
