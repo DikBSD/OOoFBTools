@@ -162,8 +162,11 @@ Sub ExportToFB21()
 	SaveBody()
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
-	If UBound(vFootnoteText()) &lt;&gt; -1 Then
-		oProgressBar.start( sIDD.sFB2ExportProgressBarFootnote, UBound(vFootnoteText() )
+	If UBound(vFootnoteText()) &lt;&gt; -1 Or UBound(vEndnoteText()) &lt;&gt; -1 Then
+		Dim imaxProgress As Integer
+		If UBound(vFootnoteText()) &lt;&gt; -1 Then imaxProgress = UBound(vFootnoteText()
+		If  UBound(vEndnoteText()) &lt;&gt; -1 Then imaxProgress = imaxProgress + UBound(vEndnoteText()
+		oProgressBar.start( sIDD.sFB2ExportProgressBarFootnote, imaxProgress )
 		oProgressBar.setValue(0)
 		SaveNotes()
 	End If

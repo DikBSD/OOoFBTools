@@ -22,13 +22,18 @@ Private sENTitle	As String
 Private lBATIndex		As Long 	&apos; Указатель на индекс ячейки массива sBodyParagraphs, хранящей стиль Book Author или Book Title
 
 Private	vFootnoteText() As Variant	&apos; массив текста всех сносок по абзацам с их &quot;аттрибутами&quot;
-Private iFootnoteCount	As Integer
+Private	vEndnoteText()  As Variant	&apos; массив текста всех концевых сносок по абзацам с их &quot;аттрибутами&quot;
+Private iFootnoteCount	As Integer	&apos; счетчик сносок
+Private iEndnoteCount	As Integer	&apos; счетчик концевых сносок
 Private iImgCurrent		As Integer	&apos; для формирования номера картинки
 Private sPrevStyle		As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
 Private sNotesPrevStyle As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк в тексте сносок
 Private sPara			As String	&apos; отформатированный текст параграфа
 
 Sub DocumentParser()
+	iFootnoteCount = 0
+	iEndnoteCount = 0
+	
 	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar		As Object &apos;Перебираемый параграф
 	Dim oSectEnum	As Object &apos;Счетчик, используемый для перебора текстовых разделов
@@ -284,8 +289,10 @@ Function InLineAllParser(oSect As Object) As String
 	InLineAllParser = sLSpace + sLexem + sRSpace
 End Function
 
-&apos; парсер сносок
+&apos; /////////////// парсер сносок /////////////////////////////
 Function FootEndNoteParser( oSect As Object ) As String
+	Dim bIsFootNote As Boolean : bIsFootNote = False &apos; флаг - сноска (True) или концевая сноска (False)
+	
 	Dim oFootnoteCursor As Object
 	Dim sNote 			As String : sNote = &quot;&quot;
 	
@@ -294,21 +301,25 @@ Function FootEndNoteParser( oSect As Object ) As String
 	oFootnoteCursor.gotoStart(False)
 	oFootnoteCursor.gotoEndOfParagraph(True)
 	
-	Static j As Integer : j = iFootnoteCount + 1
+	Static fn As Integer : fn = iFootnoteCount + 1
 	
 	If bFENoteSeparately = True Then
 		&apos; раздельный вывод сносок и концевых сносок в разные блоки
 		If FNType( oFootnoteCursor.ParaStyleName ) = &quot;FootNote&quot; Then
 			If bFootnoteSpace = True Then sNote = sNote &amp; &quot; &quot;
-			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; j &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; j &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
+			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; fn &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; fn &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
+			bIsFootNote = True
 		Else
+			Static en As Integer : en = iEndnoteCount + 1
 			If bENSpace = True Then sNote = sNote &amp; &quot; &quot;
-			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#c&quot; &amp; j &amp; &quot;&quot;&quot;&gt;&quot; &amp; sENLeft &amp; j &amp; sENRight &amp; &quot;&lt;/a&gt;&quot;
+			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#c&quot; &amp; en &amp; &quot;&quot;&quot; type=&quot;&quot;comment&quot;&quot;&gt;&quot; &amp; sENLeft &amp; en &amp; sENRight &amp; &quot;&lt;/a&gt;&quot;
+			bIsFootNote = False
 		End If
 	Else
 		&apos; совместный вывод сносок и концевых сносок в один блок
 		If bFootnoteSpace = True Then sNote = sNote &amp; &quot; &quot;
-		sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; j &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; j &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
+		sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; fn &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; fn &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
+		bIsFootNote = True
 	End If
 	
 	
@@ -422,13 +433,19 @@ Function FootEndNoteParser( oSect As Object ) As String
 	End If
 	vTextArray(n) = asFNPart()
 
-	ReDim Preserve vFootnoteText(iFootnoteCount) As Variant
-	vFootnoteText( iFootnoteCount ) = vTextArray()
-	iFootnoteCount = iFootnoteCount + 1
-	
+	If bIsFootNote = True Then
+		ReDim Preserve vFootnoteText(iFootnoteCount) As Variant
+		vFootnoteText( iFootnoteCount ) = vTextArray()
+		iFootnoteCount = iFootnoteCount + 1
+	Else
+		ReDim Preserve vEndnoteText(iEndnoteCount) As Variant
+		vEndnoteText( iEndnoteCount ) = vTextArray()
+		iEndnoteCount = iEndnoteCount + 1
+	End If
 	FootEndNoteParser = sNote
 End Function
 
+&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////+
 Function FNType( sNoteType As String )
 	FNType = &quot;FootNote&quot;
 	If LCase(sNoteType) = &quot;endnote&quot; Then FNType = &quot;EndNote&quot;
