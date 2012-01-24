@@ -3,11 +3,11 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="InfoControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public Const sConstMyGenre			As String = &quot;/OOoFBTools/mygenre.txt&quot;			&apos; файл Избранных Жанров
-Public Const sConstMyGenreSettings	As String = &quot;/OOoFBTools/mygenre_settings.txt&quot;	&apos; файл настроек Избранных Жанров
-Public Const sConstSettings			As String = &quot;/OOoFBTools/settings.txt&quot;			&apos; файл настроек
-Public Const sConstFB2AuthorProfile	As String = &quot;/OOoFBTools/profile.txt&quot;			&apos; файл профиля Автора fb2 документа
-Const sConstMainDlg					As String = &quot;/OOoFBTools/main_dialog.txt&quot;		&apos; файл настроек основного диалога
+Public Const sConstMyGenre			As String = &quot;mygenre.txt&quot;			&apos; файл Избранных Жанров
+Public Const sConstMyGenreSettings	As String = &quot;mygenre_settings.txt&quot;	&apos; файл настроек Избранных Жанров
+Public Const sConstSettings			As String = &quot;settings.txt&quot;			&apos; файл настроек
+Public Const sConstFB2AuthorProfile	As String = &quot;profile.txt&quot;			&apos; файл профиля Автора fb2 документа
+Const sConstMainDlg					As String = &quot;main_dialog.txt&quot;		&apos; файл настроек основного диалога
 	
 Public oProgressBar
 Public oInfoDlg		As Object
@@ -203,7 +203,7 @@ Function InfoDlgExec() As Boolean
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadMainFormSettings( getUserPath() &amp; sConstMainDlg, oInfoDlg, nX, nY )
+	ReadMainFormSettings( getOOoFBToolsSettingsDir() &amp; sConstMainDlg, oInfoDlg, nX, nY )
 	oInfoDlg.setPosSize( nX, nY, 362, 408, com.sun.star.awt.PosSize.POS )
 	oProgressBar.setValue(5) &apos; Статусбар
 	
@@ -216,7 +216,7 @@ Function InfoDlgExec() As Boolean
 	oProgressBar.setValue(6) &apos; Статусбар
 	
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
-	_ReadProfile( getUserPath() &amp; sConstFB2AuthorProfile, 1 )
+	_ReadProfile( getOOoFBToolsSettingsDir() &amp; sConstFB2AuthorProfile, 1 )
 	oProgressBar.setValue(7) &apos; Статусбар
 	
 	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
@@ -242,7 +242,7 @@ Function InfoDlgExec() As Boolean
 	
 	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
-	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
+	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
 	oInfoDlg.Model.lbGenreElite.StringItemList = aArray()
 	oProgressBar.setValue(10) &apos; Статусбар
 	oProgressBar.end
@@ -373,7 +373,7 @@ End Function
 
 Sub ConvertingFile()
 	&apos; сохраняем настройки формы
-	SaveSettings( getUserPath() &amp; sConstMainDlg, oInfoDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstMainDlg, oInfoDlg )
 	
 	If oInfoDlg.getControl(&quot;GenreComboBox&quot;).SelectedItem = &quot;&quot; And UBound( sGenres() ) = -1 Then
 		MsgBox sIDD.sInfoDlgSelectGenre, 64, sConvertorName
@@ -1069,12 +1069,12 @@ Sub cbtnGenreElite_Click()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstMyGenreSettings, oGEDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstMyGenreSettings, oGEDlg, nX, nY )
 	oGEDlg.setPosSize( nX, nY, 165, 215, com.sun.star.awt.PosSize.POS )
 	
 	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
-	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
+	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
 	oGEDlg.Model.lbGE.StringItemList = aArray()
 	
 	&apos; Загрузка Списка Жанров, в зависимости от выбранной Схемы Жанров
@@ -1177,18 +1177,18 @@ End Sub
 &apos; сохраняем список Избранных Жанров в файл
 Sub GEOK()
 	&apos; сохранение настроек
-	SaveSettings( getUserPath() &amp; sConstMyGenreSettings, oGEDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstMyGenreSettings, oGEDlg )
 	Dim aArray() As String
 	aArray = oGEDlg.Model.lbGE.StringItemList
 &apos;	If UBound(aArray()) &gt; -1 Then
-		SaveArray( aArray(), getUserPath() &amp; sConstMyGenre )
+		SaveArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
 &apos;	End If
 	oGEDlg.endExecute()
 End Sub
 
 Sub GenreElite_Focus()
 	Dim aArray() As String
-	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
+	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
 	oInfoDlg.Model.lbGenreElite.StringItemList = aArray
 End Sub
 

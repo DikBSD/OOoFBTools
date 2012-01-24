@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="JoinBreakLines" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Const sConstJoinBreakLines As String = &quot;/OOoFBTools/joinbreaklines.txt&quot; &apos; файл настроек
+Const sConstJoinBreakLines As String = &quot;joinbreaklines.txt&quot; &apos; файл настроек
 
 Public oJoinBreakLinesDlg			As Object
 
@@ -35,7 +35,7 @@ Sub JoinBreakLines()
 	End With
 	
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg, nX, nY )
 	oJoinBreakLinesDlg.setPosSize( nX, nY, 153, 305, com.sun.star.awt.PosSize.POS )
 	
 	oJoinBreakLinesDlg.execute()
@@ -44,7 +44,7 @@ End Sub
 
 Sub SaveJoinBreakLinesDlgSettings()
 	&apos; сохранение положение формы
-	SaveSettings( getUserPath() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg )
 	&apos; заполняем переменные
 	With oJoinBreakLinesDlg
 		bBreakLinesInParaStartSpace = .GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State

@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Const sConstCorrector As String = &quot;/OOoFBTools/corrector.txt&quot; &apos; файл настроек Корректора Текста
+Const sConstCorrector As String = &quot;corrector.txt&quot; &apos; файл настроек Корректора Текста
 
 Private oDoc As Object
 Private oReplace As Object
@@ -103,7 +103,7 @@ Sub TextCorrector()
 	SetCorrectorSettingDefault()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
 	oTextCorrectorDlg.setPosSize( nX, nY, 455, 423, com.sun.star.awt.PosSize.POS )
 	
 	ControlsEnabled()
@@ -115,7 +115,7 @@ End Sub
 Sub SaveCorrectorSettings()
 	&apos; записываем настройки очистки текста
 	Dim oLB As Object &apos; Для работы с ListBox`ами
-	SaveSettings( getUserPath() &amp; sConstCorrector, oTextCorrectorDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstCorrector, oTextCorrectorDlg )
 	
 	&apos; заполняем переменные
 	With oTextCorrectorDlg

@@ -9,7 +9,7 @@ Option Explicit
 
 Public oRN As Object
 &apos; файл настроек
-Public Const sNSettingsFilename As String = &quot;/OOoFBTools/numbering.txt&quot;
+Public Const sNSettingsFilename As String = &quot;numbering.txt&quot;
 Private nIndex	As Integer &apos; начальный номер абзаца
 Private sLeft	As String
 Private sRight	As String
@@ -51,7 +51,7 @@ Sub NumberingStart()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sNSettingsFilename, oRN, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sNSettingsFilename, oRN, nX, nY )
 	oRN.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
 
 	oRN.execute()
@@ -61,7 +61,7 @@ End Sub
 Sub Numbering()
 	&apos; Принятие параметров
 	&apos; записываем настройки диалога
-	SaveSettings( getUserPath() &amp; sNSettingsFilename, oRN )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sNSettingsFilename, oRN )
 	
 	nIndex = oRN.GetControl( &quot;nfNumber&quot; ).Value
 	&apos; левая и правая часть регулярного выражения для 1-го поиска номера примечания в списке примечаний

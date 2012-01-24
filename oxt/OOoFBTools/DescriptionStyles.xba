@@ -2,8 +2,8 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="DescriptionStyles" script:language="StarBasic">REM  *****  BASIC  *****
 
-Const sConstDescGenre	As String = &quot;/OOoFBTools/DescGenre.txt&quot;
-Const sConstDescLang	As String = &quot;/OOoFBTools/DescLange.txt&quot;
+Const sConstDescGenre	As String = &quot;DescGenre.txt&quot;
+Const sConstDescLang	As String = &quot;DescLange.txt&quot;
 
 Private oTCurs &apos; текстовый курсор
 Private oDGDlg As Object
@@ -131,7 +131,7 @@ Sub ViewDescGenreDlg()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstDescGenre, oDGDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstDescGenre, oDGDlg, nX, nY )
 	oDGDlg.setPosSize( nX, nY, 130, 265, com.sun.star.awt.PosSize.POS )
 
 	&apos; инициализация формы вставки Жанров Книги в Служебную области Текста
@@ -249,11 +249,11 @@ Sub InsertDescGenre()
 	End If
 	
 	&apos; записываем настройки диалога
-	SaveSettings( getUserPath() &amp; sConstDescGenre, oDGDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstDescGenre, oDGDlg )
 	&apos; загрузка стилей по-умолчанию в переменные
 	SetDefaultStylesInVars()
 	&apos; читаем стили из файла и заносим их в переменные
-	ReadStyles( getUserPath() &amp; sConstStyles, False )
+	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, False )
 	
 	Dim i As Integer
 	Dim sGenreName As String, sGenreMath As String, sGanrePara As String, sItem As String
@@ -270,7 +270,7 @@ End Sub
 
 Sub DescGenreElite_Focus()
 	Dim aArray() As String
-	ReadFileInArray( aArray(), getUserPath() &amp; sConstMyGenre )
+	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
 	oDGDlg.Model.lbDescGenreElite.StringItemList = aArray
 End Sub
 
@@ -309,7 +309,7 @@ Sub ViewDescLangDlg()
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstDescLang, oDLDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstDescLang, oDLDlg, nX, nY )
 	oDLDlg.setPosSize( nX, nY, 49, 159, com.sun.star.awt.PosSize.POS )
 	
 	oDLDlg.execute()
@@ -319,11 +319,11 @@ End Sub
 Sub InsertDescLang()
 	oDLDlg.endExecute()
 	&apos; записываем настройки диалога
-	SaveSettings( getUserPath() &amp; sConstDescLang, oDLDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstDescLang, oDLDlg )
 	&apos; загрузка стилей по-умолчанию в переменные
 	SetDefaultStylesInVars()&apos; загрузка стилей по-умолчанию в переменные
 	&apos; читаем стили из файла и заносим их в переменные
-	ReadStyles( getUserPath() &amp; sConstStyles, False )
+	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, False )
 
 	Dim sLangBook As String, sLangOriginal As String, sLangPara As String
 	sLangBook = oDLDlg.getControl( &quot;lbLangBook&quot; ).SelectedItem

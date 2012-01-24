@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="SetSymbolAsMarker" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Const sConstMarker As String = &quot;/OOoFBTools/set_symbol_as_marker.txt&quot; &apos; файл настроек
+Const sConstMarker As String = &quot;set_symbol_as_marker.txt&quot; &apos; файл настроек
 
 Public oSSAMDlg As Object
 Private bOnlyMarkers	As Boolean
@@ -26,7 +26,7 @@ Sub SetSymbolAsMarker()
 	
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstMarker, oSSAMDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstMarker, oSSAMDlg, nX, nY )
 	oSSAMDlg.setPosSize( nX, nY, 40, 260, com.sun.star.awt.PosSize.POS )
 	
 	oSSAMDlg.execute()
@@ -165,7 +165,7 @@ End Sub
 
 Sub SaveSetSymbolAsMarkerDlgSettings()
 	&apos; сохранение положение формы
-	SaveSettings( getUserPath() &amp; sConstMarker, oSSAMDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstMarker, oSSAMDlg )
 	&apos; заполняем переменные
 	bOnlyMarkers = oSSAMDlg.GetControl(&quot;optbtnOnlyMarkers&quot;).State
 End Sub

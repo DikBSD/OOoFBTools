@@ -10,8 +10,8 @@ Const sConstBookMarkListNote	As String	= &quot;_ooo_ocr_tc_foot_note_list_zone_d
 Const sConstBookMarkFNNumber	As String	= &quot;_ooo_ocr_tc_foot_note_find_number_dikbsd_&quot;	&apos; закладка на найденный номер сноски
 Const sConstBookMarkFNText		As String	= &quot;_ooo_ocr_tc_foot_note_find_text_dikbsd_&quot;		&apos; закладка на найденный текст сноски, указанного номера
 
-Const sConstBuildFootEndNoteDlgSettings				As String = &quot;/OOoFBTools/BuildFootEndNoteDlgSettings.txt&quot;
-Const sConstFootNoteLinkTransDlgSettingsSettings	As String = &quot;/OOoFBTools/FootNoteLinkTransDlgSettings.txt&quot;
+Const sConstBuildFootEndNoteDlgSettings				As String = &quot;BuildFootEndNoteDlgSettings.txt&quot;
+Const sConstFootNoteLinkTransDlgSettingsSettings	As String = &quot;FootNoteLinkTransDlgSettings.txt&quot;
 
 Private oBuildFootEndNoteDlg	As Object
 Private	oFootNoteLinkTransDlg	As Object
@@ -1121,7 +1121,7 @@ Sub StartBuildFootEndNoteDlg()
 	
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg, nX, nY )
 	oBuildFootEndNoteDlg.setPosSize( nX, nY, 235, 300, com.sun.star.awt.PosSize.POS )
 	
 	ControlModeEnabled()
@@ -1251,7 +1251,7 @@ Sub BuildFootNote()
 	
 	oBuildFootEndNoteDlg.endExecute()
 	&apos; сохранение настроек
-	SaveSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg )
 	
 	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnSimpleFootNote&quot; ).State Then
 		&apos; Простой режим генерации сносок
@@ -1295,7 +1295,7 @@ Sub StartFootNoteLinkTransDlg()
 	
 	&apos; ситаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( getUserPath() &amp; sConstFootNoteLinkTransDlgSettingsSettings, oFootNoteLinkTransDlg, nX, nY )
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstFootNoteLinkTransDlgSettingsSettings, oFootNoteLinkTransDlg, nX, nY )
 	oFootNoteLinkTransDlg.setPosSize( nX, nY, 50, 238, com.sun.star.awt.PosSize.POS )
 
 	oFootNoteLinkTransDlg.execute()
@@ -1314,7 +1314,7 @@ End Sub
 Sub TransformationFootNote()
 	oFootNoteLinkTransDlg.endExecute()
 	&apos; сохранение настроек
-	SaveSettings( getUserPath() &amp; sConstFootNoteLinkTransDlgSettingsSettings, oFootNoteLinkTransDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstFootNoteLinkTransDlgSettingsSettings, oFootNoteLinkTransDlg )
 
 	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oProgressBar.start( sBTEND.sNoteTransforming, ThisComponent.ParagraphCount )
@@ -1470,7 +1470,7 @@ Sub FootNoteTest()
 	&apos;oBuildFootEndNoteDlg.Enable = False
 	oBuildFootEndNoteDlg.endExecute()
 	&apos; сохранение настроек
-	SaveSettings( getUserPath() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg )
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstBuildFootEndNoteDlgSettings, oBuildFootEndNoteDlg )
 	&apos; проверка, есть ли в Документе Врезки и/или Таблицы
 	If IsTableAndOrTextFrameExistInDocument() Then
 		If MsgBox ( oBuildFootEndNoteDlg.getModel.tfTestHelp.Text &amp; chr(10) &amp; chr(10) &amp; sBTEND.sTestContinueQuery, 32 + 16 + 1, sBTEND.sFootnotesGeneration ) &lt;&gt; 1 Then

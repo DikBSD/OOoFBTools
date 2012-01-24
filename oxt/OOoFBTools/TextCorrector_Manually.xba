@@ -22,7 +22,7 @@ Private oDocControl, otxtCurs &apos; текстовый курсор
 Private sOCRTCSettingsFilename As String &apos; файл настроек Корректора Текста
 Private asWords() As String &apos; массив с &quot;нормальными&quot; дефисными словами
 
-Public Const sWordsDefisListFile As String = &quot;/OOoFBTools/words_defis_list.txt&quot; &apos; файл с запомненными дефисными словами
+Public Const sWordsDefisListFile As String = &quot;words_defis_list.txt&quot; &apos; файл с запомненными дефисными словами
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub TextDefectFinderDlg_windowActivated(oEv)
@@ -57,10 +57,10 @@ End Sub
 &apos; инициализация и запуск диалога поиска
 Sub TextDefectFinderStart()
 	&apos; файл настроек Корректора Текста
-	sOCRTCSettingsFilename = getUserPath() &amp; &quot;/OOoFBTools/ocr_errors_corrector.txt&quot;
+	sOCRTCSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;ocr_errors_corrector.txt&quot;
 	ReDim asWords() As String
 	&apos; считываем из файла дефисные слова, чтобы их потом &quot;пропускать&quot;
-	ReadFileInArray( asWords(), getUserPath() &amp; sWordsDefisListFile )
+	ReadFileInArray( asWords(), getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile )
 
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
 	oTDF = LoadDialog( &quot;OOoFBTools&quot;, &quot;TextDefectFinderDlg&quot; )
@@ -642,10 +642,10 @@ Sub cmdbtnTDFSaveClick()
 		
 		&apos; сохраняем список запомненных дефисных слов в файл
 		If UBound( asWords() ) &gt; -1 Then
-			If FileExists( getUserPath() &amp; sWordsDefisListFile ) Then
-				Kill getUserPath() &amp; sWordsDefisListFile
+			If FileExists( getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile ) Then
+				Kill getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile
 			End If
-			SaveArray( asWords(), getUserPath() &amp; sWordsDefisListFile )
+			SaveArray( asWords(), getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile )
 		End If
 	Else
 		MsgBox sTDFD.sNotDefisInSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
@@ -656,8 +656,8 @@ End Sub
 
 &apos; правка списка дефисных слов
 Sub cmdbtnTDFEditClick()
-	If FileExists( getUserPath() &amp; sWordsDefisListFile ) Then
-		FileExecute( getUserPath() &amp; sWordsDefisListFile )
+	If FileExists( getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile ) Then
+		FileExecute( getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile )
 	Else
 		MsgBox sTDFD.sWordDefisFileNotExists, 64, oTDF.Title	
 	End If	

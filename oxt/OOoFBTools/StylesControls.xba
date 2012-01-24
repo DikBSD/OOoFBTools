@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="StylesControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public Const sConstStyles As String = &quot;/OOoFBTools/styles.txt&quot;
+Public Const sConstStyles As String = &quot;styles.txt&quot;
 
 Public oStylesDlg As Object
 Public bStyleExecute As Boolean
@@ -117,7 +117,7 @@ Function SetUserStyles() As Boolean
 	oProgressBar.setValue(3)
 	&apos; Только теперь считывание стилей из файла
 	Dim nX As Integer, nY As Integer
-	ReadStyles( getUserPath() &amp; sConstStyles, True, nX, nY )
+	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, True, nX, nY )
 	oStylesDlg.setPosSize( nX, nY, 260, 425, com.sun.star.awt.PosSize.POS )
 	
 	With oStylesDlg.Model
@@ -144,7 +144,7 @@ Sub StylesDlgOk()
 		MsgBox sSD.sFillAllFields, 64, &quot;OOoFBTools&quot;
 		Exit Sub
 	End If
-	SaveSettings( getUserPath() &amp; sConstStyles, oStylesDlg ) &apos; сохраняем стили в файл
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstStyles, oStylesDlg ) &apos; сохраняем стили в файл
 	
 	bStyleExecute = True
 	oStylesDlg.endExecute()

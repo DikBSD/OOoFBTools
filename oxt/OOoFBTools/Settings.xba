@@ -5,12 +5,12 @@ Option Explicit
 
 Function ReadSettings( bInCtrls As Boolean, Optional nX As Integer, Optional nY As Integer ) As Boolean
 	&apos; Читаем установки и задаем значения контролам
-	If FileExists( getUserPath() &amp; sConstSettings ) Then
+	If FileExists( getOOoFBToolsSettingsDir() &amp; sConstSettings ) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
 
 		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
-		oFS = oSFA.openFileRead ( ConvertToURL ( getUserPath() &amp; sConstSettings ) )
+		oFS = oSFA.openFileRead ( ConvertToURL ( getOOoFBToolsSettingsDir() &amp; sConstSettings ) )
 		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
 		oTIS.setInputStream ( oFS )
 		Do While ( NOT oTIS.isEOF() )
