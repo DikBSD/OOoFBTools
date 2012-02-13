@@ -1314,6 +1314,11 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([&quot;&quot;“„«])&quot;
+		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
 		
 	&apos; для русских слов обработку &quot; --пример&quot;, но не &quot; --i&quot;
 	With oReplace
