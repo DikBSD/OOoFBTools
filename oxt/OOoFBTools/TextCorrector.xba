@@ -931,6 +931,14 @@ Sub TextCorrectorDlgOk()
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
+	
+	&apos; If bInsertSpaceBPunctAndSym должен идти ДО If bRemoveSpaceBeforePunct - так результат лучше
+	&apos; Вставляем ПРОСТОЙ пробел после знака препинания
+	If bInsertSpaceBPunctAndSym = True Then
+		InsertSpaceBPunctAndSymbol( oDoc, oReplace )
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; Удаляем ПРОСТЫЕ пробелы перед знаком препинания
 	If bRemoveSpaceBeforePunct = True Then
 		RemoveSpaceBeforePunct( oDoc, oReplace )
@@ -947,12 +955,6 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 		
-	&apos; Вставляем ПРОСТОЙ пробел после знака препинания
-	If bInsertSpaceBPunctAndSym = True Then
-		InsertSpaceBPunctAndSymbol( oDoc, oReplace )
-	End If
-	oProgressBar.setValue(nCur)
-	nCur = nCur+1
 	&apos; Вставка ПРОСТОГО пробела между знаком препинания и минусом, тире или дефисом
 	If bInsertSpaceBPunctAndMDH Then
 		InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, 45 )		&apos; минус
@@ -1457,8 +1459,10 @@ End Sub
 &apos; Удаление пробелов перед знаком препинания
 Sub RemoveSpaceBeforePunct( oDoc, oReplace )
 	With oReplace
-		.SearchString = &quot;[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]+([.,:;!?…])&quot;
-		.ReplaceString = &quot;$1&quot;
+		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]+([.,:;!?…])&quot;
+		&apos;.ReplaceString = &quot;$1$2&quot;
+		.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,}([.,!?…])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
+		.ReplaceString = &quot;$1$2$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
@@ -1466,14 +1470,38 @@ End Sub
 &apos; Вставляем пробел после знака препинания
 Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 	&apos; (.) обрабатываем только для русских букв и БОЛЬШИХ английских, чтобы &quot;не портились&quot; листинги кода, скрипты и интернет-адреса
+&apos;	With oReplace
+&apos;		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+&apos;		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z]|[а-яА-ЯёЁa-zA-Z\)}\]”\&quot;&quot;»])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+&apos;		.ReplaceString = &quot;$1$2$3 $4&quot;
+&apos;	End With
+&apos;	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([,:;!?])([а-яА-ЯёЁ])&quot;
+		.ReplaceString = &quot;$1$2$3 $4&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([,;!?])([a-zA-Z])&quot;
+		.ReplaceString = &quot;$1$2$3 $4&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+&apos;	With oReplace
+&apos;		.SearchCaseSensitive = True
+&apos;		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([\.])([а-яА-ЯёЁA-Z])&quot;
+&apos;		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z]|[а-яА-ЯёЁa-zA-Z\)}\]”\&quot;&quot;»][&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([\.])([а-яА-ЯёЁA-Z])&quot;
+&apos;		.ReplaceString = &quot;$1$2 $3&quot;
+&apos;	End With
+&apos;	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»][&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})([\.])([а-яА-ЯёЁ])&quot;
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([\.])([а-яА-ЯёЁA-Z])&quot;
+		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»][&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})([\.])([A-Z])&quot;
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
