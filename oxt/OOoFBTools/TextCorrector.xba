@@ -47,9 +47,9 @@ Private bInsertSpaceBPunctAndSym	As Boolean
 Private bDefis			As Boolean
 Private bNoBreakDefis	As Boolean
 
-Private bKav As Boolean
+Private bKav 	As Boolean
 Private bPoints As Boolean
-Private bC As Boolean
+Private bC		As Boolean
 Private bImages As Boolean
 Private nAnchor As String
 Private bDeleteAllLineShape		As Boolean
@@ -58,16 +58,6 @@ Private bRemoveSpaceInQuote		As Boolean
 
 Private bInsertNoBreakBlankToFIO		As Boolean
 Private bInsertNoBreakBlankToShortening	As Boolean
-
-Private sWorkType				As String
-Private Const DEFAULT_TYPE		As String = &quot;DefaultType&quot;
-Private Const DOCUMENT_TYPE		As String = &quot;DocumentType&quot;
-Private Const FICTION_TYPE		As String = &quot;FictionType&quot;
-Private Const PUBLICISM_TYPE	As String = &quot;PublicismType&quot;
-Private Const SCIENTIFIC_TYPE	As String = &quot;ScientificType&quot;
-Private Const TECHNIC_TYPE		As String = &quot;TechnicType&quot;
-Private Const PROGRAMMING_TYPE	As String = &quot;ProgrammingType&quot;
-Private Const RELIGION_TYPE		As String = &quot;ReligionType&quot;
 
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -338,7 +328,6 @@ Sub SetCorrectorSettingDefault()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = DEFAULT_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -403,7 +392,6 @@ Sub SetDocumentType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = DOCUMENT_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -468,7 +456,6 @@ Sub SetFictionType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = FICTION_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -533,7 +520,6 @@ Sub SetPublicismType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = PUBLICISM_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -598,7 +584,6 @@ Sub SetScientificType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = SCIENTIFIC_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -663,7 +648,6 @@ Sub SetTechnicType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = TECHNIC_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -728,7 +712,6 @@ Sub SetProgrammingType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = PROGRAMMING_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -793,7 +776,6 @@ Sub SetReligionType()
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
 	End With
-	sWorkType = RELIGION_TYPE
 	ControlsEnabled()
 End Sub
 
@@ -1483,25 +1465,19 @@ End Sub
 
 &apos; Вставляем пробел после знака препинания
 Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
-	If sWorkType = PROGRAMMING_TYPE Then
-		&apos; чтобы не портились интернет-адреса, не обрабатываем точку и латинские символы
-		With oReplace
-			.SearchString = &quot;([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
-			.ReplaceString = &quot;$1 $2&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-		With oReplace
-			.SearchString = &quot;([\.])([а-яА-ЯёЁ])&quot;
-			.ReplaceString = &quot;$1 $2&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-	Else
-		With oReplace
-			.SearchString = &quot;([.,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
-			.ReplaceString = &quot;$1 $2&quot;
-		End With
-		oDoc.ReplaceAll(oReplace)
-	End If
+	&apos; (.) обрабатываем только для русских букв и БОЛЬШИХ английских, чтобы &quot;не портились&quot; листинги кода, скрипты и интернет-адреса
+	With oReplace
+		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+		.ReplaceString = &quot;$1$2 $3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([\.])([а-яА-ЯёЁA-Z])&quot;
+		.ReplaceString = &quot;$1$2 $3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	oReplace.SearchCaseSensitive = False
 End Sub
 
 &apos; Вставка ПРОБЕЛА между символами, кавычками и минусом, тире или дефисом
