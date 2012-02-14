@@ -1882,20 +1882,23 @@ Sub JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBa
 				Else Exit Do
 				End If
 			Else &apos; обходим строки таблицы
-				vStartFound.gotoNextParagraph(False)
-				vL.gotoNextParagraph(False)
-				With vEndFound
-					.gotoNextParagraph(False)
-					.gotoEndOfWord(False)
-				End With
-				With vR
-					.gotoNextParagraph(False)
-					.gotoEndOfWord(False)
-				End With
-				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
-				vEndFound = oDoc.findNext( vEndFound.End, vSearch )
-				vL = oDoc.findNext( vL.End, vSearch )
-				vR = oDoc.findNext( vR.End, vSearch )
+				If Not IsNull(vEndFound) Then
+					vStartFound.gotoNextParagraph(False)
+					vL.gotoNextParagraph(False)
+					With vEndFound
+						.gotoNextParagraph(False)
+						.gotoEndOfWord(False)
+					End With
+					With vR
+						.gotoNextParagraph(False)
+						.gotoEndOfWord(False)
+					End With
+					vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+					vEndFound = oDoc.findNext( vEndFound.End, vSearch )
+					vL = oDoc.findNext( vL.End, vSearch )
+					vR = oDoc.findNext( vR.End, vSearch )
+				Else Exit Do
+				End If
 			End If
 		End If
 	Loop
