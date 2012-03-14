@@ -15,6 +15,10 @@ Private sTFList()			As String &apos; вид экспорта врезок
 Private sGraphList()		As String &apos; форматы для преобразования графики
 
 Sub ServiceDlgExec()
+	&apos;DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
 	oServiceDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.ServiceDlg )
 	
 	&apos; инициализация диалога Настроек в зависимости от локали
@@ -82,33 +86,6 @@ Sub ServiceDlgOk()
 	SetDefaultSettingsInVars()
 	&apos; только теперь считываем настройки из файла в переменные
 	ReadSettings(False)
-
-	&apos; Инициализация поиска &quot;служебных стилей&quot;
-	oProgressBar.start( sServD.sInitializing, ThisComponent.ParagraphCount )
-	ReDim  sGenres()		As String
-	ReDim  sAuthors()		As String
-	ReDim  sTranslators()	As String
-	ReDim  sSequences()		As String
-	ReDim  sPubSequences()	As String
-	ReDim  sCustomInfos()	As String
-	
-	With oInfoDlg
-		.GetControl( &quot;lblGenres&quot; ).Text			= Ubound(sGenres())+1
-		.GetControl( &quot;lblBookAutors&quot; ).Text		= Ubound(sAuthors())+1
-		.GetControl( &quot;lblTranslators&quot; ).Text	= Ubound(sTranslators())+1
-		.GetControl( &quot;lblSequences&quot; ).Text		= Ubound(sSequences())+1
-		.GetControl( &quot;lblPubSequences&quot; ).Text	= Ubound(sPubSequences())+1
-		.GetControl( &quot;lbCustomInfo&quot; ).Text		= Ubound(sCustomInfos())+1
-		&apos; Поиск &quot;служебных стилей&quot;
-		.Enable = False
-		ReadServiceStyles(0)
-		&apos; ID Книги
-		.Model.IDField.Text = GetNewBookID()
-	End With
-	
-	oProgressBar.end
-	oInfoDlg.Enable = True	
-
 	oServiceDlg.endExecute()
 End Sub
 
