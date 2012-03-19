@@ -152,6 +152,8 @@ Sub ExportToFB21()
 	If bSaveUTF8 And bMarker Then 	&apos; сохранение fb2-файла в UTF-8, т.к. в тексте есть маркерные списки
 		sFB2Encoding = &quot;utf-8&quot;
 	End If
+	&apos; если в тексте есть хоть один неразрывный дефис, то экспортируем в utf-8
+	If IsNoBreakDefExsist() Then sFB2Encoding = &quot;utf-8&quot;
 	oTextOutputStream.setEncoding( sFB2Encoding )
 	
 	&apos; печатаем данные из &lt;description&gt;

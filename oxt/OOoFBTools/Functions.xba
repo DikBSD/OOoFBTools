@@ -1077,6 +1077,16 @@ Sub CursorAfterCurrentTextTable( oCursor )
 End Sub
 
 &apos; /// Поиск ///
+&apos; есть ли в тексте неразрывный дефис
+Function IsNoBreakDefExsist() As Boolean
+	IsNoBreakDefExsist = False
+	Dim vSearch	As Variant : vSearch = ThisComponent.createSearchDescriptor()
+	vSearch.SearchString = chr(8209)
+	Dim vFound As Variant : vFound = ThisComponent.findFirst( vSearch )
+	If Not IsNull( vFound ) Then
+		IsNoBreakDefExsist = True
+	End If
+End Function
 
 Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	Dim sResult As String
