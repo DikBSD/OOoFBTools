@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="GenreFavorites" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+&apos; //////////////////////////////////////////////////////////////////////
+&apos; //////////////////// Работа с Избранным Жанров ///////////////////////
+&apos; //////////////////////////////////////////////////////////////////////
+
+&apos; запуск диалога работы со списком избранных жанров
+Sub cbtnGenreElite_Click()
+	oGEDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.GenreEliteDlg )
+	
+	&apos; инициализация диалога работы с Избранными Жанрами от локали
+	InitGenreEliteDlg()
+	
+	With oGEDlg.Model
+		.Height	= 165
+		.Width	= 215
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstMyGenreSettings, oGEDlg, nX, nY )
+	oGEDlg.setPosSize( nX, nY, 165, 215, com.sun.star.awt.PosSize.POS )
+	
+	&apos; читаем избранные жанры из файла, если он есть
+	Dim aArray() As String
+	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
+	oGEDlg.Model.lbGE.StringItemList = aArray()
+	
+	&apos; Загрузка Списка Жанров, в зависимости от выбранной Схемы Жанров
+	If oGEDlg.Model.obtnGEFB21.State = True Or oGEDlg.Model.obtnGEFB21.State = 1 Then
+		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
+	Else
+		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
+	End If
+	
+	oGEDlg.execute()
+End Sub
+
+&apos; Инициализация диалога работы со списком Избранных Жанров  жанрами схемы FictionBook 2.1
+Sub InitGEFB21()
+	GenreFB21()
+
+	With oGEDlg.Model
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB21
+		.cboxGE.StringItemList = sGLN()
+	End With
+
+End Sub
+
+&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
+Sub InitGEFB22()
+	GenreFB22()
+
+	With oGEDlg.Model
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+End Sub
+
+&apos; Добавить жанр в список Избранного
+Sub GEAdd()
+	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteAdd
+	sGenre = &quot;&quot;
+	For i=0 To UBound(sGLN())
+		If sGLN(i) = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem Then
+			sGenreName = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem
+			sGenre = sGLC(i)
+			Exit For
+		End If
+	Next i
+
+	&apos; ищем выделенный жанр в списке
+	aArray = oGEDlg.Model.lbGE.StringItemList
+	For i=0 To UBound(aArray())
+		If aArray(i) = sGenreName Then
+			MsgBox sGD.sGenreEliteSelected &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sGenreName &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					sGD.sGenreEliteIsExists &amp; chr(10) &amp; _
+					sGD.sGenreEliteSelectOther, 64, sTitle
+			oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()		
+			Exit Sub
+		End If
+	Next i
+	
+	If sGenre = &quot;?&quot; Then
+		MsgBox sGD.sGenreGroup, 64, sTitle
+	ElseIf sGenreName&lt;&gt;&quot;&quot; Then
+		oGEDlg.getControl(&quot;lbGE&quot;).AddItem(sGenreName, oGEDlg.getControl(&quot;lbGE&quot;).ItemCount) &apos; в конец списка
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sGenreName, True)
+	Else
+		MsgBox sGD.sGenreEliteSelectFromList, 64, sTitle
+	End If
+	oGEDlg.getControl(&quot;cboxGE&quot;).SetFocus()
+	
+End Sub
+
+&apos; Удалить жанр из списка Избранного
+Sub GERemove()
+	Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteRemove
+	oLB = oGEDlg.getControl(&quot;lbGE&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox sGD.sGenreEliteSelectForRemove, 64, sTitle
+		Exit Sub
+	End If
+	
+	If	MsgBox( sGD.sGenreEliteQuestionRemove &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sTitle ) = 6 Then
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+	End If
+End Sub
+
+&apos; сохраняем список Избранных Жанров в файл
+Sub GEOK()
+	&apos; сохранение настроек
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstMyGenreSettings, oGEDlg )
+	Dim aArray() As String
+	aArray = oGEDlg.Model.lbGE.StringItemList
+&apos;	If UBound(aArray()) &gt; -1 Then
+		SaveArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
+&apos;	End If
+	oGEDlg.endExecute()
+End Sub
+
+&apos; сортировка списка Избранных Жанров
+Sub SortGenre()
+	Dim aArray() As String
+	If	MsgBox( sGD.sGenreEliteQuestionSort &amp; &quot;,&quot; &amp; chr(10), _
+				32 + 4 + 256, sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteSorting ) = 6 Then
+		Dim sItem As String
+		sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
+		aArray = oGEDlg.Model.lbGE.StringItemList
+		bubble_sort(aArray(), Ubound(aArray())+1)
+		oGEDlg.Model.lbGE.StringItemList = aArray
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
+	End If
+End Sub
+
+&apos; перемещение выбранного жанра списка Избранных Жанров вверх
+Sub GenreUp()
+	Dim aArray() As String, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteUp
+	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
+		MsgBox sGD.sGenreEliteSelectToUp, 64, sTitle
+		Exit Sub
+	End If
+	
+	If oGEDlg.Model.lbGE.SelectedItems(0) &gt; 0 Then
+		Dim sItem As String : sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
+		aArray() = oGEDlg.Model.lbGE.StringItemList
+		swap( aArray, oGEDlg.Model.lbGE.SelectedItems(0)-1, oGEDlg.Model.lbGE.SelectedItems(0) )
+		oGEDlg.Model.lbGE.StringItemList = aArray()
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
+	End If
+End Sub
+
+&apos; перемещение выбранного жанра списка Избранных Жанров вниз
+Sub GenreDown()
+	Dim aArray() As String, sTitle As String
+	sTitle = sConvertorName &amp; &quot; - &quot; &amp; sGD.sGenreEliteDown
+	If oGEDlg.getControl(&quot;lbGE&quot;).SelectedItem = &quot;&quot; Then
+		MsgBox sGD.sGenreEliteSelectToDown, 64, sTitle
+		Exit Sub
+	End If
+	aArray() = oGEDlg.Model.lbGE.StringItemList
+	If oGEDlg.Model.lbGE.SelectedItems(0) &lt; UBound(aArray()) Then
+		Dim sItem As String : sItem = oGEDlg.getControl(&quot;lbGE&quot;).getSelectedItem
+		swap( aArray(), oGEDlg.Model.lbGE.SelectedItems(0), oGEDlg.Model.lbGE.SelectedItems(0)+1 )
+		oGEDlg.Model.lbGE.StringItemList = aArray()
+		oGEDlg.getControl(&quot;lbGE&quot;).selectItem(sItem, True)
+	End If
+End Sub
+
+&apos;/////////////////////////////////////////////////////////
+</script:module>

@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="DocProperties" script:language="StarBasic">REM  *****  BASIC  *****
+&apos;================================================================================================================
+&apos; 					модуль - основные функции по работе с пользовательскими свойствами документа
+&apos;================================================================================================================
+Option Explicit
+
+Public Const _fb2_Preffix		As String = &quot;_fb2_&quot; &apos; префикс для поиска массивов свойств
+&apos; Свойства Книги
+&apos; = Title Info =
+&apos; Единичные свойства
+Public Const _fb2_ti_BookTitle	As String = &quot;_fb2_ti_BookTitle&quot;	&apos; Название Книги
+Public Const _fb2_ti_Keywords	As String = &quot;_fb2_ti_Keywords&quot;	&apos; Ключевые слова
+Public Const _fb2_ti_Date		As String = &quot;_fb2_ti_Date_&quot;		&apos; Дата Значение
+Public Const _fb2_ti_DateText	As String = &quot;_fb2_ti_DateText&quot;	&apos; Дата Текст
+Public Const _fb2_ti_Lang		As String = &quot;_fb2_ti_Lang&quot;		&apos; Язык Книги
+Public Const _fb2_ti_SrcLang	As String = &quot;_fb2_ti_SrcLang&quot;	&apos; Язык оригинала
+&apos; Массивы свойств
+Public Const _fb2_ti_Genre			As String = &quot;_fb2_ti_Genre_&quot;		&apos; Жанр
+Public Const _fb2_ti_GenreMatch		As String = &quot;_fb2_ti_GenreMatch&quot;	&apos; Жанр_Совпадение
+Public Const _fb2_ti_Author_LN		As String = &quot;_fb2_ti_Author_LN&quot;		&apos; Автор_Фамилия
+Public Const _fb2_ti_Author_FN		As String = &quot;_fb2_ti_Author_FN&quot;		&apos; Автор_Имя
+Public Const _fb2_ti_Author_MN		As String = &quot;_fb2_ti_Author_MN&quot;		&apos; Автор_Отчество
+Public Const _fb2_ti_Author_NN		As String = &quot;_fb2_ti_Author_NN&quot;		&apos; Автор_Ник
+Public Const _fb2_ti_Author_HP		As String = &quot;_fb2_ti_Author_HP&quot;		&apos; Автор_Сайт
+Public Const _fb2_ti_Author_Email	As String = &quot;_fb2_ti_Author_Email&quot;	&apos; Автор_Email
+Public Const _fb2_ti_Translator_LN 	As String = &quot;_fb2_ti_Translator_LN&quot;		&apos; Переводчик_Фамилия
+Public Const _fb2_ti_Translator_FN 	As String = &quot;_fb2_ti_Translator_FN&quot;		&apos; Переводчик_Имя
+Public Const _fb2_ti_Translator_MN 	As String = &quot;_fb2_ti_Translator_MN&quot;		&apos; Переводчик_Отчество
+Public Const _fb2_ti_Translator_NN 	As String = &quot;_fb2_ti_Translator_NN&quot;		&apos; Переводчик_Ник
+Public Const _fb2_ti_Translator_HP 	As String = &quot;_fb2_ti_Translator_HP&quot;		&apos; Переводчик_Сайт
+Public Const _fb2_ti_Translator_Email	As String = &quot;_fb2_ti_Translator_Email&quot;	&apos; Переводчик_Email
+Public Const _fb2_ti_Sequence			As String = &quot;_fb2_ti_Sequence_&quot;			&apos; Серия
+Public Const _fb2_ti_SequenceNumber		As String = &quot;_fb2_ti_SequenceNumber&quot;	&apos; Серия Номер
+
+&apos; = Document Info =
+&apos; Единичные свойства
+Public Const _fb2_di_ID				As String = &quot;_fb2_di_ID&quot;			&apos; ID
+Public Const _fb2_di_Version		As String = &quot;_fb2_di_Version&quot;		&apos; Версия файла
+Public Const _fb2_di_SrcUrl			As String = &quot;_fb2_di_SrcUrl&quot;		&apos; URL источника
+Public Const _fb2_di_OCR			As String = &quot;_fb2_di_OCR&quot;			&apos; OCR
+Public Const _fb2_di_History		As String = &quot;_fb2_di_History&quot;		&apos; История изменения
+&apos; Массивы свойств
+Public Const _fb2_di_Author_LN		As String = &quot;_fb2_di_Author_LN&quot;		&apos; Автор_Фамилия
+Public Const _fb2_di_Author_FN		As String = &quot;_fb2_di_Author_FN&quot;		&apos; Автор_Имя
+Public Const _fb2_di_Author_MN		As String = &quot;_fb2_di_Author_MN&quot;		&apos; Автор_Отчество
+Public Const _fb2_di_Author_NN		As String = &quot;_fb2_di_Author_NN&quot;		&apos; Автор_Ник
+Public Const _fb2_di_Author_HP 		As String = &quot;_fb2_di_Author_HP&quot;		&apos; Автор_Сайт
+Public Const _fb2_di_Author_Email	As String = &quot;_fb2_di_Author_Email&quot;	&apos; Автор_Email
+
+&apos; = Publish Info =
+&apos; Единичные свойства
+Public Const _fb2_pi_BookName	As String = &quot;_fb2_pi_BookName&quot;	&apos; Название Книги
+Public Const _fb2_pi_Publisher	As String = &quot;_fb2_pi_Publisher&quot;	&apos; Издатель
+Public Const _fb2_pi_City		As String = &quot;_fb2_pi_City&quot;		&apos; Город
+Public Const _fb2_pi_Year		As String = &quot;_fb2_pi_Year&quot;		&apos; Год
+Public Const _fb2_pi_ISBN		As String = &quot;_fb2_pi_ISBN&quot;		&apos; ISBN
+&apos; Массивы свойств
+Public Const _fb2_pi_Sequence 		As String = &quot;_fb2_pi_Sequence_&quot;			&apos; Серия	
+Public Const _fb2_pi_SequenceNumber	As String = &quot;_fb2_pi_SequenceNumber&quot;	&apos; Серия Номер	
+
+&apos; = Custom Info =
+&apos; Массивы свойств
+Public Const _fb2_ci_Type	As String = &quot;_fb2_ci_Type&quot;	&apos; Тип
+Public Const _fb2_ci_Value	As String = &quot;_fb2_ci_Value&quot;	&apos; Значение
+
+&apos; = Разное =
+&apos; Единичные свойства
+Public Const _fb2_Encoding	As String = &quot;_fb2_Encoding&quot;	&apos; Кодировка
+
+
+&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; 									Общие функции работы со свойствами документа
+&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;***************************************************************************
+&apos; задание пользовательского свойства документа UserPropertyName
+Sub SetUserProperty(UserPropertyName As String, UserPropertyValue As Variant)
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; проверякем, есть ли в документе заданное свойство UserPropertyName
+	Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+		If PropertyValues(i).Name = UserPropertyName Then
+         	&apos; если есть, то удаляем его
+			UserDefProperties.removeProperty(UserPropertyName)
+			Exit For
+		End If
+    Next i
+    &apos; добавляем заданное свойство документа UserPropertyName
+	UserDefProperties.addProperty(UserPropertyName, 128, UserPropertyValue)
+End Sub
+
+&apos;***************************************************************************
+&apos; удаление пользовательского свойства документа
+Function RemoveUserProperty(UserPropertyName As String) As Boolean
+    RemoveUserProperty = False
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа UserPropertyName и удаляем его, если оно есть
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+		If PropertyValues(i).Name = UserPropertyName Then
+			UserDefProperties.removeProperty(UserPropertyName)
+			RemoveUserProperty = True
+			Exit For
+		End If
+    Next i
+End Function
+
+&apos;***************************************************************************
+&apos; удаление всех пользовательских свойств документа по шаблону
+Sub RemoveAllUserPropertyFromTemplate()
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа UserPropertyName и удаляем
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+        If InStr( PropertyValues(i).Name, _fb2_Preffix ) = 1 Then
+        	UserDefProperties.removeProperty(PropertyValues(i).Name)
+		End If
+    Next i
+End Sub
+
+&apos;***************************************************************************
+&apos; получение заданного пользовательского свойства документа UserPropertyName
+Function GetUserProperty(UserPropertyName As String) As com.sun.star.beans.PropertyValue
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа UserPropertyName
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+        If PropertyValues(i).Name = UserPropertyName Then
+        	GetUserProperty = PropertyValues(i)
+			Exit For
+		End If
+    Next i
+End Function
+
+&apos;***************************************************************************
+&apos; получение значения заданного пользовательского свойства документа UserPropertyName
+Function GetUserPropertyValue(UserPropertyName As String) As Variant
+	GetUserPropertyValue = NULL
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа UserPropertyName
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+        If PropertyValues(i).Name = UserPropertyName Then
+        	GetUserPropertyValue = PropertyValues(i).Value
+			Exit For
+		End If
+    Next i
+End Function
+
+&apos;***************************************************************************
+&apos; получение массива пользовательских свойств документа по шаблону UserPropertyName
+Function GetUserPropertyArray(UserPropertyName As String) As Array
+	Dim vArray() As Variant
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа UserPropertyName
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+        If InStr( PropertyValues(i).Name, UserPropertyName ) = 1 Then
+        	AddNewItemToVarArray1( vArray(), PropertyValues(i) )
+		End If
+    Next i
+    GetUserPropertyArray = vArray()
+End Function
+
+&apos;***************************************************************************
+&apos; Есть ли хоть одно fb2 свойство в документе?
+Function IsFB2AnyPropertyIsExsist() As Boolean
+    IsFB2AnyPropertyIsExsist = False
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа UserPropertyName и удаляем
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+        If InStr( PropertyValues(i).Name, _fb2_Preffix ) = 1 Then
+        	IsFB2AnyPropertyIsExsist = True
+        	Exit Function
+		End If
+    Next i
+End Function
+
+&apos;***************************************************************************
+&apos; формирование строки сообщения об ошибке, если заданного обязательного свойства - нет.
+Sub MakeErrorMessage(ByRef DocProperty As com.sun.star.beans.PropertyValue, ByRef sErrorMess As String, ByRef sErrorProperty As String)
+	If IsNull(DocProperty) Then
+    	sErrorMess = sErrorMess &amp; sErrorProperty &amp; chr(10)
+    ElseIf IsNull(DocProperty.Value) Or Trim(DocProperty.Value)=&quot;&quot; Then
+	    sErrorMess = sErrorMess &amp; sErrorProperty &amp; chr(10)
+    End If
+End Sub
+
+&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;							Получение конкретных свойств документа
+&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;***************************************************************************
+&apos; функция получение строкового свойства UserPropertyName
+Function GetStringProperty(UserPropertyName As String) As String
+	GetStringProperty = &quot;&quot;
+	Dim DocProperty As new com.sun.star.beans.PropertyValue
+    DocProperty = GetUserProperty(UserPropertyName)
+    If Not IsNull(DocProperty) Then
+    	If Not IsNull(DocProperty.Value) Or Trim(DocProperty.Value) &lt;&gt; &quot;&quot; Then
+    		GetStringProperty = Trim( DocProperty.Value )
+    	End If
+    End If
+End Function
+
+&apos;***************************************************************************
+&apos; получение данных по всем Авторам Книги или всем Переводчикам или Авторам fb2 файла
+Sub GetAuthorsList( _FN As String, _MN As String, _LN As String, _NN As String, _Email As String, _HP As String, _
+					ByRef ListBox As stardiv.Toolkit.UnoListBoxControl )
+	Dim sFNArray()	As Variant : sFNArray()		= GetUserPropertyArray(_FN)
+	Dim sMNArray()	As Variant : sMNArray()		= GetUserPropertyArray(_MN)
+	Dim sLNArray()	As Variant : sLNArray()		= GetUserPropertyArray(_LN)
+	Dim sNNArray()	As Variant : sNNArray()		= GetUserPropertyArray(_NN)
+	Dim sEmailArray()As Variant : sEmailArray()	= GetUserPropertyArray(_Email)
+	Dim sHPArray()	As Variant : sHPArray()		= GetUserPropertyArray(_HP)
+	Dim i As Integer, DataString As String
+	For i=0 To UBound( sLNArray() )
+		&apos; добавление в список
+		DataString = MakeAuthorDataString( Trim(sFNArray(i).Value), Trim(sMNArray(i).Value), Trim(sLNArray(i).Value), _
+											Trim(sNNArray(i).Value), Trim(sEmailArray(i).Value), Trim(sHPArray(i).Value) )
+		ListBox.addItem(DataString, ListBox.getItemCount())
+	Next i
+End Sub
+
+&apos;***************************************************************************
+&apos; получение данных по всем Сериям Электронной или Бумажной Книги
+Sub GetSequenceList( _Sequence As String, _SequenceNumber As String, ByRef ListBox As stardiv.Toolkit.UnoListBoxControl )
+	Dim sSequenceArray()		As Variant : sSequenceArray()		= GetUserPropertyArray(_Sequence)
+	Dim sSequenceNumberArray()	As Variant : sSequenceNumberArray()	= GetUserPropertyArray(_SequenceNumber)
+	Dim i As Integer, DataString As String
+	For i=0 To UBound( sSequenceArray() )
+		&apos; добавление в список
+		DataString = MakeBookSequenceDataString( Trim(sSequenceArray(i).Value), Trim(sSequenceNumberArray(i).Value) )
+		ListBox.addItem(DataString, ListBox.getItemCount())
+	Next i
+End Sub
+
+&apos; = Title Info =
+&apos; Единичные свойства
+Function GetBookTitleFromProperty() As String
+	GetBookTitleFromProperty = GetStringProperty(_fb2_ti_BookTitle)
+End Function
+
+Function GetKeywordsFromProperty() As String
+	GetKeywordsFromProperty = GetStringProperty(_fb2_ti_Keywords)
+End Function
+
+Function GetBookDateFromProperty() As String
+	GetBookDateFromProperty = GetStringProperty(_fb2_ti_Date)
+End Function
+
+Function GetBookDateTextFromProperty() As String
+	GetBookDateTextFromProperty = GetStringProperty(_fb2_ti_DateText)
+End Function
+
+Function GetLangFromProperty() As String
+	GetLangFromProperty = GetStringProperty(_fb2_ti_Lang)
+End Function
+
+Function GetSrcLangFromProperty() As String
+	GetSrcLangFromProperty = GetStringProperty(_fb2_ti_SrcLang)
+End Function
+
+Sub GetBookAuthorsArray()
+	Dim oListOfBookAuthors As Object : oListOfBookAuthors = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
+	GetAuthorsList( _fb2_ti_Author_FN, _fb2_ti_Author_MN, _fb2_ti_Author_LN, _fb2_ti_Author_NN, _fb2_ti_Author_Email, _
+					_fb2_ti_Author_HP, oListOfBookAuthors )
+End Sub
+
+Sub GetBookTranslatorsArray()
+	Dim oListOfTranslators As Object : oListOfTranslators = oFB2PropertiesDlg.getControl(&quot;lbTranslators&quot;)
+	GetAuthorsList( _fb2_ti_Translator_FN, _fb2_ti_Translator_MN, _fb2_ti_Translator_LN, _fb2_ti_Translator_NN, _
+					_fb2_ti_Translator_Email, _fb2_ti_Translator_HP, oListOfTranslators )
+End Sub
+
+Sub GetGenresArray()
+	Dim sGenreArray()		As Variant	: sGenreArray()			= GetUserPropertyArray(_fb2_ti_Genre)
+	Dim sGenreMatchArray()	As Variant	: sGenreMatchArray()	= GetUserPropertyArray(_fb2_ti_GenreMatch)
+	Dim oListOfGenres		As Object	: oListOfGenres			= oFB2PropertiesDlg.getControl(&quot;lbGenre&quot;)
+	Dim i As Integer
+	For i=0 To UBound( sGenreArray() )
+		&apos; добавление в список
+		Dim sGenreWithMatch As String : sGenreWithMatch = Trim(sGenreArray(i).Value) &amp; &quot; | &quot; &amp; Trim(sGenreMatchArray(i).Value)
+		oListOfGenres.addItem(sGenreWithMatch, oListOfGenres.getItemCount())
+	Next i
+End Sub
+
+&apos; Массивы свойств
+Sub GetBookSequenceArray()
+	Dim oListOfSequencies As Object : oListOfSequencies = oFB2PropertiesDlg.getControl(&quot;lbSequencies&quot;)
+	GetSequenceList( _fb2_ti_Sequence, _fb2_ti_SequenceNumber, oListOfSequencies )
+End Sub
+
+&apos; = Document Info =
+&apos; Единичные свойства
+Function GetIDFromProperty() As String
+	GetIDFromProperty = GetStringProperty(_fb2_di_ID)
+End Function
+
+Function GetVersionFromProperty() As String
+	GetVersionFromProperty = GetStringProperty(_fb2_di_Version)
+End Function
+
+Function GetSrcUrlFromProperty() As String
+	GetSrcUrlFromProperty = GetStringProperty(_fb2_di_SrcUrl)
+End Function
+
+Function GetOCRFromProperty() As String
+	GetOCRFromProperty = GetStringProperty(_fb2_di_OCR)
+End Function
+
+Function GetHistoryFromProperty() As String
+	GetHistoryFromProperty = GetStringProperty(_fb2_di_History)
+End Function
+
+&apos; Массивы свойств
+Sub GetFB2AuthorsArray()
+	Dim oListOfFB2Authors As Object : oListOfFB2Authors = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
+	GetAuthorsList( _fb2_di_Author_FN, _fb2_di_Author_MN, _fb2_di_Author_LN, _fb2_di_Author_NN, _
+					_fb2_di_Author_Email, _fb2_di_Author_HP, oListOfFB2Authors )
+End Sub
+
+&apos; = Publish Info =
+&apos; Единичные свойства
+Function GetPubBookNameFromProperty() As String
+	GetPubBookNameFromProperty = GetStringProperty(_fb2_pi_BookName)
+End Function
+
+Function GetPublisherFromProperty() As String
+	GetPublisherFromProperty = GetStringProperty(_fb2_pi_Publisher)
+End Function
+
+Function GetCityFromProperty() As String
+	GetCityFromProperty = GetStringProperty(_fb2_pi_City)
+End Function
+
+Function GetYearFromProperty() As String
+	GetYearFromProperty = GetStringProperty(_fb2_pi_Year)
+End Function
+
+Function GetISBNFromProperty() As String
+	GetISBNFromProperty = GetStringProperty(_fb2_pi_ISBN)
+End Function
+
+&apos; Массивы свойств
+Sub GetPublishSequenceArray()
+	Dim oListOfSequencies As Object : oListOfSequencies = oFB2PropertiesDlg.getControl(&quot;lbPubSequensies&quot;)
+	GetSequenceList( _fb2_pi_Sequence, _fb2_pi_SequenceNumber, oListOfSequencies )
+End Sub
+
+&apos; = Custom Info =
+&apos; Массивы свойств
+Sub GetCustomInfosArray()
+	Dim sciTypeArray()		As Variant	: sciTypeArray()	= GetUserPropertyArray(_fb2_ci_Type)
+	Dim sciValueArray()		As Variant	: sciValueArray()	= GetUserPropertyArray(_fb2_ci_Value)
+	Dim oListOfCustomInfos	As Object	: oListOfCustomInfos= oFB2PropertiesDlg.getControl(&quot;lbCustomInfos&quot;)
+	Dim i As Integer
+	For i=0 To UBound( sciTypeArray() )
+		&apos; добавление в список
+		Dim sCustomInfo As String : sCustomInfo = Trim(sciTypeArray(i).Value) &amp; &quot; | &quot; &amp; Trim(sciValueArray(i).Value)
+		oListOfCustomInfos.addItem(sCustomInfo, oListOfCustomInfos.getItemCount())
+	Next i
+End Sub
+
+&apos; = Разное =
+Function GetEncodingFromProperty() As String
+	GetEncodingFromProperty = GetStringProperty(_fb2_Encoding)
+   	If Trim(GetEncodingFromProperty) = &quot;&quot; Then
+   		GetEncodingFromProperty = &quot;utf-8&quot;
+    End If
+End Function
+
+</script:module>

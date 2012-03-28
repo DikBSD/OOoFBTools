@@ -18,9 +18,7 @@ Sub _ReadProfile( sFilename As String, nN As Integer )
 			sLine = oTIS.readLine()
 			If sLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные профиля
-				If nN = 0 Then &apos; профиль Автора Книги
-					SetBookAuthorProfile(sLine)
-				ElseIf nN = 1 Then &apos; профиль Автора fb2-документа
+				If nN = 1 Then &apos; профиль Автора fb2-документа
 					SetFB2AuthorProfile(sLine)
 				ElseIf nN = 2 Then &apos; профиль Издательства
 					SetPublisherProfile(sLine)
@@ -97,23 +95,23 @@ Sub _SaveProfile( sTitle As String, nN As Integer )
 		&apos; Сохраняем данные профиля
 		Dim oLB As Object
 		If nN = 0 Then &apos; профиль Автора Книги
-			oTOS.writeString(&quot;tiFirst=&quot; &amp; oInfoDlg.Model.tiFirst.Text &amp; chr(10))
-			oTOS.writeString(&quot;tiMiddle=&quot; &amp; oInfoDlg.Model.tiMiddle.Text &amp; chr(10))
-			oTOS.writeString(&quot;tiLast=&quot; &amp; oInfoDlg.Model.tiLast.Text &amp; chr(10))
-			oTOS.writeString(&quot;tiNickname=&quot; &amp; oInfoDlg.Model.tiNickname.Text &amp; chr(10))
-			oTOS.writeString(&quot;tiEmail=&quot; &amp; oInfoDlg.Model.tiEmail.Text &amp; chr(10))
-			oTOS.writeString(&quot;tiHomepage=&quot; &amp; oInfoDlg.Model.tiHomepage.Text &amp; chr(10))
-			oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
+			oTOS.writeString(&quot;tiFirst=&quot; &amp; oFB2PropertiesDlg.Model.tiFirst.Text &amp; chr(10))
+			oTOS.writeString(&quot;tiMiddle=&quot; &amp; oFB2PropertiesDlg.Model.tiMiddle.Text &amp; chr(10))
+			oTOS.writeString(&quot;tiLast=&quot; &amp; oFB2PropertiesDlg.Model.tiLast.Text &amp; chr(10))
+			oTOS.writeString(&quot;tiNickname=&quot; &amp; oFB2PropertiesDlg.Model.tiNickname.Text &amp; chr(10))
+			oTOS.writeString(&quot;tiEmail=&quot; &amp; oFB2PropertiesDlg.Model.tiEmail.Text &amp; chr(10))
+			oTOS.writeString(&quot;tiHomepage=&quot; &amp; oFB2PropertiesDlg.Model.tiHomepage.Text &amp; chr(10))
+			oLB = oFB2PropertiesDlg.getControl(&quot;GenreComboBox&quot;)
 			oTOS.writeString(&quot;GenreComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
-			oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
+			oLB = oFB2PropertiesDlg.getControl(&quot;LangComboBox&quot;)
 			oTOS.writeString(&quot;LangComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
-			oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
+			oLB = oFB2PropertiesDlg.getControl(&quot;SrcLangComboBox&quot;)
 			oTOS.writeString(&quot;SrcLangComboBox=&quot; &amp; oLB.SelectedItemPos &amp; chr(10))
 		ElseIf nN = 1 Then &apos; профиль Автора fb2-документа
 			_SaveFB2AuthorProfile( oTOS )
 		ElseIf nN = 2 Then &apos; профиль Издательства
-			oTOS.writeString(&quot;pubPublisherTextField=&quot; &amp; oInfoDlg.Model.pubPublisherTextField.Text &amp; chr(10))
-			oTOS.writeString(&quot;pubCityTextField=&quot; &amp; oInfoDlg.Model.pubCityTextField.Text &amp; chr(10))
+			oTOS.writeString(&quot;pubPublisherTextField=&quot; &amp; oFB2PropertiesDlg.Model.pubPublisherTextField.Text &amp; chr(10))
+			oTOS.writeString(&quot;pubCityTextField=&quot; &amp; oFB2PropertiesDlg.Model.pubCityTextField.Text &amp; chr(10))
 		End If
 		oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
 		oTOS.closeOutput()
@@ -123,15 +121,15 @@ End Sub
 
 &apos; записываем профиль автора fb2-файла
 Sub _SaveFB2AuthorProfile( oTOS As Object )
-	oTOS.writeString(&quot;diFirstField=&quot; &amp; oInfoDlg.Model.diFirstField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diMiddleField=&quot; &amp; oInfoDlg.Model.diMiddleField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diLastField=&quot; &amp; oInfoDlg.Model.diLastField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diNicknameField=&quot; &amp; oInfoDlg.Model.diNicknameField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diEmailField=&quot; &amp; oInfoDlg.Model.diEmailField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diHomepageField=&quot; &amp; oInfoDlg.Model.diHomepageField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diOCRField=&quot; &amp; oInfoDlg.Model.diOCRField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diURLField=&quot; &amp; oInfoDlg.Model.diURLField.Text &amp; chr(10))
-	oTOS.writeString(&quot;HistoryTextField=&quot; &amp; oInfoDlg.Model.HistoryTextField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diFirstField=&quot; &amp; oFB2PropertiesDlg.Model.diFirstField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diMiddleField=&quot; &amp; oFB2PropertiesDlg.Model.diMiddleField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diLastField=&quot; &amp; oFB2PropertiesDlg.Model.diLastField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diNicknameField=&quot; &amp; oFB2PropertiesDlg.Model.diNicknameField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diEmailField=&quot; &amp; oFB2PropertiesDlg.Model.diEmailField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diHomepageField=&quot; &amp; oFB2PropertiesDlg.Model.diHomepageField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diOCRField=&quot; &amp; oFB2PropertiesDlg.Model.diOCRField.Text &amp; chr(10))
+	oTOS.writeString(&quot;diURLField=&quot; &amp; oFB2PropertiesDlg.Model.diURLField.Text &amp; chr(10))
+	oTOS.writeString(&quot;HistoryTextField=&quot; &amp; oFB2PropertiesDlg.Model.HistoryTextField.Text &amp; chr(10))
 End Sub
 
 &apos;//////////////////////////////////////////////////
@@ -139,7 +137,7 @@ End Sub
 &apos;//////////////////////////////////////////////////
 &apos; загрузка профиля Автора fb2-файла по-умолчанию
 Sub ReadDefFB2AuthorProfile()
-	If MsgBox( sIDD.sProfileFB2AuthorQuestionLoad, 128 + 32 + 1, sConvertorName ) = 2 Then
+	If MsgBox( sFB2PED.sProfileFB2AuthorQuestionLoad, 128 + 32 + 1, sConvertorName ) = 2 Then
 		Exit Sub
 	End If
 	&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
@@ -148,7 +146,7 @@ End Sub
 
 Sub SaveDefFB2AuthorProfile()
 	&apos; записываем профиль автора fb2-файла по-умолчанию
-	If MsgBox( sIDD.sProfileFB2AuthorQuestionSave, 128 + 32 + 1, sConvertorName ) = 2 Then
+	If MsgBox( sFB2PED.sProfileFB2AuthorQuestionSave, 128 + 32 + 1, sConvertorName ) = 2 Then
 		Exit Sub
 	End If
 	Dim oOS As Object, oFA As Object, oTOS As Object
@@ -172,23 +170,23 @@ Sub SetFB2AuthorProfile( sCurrentLine )
 	sProfile = Split(sCurrentLine, &quot;=&quot;)
 	Select Case sProfile(0)
 		Case &quot;diFirstField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diMiddleField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diLastField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diNicknameField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diEmailField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diHomepageField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diOCRField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;diURLField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;HistoryTextField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 	End Select
 	Exit Sub
 	
@@ -200,77 +198,12 @@ End Sub
 &apos;/////////////////////////////////////
 &apos; загрузка профиля Автора fb2-файла
 Sub LoadFB2AuthorProfile()
-	_LoadProfile( sIDD.sProfileFB2AuthorOpen, 1 )
+	_LoadProfile( sFB2PED.sProfileFB2AuthorOpen, 1 )
 End Sub
 
 &apos; записываем профиль автора fb2-файла
 Sub SaveFB2AuthorProfile()
-	_SaveProfile( sIDD.sProfileFB2AuthorSave, 1 )
-End Sub
-
-&apos;//////////////////////////////
-&apos;/// Профили Авторов Книги ////
-&apos;//////////////////////////////
-&apos; Загрузка Автора Книга из файла профиля этого Автора
-Sub LoadBookAuthorProfile()
-	_LoadProfile( sIDD.sProfileAuthorOpen, 0 )
-End Sub
-
-&apos; Сохранение Автора Книга в файл профиля этого Автора
-Sub SaveBookAuthorProfile()
-	If Trim(oInfoDlg.Model.tiFirst.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiMiddle.Text) = &quot;&quot; AND _
-		Trim(oInfoDlg.Model.tiLast.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiNickname.Text) = &quot;&quot; AND _
-		Trim(oInfoDlg.Model.tiEmail.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.tiHomepage.Text) = &quot;&quot; Then
-		MsgBox sIDD.sInfoDlgFillBookAuthor, 64, sConvertorName
-		Exit Sub
-	End If
-	_SaveProfile( sIDD.sProfileAuthorSave, 0 )
-End Sub
-
-Sub SetBookAuthorProfile( sCurrentLine )
-	On Error Goto ErrorHandler
-	Dim sProfile() As String
-	Dim oLB As Object
-	sProfile = Split(sCurrentLine, &quot;=&quot;)
-
-	Select Case sProfile(0)
-		Case &quot;tiFirst&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;tiMiddle&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;tiLast&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;tiNickname&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;tiEmail&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;tiHomepage&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;GenreComboBox&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;LangComboBox&quot;
-			oLB = oInfoDlg.getControl(&quot;LangComboBox&quot;)
-			oLB.SelectItemPos(sProfile(1), True)
-		Case &quot;SrcLangComboBox&quot;
-			oLB = oInfoDlg.getControl(&quot;SrcLangComboBox&quot;)
-			oLB.SelectItemPos(sProfile(1), True)
-	End Select
-	Exit Sub
-	
-	ErrorHandler: &apos; Идем дальше
-End Sub
-
-Sub ClearBookAuthorFields()
-	&apos; Очистка всех полей для Автора Книги
-	oInfoDlg.Model.tiFirst.Text = &quot;&quot;
-	oInfoDlg.Model.tiMiddle.Text = &quot;&quot;
-	oInfoDlg.Model.tiLast.Text = &quot;&quot;
-	oInfoDlg.Model.tiNickname.Text = &quot;&quot;
-	oInfoDlg.Model.tiEmail.Text = &quot;&quot;
-	oInfoDlg.Model.tiHomepage.Text = &quot;&quot;
-	Dim oLB As Object
-	oLB = oInfoDlg.getControl(&quot;GenreComboBox&quot;)
-	oLB.SelectItemPos(0, True)
+	_SaveProfile( sFB2PED.sProfileFB2AuthorSave, 1 )
 End Sub
 
 &apos;////////////////////////////
@@ -278,16 +211,16 @@ End Sub
 &apos;////////////////////////////
 &apos; Загрузка данных Издательства из файла профиля этого Издательства
 Sub LoadPublisherProfile()
-	_LoadProfile( sIDD.sProfilePublisherOpen, 2 )
+	_LoadProfile( sFB2PED.sProfilePublisherOpen, 2 )
 End Sub
 
 &apos; Сохранение Автора Книга в файл профиля этого Автора
 Sub SavePublisherProfile()
-	If Trim(oInfoDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND Trim(oInfoDlg.Model.pubCityTextField.Text) = &quot;&quot; Then
-		MsgBox sIDD.sInfoDlgFillPublisher, 64, sConvertorName
+	If Trim(oFB2PropertiesDlg.Model.pubPublisherTextField.Text) = &quot;&quot; AND Trim(oFB2PropertiesDlg.Model.pubCityTextField.Text) = &quot;&quot; Then
+		MsgBox sFB2PED.sInfoDlgFillPublisher, 64, sConvertorName
 		Exit Sub
 	End If
-	_SaveProfile( sIDD.sProfilePublisherSave, 2 )
+	_SaveProfile( sFB2PED.sProfilePublisherSave, 2 )
 End Sub
 
 Sub SetPublisherProfile( sCurrentLine )
@@ -296,24 +229,13 @@ Sub SetPublisherProfile( sCurrentLine )
 	sProfile = Split(sCurrentLine, &quot;=&quot;)
 	Select Case sProfile(0)
 		Case &quot;pubPublisherTextField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 		Case &quot;pubCityTextField&quot;
-			oInfoDlg.GetControl(sProfile(0)).Text = sProfile(1)
+			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
 	End Select
 	Exit Sub
 	
 	ErrorHandler: &apos; идем дальше
-End Sub
-
-&apos; Очистка всех полей для Бумажной книги
-Sub ClearPaperBookFields()
-	oInfoDlg.Model.pubBookNameTextField.Text = &quot;&quot;
-	oInfoDlg.Model.pubISBNTextField.Text = &quot;&quot;
-	oInfoDlg.Model.pubPublisherTextField.Text = &quot;&quot;
-	oInfoDlg.Model.pubCityTextField.Text = &quot;&quot;
-	oInfoDlg.Model.pubYearTextField.Text = &quot;&quot;
-	oInfoDlg.Model.pubSequenseTextField.Text = &quot;&quot;
-	oInfoDlg.Model.pubSequenseNumberTextField.Text = &quot;&quot;
 End Sub
 
 </script:module>

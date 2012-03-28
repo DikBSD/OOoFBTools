@@ -3,12 +3,17 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-Public sCurDocFile As String
-Public oTextOutputStream As Object
-Public sBookAnnotation() As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
-Public sBodyParagraphs() As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
-Public sLinksTo() 		 As String &apos; массив ссылок КУДА и их ID
-Public sConvertorName 	 As String &apos; название конвертора
+Public Const sConvertorName						As String = &quot;ExportToFB2.1&quot;						&apos; название конвертера
+Public Const sConstFB2ConverterDialogSettings	As String = &quot;FB2ConverterDialogSettings.txt&quot;	&apos; файл настроек диалога Конвертера
+
+Public oExportToFB21Dlg	As Object
+Public oProgressBar		As Object
+
+Public sCurDocFile			As String
+Public oTextOutputStream	As Object
+Public sBookAnnotation()	As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
+Public sBodyParagraphs()	As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
+Public sLinksTo()			As String &apos; массив ссылок КУДА и их ID
 
 &apos; для аннотации
 Public bMergeAnnotationSubTitle As Boolean
@@ -45,11 +50,8 @@ Public sGifAs As String &apos; формат преоьбразования дл�
 Public sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
 Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
 Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
-&apos; &quot;Служебная область&quot; для &quot;служебных стилей&quot; (по умолчанию - верх документа)
-Public bUp As Boolean
 &apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
 Public bSaveUTF8 As Boolean
-
 &apos; Чистка fb2 кода
 Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
 Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
@@ -62,44 +64,40 @@ Public lCurrentElement As Long &apos; номер текущего элемент
 
 Public sIDFNPrev As String &apos; хранит имя закладки-ID
 
-Sub ExportToFB21()
-	sConvertorName = &quot;ExportToFB2.1&quot;
-	
-	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
-	&apos; т.к. конвертор развивается, и в диалоге Переопределения пользовательских стилей появляются НОВЫЕ поля стилей,
-	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых стилей нет,
-	&apos; то при работе конвертора может произойти либо ошибка, либо экспорт выделенных новыми стилями абзацев
-	&apos; будет сделан, как просто абзацы (&lt;p&gt;......&lt;/p&gt;), что не верно.
-	&apos; Поэтому, сначала устанавливаем значения переменных по умолчанию ( SetDefaultStylesInVars() ),
-	&apos; а потом - считываем из файла значения стилей в переменные (ReadStylesInVars).
-	&apos; Для тех новых полей, которых еще нет в файле styles.txt значения будут по умолчанию, а для остальных - считаны из файла.
-	&apos; Когда же User запустит форму и пересохранит ВСЕ стили, то все переменные и контролы будут иметь значения из файла!
-	
-	&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesInVars()
-	&apos; Только теперь загружаем стили из файла в переменные
-	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, False )
-
-	Dim oFileAccess As Object
-	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	Dim oDoc As Object : oDoc = ThisComponent
-
+&apos; ===========================================================================================================================
+&apos; 												Работа контролов и формы Конвертера
+&apos; ===========================================================================================================================
+&apos; Запуск Формы конвертера
+Sub ExportToFB21DlgExec()
 	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
-	InitInfoDlgMessage()
+	InitExportToFB21DlgMessage()
 	
+	&apos; основные проверки
+	Dim oDoc As Object : oDoc = ThisComponent
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL
 	Else
-		MsgBox sIDD.sFB2ExportSaveMessage, 64, sConvertorName
+		MsgBox sETFB2DD.sFB2ExportSaveMessage, 64, sConvertorName
 		Exit Sub
 	End If
 	
 	If oDoc.isModified() Then
-		If MsgBox ( sIDD.sFB2ExportSaveModified, 32 + 1 + 256, sConvertorName ) = 2 Then
+		If MsgBox ( sETFB2DD.sFB2ExportSaveModified, 32 + 1 + 256, sConvertorName ) = 2 Then
 			Exit Sub
 		End If
 	End If
+	
+	oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarCreateDialog+&quot;, &quot;+sETFB2DD.sFB2ExportProgressBarInit, 5 )
+	oProgressBar.setValue(0)
+	
+	&apos; Создание формы
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oExportToFB21Dlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.ExportToFB21Dlg )
+	oProgressBar.setValue(1)
 	
 	&apos; меняем расширение на fb2
 	Dim sFile() As String, i As Integer
@@ -113,10 +111,71 @@ Sub ExportToFB21()
 		sCurDocFile = sCurDocFile &amp; &quot;.fb2&quot;
 	End If
 	
-	If Not InfoDlgExec() Then
-		Exit Sub
-	End If
+	&apos; инициализация основной формы конвертера в зависимости от локали
+	InitExportToFB21Dlg()
 	
+	&apos; считаем положение диалога из файла настроек
+	ReadExportToFB21DlgSettings()
+	oExportToFB21Dlg.Model.fb2PathTextField.Text = ConvertFromUrl( sCurDocFile )
+	oProgressBar.setValue(2)
+	
+	&apos; загрузка стилей по-умолчанию в переменные
+	SetDefaultStylesInVars()
+	&apos; Только теперь загружаем стили из файла в переменные
+	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, False )
+	&apos; Задаем настройки в переменные по умолчанию
+	SetDefaultSettingsInVars()
+	oProgressBar.setValue(3)
+	&apos; только теперь считываем настройки из файла в переменные
+	ReadSettings(False)
+	oProgressBar.setValue(4)
+	oProgressBar.end
+	
+	oExportToFB21Dlg.execute()
+End Sub
+
+&apos;***************************************************************************
+&apos; отмена экспорта
+Sub ExportToFB21DlgCanceled()
+	oExportToFB21Dlg.endExecute()
+End Sub
+
+&apos;***************************************************************************
+&apos; запуск экспорта документа в fb2 формат
+Sub ExportDoc()
+	&apos; Есть ли хоть одно fb2 свойство в документе?
+	Dim nVar As Integer
+	If Not IsFB2AnyPropertyIsExsist() Then
+		nVar = MsgBox( sETFB2DD.sFB2ExportFB2NotFB2Property &amp; chr(10) &amp; sETFB2DD.sFB2ExportFB2StartFB2PropEditor, _
+    					16+1+128, sConvertorName )
+    	If nVar = 1 Then
+    		oExportToFB21Dlg.endExecute()
+    		FB2PropertiesEditorDlgExec()
+    	End If
+    	Exit Sub
+	End If
+	&apos; все ли обязательные fb2-свойства документа заполнены?
+	Dim sErrorMess As String : sErrorMess = IsFB2BindingPropertiesCorrect()
+	If sErrorMess &lt;&gt; &quot;&quot; Then
+    	nVar = MsgBox( sETFB2DD.sFB2ExportRequiredPropNotFound &amp; chr(10) &amp; sErrorMess &amp; chr(10) &amp; sETFB2DD.sFB2ExportFB2StartFB2PropEditor, _
+    					16+1+128, sConvertorName )
+    	If nVar = 1 Then
+    		oExportToFB21Dlg.endExecute()
+    		FB2PropertiesEditorDlgExec()
+    	End If
+    	Exit Sub
+    End If
+    
+	&apos; задан ли путь к fb2-файлу?
+	If Trim( oExportToFB21Dlg.getControl(&quot;fb2PathTextField&quot;).Text ) = &quot;&quot; Then
+    	MsgBox sETFB2DD.sFB2ExportFB2PathNotFound, 64, sConvertorName
+    	oExportToFB21Dlg.getControl(&quot;fb2PathTextField&quot;).setFocus()
+    	Exit Sub
+    End If
+    
+	&apos; записываем расположение на экране диалога Конвертера в файл настроек
+	SaveExportToFB21DlgSettings()
+
 	&apos; создаем OOoFBToolsTemp папку
 	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
 		MkDir getOOoFBToolsTempPath()
@@ -128,34 +187,38 @@ Sub ExportToFB21()
 			FileCopy base64Path, ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\base64.exe&quot; )
 		End If
 	End If
-
+	
+	Dim oDoc As Object : oDoc = ThisComponent
+	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
+	oProgressBar.setValue( 0 )
+	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
-	If IsStyleExists( sStyleBookTitle ) And ( ThisComponent.getGraphicObjects().Count &gt; 0 Or ThisComponent.getDrawPage().Count &gt; 0) Then
+	If IsStyleExists( sStyleBookTitle ) And ( oDoc.getGraphicObjects().Count &gt; 0 Or oDoc.getDrawPage().Count &gt; 0) Then
 		MakeCoverParser()
 	End If
-
-	oProgressBar.start( sIDD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
-	oProgressBar.setValue( 0 )
+	
+	oExportToFB21Dlg.endExecute()
 	
 	&apos; запускаем парсинг всего текста
 	DocumentParser()
 	
 	&apos; Создание fb2 файла
-	Dim oOutputStream As Object
-	oOutputStream = oFileAccess.openFileWrite( ConvertToUrl( oInfoDlg.Model.FilenameTextField.Text ) )
+	Dim oFileAccess As Object : oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTextOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	Dim oOutputStream As Object : oOutputStream = oFileAccess.openFileWrite( ConvertToUrl( oExportToFB21Dlg.Model.fb2PathTextField.Text ) )
 	oOutputStream.truncate()
 	oTextOutputStream.setOutputStream( oOutputStream )
 
-	Dim oCodeLB As Object : oCodeLB = oInfoDlg.getControl( &quot;Codepage&quot; )
-	Dim sFB2Encoding As String : sFB2Encoding = oCodeLB.SelectedItem
-	oTextOutputStream.setEncoding( oCodeLB.SelectedItem )
-	If bSaveUTF8 And bMarker Then 	&apos; сохранение fb2-файла в UTF-8, т.к. в тексте есть маркерные списки
-		sFB2Encoding = &quot;utf-8&quot;
-	End If
+	Dim sFB2Encoding As String : sFB2Encoding = GetEncodingFromProperty()
+	&apos; если в тексте есть маркерные списки, то экспортируем fb2-файл в UTF-8
+	If bSaveUTF8 And bMarker Then sFB2Encoding = &quot;utf-8&quot;
 	&apos; если в тексте есть хоть один неразрывный дефис, то экспортируем в utf-8
 	If IsNoBreakDefExsist() Then sFB2Encoding = &quot;utf-8&quot;
 	oTextOutputStream.setEncoding( sFB2Encoding )
 	
+	&apos; создание fb2 файла
+	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarCreate, UBound( sBodyParagraphs() ) )
+	oProgressBar.setValue(0)
 	&apos; печатаем данные из &lt;description&gt;
 	SaveDescription( sFB2Encoding, False )
 	
@@ -168,7 +231,7 @@ Sub ExportToFB21()
 		Dim imaxProgress As Integer
 		If UBound(vFootnoteText()) &lt;&gt; -1 Then imaxProgress = UBound(vFootnoteText()
 		If  UBound(vEndnoteText()) &lt;&gt; -1 Then imaxProgress = imaxProgress + UBound(vEndnoteText()
-		oProgressBar.start( sIDD.sFB2ExportProgressBarFootnote, imaxProgress )
+		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarFootnote, imaxProgress )
 		oProgressBar.setValue(0)
 		SaveNotes()
 	End If
@@ -176,7 +239,7 @@ Sub ExportToFB21()
 	&apos; печатаем коды картинок, если они есть
 	Dim iSI As Integer
 	If UBound(Images()) &lt;&gt; -1 Then
-		oProgressBar.start( sIDD.sFB2ExportProgressBarGraphics, UBound(Images() )
+		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound(Images() )
 		oProgressBar.setValue(0)
 		iSI = SaveImages()
 	End If
@@ -186,37 +249,172 @@ Sub ExportToFB21()
 	oProgressBar.End
 		
 	&apos; запустить полученный файл на просмотр и валидацию, если нужно
-	Dim sEndMessage	As String : sEndMessage	= sIDD.sFB2ExportEnd
+	Dim sEndMessage	As String : sEndMessage	= sETFB2DD.sFB2ExportEnd
 	If iSI &gt; 0 Then
-		sEndMessage = sEndMessage &amp; chr(10) &amp; sIDD.sFB2ExportReport &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; sIDD.sFB2ExportReportFrom &amp; _
-		&quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; sIDD.sFB2ExportReportFromSearcing
+		sEndMessage = sEndMessage &amp; chr(10) &amp; sETFB2DD.sFB2ExportReport &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; _
+					sETFB2DD.sFB2ExportReportFrom &amp; &quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; sETFB2DD.sFB2ExportReportFromSearching
 	End If
 	
-	Dim sFB2File As String : sFB2File = oInfoDlg.Model.FilenameTextField.Text
+	Dim sFB2File As String : sFB2File = oExportToFB21Dlg.Model.fb2PathTextField.Text
 	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
 	
 	If bValidate And GetOS() = 0 Then
-		sMess = sMess &amp; sIDD.sFB2ExportStartValidate &amp; chr(10) &amp; chr(10)
+		sMess = sMess &amp; sETFB2DD.sFB2ExportStartValidate &amp; chr(10) &amp; chr(10)
 		Validate( sFB2File ) &apos;валидация результата
 	End If
 
 	If bFB2Execute Then
 		FileExecute( ConvertToUrl( sFB2File ) )
-		MsgBox sMess &amp; sIDD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
-				sFB2File &amp; chr(10) &amp; sIDD.sFB2ExportReportStartToPreview, 64, sConvertorName
+		MsgBox sMess &amp; sETFB2DD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
+				sFB2File &amp; chr(10) &amp; sETFB2DD.sFB2ExportReportStartToPreview, 64, sConvertorName
 	Else
-		MsgBox sMess &amp; sIDD.sFB2ExportReportFile &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
+		MsgBox sMess &amp; sETFB2DD.sFB2ExportReportFile &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
 	End If
 	
 	&apos; удаляем временные файлы
 	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
 		RmDir getOOoFBToolsTempPath()
 	End If
-	
-	oInfoDlg.Dispose()
 End Sub
 
-&apos; ////////////////////////////////////////////////////////////////////////////
+&apos;***************************************************************************
+&apos; проверка, все ли обязательные fb2-свойства документа заполнены
+Function IsFB2BindingPropertiesCorrect() As String
+	IsFB2BindingPropertiesCorrect = &quot;&quot;
+	&apos; жанр, язык, Название, версия, ID
+	Dim sErrorMess As String
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    Dim PropertyValue		As new com.sun.star.beans.PropertyValue
+    
+    PropertyValue = GetUserProperty(_fb2_di_ID)
+    MakeErrorMessage(PropertyValue, sErrorMess, &quot;ID&quot;)
+    
+    PropertyValue = GetUserProperty(_fb2_di_Version)
+    MakeErrorMessage(PropertyValue, sErrorMess, &quot;Version&quot;)
+    
+    PropertyValue = GetUserProperty(_fb2_ti_BookTitle)
+    MakeErrorMessage(PropertyValue, sErrorMess, &quot;BookTitle&quot;)
+
+    PropertyValue = GetUserProperty(_fb2_ti_Lang)
+    MakeErrorMessage(PropertyValue, sErrorMess, &quot;Lang&quot;)
+    
+    Dim i As Integer
+    Dim bGenre As Boolean : bGenre = False
+    For i = 0 To uBound(PropertyValues) 
+        If InStr( PropertyValues(i).Name, _fb2_ti_Genre ) = 1 Then
+        	bGenre = True : Exit For
+		End If
+    Next i
+    If Not bGenre Then MakeErrorMessage(PropertyValue, sErrorMess, &quot;Genre&quot;)
+
+    IsFB2BindingPropertiesCorrect = sErrorMess
+End Function
+
+&apos;***************************************************************************
+&apos; вызов диалога сохнанения fb2 файла
+Sub SaveFB2FileAs()
+	Dim oFileDlg As Object
+	Dim sArg() As String
+	Dim sDir As String
+	Dim sFName As String
+	
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	End If
+	
+	sDir = DirectoryNameOutOfPath(sCurDocFile, &quot;/&quot;)
+	sFName = ConvertFromUrl(FilenameOutOfPath(sCurDocFile, &quot;/&quot;)
+	
+	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
+	
+	With oFileDlg
+		.initialize(sArg())
+		.appendFilter(&quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot;)
+		.setTitle( sFB2PED.sFileDlgSaveAs )
+		.setDisplayDirectory(sDir)
+		.setDefaultName(sFName)
+	End With
+	If oFileDlg.execute() Then
+		Dim sFile As String
+		sFile = ConvertFromUrl(oFileDlg.Files(0))
+		IF (InStr(sFile,&quot;.fb2&quot;)=0) Then
+			sFile = sFile + &quot;.fb2&quot;
+		End If
+		oExportToFB21Dlg.Model.fb2PathTextField.Text = sFile
+	End If
+	oFileDlg.Dispose()
+End Sub
+
+&apos;***************************************************************************
+&apos; Читаем настройки и задаем значения контролам основной формы
+Function ReadExportToFB21DlgSettings() As Boolean
+	On Error Resume Next
+	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2ConverterDialogSettings
+	If FileExists( sFileName ) Then
+		Dim nX As Integer, nY As Integer
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFileName ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные
+				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		oExportToFB21Dlg.setPosSize( nX, nY, 63, 242, com.sun.star.awt.PosSize.POS )
+		ReadExportToFB21DlgSettings = True
+	Else
+		ReadExportToFB21DlgSettings = False
+	End If
+End Function
+
+&apos;***************************************************************************
+&apos; записываем расположение на экране диалога Конвертера в файл настроек
+Sub SaveExportToFB21DlgSettings()
+	Dim oOS As Object, oFA As Object, oTOS As Object
+	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	oOS = oFA.openFileWrite(  getOOoFBToolsSettingsDir() &amp; sConstFB2ConverterDialogSettings )
+	oOS.truncate()
+	oTOS.setOutputStream( oOS )
+	oTOS.setEncoding( &quot;utf-8&quot; )
+	
+	Dim ctrl As Object, i As Integer
+	ctrl = oExportToFB21Dlg.getControls()
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
+			If ctrl(i).Model.Name = &quot;obtnFB21&quot; Or ctrl(i).Model.Name = &quot;obtnFB22&quot; Then
+				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
+			End If
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
+			If ctrl(i).Model.Name = &quot;Codepage&quot; Then
+				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
+			End If
+		End If
+	Next i
+	oTOS.writeString(&quot;X=&quot; &amp; oExportToFB21Dlg.PosSize.X &amp; chr(10))
+	oTOS.writeString(&quot;Y=&quot; &amp; oExportToFB21Dlg.PosSize.Y &amp; chr(10))
+	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
+	oTOS.closeOutput()
+End Sub
+
+&apos; ===========================================================================================================================
+&apos; 												Функции экспорта
+&apos; ===========================================================================================================================
 Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
 	Dim sR(5) As Integer, sR1(5) As Integer, sR2(5) As Integer
 	If bSuperfluous = True Then

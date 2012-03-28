@@ -6,7 +6,6 @@ Option Explicit
 Public Const sConstStyles As String = &quot;styles.txt&quot;
 
 Public oStylesDlg As Object
-Public bStyleExecute As Boolean
 
 &apos; Данные книги
 Public sStyleBookTitle As String
@@ -39,46 +38,12 @@ Public sStyleLevel7 As String
 Public sStyleLevel8 As String
 Public sStyleLevel9 As String
 Public sStyleLevel10 As String
-
-&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-&apos; абзацевые
+&apos; Аннотация книги
 Public sStyle_BookAnnotation As String
-Public sStyle_BookAuthor As String
-Public sStyle_BookTranslator As String
-Public sStyle_BookSeries As String
-Public sStyle_BookKeywords As String
-Public sStyle_PaperBookSeries As String
-Public sStyle_BookDate As String
-Public sStyle_PaperBook As String
-Public sStyle_CustomInfo As String
-Public sStyle_Genre As String
-Public sStyle_Lang As String
-&apos; символьные
-Public sStyle_Name As String
-Public sStyle_Patronymic As String
-Public sStyle_Family As String
-Public sStyle_Nick As String
-Public sStyle_Email As String
-Public sStyle_WebSite As String
-Public sStyle_Sequence As String
-Public sStyle_SequenceNumber As String
-Public sStyle_BookDateText As String
-Public sStyle_BookDateValue As String
-Public sStyle_PaperBookName As String
-Public sStyle_PaperBookPublisher As String
-Public sStyle_PaperBookCity As String
-Public sStyle_PaperBookYear As String
-Public sStyle_PaperBookISBN As String
-Public sStyle_CustomInfoType As String
-Public sStyle_CustomInfoValue As String
-Public sStyle_GenreName As String
-Public sStyle_GenreMatch As String
-Public sStyle_LangBook As String
-Public sStyle_LangOriginal As String
 
 Public asRealStyleLevel(10) As String &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 
-Function SetUserStyles() As Boolean
+Sub SetUserStyles()
 	&apos; инициализация сообщений диалога Пользовательских Стилей в зависимости от локали
 	InitStylesDlgMessage()
 	
@@ -96,17 +61,6 @@ Function SetUserStyles() As Boolean
 	oProgressBar.start( sSD.sStylesLoad, 4 )
 	InitStylesDlg()
 
-	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
-	&apos; т.к. конвертор развивается, и в диалоге Переопределения пользовательских стилей появляются НОВЫЕ поля стилей,
-	&apos; а у пользователей УЖЕ СОХРАНЕН файл styles.txt, где данных для этих новых полей нет,
-	&apos; то при работе конвертора может произойти либо ошибка, либо экспорт выделенных новыми стилями абзацев
-	&apos; будет сделан, как просто абзацы (&lt;p&gt;......&lt;/p&gt;), а при запуске формы Стилей новые поля будут пустыми, что не верно.
-	&apos; Поэтому, сначала устанавливаем значения контролов и переменных по умолчанию (SetDefaultStylesInVars(),
-	&apos; SetGeneralStylesControlsDefault, SetServiceStylesControlsDefault),
-	&apos; а потом - считываем из файла значения (ReadStyles).
-	&apos; Для тех новых полей, которых еще нет в файле styles.txt значения будут по умолчанию, а для остальных - считаны из файла.
-	&apos; Когда же User запустит форму и пересохранит ВСЕ стили, то вне переменные и контролы будут иметь значения из файла!
-
 	&apos; загрузка стилей по-умолчанию в переменные
 	SetDefaultStylesInVars()
 	oProgressBar.setValue(1)
@@ -118,25 +72,11 @@ Function SetUserStyles() As Boolean
 	&apos; Только теперь считывание стилей из файла
 	Dim nX As Integer, nY As Integer
 	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, True, nX, nY )
-	oStylesDlg.setPosSize( nX, nY, 260, 425, com.sun.star.awt.PosSize.POS )
-	
-	With oStylesDlg.Model
-		.Height	= 260
-		.Width	= 425
-	End With
-	
-	If oStylesDlg.GetControl(&quot;optbtnGeneral&quot;).State	= True Then
-		oStylesDlg.Model.Step = 1
-	ElseIf oStylesDlg.GetControl(&quot;optbtnService&quot;).State	= True Then
-		oStylesDlg.Model.Step = 2
-	End If
-	
+	oStylesDlg.setPosSize( nX, nY, 212, 425, com.sun.star.awt.PosSize.POS )
 	oProgressBar.setValue(4)
 	oProgressBar.end
 	oStylesDlg.execute()
-	
-	SetUserStyles = bStyleExecute
-End Function
+End Sub
 
 Sub StylesDlgOk()
 	&apos; Принятие стилей
@@ -145,22 +85,11 @@ Sub StylesDlgOk()
 		Exit Sub
 	End If
 	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstStyles, oStylesDlg ) &apos; сохраняем стили в файл
-	
-	bStyleExecute = True
 	oStylesDlg.endExecute()
 End Sub
 
 Sub StylesDlgCanceled()
-	bStyleExecute = False
 	oStylesDlg.endExecute()
-End Sub
-
-Sub ChangeStyles(o)
-	If o.Source.Model.Name		= &quot;optbtnGeneral&quot; Then
-		oStylesDlg.Model.Step	= 1
-	ElseIf o.Source.Model.Name	= &quot;optbtnService&quot; Then
-		oStylesDlg.Model.Step	= 2
-	End If
 End Sub
 
 &apos; // Установка стилей по умолчанию в контролы //
@@ -253,49 +182,8 @@ End Sub
 
 &apos; // Установка &quot;Служебных&quot; стилей по-умолчанию в контролы //
 Sub SetServiceStylesControlsDefault()
-	With oStylesDlg
-		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-		&apos; Анотация Книги
-		.GetControl(&quot;tf_BookAnnotation&quot;).Text	= sStyle_BookAnnotation
-		.GetControl(&quot;tf_BookKeywords&quot;).Text		= sStyle_BookKeywords
-
-		.GetControl(&quot;tf_BookAuthor&quot;).Text		= sStyle_BookAuthor
-		.GetControl(&quot;tf_BookTranslator&quot;).Text	= sStyle_BookTranslator
-		.GetControl(&quot;tf_Name&quot;).Text			= sStyle_Name
-		.GetControl(&quot;tf_Patronymic&quot;).Text	= sStyle_Patronymic
-		.GetControl(&quot;tf_Family&quot;).Text		= sStyle_Family
-		.GetControl(&quot;tf_Nick&quot;).Text			= sStyle_Nick
-		.GetControl(&quot;tf_Email&quot;).Text		= sStyle_Email
-		.GetControl(&quot;tf_WebSite&quot;).Text		= sStyle_WebSite
-	
-		.GetControl(&quot;tf_BookSeries&quot;).Text		= sStyle_BookSeries
-		.GetControl(&quot;tf_PaperBookSeries&quot;).Text	= sStyle_PaperBookSeries
-		.GetControl(&quot;tf_Sequence&quot;).Text			= sStyle_Sequence
-		.GetControl(&quot;tf_SequenceNumber&quot;).Text	= sStyle_SequenceNumber
-
-		.GetControl(&quot;tf_PaperBook&quot;).Text			= sStyle_PaperBook
-		.GetControl(&quot;tf_PaperBookName&quot;).Text		= sStyle_PaperBookName
-		.GetControl(&quot;tf_PaperBookPublisher&quot;).Text = sStyle_PaperBookPublisher
-		.GetControl(&quot;tf_PaperBookCity&quot;).Text		= sStyle_PaperBookCity
-		.GetControl(&quot;tf_PaperBookYear&quot;).Text		= sStyle_PaperBookYear
-		.GetControl(&quot;tf_PaperBookISBN&quot;).Text		= sStyle_PaperBookISBN
-	
-		.GetControl(&quot;tf_BookDate&quot;).Text			= sStyle_BookDate
-		.GetControl(&quot;tf_DateText&quot;).Text			= sStyle_BookDateText
-		.GetControl(&quot;tf_DateValue&quot;).Text		= sStyle_BookDateValue
-	
-		.GetControl(&quot;tf_CustomInfo&quot;).Text		= sStyle_CustomInfo
-		.GetControl(&quot;tf_CustomInfoType&quot;).Text	= sStyle_CustomInfoType
-		.GetControl(&quot;tf_CustomInfoValue&quot;).Text	= sStyle_CustomInfoValue
-	
-		.GetControl(&quot;tf_Genre&quot;).Text			= sStyle_Genre
-		.GetControl(&quot;tf_GenreName&quot;).Text		= sStyle_GenreName
-		.GetControl(&quot;tf_GenreMatch&quot;).Text		= sStyle_GenreMatch
-	
-		.GetControl(&quot;tf_Lang&quot;).Text				= sStyle_Lang
-		.GetControl(&quot;tf_LangBook&quot;).Text			= sStyle_LangBook
-		.GetControl(&quot;tf_LangOriginal&quot;).Text		= sStyle_LangOriginal
-	End With
+	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; ( Анотация Книги )
+	oStylesDlg.GetControl(&quot;tf_BookAnnotation&quot;).Text	= sStyle_BookAnnotation
 End Sub
 
 &apos; Загрузка названий стилей из файла профиля стилей
@@ -430,75 +318,6 @@ Sub SetStylesInVars( sCurrentLine As String )
 		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
 		Case &quot;tf_BookAnnotation&quot;
 			sStyle_BookAnnotation = aStyles(1)
-		Case &quot;tf_BookKeywords&quot;
-			sStyle_BookKeywords = aStyles(1)
-			
-		Case &quot;tf_BookAuthor&quot;
-			sStyle_BookAuthor = aStyles(1)
-		Case &quot;tf_BookTranslator&quot;
-			sStyle_BookTranslator = aStyles(1)
-		Case &quot;tf_Name&quot;
-			sStyle_Name = aStyles(1)
-		Case &quot;tf_Patronymic&quot;
-			sStyle_Patronymic = aStyles(1)
-		Case &quot;tf_Family&quot;
-			sStyle_Family = aStyles(1)
-		Case &quot;tf_Nick&quot;
-			sStyle_Nick = aStyles(1)
-		Case &quot;tf_Email&quot;
-			sStyle_Email = aStyles(1)
-		Case &quot;tf_WebSite&quot;
-			sStyle_WebSite = aStyles(1)
-
-		Case &quot;tf_BookSeries&quot;
-			sStyle_BookSeries = aStyles(1)
-		Case &quot;tf_PaperBookSeries&quot;
-			sStyle_PaperBookSeries = aStyles(1)			
-		Case &quot;tf_Sequence&quot;
-			sStyle_Sequence	= aStyles(1)
-		Case &quot;tf_SequenceNumber&quot;
-			sStyle_SequenceNumber = aStyles(1)
-			
-		Case &quot;tf_BookDate&quot;
-			sStyle_BookDate = aStyles(1)
-		Case &quot;tf_DateText&quot;
-			sStyle_BookDateText = aStyles(1)
-		Case &quot;tf_DateValue&quot;
-			sStyle_BookDateValue = aStyles(1)
-				
-		Case &quot;tf_PaperBook&quot;
-			sStyle_PaperBook = aStyles(1)
-		Case &quot;tf_PaperBookName&quot;
-			sStyle_PaperBookName = aStyles(1)
-		Case &quot;tf_PaperBookPublisher&quot;
-			sStyle_PaperBookPublisher = aStyles(1)
-		Case &quot;tf_PaperBookCity&quot;
-			sStyle_PaperBookCity = aStyles(1)
-		Case &quot;tf_PaperBookYear&quot;
-			sStyle_PaperBookYear = aStyles(1)
-		Case &quot;tf_PaperBookISBN&quot;
-			sStyle_PaperBookISBN = aStyles(1)
-			
-		Case &quot;tf_CustonInfo&quot;
-			sStyle_CustomInfo = aStyles(1)
-		Case &quot;tf_CustonInfoType&quot;
-			sStyle_CustomInfoType = aStyles(1)
-		Case &quot;tf_CustonInfoValue&quot;
-			sStyle_CustomInfoValue = aStyles(1)
-			
-		Case &quot;tf_Genre&quot;
-			sStyle_Genre = aStyles(1)
-		Case &quot;tf_GenreName&quot;
-			sStyle_GenreName = aStyles(1)
-		Case &quot;tf_GenreMatch&quot;
-			sStyle_GenreMatch = aStyles(1)
-			
-		Case &quot;tf_Lang&quot;
-			sStyle_Lang = aStyles(1)
-		Case &quot;tf_LangBook&quot;
-			sStyle_LangBook = aStyles(1)
-		Case &quot;tf_LangOriginal&quot;
-			sStyle_LangOriginal = aStyles(1)
 	End Select
 End Sub
 

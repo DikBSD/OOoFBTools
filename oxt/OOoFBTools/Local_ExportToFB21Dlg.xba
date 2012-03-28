@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_ExportToFB21Dlg" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ===================================================================================
+&apos; 			модуль локализации формы Конвертера ExportToFB21
+&apos; ===================================================================================
+Option Explicit
+
+&apos; для хранения сообщений для формы Конвертера ExportToFB21
+Type tExportToFB21DlgData	
+	&apos; Конвертер
+	sFB2ExportToFB21DlgTitle			As String &apos; Заголовок основной формы Конвертера
+	sFB2ExportProgressBarCreateDialog	As String &apos; Создание диалога
+	sFB2ExportProgressBarInit			As String &apos; Инициализация
+	sFB2ExportProgressBarCreate			As String &apos; Экспорт в FB2: Создание файла
+	sFB2ExportProgressBarAnalysis		As String &apos; Экспорт в FB2: Анализ
+	sFB2ExportProgressBarFootnote		As String &apos; Экспорт в FB2: Сохранение сносок
+	sFB2ExportProgressBarGraphics		As String &apos; Экспорт в FB2: Сохранение картинок
+	sFB2ExportSaveMessage				As String &apos; Перед экспортом сохраните, пожалуйста, ваш ООо файл.
+	sFB2ExportSaveModified				As String &apos; Документ был изменен.
+	sFB2ExportStartValidate				As String &apos; Запущена валидация файла.
+	sFB2ExportEnd						As String &apos; Создание книги в fb2 формате завершено!
+	sFB2ExportReport					As String &apos; Экспортировано Графических Объектов:
+	sFB2ExportReportFromSearching		As String &apos; найденных в документе.
+	sFB2ExportReportFrom				As String &apos; из
+	sFB2ExportReportGeneratedFB2File	As String &apos; Сгенерированный fb2-файл:
+	sFB2ExportReportStartToPreview		As String &apos; запущен на просмотр.
+	sFB2ExportReportFile				As String &apos; Файл:
+	sFB2ExportRequiredPropNotFound		As String &apos; Не заданы обязательные свойства документа:
+	sFB2ExportFB2PathNotFound			As String &apos; Не задан путь к создаваемому fb2 файлу.
+	sFB2ExportFB2NotFB2Property			As String &apos; В документе нет ни одного сохраненного fb2 свойства.
+	sFB2ExportFB2StartFB2PropEditor		As String &apos; Запустить Редактор FB2 свойств?
+	&apos; диалог сохранения файла
+	sFileDlgSaveAs						As String &apos; Сохранить как...
+End Type
+
+Public sETFB2DD	As tExportToFB21DlgData
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация основной формы конвертера в зависимости от локали
+Sub InitExportToFB21Dlg()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With oExportToFB21Dlg.getModel
+			.Title				= &quot;Экспорт в формат fb2.1&quot;
+			.fb2Path			= &quot;fb2 файл:&quot;
+			.cmdbtnCancel		= &quot;Отмена&quot;
+			.cmdbtnExportToFB21	= &quot;Экспорт&quot;
+		End With
+	Else
+		With oExportToFB21Dlg.getModel
+			.Title				= &quot;Export to fb2.1&quot;
+			.fb2Path			= &quot;fb2 file:&quot;
+			.cmdbtnCancel		= &quot;Cancel&quot;
+			.cmdbtnExportToFB21	= &quot;Export&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация сообщений основной формы конвертера в зависимости от локали
+Sub InitExportToFB21DlgMessage()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With sETFB2DD
+			&apos; Конвертер
+			
+			.sFB2ExportProgressBarCreateDialog	= &quot;Создание диалога&quot;
+			.sFB2ExportProgressBarInit			= &quot;Инициализация&quot;
+			.sFB2ExportProgressBarCreate		= &quot;Экспорт в FB2: Создание файла&quot;
+			.sFB2ExportProgressBarAnalysis		= &quot;Экспорт в FB2: Анализ&quot;
+			.sFB2ExportProgressBarFootnote		= &quot;Экспорт в FB2: Сохранение сносок&quot;
+			.sFB2ExportProgressBarGraphics		= &quot;Экспорт в FB2: Сохранение картинок&quot;
+			.sFB2ExportSaveMessage				= &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot;
+			.sFB2ExportSaveModified				= &quot;Документ был изменен.&quot; &amp; chr(10) &amp; &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot; &amp; chr(10) &amp; _
+													&quot;Если в тексте есть графика (картинки, формулы, диаграммы), то еще и перезагрузите редактор, &quot; &amp; _
+													&quot;иначе графика не будет корректно экспортирована (особенность OOoWriter)!&quot; &amp; chr(10) &amp; _
+													&quot;Вы все равно хотите экспортировать документ в fb2?&quot;
+			.sFB2ExportStartValidate			= &quot;Запущена валидация fb2-файла.&quot;
+			.sFB2ExportEnd						= &quot;Создание книги в fb2 формате завершено!&quot;
+			.sFB2ExportReport					= &quot;Экспортировано Графических Объектов:&quot;
+			.sFB2ExportReportFromSearching		= &quot;найденных в документе.&quot;
+			.sFB2ExportReportFrom				= &quot;из&quot;
+			.sFB2ExportReportGeneratedFB2File	= &quot;Сгенерированный fb2-файл:&quot;
+			.sFB2ExportReportStartToPreview		= &quot;запущен на просмотр.&quot;
+			.sFB2ExportReportFile				= &quot;Файл:&quot;
+			.sFB2ExportRequiredPropNotFound		= &quot;Не заданы обязательные свойства документа: &quot;
+			.sFB2ExportFB2PathNotFound			= &quot;Не задан путь к создаваемому fb2 файлу.&quot;
+			.sFB2ExportFB2NotFB2Property		= &quot;В документе нет ни одного сохраненного fb2 свойства.&quot;
+			.sFB2ExportFB2StartFB2PropEditor	= &quot;Запустить Редактор FB2 свойств?&quot;
+			&apos; диалог сохранения файла
+			.sFileDlgSaveAs						= &quot;Сохранить как...&quot;
+		End With
+	Else
+		With sETFB2DD
+			&apos; Converter
+			.sFB2ExportProgressBarCreateDialog	= &quot;Creating the Dialog&quot;
+			.sFB2ExportProgressBarInit			= &quot;Initialization&quot;
+			.sFB2ExportProgressBarCreate		= &quot;Export to FB2: File creating&quot;
+			.sFB2ExportProgressBarAnalysis		= &quot;Export to FB2: Analysis&quot;
+			.sFB2ExportProgressBarFootnote		= &quot;Export to FB2: Save Footnotes&quot;
+			.sFB2ExportProgressBarGraphics		= &quot;Export to FB2: Save Graphics&quot;
+			.sFB2ExportSaveMessage				= &quot;Please, save yuor ООо File before export.&quot;
+			.sFB2ExportSaveModified				= &quot;The Document has been changed.&quot; &amp; chr(10) &amp; &quot;Before export save, please, yours a ООо File.&quot; &amp; chr(10) &amp; _
+													&quot;If in the Text is the schedule (a Picture, the Formula, the Diagram) also reload the Editor, &quot; &amp; _
+													&quot;otherwise the schedule it will not be correctly exported (Feature OOoWriter)!&quot; &amp; chr(10) &amp; _
+													&quot;You don&apos;t care want to export the Document in fb2?&quot;
+			.sFB2ExportStartValidate			= &quot;It is started fb2-File Validate.&quot;
+			.sFB2ExportEnd						= &quot;Creation of the Book in fb2 a Format is completed!&quot;
+			.sFB2ExportReport					= &quot;It is exported Graphic Objects:&quot;
+			.sFB2ExportReportFromSearching		= &quot;found in the Document.&quot;
+			.sFB2ExportReportFrom				= &quot;from&quot;
+			.sFB2ExportReportGeneratedFB2File	= &quot;Generated fb2-File:&quot;
+			.sFB2ExportReportStartToPreview		= &quot;It is started on viewing.&quot;
+			.sFB2ExportReportFile				= &quot;File:&quot;
+			.sFB2ExportRequiredPropNotFound		= &quot;Do not set the required properties of the document:&quot;
+			.sFB2ExportFB2PathNotFound			= &quot;Do not know the path to the created fb2 file&quot;
+			.sFB2ExportFB2NotFB2Property		= &quot;In the document there is no saved fb2 properties.&quot;
+			.sFB2ExportFB2StartFB2PropEditor	= &quot;Open the FB2 Properties Editor?&quot;
+			&apos; Save As Dialog
+			.sFileDlgSaveAs						= &quot;Save As...&quot;
+			
+		End With
+	End If
+End Sub
+
+</script:module>

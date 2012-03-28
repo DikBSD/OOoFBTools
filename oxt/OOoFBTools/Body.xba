@@ -37,7 +37,6 @@ Function IsAECP( sStyle As String ) As Boolean
 End Function
 
 Sub SaveBody()
-	Dim lParaCount As Long
 	If  IsLevel(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True OR _
 		IsAECP(sBodyParagraphs(UBound(sBodyParagraphs),1)) = True Then
 		&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - 
@@ -46,16 +45,11 @@ Sub SaveBody()
 	 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
 		AddBodyArray( &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False )
 	End If
-	
-	lParaCount = UBound( sBodyParagraphs )
-	oProgressBar.start( sIDD.sFB2ExportProgressBarCreate, lParaCount )
-	oProgressBar.setValue(0)
-	
+
 	lCurrentElement = 0
 	oTextOutputStream.writeString( MakeBookTitle )
 	
-	MakeBody( sBodyParagraphs, True )
-	
+	MakeBody( sBodyParagraphs(), True )
 End Sub
 
 Function Save1OpenSectionForCandidate( sArray() As String, lCurrentElement As Long, bTextSmSection As Boolean )

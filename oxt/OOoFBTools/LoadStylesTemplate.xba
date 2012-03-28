@@ -7,51 +7,22 @@ Option Explicit
 Sub LoadStylesTemplate()
 	&apos; инициализация сообщений Загрузки Шаблона fb2-стилей в зависимости от локали
 	InitLoadStylesTemplateMessage()
-	Dim oDoc : oDoc = ThisComponent
+	Dim oDoc As Object : oDoc = ThisComponent
 	oProgressBar = oDoc.CurrentController.StatusIndicator
 	oProgressBar.start( sLSTD.sProgressTitle, 4 )
 	oProgressBar.setValue( 0 )
-	
-	Dim oDesktop, oTemplate, oPathSettings
-	Dim sFile As String, sPath As String, sPathArray() As String
-	Dim i As Integer
 
-	oPathSettings = CreateUnoService( &quot;com.sun.star.util.PathSettings&quot; )
-	sFile = &quot;fb21_styles.ott&quot;
-
-	sPathArray = Split( oPathSettings.Template,&quot;;&quot; )
-	&apos; Ищем папку, хранящую наш шаблон
-	For i = LBound( sPathArray ) To UBound( sPathArray )
-		If FileExists( sPathArray(i) &amp; &quot;/&quot; &amp; sFile ) Then
-			sPath = sPathArray(i) &amp; &quot;/&quot; &amp; sFile
-			Exit For
-		End If
-	Next i
-	
-	If sPath = &quot;&quot; Then
-		sPathArray = Split( oPathSettings.Template,&quot;&apos;&quot; )
-		&apos; Ищем папку, хранящую наш шаблон
-		For i = LBound( sPathArray ) To UBound( sPathArray )
-			If FileExists( Trim( sPathArray(i) ) &amp; &quot;/&quot; &amp; sFile ) Then
-				sPath = Trim( sPathArray(i) ) &amp; &quot;/&quot; &amp; sFile
-				Exit For
-			End If
-		Next i
-		If sPath = &quot;&quot; Then
-			MsgBox sLSTD.sTemplateNotFound, 64, sConvertorName
-			Exit Sub
-		End If
-	End If
-	oProgressBar.setValue( 1 )
+	Dim fb21StylesFile As String : fb21StylesFile = &quot;fb21_styles.ott&quot;
+	Dim fb21StylesPath As String : fb21StylesPath = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;\styles\&quot; &amp; fb21StylesFile
 	
 	&apos;Загрузка шаблона в переменную
-	oDesktop = createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	Dim oDesktop : oDesktop = createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
 	Dim aArgs(1) As New com.sun.star.beans.PropertyValue
 	aArgs(0).Name	= &quot;AsTemplate&quot;
 	aArgs(0).Value	= False
 	aArgs(1).Name	= &quot;Hidden&quot;
    	aArgs(1).Value	= True
-	oTemplate = oDesktop.loadComponentFromURL( sPath, &quot;_blank&quot;, 0, aArgs() )
+	Dim oTemplate : oTemplate = oDesktop.loadComponentFromURL( fb21StylesPath, &quot;_blank&quot;, 0, aArgs() )
 	oProgressBar.setValue( 2 )
 	
 	&apos; Загрузка и переименовывание стилей для докуменета из шаблона
@@ -59,12 +30,12 @@ Sub LoadStylesTemplate()
     aArgs(0).Value	= True
     aArgs(1).Name	= &quot;&quot;
     aArgs(1).Value	= &quot;&quot;
-    oDoc.stylefamilies.loadStylesFromURL( sPath, aArgs() )
+    oDoc.stylefamilies.loadStylesFromURL( fb21StylesPath, aArgs() )
 	oProgressBar.setValue( 3 )
 	
 	&apos; привязываем наш документ к шаблону
     oDoc.DocumentInfo.Template			= oTemplate.DocumentInfo.Title
-    oDoc.DocumentInfo.TemplateFileName	= sPath
+    oDoc.DocumentInfo.TemplateFileName	= fb21StylesPath
        
     oTemplate.Close( false )
     oProgressBar.setValue( 4 )
