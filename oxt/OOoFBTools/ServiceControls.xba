@@ -47,12 +47,9 @@ Sub ServiceDlgExec()
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
-	SetDefaultSettingsInControls()
-	
+	SetDefaultSettingsToControls()
 	&apos; Считываем и устанавливаем настройки
-	Dim nX As Integer, nY As Integer
-	ReadSettings( True, nX, nY )
-	oServiceDlg.setPosSize( nX, nY, 395, 382, com.sun.star.awt.PosSize.POS )
+	ReadSettingsToControlls()
 	
 	obtnFENoteCommonEnabled()
 	cboxExportGraphicsEnabled()
@@ -67,23 +64,10 @@ End Sub
 Sub ServiceDlgOk()
 	&apos; Сохраняем настройки в файл
 	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstSettings, oServiceDlg )
-	
-	&apos; АЛГОРИТМ - Очень ВАЖНО!!!
-	&apos; т.к. число Настроек Конвертора  с развитием Конвертора увеличивается, появляются НОВЫЕ опции (контролы),
-	&apos; а у пользователей УЖЕ СОХРАНЕН файл settings.txt, где данных для этих новых опций нет,
-	&apos; то при работе Корректора может произойти либо ошибка, либо экспорт произведется не так, как ожидается,
-	&apos; а при запуске формы Настроек новые опции будут не такими, как ожидал User,
-	&apos; Поэтому, сначала устанавливаем значения переменных по умолчанию (SetDefaultSettingsInVars),
-	&apos; а потом - считываем из файла значения опций в переменные (ReadSettingsInVars).
-	&apos; Для тех новых опций, которых еще нет в файле settings.txt значения будут по умолчанию,
-	&apos; а для остальных - считаны из файла.
-	&apos; Когда же User запустит форму Настроек и пересохранит ВСЕ настройки Конвертора,
-	&apos; то все переменные и контролы будут иметь значения из файла!
-	
 	&apos; Задаем настройки в контролы по умолчанию
-	SetDefaultSettingsInVars()
+	SetDefaultSettingsToVars()
 	&apos; только теперь считываем настройки из файла в переменные
-	ReadSettings(False)
+	LoadSettingsToVars()
 	oServiceDlg.endExecute()
 End Sub
 
@@ -138,5 +122,455 @@ Sub obtnFENoteCommonEnabled()
 		End If
 	End With
 End Sub
+
+&apos; Читаем установки и задаем значения контролам
+Function ReadSettingsToControlls() As Boolean
+	ReadSettingsToControlls = False
+	Dim nX As Integer, nY As Integer
+	Dim sFile As String : sFile = getOOoFBToolsSettingsDir() &amp; sConstSettings
+	If FileExists( sFile ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFile ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream ( oFS )
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные
+				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					&apos; Устанавливаем настройки в контроды
+					SetSettingsToControlls( sLine, oServiceDlg )
+				End If
+			End If
+		Loop
+		oServiceDlg.setPosSize( nX, nY, 395, 382, com.sun.star.awt.PosSize.POS )
+		oTIS.closeInput()
+		ReadSettingsToControlls = True
+	End If
+End Function
+
+&apos; Читаем установки и задаем значения контролам
+Function LoadSettingsToVars() As Boolean
+	LoadSettingsToVars = False
+	Dim sFile As String : sFile = getOOoFBToolsSettingsDir() &amp; sConstSettings
+	If FileExists( sFile ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFile ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream ( oFS )
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем настройки в переменные
+				SetSettingsToVars( sLine )
+			End If
+		Loop
+		oTIS.closeInput()
+		LoadSettingsToVars = True
+	End If
+End Function
+
+&apos; Настройки По умолчанию - в контролы
+Sub SetDefaultSettingsToControls()
+	Dim oLB As Object &apos; Для работы с ListBox`ами
+	&apos; Сноски
+	oServiceDlg.Model.obtnFENoteCommon.State = 0
+	oServiceDlg.Model.obtnFENoteSeparately.State = 1
+	oLB = oServiceDlg.getControl(&quot;cmbboxStyle&quot;)
+	oLB.SelectItemPos(1, True)
+	oServiceDlg.Model.cmbboxTitle.Text = sServD.sNotes
+	oServiceDlg.Model.cboxSpace.State = 0
+	&apos; концевые сноски
+	oLB = oServiceDlg.getControl(&quot;cmbboxENStyle&quot;)
+	oLB.SelectItemPos(3, True)
+	oServiceDlg.Model.cmbboxENTitle.Text = sServD.sCommentaries
+	oServiceDlg.Model.cboxENSpace.State = 0
+	&apos; Стихи
+	oServiceDlg.Model.cboxPoemTitle.State = 0
+	oServiceDlg.Model.cboxPoemAuthor.State = 0
+	oServiceDlg.Model.cboxPoemSubtitle.State = 1
+	&apos; Эпиграфы
+	oServiceDlg.Model.cboxEpigAuthor.State = 0
+	&apos; SubTitle
+	oServiceDlg.Model.cboxSubtitle.State = 1
+	&apos; Аннотации
+	oServiceDlg.Model.cboxAnnotationSubtitle.State = 1
+	&apos; Цитаты
+	oServiceDlg.Model.cboxCiteAuthor.State = 0
+	oServiceDlg.Model.cboxCiteSubtitle.State = 1
+	&apos; Графика
+	oServiceDlg.Model.cboxImageTitle.State = 0
+	oServiceDlg.Model.cboxExportGraphics.State = 1
+	oLB = oServiceDlg.getControl(&quot;lbJPEGAs&quot;)
+	oLB.SelectItemPos(2, True)
+	oLB = oServiceDlg.getControl(&quot;lbPNGAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbGifAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbTifBMPAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbAnyAs&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;lbOLEAs&quot;)
+	oLB.SelectItemPos(0, True)
+	
+	&apos; Текстовые врезки
+	oLB = oServiceDlg.getControl(&quot;cmbboxTextFrame&quot;)
+	oLB.SelectItemPos(3, True)
+	&apos; Таблицы
+	oLB = oServiceDlg.getControl(&quot;cmbboxHeaderTHV&quot;)
+	oLB.SelectItemPos(0, True)
+	oLB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
+	oLB.SelectItemPos(0, True)
+	&apos; Разное
+	oServiceDlg.Model.cboxCorrect.State	= 1
+	oServiceDlg.Model.cboxDelEL.State	= 0
+	oServiceDlg.Model.cboxDocLinks.State = 1
+	oServiceDlg.Model.cboxSaveUTF8.State = 1
+	
+	&apos; Чистка fb2 кода
+	oServiceDlg.Model.cboxSuperfluous.State = 1
+	oServiceDlg.Model.cboxStyleSpace.State	= 1
+	
+	&apos; запустить полученный fb2-файл на просмотр
+	oServiceDlg.Model.cboxFB2Execute.State = 0
+	
+	&apos; Валидация
+	oServiceDlg.Model.cboxValidate.State = 1
+	
+	&apos; экспорт тестовых полей
+	oServiceDlg.Model.cboxTextField.State = 1
+	&apos; генерировать сложный ID Книги
+	oServiceDlg.Model.cboxComplexID.State = 0
+
+End Sub
+
+&apos; задание настроек по-умолчанию для переменных
+Sub SetDefaultSettingsToVars()
+	&apos; значения по умолчанию для сносок
+	bFENoteCommon = False
+	bFENoteSeparately = True
+	
+	sFootnoteLeft = &quot;[&quot;
+	sFootnoteRight = &quot;]&quot;
+	bFootnoteSpace = False
+	sFootnoteTitle = sServD.sNotes
+	&apos; концевые сноски
+	sENLeft = &quot;{&quot;
+	sENRight = &quot;}&quot;
+	bENSpace = False
+	sENTitle = sServD.sCommentaries
+	
+	&apos; значения по умолчанию для аннотации
+	bMergeAnnotationSubTitle = True
+	&apos; значения по умолчанию для SubTitle
+	bMergeSubTitle = True
+	&apos; значения по умолчанию для Авторов епиграфа
+	bMergeEpigraphAuthors = False
+	&apos; значения по умолчанию для заголовков стихов
+	bMergePoemTitle = False
+	&apos; значения по умолчанию для авторов стихов
+	bMergePoemAuthors = False
+	bMergePoemSubTitle = True
+	&apos; значения по умолчанию для авторов цитат
+	bMergeCiteAuthors = False
+	bMergeCiteSubTitle = True
+	&apos; значения по умолчанию для удаления пустых строк
+	bDelEL = False
+	&apos; значения по умолчанию для обработкb &quot;проблемных&quot; знаков (&lt; &gt;)
+	bCorrectPara = True
+	&apos; Экспорт Текстовых Полей
+	bTextField = True
+	&apos; генерироват сложный ID Книги
+	bComplexID = False
+	
+	&apos; значения по умолчанию для сохранения названия картинки, как аттрибута &quot;title&apos;
+	bSaveImageTitle = False
+	&apos; значение по-умолчанию для экспорта Графики
+	bExportGraphics = True
+	&apos; значение по умолчанию для формата преобразования
+	sJpegAs		= &quot;jpg&quot;
+	sPngAs		= &quot;png&quot;
+	sGifAs		= &quot;png&quot;
+	sTifBMPAs	= &quot;png&quot;
+	sAnyAs		= &quot;png&quot;
+	sOLEAs		= &quot;png&quot;
+	
+	&apos; значение по-умолчанию для обработки ссылок внутри документа
+	bDocLinks	= True
+	&apos; значение по-умолчанию для сохранения fb2-файла в utf-8, если в тексте есть маркерные строки
+	bSaveUTF8	= True
+	&apos; значения по-умолчанию для выравнивания элементов таблиц
+	sHeaderTVA	= &quot;&quot;
+	sLineTVA	= &quot;&quot;
+
+	sTextFrameToFB2	 = sServD.sTable
+	
+	&apos; Чистка fb2 кода
+	bSuperfluous = True
+	bStyleSpace = True
+	
+	&apos; запустить полученный fb2-файл на просмотр
+	bFB2Execute = False
+	
+	&apos; валидация
+	bValidate = True
+End Sub
+
+&apos; Настройки из файла - в переменные
+Sub SetSettingsToVars( sCurrentLine )
+	Dim sSetting() As String
+	sSetting = Split(sCurrentLine, &quot;=&quot;)
+&apos;	Dim s As String
+&apos;	s = sSetting(1)
+&apos;	sSetting(1) = ReplaceInString(s, chr(10), &quot;&quot;, False)
+	Select Case sSetting(0)
+		&apos; Сноски
+		Case &quot;obtnFENoteCommon&quot;
+			bFENoteCommon = sSetting(1)
+		Case &quot;obtnFENoteSeparately&quot;
+			bFENoteSeparately = sSetting(1)
+		
+		Case &quot;cmbboxStyle&quot;
+			Select Case sSetting(1)
+				Case &quot;0&quot;
+					sFootnoteLeft = &quot;&quot;
+					sFootnoteRight = &quot;&quot;
+				Case &quot;1&quot;
+					sFootnoteLeft = &quot;[&quot;
+					sFootnoteRight = &quot;]&quot;
+				Case &quot;2&quot;
+					sFootnoteLeft = &quot;[ &quot;
+					sFootnoteRight = &quot; ]&quot;
+				Case &quot;3&quot;
+					sFootnoteLeft = &quot;{&quot;
+					sFootnoteRight = &quot;}&quot;
+				Case &quot;4&quot;
+					sFootnoteLeft = &quot;{ &quot;
+					sFootnoteRight = &quot; }&quot;
+				Case &quot;5&quot;
+					sFootnoteLeft = &quot;(&quot;
+					sFootnoteRight = &quot;)&quot;
+				Case &quot;6&quot;
+					sFootnoteLeft = &quot;( &quot;
+					sFootnoteRight = &quot; )&quot;
+				Case Else
+					sFootnoteLeft = &quot;[&quot;
+					sFootnoteRight = &quot;]&quot;	
+			End Select
+		Case &quot;cboxSpace&quot;
+			bFootnoteSpace = sSetting(1)
+		Case &quot;cmbboxTitle&quot;
+			sFootnoteTitle = sSetting(1)
+		
+		&apos; Концевые Сноски
+		Case &quot;cmbboxENStyle&quot;
+			Select Case sSetting(1)
+				Case &quot;0&quot;
+					sENLeft = &quot;&quot;
+					sENRight = &quot;&quot;
+				Case &quot;1&quot;
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;
+				Case &quot;2&quot;
+					sENLeft = &quot;[ &quot;
+					sENRight = &quot; ]&quot;
+				Case &quot;3&quot;
+					sENLeft = &quot;{&quot;
+					sENRight = &quot;}&quot;
+				Case &quot;4&quot;
+					sENLeft = &quot;{ &quot;
+					sENRight = &quot; }&quot;
+				Case &quot;5&quot;
+					sENLeft = &quot;(&quot;
+					sENRight = &quot;)&quot;
+				Case &quot;6&quot;
+					sENLeft = &quot;( &quot;
+					sENRight = &quot; )&quot;
+				Case Else
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;	
+			End Select
+		Case &quot;cboxENSpace&quot;
+			bENSpace = sSetting(1)
+		Case &quot;cmbboxENTitle&quot;
+			sENTitle = sSetting(1)
+		
+		&apos; аннотация
+		Case &quot;cboxAnnotationSubtitle&quot;
+			bMergeAnnotationSubTitle = sSetting(1)
+			
+		Case &quot;cmbboxENStyle&quot;
+			Select Case sSetting(1)
+				Case &quot;0&quot;
+					sENLeft = &quot;&quot;
+					sENRight = &quot;&quot;
+				Case &quot;1&quot;
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;
+				Case &quot;2&quot;
+					sENLeft = &quot;[ &quot;
+					sENRight = &quot; ]&quot;
+				Case &quot;3&quot;
+					sENLeft = &quot;{&quot;
+					sENRight = &quot;}&quot;
+				Case &quot;4&quot;
+					sENLeft = &quot;{ &quot;
+					sENRight = &quot; }&quot;
+				Case &quot;5&quot;
+					sENLeft = &quot;(&quot;
+					sENRight = &quot;)&quot;
+				Case &quot;6&quot;
+					sENLeft = &quot;( &quot;
+					sENRight = &quot; )&quot;
+				Case Else
+					sENLeft = &quot;[&quot;
+					sENRight = &quot;]&quot;	
+			End Select
+		&apos; Стихи
+		Case &quot;cboxPoemTitle&quot;
+			bMergePoemTitle = sSetting(1)
+		Case &quot;cboxPoemAuthor&quot;
+			bMergePoemAuthors = sSetting(1)
+		Case &quot;cboxPoemSubtitle&quot;
+			bMergePoemSubTitle = sSetting(1)
+		&apos; Эпиграфы
+		Case &quot;cboxEpigAuthor&quot;
+			bMergeEpigraphAuthors = sSetting(1)
+		&apos; SubTitle
+		Case &quot;cboxSubtitle&quot;
+			bMergeSubTitle = sSetting(1)
+		&apos; Цитаты
+		Case &quot;cboxCiteAuthor&quot;
+			bMergeCiteAuthors = sSetting(1)
+		Case &quot;cboxCiteSubtitle&quot;
+			bMergeCiteSubTitle = sSetting(1)
+		&apos; Графика
+		Case &quot;cboxImageTitle&quot;
+			bSaveImageTitle = sSetting(1)
+		Case &quot;cboxExportGraphics&quot;
+			bExportGraphics = sSetting(1)	
+		Case &quot;lbJPEGAs&quot;
+			sJpegAs = GetFormat(sSetting(1))
+		Case &quot;lbPNGAs&quot;
+			sPngAs 	= GetFormat(sSetting(1))
+		Case &quot;lbGifAs&quot;
+			sGifAs 	= GetFormat(sSetting(1))
+		Case &quot;lbTifBMPAs&quot;
+			sTifBMPAs 	= GetFormat(sSetting(1))
+		Case &quot;lbAnyAs&quot;
+			sAnyAs 	= GetFormat(sSetting(1))
+		Case &quot;lbOLEAs&quot;
+			sOLEAs 	= GetFormat(sSetting(1))
+		&apos; Текстовые врезки
+		Case &quot;cmbboxTextFrame&quot;
+			Select Case sSetting(1)
+				Case &quot;0&quot;
+					sTextFrameToFB2 = sServD.sTable
+				Case &quot;1&quot;
+					sTextFrameToFB2 = sServD.sText
+				Case &quot;2&quot;
+					sTextFrameToFB2 = sServD.sCite
+				Case &quot;3&quot;
+					sTextFrameToFB2 = sServD.sStructure
+				Case Else
+					sTextFrameToFB2 = sServD.sTable
+			End Select
+		&apos; Таблицы
+		Case &quot;cmbboxHeaderTHV&quot;
+			sHeaderTVA 	= Trim( GetTMB(sSetting(1)) )
+		Case &quot;cmbboxLineTDV&quot;
+			sLineTVA	= Trim( GetTMB(sSetting(1)) )
+		&apos; Разное
+		Case &quot;cboxCorrect&quot;
+			bCorrectPara = sSetting(1)
+		Case &quot;cboxDelEL&quot;
+			bDelEL = sSetting(1)
+		Case &quot;cboxDocLinks&quot;
+			bDocLinks = sSetting(1)
+		Case &quot;cboxSaveUTF8&quot;
+			bSaveUTF8 = sSetting(1)	
+		&apos; Чистка fb2 кода
+		Case &quot;cboxSuperfluous&quot;
+			bSuperfluous = sSetting(1)
+		Case &quot;cboxStyleSpace&quot;
+			bStyleSpace = sSetting(1)
+		&apos; запустить полученный fb2-файл на просмотр
+		Case &quot;cboxFB2Execute&quot;
+			bFB2Execute = sSetting(1)
+		&apos; Валидация
+		Case &quot;cboxValidate&quot;
+			bValidate = sSetting(1)
+		&apos; экспорт текстовых полей
+		Case &quot;cboxTextField&quot;
+			bTextField = sSetting(1)
+		&apos; генерировать сложный ID Книги
+		Case &quot;cboxComplexID&quot;
+			bComplexID = sSetting(1)
+	End Select
+End Sub
+
+Function GetLCRATF(sSetting) As String
+	Select Case sSetting
+		Case &quot;0&quot; &apos; &quot;Слева&quot;
+			GetLCRATF = &quot;left&quot;
+		Case &quot;1&quot; &apos; &quot;По Центру&quot;
+			GetLCRATF = &quot;center&quot;
+		Case &quot;2&quot; &apos; &quot;Справа&quot;
+			GetLCRATF = &quot;right&quot;
+		Case Else
+			GetLCRATF = &quot;&quot;
+	End Select
+End Function
+
+Function GetLCR(sSetting) As String
+	Select Case sSetting
+		Case &quot;1&quot; &apos; &quot;Слева&quot;
+			GetLCR = &quot;left&quot;
+		Case &quot;2&quot; &apos; &quot;По Центру&quot;
+			GetLCR = &quot;center&quot;
+		Case &quot;3&quot; &apos; &quot;Справа&quot;
+			GetLCR = &quot;right&quot;
+		Case Else
+			GetLCR = &quot;&quot;
+	End Select
+End Function
+
+Function GetTMB(sSetting) As String
+	Select Case sSetting
+		Case &quot;1&quot; &apos; &quot;Сверху&quot;
+			GetTMB = &quot;top&quot;
+		Case &quot;2&quot; &apos; &quot;По Центру&quot;
+			GetTMB = &quot;middle&quot;
+		Case &quot;3&quot; &apos; &quot;Снизу&quot;
+			GetTMB = &quot;bottom&quot;
+		Case Else
+			GetTMB =  &quot;&quot;
+	End Select
+End Function
+
+Function GetFormat( sSetting As String) As String
+	Select Case sSetting
+		Case &quot;0&quot; 
+			GetFormat = &quot;png&quot;
+		Case &quot;1&quot;
+			GetFormat = &quot;jpg&quot;
+		Case &quot;2&quot;
+			GetFormat = &quot;jpeg&quot;
+		Case Else
+			GetFormat =  &quot;png&quot;
+	End Select
+End Function
 
 </script:module>

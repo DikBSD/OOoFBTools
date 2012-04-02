@@ -2,12 +2,12 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Description" script:language="StarBasic">REM  *****  BASIC  *****
 
-&apos;//////////////////////////////////////////////////////
-&apos; Модуль сохранения описания книги - секции Description
-&apos;//////////////////////////////////////////////////////
-
+&apos;================================================================================================================
+&apos; 						Модуль сохранения описания книги - секции Description
+&apos;================================================================================================================
 Option Explicit
 
+&apos;***************************************************************************
 Sub SaveDescription( sFB2Encoding As String )
 	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; sFB2Encoding &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;FictionBook xmlns=&quot;&quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot; xmlns:l=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot;&gt;&quot;&amp;chr(10))
@@ -15,20 +15,15 @@ Sub SaveDescription( sFB2Encoding As String )
 	
 	oTextOutputStream.writeString(&quot;&lt;title-info&gt;&quot; &amp; chr(10))
 	
-	Dim i As Integer
+	Dim i As Integer, aTemp() As String
 	&apos; для Жанров Книги
-	Dim sGenreArray()		As Variant	: sGenreArray()			= GetUserPropertyArray(_fb2_ti_Genre)
-	Dim sGenreMatchArray()	As Variant	: sGenreMatchArray()	= GetUserPropertyArray(_fb2_ti_GenreMatch)
+	Dim sGenreArray() As Variant : sGenreArray() = GetUserPropertyArray(_fb2_ti_GenreCM)
 	If UBound( sGenreArray() ) &lt;&gt; -1 Then
-		Dim sGenre As String, sGenreCode As String, sGenreMatch As String, nFrom As Integer, nTo As Integer
 		For i = 0 To UBound( sGenreArray() )
-			sGenre = sGenreArray(i).Value
-			nFrom = InStr(sGenre, &quot; (&quot;) + Len(&quot; (&quot;)
-			nTo = InStr(sGenre, &quot;)&quot;)
-			sGenreCode = Trim( Mid( sGenre, nFrom, nTo - nFrom )  )
-			sGenreMatch = sGenreMatchArray(i).Value : sGenreMatch = Mid( sGenreMatch, 1, Len( sGenreMatch ) - 1 )
+			aTemp() = SplitStringToArray( sGenreArray(i).Value )
+			Dim sGenreMatch As String : sGenreMatch = Trim( aTemp(1) ) : sGenreMatch = Mid( sGenreMatch, 1, Len( sGenreMatch ) - 1 )
 			If sGenreMatch = &quot;0&quot; Then
-				oTextOutputStream.writeString(&quot;&lt;genre&gt;&quot; &amp; sGenreCode &amp; &quot;&lt;/genre&gt;&quot; &amp; chr(10))
+				oTextOutputStream.writeString(&quot;&lt;genre&gt;&quot; &amp; GetGenreCode( aTemp(0) ) &amp; &quot;&lt;/genre&gt;&quot; &amp; chr(10))
 			Else
 				oTextOutputStream.writeString(&quot;&lt;genre match=&quot;&quot;&quot; &amp; sGenreMatch &amp; &quot;&quot;&quot;&gt;&quot; &amp; sGenreCode &amp; &quot;&lt;/genre&gt;&quot; &amp; chr(10))
 			End If
@@ -36,15 +31,11 @@ Sub SaveDescription( sFB2Encoding As String )
 	End If
 	
 	&apos; для Авторов Книги
-	Dim sFNArray()	As Variant : sFNArray()		= GetUserPropertyArray(_fb2_ti_Author_FN)
-	Dim sMNArray()	As Variant : sMNArray()		= GetUserPropertyArray(_fb2_ti_Author_MN)
-	Dim sLNArray()	As Variant : sLNArray()		= GetUserPropertyArray(_fb2_ti_Author_LN)
-	Dim sNNArray()	As Variant : sNNArray()		= GetUserPropertyArray(_fb2_ti_Author_NN)
-	Dim sEmailArray()As Variant : sEmailArray()	= GetUserPropertyArray(_fb2_ti_Author_HP)
-	Dim sHPArray()	As Variant : sHPArray()		= GetUserPropertyArray(_fb2_ti_Author_HP)
-	If UBound( sLNArray() ) &lt;&gt; -1 Then
-		For i = 0 To UBound( sLNArray() )
-			SaveAuthor( sFNArray(i).Value, sMNArray(i).Value, sLNArray(i).Value, sNNArray(i).Value, sEmailArray(i).Value, sHPArray(i).Value )
+	Dim sBookAuthorArray() As Variant : sBookAuthorArray() = GetUserPropertyArray(_fb2_ti_BookAuthor)
+	If UBound( sBookAuthorArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sBookAuthorArray() )
+			aTemp() = SplitStringToArray( sBookAuthorArray(i).Value )
+			SaveAuthor( Trim( aTemp(0) ), Trim( aTemp(1) ), Trim( aTemp(2) ), Trim( aTemp(3) ), Trim( aTemp(4) ), Trim( aTemp(5) ) )
 		Next i
 	Else
 		SaveEmptyAuthor()
@@ -96,26 +87,22 @@ Sub SaveDescription( sFB2Encoding As String )
 	If SrcLang &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; Mid( SrcLang, InStr( SrcLang, &quot;(&quot; )+1, 2 ) &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
 	
 	&apos; переводчики Книги
-	sFNArray()		= GetUserPropertyArray(_fb2_ti_Translator_FN)
-	sMNArray()		= GetUserPropertyArray(_fb2_ti_Translator_MN)
-	sLNArray()		= GetUserPropertyArray(_fb2_ti_Translator_LN)
-	sNNArray()		= GetUserPropertyArray(_fb2_ti_Translator_NN)
-	sEmailArray()	= GetUserPropertyArray(_fb2_ti_Translator_Email)
-	sHPArray()		= GetUserPropertyArray(_fb2_ti_Translator_HP)
-	If UBound( sLNArray() ) &lt;&gt; -1 Then
-		For i = 0 To UBound( sLNArray() )
-			SaveTranslator( sFNArray(i).Value, sMNArray(i).Value, sLNArray(i).Value, sNNArray(i).Value, sEmailArray(i).Value, sHPArray(i).Value )
+	Dim sTranslatorArray() As Variant : sTranslatorArray() = GetUserPropertyArray(_fb2_ti_Translator)
+	If UBound( sTranslatorArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sTranslatorArray() )
+			aTemp() = SplitStringToArray( sTranslatorArray(i).Value )
+			SaveTranslator( Trim( aTemp(0) ), Trim( aTemp(1) ), Trim( aTemp(2) ), Trim( aTemp(3) ), Trim( aTemp(4) ), Trim( aTemp(5) ) )
 		Next i
 	End If
 	
 	&apos; серии Книги
-	Dim sSequenceArray()		As Variant : sSequenceArray()		= GetUserPropertyArray(_fb2_ti_Sequence)
-	Dim sSequenceNumberArray()	As Variant : sSequenceNumberArray()	= GetUserPropertyArray(_fb2_ti_SequenceNumber)
+	Dim sSequenceArray() As Variant : sSequenceArray() = GetUserPropertyArray(_fb2_ti_Sequence)
 	If UBound( sSequenceArray() ) &lt;&gt; -1 Then
 		For i = 0 To UBound( sSequenceArray() )
-			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( sSequenceArray(i).Value )
-			If Trim( sSequenceNumberArray(i).Value ) &lt;&gt; &quot;&quot; Then
-				s = s &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; CorrectPara( sSequenceNumberArray(i).Value )
+			aTemp() = SplitStringToArray( sSequenceArray(i).Value )
+			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) )
+			If Trim( Trim( aTemp(1) ) ) &lt;&gt; &quot;&quot; Then
+				s = s &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(1) ) )
 			End If
 			s = s &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
 			oTextOutputStream.writeString( s )
@@ -126,15 +113,11 @@ Sub SaveDescription( sFB2Encoding As String )
 
 	oTextOutputStream.writeString(&quot;&lt;document-info&gt;&quot; &amp; chr(10))
 	&apos; Авторы fb2-файла
-	sFNArray()		= GetUserPropertyArray(_fb2_di_Author_FN)
-	sMNArray()		= GetUserPropertyArray(_fb2_di_Author_MN)
-	sLNArray()		= GetUserPropertyArray(_fb2_di_Author_LN)
-	sNNArray()		= GetUserPropertyArray(_fb2_di_Author_NN)
-	sEmailArray()	= GetUserPropertyArray(_fb2_di_Author_HP)
-	sHPArray()		= GetUserPropertyArray(_fb2_di_Author_HP)
-	If UBound( sLNArray() ) &lt;&gt; -1 Then
-		For i = 0 To UBound( sLNArray() )
-			SaveAuthor( sFNArray(i).Value, sMNArray(i).Value, sLNArray(i).Value, sNNArray(i).Value, sEmailArray(i).Value, sHPArray(i).Value )
+	Dim sFB2AuthorArray() As Variant : sFB2AuthorArray() = GetUserPropertyArray(_fb2_di_FB2Author)
+	If UBound( sFB2AuthorArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sFB2AuthorArray() )
+			aTemp() = SplitStringToArray( sFB2AuthorArray(i).Value )
+			SaveAuthor( Trim( aTemp(0) ), Trim( aTemp(1) ), Trim( aTemp(2) ), Trim( aTemp(3) ), Trim( aTemp(4) ), Trim( aTemp(5) ) )
 		Next i
 	Else
 		SaveEmptyAuthor()
@@ -178,6 +161,7 @@ Sub SaveDescription( sFB2Encoding As String )
 
 End Sub
 
+&apos;***************************************************************************
 Sub SaveAuthor(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String) 
 	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
 	oTextOutputStream.writeString(&quot;&lt;first-name&gt;&quot; &amp; CorrectPara( Str1 ) &amp; &quot;&lt;/first-name&gt;&quot; &amp; chr(10))
@@ -195,6 +179,7 @@ Sub SaveAuthor(Str1 As String, Str2 As String, Str3 As String, Str4 As String, S
 	oTextOutputStream.writeString(&quot;&lt;/author&gt;&quot;&amp; chr(10))
 End Sub
 
+&apos;***************************************************************************
 Sub SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String)
 	If Str1 = &quot;&quot; AND Str2 = &quot;&quot; AND Str3 = &quot;&quot; AND Str4 = &quot;&quot; AND Str5 = &quot;&quot; AND Str6 = &quot;&quot; Then
 		Exit Sub
@@ -215,6 +200,7 @@ Sub SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As Strin
 	oTextOutputStream.writeString(&quot;&lt;/translator&gt;&quot;&amp; chr(10))
 End Sub
 
+&apos;***************************************************************************
 Sub SavePublisher()
 	Dim PubBookName	As String : PubBookName = GetPubBookNameFromProperty()
 	Dim Publisher	As String : Publisher	= GetPublisherFromProperty()
@@ -222,7 +208,6 @@ Sub SavePublisher()
 	Dim Year		As String : Year		= GetYearFromProperty()
 	Dim ISBN		As String : ISBN		= GetISBNFromProperty()
 	Dim sSequenceArray()		As Variant : sSequenceArray()		= GetUserPropertyArray(_fb2_pi_Sequence)
-	Dim sSequenceNumberArray()	As Variant : sSequenceNumberArray()	= GetUserPropertyArray(_fb2_pi_SequenceNumber)
 	If PubBookName = &quot;&quot; AND Publisher = &quot;&quot; AND Year = &quot;&quot; AND City = &quot;&quot; AND ISBN = &quot;&quot; AND UBound( sSequenceArray() ) = -1 Then
 		Exit Sub
 	End If
@@ -234,11 +219,12 @@ Sub SavePublisher()
 	If Year &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;year&gt;&quot; &amp; CorrectPara( Year ) &amp; &quot;&lt;/year&gt;&quot; &amp; chr(10))
 	If ISBN &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; CorrectPara( ISBN ) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
 	If UBound( sSequenceArray() ) &lt;&gt; -1 Then
-		Dim i As Integer, s As String
+		Dim i As Integer, s As String, aTemp() As String
 		For i = 0 To UBound( sSequenceArray() )
-			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( sSequenceArray(i).Value )
-			If Trim( sSequenceNumberArray(i).Value ) &lt;&gt; &quot;&quot; Then
-				s = s &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; CorrectPara( sSequenceNumberArray(i).Value )
+			aTemp() = SplitStringToArray( sSequenceArray(i).Value )
+			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) )
+			If Trim( Trim( aTemp(1) ) ) &lt;&gt; &quot;&quot; Then
+				s = s &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(1) ) )
 			End If
 			s = s &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
 			oTextOutputStream.writeString( s )
@@ -247,17 +233,19 @@ Sub SavePublisher()
 	oTextOutputStream.writeString(&quot;&lt;/publish-info&gt;&quot; &amp; chr(10))
 End Sub
 
+&apos;***************************************************************************
 Sub SaveCustomInfo()
-	Dim sciTypeArray()		As Variant	: sciTypeArray()	= GetUserPropertyArray(_fb2_ci_Type)
-	Dim sciValueArray()		As Variant	: sciValueArray()	= GetUserPropertyArray(_fb2_ci_Value)
-	If UBound( sciTypeArray() ) &lt;&gt; -1 Then
-		Dim i As Integer
-		For i = 0 To UBound( sciTypeArray() )
-			oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; CorrectPara( sciTypeArray(i).Value ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara( sciValueArray(i).Value ) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
+	Dim sCustomInfoArray() As Variant : sCustomInfoArray() = GetUserPropertyArray(_fb2_ci_CustomInfo)
+	If UBound( sCustomInfoArray() ) &lt;&gt; -1 Then
+		Dim i As Integer, aTemp() As String
+		For i = 0 To UBound( sCustomInfoArray() )
+			aTemp() = SplitStringToArray( sCustomInfoArray(i).Value )
+			oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara( Trim( aTemp(1) ) ) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
 		Next i
 	End If
 End Sub
 
+&apos;***************************************************************************
 Sub SaveEmptyAuthor()
 	&apos; если автора нет, то записываем только пустые обязательные тэги для валидности книги
 	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
@@ -266,4 +254,22 @@ Sub SaveEmptyAuthor()
 	oTextOutputStream.writeString(&quot;&lt;/author&gt;&quot;&amp; chr(10))
 End Sub
 
+Function SplitStringToArray( Str As String ) As Array
+	SplitStringToArray = Split( Str, &quot;|&quot; )
+End Function
+
+&apos; получение кода Жанра из строки: Название (кода)
+Function GetGenreCode( ByRef GenreString As String ) As String
+	If Trim( GenreString ) = &quot;&quot; Then
+		GetGenreCode = &quot;&quot;
+		Exit Function
+	ElseIf InStr( GenreString, &quot;(&quot; ) = 0 Then
+		GetGenreCode = &quot;?&quot;
+		Exit Function
+	End If
+	Dim sGenre	As String	: sGenre	= Trim( GenreString )
+	Dim nFrom	As Integer	: nFrom		= InStr(sGenre, &quot; (&quot;) + Len(&quot; (&quot;)
+	Dim nTo		As Integer	: nTo		= InStr(sGenre, &quot;)&quot;)
+	GetGenreCode = Trim( Mid( sGenre, nFrom, nTo - nFrom )  )
+End Function
 </script:module>

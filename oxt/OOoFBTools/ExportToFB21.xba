@@ -115,19 +115,19 @@ Sub ExportToFB21DlgExec()
 	InitExportToFB21Dlg()
 	
 	&apos; считаем положение диалога из файла настроек
-	ReadExportToFB21DlgSettings()
+	LoadExportToFB21DlgSettings()
 	oExportToFB21Dlg.Model.fb2PathTextField.Text = ConvertFromUrl( sCurDocFile )
 	oProgressBar.setValue(2)
 	
 	&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesInVars()
+	SetDefaultStylesToVars()
 	&apos; Только теперь загружаем стили из файла в переменные
-	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, False )
+	LoadStylesToVars()
 	&apos; Задаем настройки в переменные по умолчанию
-	SetDefaultSettingsInVars()
+	SetDefaultSettingsToVars()
 	oProgressBar.setValue(3)
 	&apos; только теперь считываем настройки из файла в переменные
-	ReadSettings(False)
+	LoadSettingsToVars()
 	oProgressBar.setValue(4)
 	oProgressBar.end
 	
@@ -302,7 +302,7 @@ Function IsFB2BindingPropertiesCorrect() As String
     Dim i As Integer
     Dim bGenre As Boolean : bGenre = False
     For i = 0 To uBound(PropertyValues) 
-        If InStr( PropertyValues(i).Name, _fb2_ti_Genre ) = 1 Then
+        If InStr( PropertyValues(i).Name, _fb2_ti_GenreCM ) = 1 Then
         	bGenre = True : Exit For
 		End If
     Next i
@@ -349,7 +349,7 @@ End Sub
 
 &apos;***************************************************************************
 &apos; Читаем настройки и задаем значения контролам основной формы
-Function ReadExportToFB21DlgSettings() As Boolean
+Function LoadExportToFB21DlgSettings() As Boolean
 	On Error Resume Next
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2ConverterDialogSettings
 	If FileExists( sFileName ) Then
@@ -375,9 +375,9 @@ Function ReadExportToFB21DlgSettings() As Boolean
 		Loop
 		oTIS.closeInput()
 		oExportToFB21Dlg.setPosSize( nX, nY, 63, 242, com.sun.star.awt.PosSize.POS )
-		ReadExportToFB21DlgSettings = True
+		LoadExportToFB21DlgSettings = True
 	Else
-		ReadExportToFB21DlgSettings = False
+		LoadExportToFB21DlgSettings = False
 	End If
 End Function
 

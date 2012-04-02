@@ -14,7 +14,8 @@ Private oDocControl
 Private ovCurs		&apos; видимый курсор
 Private otxtCurs	&apos; текстовый курсор для перебора найденного
 Private oPosTxtCurs	&apos; текстовый курсор - хранение текущей позиции найденного символа по заданному условию
-Private bEnd As Boolean
+Private bWorkStart			As Boolean &apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd			As Boolean &apos; флаг конца работы инструмента - закрытия диалога (True)
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub FindUpIndexDlg_windowActivated(oEv)
@@ -25,10 +26,12 @@ Sub FindUpIndexDlg_windowDeactivated(oEv)
 End Sub
 
 Sub FindUpIndexDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
 End Sub
 
 Sub FindUpIndexDlg_windowClosing(oEv)
-	bFindEnd = True
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
 End Sub
 
 Sub FindUpIndexDlg_windowClosed(oEv)
@@ -46,6 +49,8 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога поиска
 Sub FindUpIndexFinderStart()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	oFUI = LoadDialog( &quot;OOoFBTools&quot;, &quot;FindUpIndexDlg&quot; )
 	
@@ -87,13 +92,9 @@ Sub FindUpIndexFinderStart()
 								&quot;\x\ &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
 								&quot;\x\. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;	)
 
-	With oFUI.Model
-		.Height	= 100
-		.Width	= 367
-		.lboxFNLTrans.StringItemList = aList()
-		.lboxFNInListTrans.StringItemList = aNFNInListList()
-	End With
 	With oFUI
+		.Model.lboxFNLTrans.StringItemList = aList()
+		.Model.lboxFNInListTrans.StringItemList = aNFNInListList()
 		.getControl( &quot;lboxFNLTrans&quot; ).SelectItemPos( 2, True )
 		.getControl( &quot;lboxFNInListTrans&quot; ).SelectItemPos( 0, True )
 	End With
@@ -103,16 +104,17 @@ Sub FindUpIndexFinderStart()
 	ReadDlgSettings( sFUISettingsFilename, oFUI,  nX, nY )
 	oFUI.setPosSize( nX, nY, 100, 367, com.sun.star.awt.PosSize.POS )
 
-	bFindEnd = False
+	bWorkEnd = False
 	
 	Dim oList : oList = createUnoListener( &quot;FindUpIndexDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
 	With oFUI
 		.addTopWindowListener( oList )
 		.setVisible( True )
 	End With
-	While Not bFindEnd
+	While Not bWorkEnd
 		Wait 200     
 	Wend
+	
 	&apos; записываем настройки диалога
 	SaveSettings( sFUISettingsFilename, oFUI )
 	oFUI.setVisible( False )

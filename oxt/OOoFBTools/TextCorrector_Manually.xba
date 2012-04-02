@@ -16,7 +16,8 @@ Type tFindData
 End Type
 
 Private oTDF As Object
-Private bFindEnd As Boolean &apos; флаг конца поиска - закрытия диалога (True)
+Private bWorkStart			As Boolean &apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd			As Boolean &apos; флаг конца работы инструмента - закрытия диалога (True)
 
 Private oDocControl, otxtCurs &apos; текстовый курсор
 Private sOCRTCSettingsFilename As String &apos; файл настроек Корректора Текста
@@ -33,10 +34,12 @@ Sub TextDefectFinderDlg_windowDeactivated(oEv)
 End Sub
 
 Sub TextDefectFinderDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
 End Sub
 
 Sub TextDefectFinderDlg_windowClosing(oEv)
-	bFindEnd = True
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
 	&apos; записываем настройки диалога
 	SaveSettings( sOCRTCSettingsFilename, oTDF )
 End Sub
@@ -56,6 +59,8 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога поиска
 Sub TextDefectFinderStart()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
 	&apos; файл настроек Корректора Текста
 	sOCRTCSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;ocr_errors_corrector.txt&quot;
 	ReDim asWords() As String
@@ -72,13 +77,9 @@ Sub TextDefectFinderStart()
 													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingBlank )
 											
 	Dim aPunctList() As String : aPunctList() = Array( &quot;.&quot;, &quot;,&quot;, &quot;!&quot;, &quot;?&quot;, &quot;:&quot;, &quot; &apos;&quot;, &quot;…&quot; )
-	With oTDF.Model
-		.Height	= 42
-		.Width	= 420
-		.lbTDFMode.StringItemList = aModeList()
-		.lbTDFPunctMarks.StringItemList = aPunctList()
-	End With
 	With oTDF
+		.Model.lbTDFMode.StringItemList = aModeList()
+		.Model.lbTDFPunctMarks.StringItemList = aPunctList()
 		.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
 		.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
 		.getControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
@@ -89,13 +90,13 @@ Sub TextDefectFinderStart()
 	ReadDlgSettings( sOCRTCSettingsFilename, oTDF, nX, nY )
 	oTDF.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
 
-	bFindEnd = False
+	bWorkEnd = False
 	
 	Dim oList : oList = createUnoListener( &quot;TextDefectFinderDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
 	oTDF.addTopWindowListener( oList )
 
 	oTDF.setVisible( True )  
-	While Not bFindEnd
+	While Not bWorkEnd
 		Wait 200     
 	Wend
 	

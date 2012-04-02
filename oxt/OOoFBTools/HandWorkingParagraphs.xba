@@ -4,7 +4,8 @@
 Option Explicit
 
 Private oHWPDlg As Object
-Private bWorkEnd As Boolean &apos; флаг конца обработки - закрытия диалога (True)
+Private bWorkStart			As Boolean &apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd			As Boolean &apos; флаг конца работы инструмента - закрытия диалога (True)
 
 Private sHWPSettingsFilename As String &apos; файл настроек
 
@@ -16,10 +17,12 @@ Sub HandWorkingParagraphsDlg_windowDeactivated(oEv)
 End Sub
 
 Sub HandWorkingParagraphsDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
 End Sub
 
 Sub HandWorkingParagraphsDlg_windowClosing(oEv)
-	bWorkEnd = True
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
 	&apos; записываем настройки диалога
  	SaveSettings( sHWPSettingsFilename, oHWPDlg )
 End Sub
@@ -39,6 +42,8 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация и запуск диалога поиска
 Sub HandWorkingParagraphsStart()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
 	&apos; файл настроек
 	sHWPSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;hand_working_paragraphs.txt&quot;
 
@@ -49,13 +54,8 @@ Sub HandWorkingParagraphsStart()
 	InitHandWorkingParagraphsDlg()
 
 	Dim aModeList() As String : aModeList() = Array( sHWPD.sBreakPara, sHWPD.sBreakLine )
-											
-	With oHWPDlg.Model
-		.Height	= 50
-		.Width	= 350
-		.lbHWPMode.StringItemList = aModeList()
-	End With
 	With oHWPDlg
+		.Model.lbHWPMode.StringItemList = aModeList()
 		.getControl( &quot;lbHWPMode&quot; ).SelectItemPos( 0, True )
 		.getControl( &quot;lbHWPModeType&quot; ).SelectItemPos( 0, True )
 	End With

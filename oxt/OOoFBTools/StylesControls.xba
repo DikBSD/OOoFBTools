@@ -9,6 +9,7 @@ Public oStylesDlg As Object
 
 &apos; Данные книги
 Public sStyleBookTitle As String
+Public sStyle_BookAnnotation As String
 &apos; Анотация
 Public sStyleAnnotation As String
 Public sStyleAnnotationSubTitle As String
@@ -38,8 +39,6 @@ Public sStyleLevel7 As String
 Public sStyleLevel8 As String
 Public sStyleLevel9 As String
 Public sStyleLevel10 As String
-&apos; Аннотация книги
-Public sStyle_BookAnnotation As String
 
 Public asRealStyleLevel(10) As String &apos; реальные пользовательские стили Заголовков, которыми он размечает документ
 
@@ -58,22 +57,18 @@ Sub SetUserStyles()
 	oStylesDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.StylesDlg )
 	
 	&apos; инициализация диалога Пользовательских Стилей в зависимости от локали
-	oProgressBar.start( sSD.sStylesLoad, 4 )
+	oProgressBar.start( sSD.sStylesLoad, 3 )
 	InitStylesDlg()
 
 	&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesInVars()
+	SetDefaultStylesToVars()
 	oProgressBar.setValue(1)
 	&apos; Задаем название стилей в контролы по умолчанию
-	SetGeneralStylesControlsDefault()
+	SetDefaultStylesToControls()
 	oProgressBar.setValue(2)
-	SetServiceStylesControlsDefault()
-	oProgressBar.setValue(3)
 	&apos; Только теперь считывание стилей из файла
-	Dim nX As Integer, nY As Integer
-	ReadStyles( getOOoFBToolsSettingsDir() &amp; sConstStyles, True, nX, nY )
-	oStylesDlg.setPosSize( nX, nY, 212, 425, com.sun.star.awt.PosSize.POS )
-	oProgressBar.setValue(4)
+	ReadStylesToControlls( getOOoFBToolsSettingsDir() &amp; sConstStyles )
+	oProgressBar.setValue(3)
 	oProgressBar.end
 	oStylesDlg.execute()
 End Sub
@@ -95,20 +90,47 @@ End Sub
 &apos; // Установка стилей по умолчанию в контролы //
 Sub SetStylesControlsDefault()
 	&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesInVars()
-	
-	If oStylesDlg.Model.Step = 1 Then
-		&apos; Установка Основных стилей по умолчанию в контролы
-		SetGeneralStylesControlsDefault()
-	Else	
-		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt;
-		SetServiceStylesControlsDefault()
-	End If
+	SetDefaultStylesToVars()
+	&apos; Установка Основных стилей по умолчанию в контролы
+	SetDefaultStylesToControls()
 End Sub
 
 &apos; Читаем стили и задаем значения контролам формы стилей
-&apos; bInCtrls = True - в контролы, иначе - в переменные
-Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integer, Optional nY As Integer ) As Boolean
+Function ReadStylesToControlls( sFile As String ) As Boolean
+	If FileExists(sFile) Then
+		Dim nX As Integer, nY As Integer
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL (sFile) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					&apos; Устанавливаем данные стилей в контроды
+					SetSettingsToControlls( sLine, oStylesDlg )
+				End If
+			End If
+		Loop
+		oStylesDlg.setPosSize( nX, nY, 212, 425, com.sun.star.awt.PosSize.POS )
+		oTIS.closeInput()
+		ReadStylesToControlls = True
+	Else
+		ReadStylesToControlls = False
+	End If
+End Function
+
+&apos; Читаем стили и задаем значения переменным
+Function LoadStylesToVars() As Boolean
+	Dim sFile As String : sFile = getOOoFBToolsSettingsDir() &amp; sConstStyles
 	If FileExists(sFile) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
@@ -120,31 +142,19 @@ Function ReadStyles( sFile As String,  bInCtrls As Boolean, Optional nX As Integ
 		Do While ( NOT oTIS.isEOF() )
 			sLine = oTIS.readLine()
 			If sLine &lt;&gt; &quot;&quot; Then
-				If bInCtrls = True Then
-					Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
-					If sSetting(0) = &quot;X&quot; Then
-						nX = sSetting(1)
-					ElseIf sSetting(0) = &quot;Y&quot; Then
-						nY = sSetting(1)
-					Else
-						&apos; Устанавливаем данные стилей в контроды
-						SetSettingsInControlls( sLine, oStylesDlg )
-					End If
-				Else
-					&apos; Устанавливаем данные стилей в переменные
-					SetStylesInVars( sLine )
-				End If
+				&apos; Устанавливаем данные стилей в переменные
+				SetStylesToVars( sLine )
 			End If
 		Loop
 		oTIS.closeInput()
-		ReadStyles = True
+		LoadStylesToVars = True
 	Else
-		ReadStyles = False
+		LoadStylesToVars = False
 	End If
 End Function
 
 &apos; // Установка Основных стилей по умолчанию в контролы //
-Sub SetGeneralStylesControlsDefault()
+Sub SetDefaultStylesToControls()
 	With oStylesDlg
 		&apos; Данные книги
 		.GetControl(&quot;tfBookTitle&quot;).Text				= sStyleBookTitle
@@ -177,13 +187,9 @@ Sub SetGeneralStylesControlsDefault()
 		.GetControl(&quot;tfLevel8&quot;).Text	= sStyleLevel8
 		.GetControl(&quot;tfLevel9&quot;).Text	= sStyleLevel9
 		.GetControl(&quot;tfLevel10&quot;).Text	= sStyleLevel10
+		&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; ( Анотация Книги )
+		.GetControl(&quot;tf_BookAnnotation&quot;).Text	= sStyle_BookAnnotation
 	End With
-End Sub
-
-&apos; // Установка &quot;Служебных&quot; стилей по-умолчанию в контролы //
-Sub SetServiceStylesControlsDefault()
-	&apos; &quot;Служебные&quot; стили для автоматического формирования &lt;Description&gt; ( Анотация Книги )
-	oStylesDlg.GetControl(&quot;tf_BookAnnotation&quot;).Text	= sStyle_BookAnnotation
 End Sub
 
 &apos; Загрузка названий стилей из файла профиля стилей
@@ -206,10 +212,9 @@ Sub LoadCustomStylesProfile()
 	End With
 	If oFileDlg.execute() Then
 		&apos; Читаем данные и задаем значения контролам профиля стилей
-		ReadStyles( oFileDlg.Files(0), True )
+		ReadStylesToControlls( oFileDlg.Files(0) )
 	End If
 	oFileDlg.Dispose()
-
 End Sub
 
 &apos; Сохранение названий стилей в файл профиля
@@ -249,7 +254,7 @@ End Sub
 
 &apos;///////////////////////////////////////////////////////////////////////
 &apos; загрузка стилей в переменные
-Sub SetStylesInVars( sCurrentLine As String )
+Sub SetStylesToVars( sCurrentLine As String )
 	Dim aStyles() As String : aStyles = Split( sCurrentLine, &quot;=&quot; )
 	Select Case aStyles(0)
 		Case &quot;tfBookTitle&quot;

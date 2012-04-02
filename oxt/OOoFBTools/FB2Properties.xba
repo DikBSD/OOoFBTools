@@ -7,14 +7,17 @@
 
 Option Explicit
 
-Public Const sConstFB2PropEditorSettings As String = &quot;FB2PropertiesEditorSettings.txt&quot; &apos; файл настроек диалога Редактора fb2 свойств
-Public Const sConstMyGenre				As String = &quot;mygenre.txt&quot;			&apos; файл Избранных Жанров
-Public Const sConstMyGenreSettings		As String = &quot;mygenre_settings.txt&quot;	&apos; файл настроек Избранных Жанров
-Public Const sConstSettings				As String = &quot;settings.txt&quot;			&apos; файл настроек
-Public Const sConstFB2AuthorProfile		As String = &quot;profile.txt&quot;			&apos; файл профиля Автора fb2 документа
+Public Const sConstFB2PropEditorSettings	As String = &quot;FB2PropertiesEditorSettings.txt&quot;	&apos; файл настроек диалога Редактора fb2 свойств
+Public Const sConstMyGenre					As String = &quot;genre_favorites.txt&quot;				&apos; файл Избранных Жанров
+Public Const sConstMyGenreSettings			As String = &quot;mygenre_settings.txt&quot;				&apos; файл настроек Избранных Жанров
+Public Const sConstSettings					As String = &quot;settings.txt&quot;						&apos; файл настроек
+Public Const sConstFB2AuthorProfile			As String = &quot;profile.txt&quot;						&apos; файл профиля Автора fb2 документа
 
 Public oFB2PropertiesDlg	As Object
 Public oGEDlg				As Object
+
+Private bWorkStart			As Boolean &apos; флаг начала работы Редактора (True). Защита от повторного запуска диалога
+Private bWorkEnd			As Boolean &apos; флаг конца работы Редактора - закрытия диалога (True)
 
 Private sLangList() 			As String &apos; список языков
 Private saTranslitLetters(66)	As String &apos; для транслитерации
@@ -22,10 +25,40 @@ Private saTranslitLetters(66)	As String &apos; для транслитераци
 &apos; ===========================================================================================================================
 &apos; 										запуск формы Редактора fb2 свойств
 &apos; ===========================================================================================================================
+Sub FB2PropertiesDlg_windowActivated(oEv)
+End Sub
+
+Sub FB2PropertiesDlg_windowDeactivated(oEv)
+End Sub
+
+Sub FB2PropertiesDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
+End Sub
+
+Sub FB2PropertiesDlg_windowClosing(oEv)
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
+	&apos; сохраняем некоторые настройки формы
+	SaveFB2PropEditorDlgSettings()
+End Sub
+
+Sub FB2PropertiesDlg_windowClosed(oEv)
+End Sub
+
+Sub FB2PropertiesDlg_windowMinimized(oEv)
+End Sub
+
+Sub FB2PropertiesDlg_windowNormalized(oEv)
+End Sub
+
+Sub FB2PropertiesDlg_disposing(oEv)
+End Sub
 
 &apos;***************************************************************************
 &apos; запуск формы Редактора fb2 свойств
 Sub FB2PropertiesEditorDlgExec()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
 	&apos; инициализация сообщений формы Редактора fb2 свойств в зависимости от локали
 	InitFB2PropertiesDlgMessage()
 	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
@@ -33,11 +66,8 @@ Sub FB2PropertiesEditorDlgExec()
 	oProgressBar.setValue(0)
 	
 	&apos; Создание формы
-&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
-    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	End If
-	oFB2PropertiesDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.FB2PropertiesDlg )
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
+	oFB2PropertiesDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;FB2PropertiesDlg&quot; )
 	oProgressBar.setValue(1)
 
 	&apos; инициализация формы Редактора fb2 свойств в зависимости от локали
@@ -57,7 +87,7 @@ Sub FB2PropertiesEditorDlgExec()
 	oProgressBar.setValue(4)
 	
 	&apos; задаем положение диалога из файла настроек
-	ReadFB2PropEditorFormSettings()
+	LoadFB2PropEditorFormSettings()
 	&apos; Есть ли хоть одно fb2 свойство в документе?
 	Dim bFB2AnyPropertyIsExsist As Boolean : bFB2AnyPropertyIsExsist = IsFB2AnyPropertyIsExsist()
 	&apos; Задана ли сложная генерация ID?
@@ -90,6 +120,8 @@ Sub FB2PropertiesEditorDlgExec()
 			&apos; загрузка из свойств документа fb2 свойств в контролы формы
 			GetFB2PropertiesFromDoc()
 		Else
+			&apos; Читаем стили и задаем значения переменным
+			LoadStylesToVars()
 			.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
 			.VersionField.Text		= &quot;1.0&quot;
 			&apos; язык книги по-умолчанию - локаль Ooo
@@ -101,23 +133,10 @@ Sub FB2PropertiesEditorDlgExec()
 	If Not bFB2AnyPropertyIsExsist Then
 		&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 		_ReadProfile( getOOoFBToolsSettingsDir() &amp; sConstFB2AuthorProfile, 1 )
-		With oFB2PropertiesDlg.Model
-			If Trim(.diFirstField.Text) &lt;&gt; &quot;&quot; Or Trim(.diMiddleField.Text) &lt;&gt; &quot;&quot; Or Trim(.diLastField.Text) &lt;&gt; &quot;&quot; Or _
-				Trim(.diNicknameField.Text) &lt;&gt; &quot;&quot; Or Trim(.diEmailField.Text) &lt;&gt; &quot;&quot; Or Trim(.diHomepageField.Text) &lt;&gt; &quot;&quot; Then
-				Dim oListOfFB2Authors As Object : oListOfFB2Authors = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
-				Dim FB2AuthorDataString As String
-				FB2AuthorDataString = MakeAuthorDataString(.diFirstField.Text, .diMiddleField.Text, .diLastField.Text, .diNicknameField.Text, .diEmailField.Text, .diHomepageField.Text)
-				If IsExsistStringInArray(oListOfFB2Authors.Items, FB2AuthorDataString) = -1 Then
-					oListOfFB2Authors.addItem(FB2AuthorDataString, oListOfFB2Authors.getItemCount())
-					.diFirstField.Text		= &quot;&quot;
-					.diMiddleField.Text		= &quot;&quot;
-					.diLastField.Text		= &quot;&quot;
-					.diNicknameField.Text	= &quot;&quot;
-					.diEmailField.Text		= &quot;&quot;
-					.diHomepageField.Text	= &quot;&quot;
-				End If
-			End If
-		End With
+		If NOT IsFB2AuthorInput() Then
+			&apos; добавляем Автора fb2-файла в ListBox
+			_FB2AuthorAdd()
+		End If
 	End If
 
 	&apos; генерируем ID Книги
@@ -125,7 +144,18 @@ Sub FB2PropertiesEditorDlgExec()
 	oProgressBar.setValue(3)
 	oProgressBar.end
 	
-	oFB2PropertiesDlg.execute()
+	bWorkEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;FB2PropertiesDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	With oFB2PropertiesDlg
+		.addTopWindowListener( oList )
+		.setVisible( True )
+	End With
+	While Not bWorkEnd
+		Wait 200     
+	Wend
+	
+	oFB2PropertiesDlg.setVisible( False )
 End Sub
 
 &apos;***************************************************************************
@@ -180,7 +210,7 @@ End Sub
 
 &apos;***************************************************************************
 &apos; Читаем настройки и задаем значения контролам основной формы
-Function ReadFB2PropEditorFormSettings() As Boolean
+Function LoadFB2PropEditorFormSettings() As Boolean
 	On Error Resume Next
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
 	Dim nX As Integer, nY As Integer
@@ -211,9 +241,9 @@ Function ReadFB2PropEditorFormSettings() As Boolean
 		Loop
 		oTIS.closeInput()
 		oFB2PropertiesDlg.setPosSize( nX, nY, 359, 408, com.sun.star.awt.PosSize.POS )
-		ReadFB2PropEditorFormSettings = True
+		LoadFB2PropEditorFormSettings = True
 	Else
-		ReadFB2PropEditorFormSettings = False
+		LoadFB2PropEditorFormSettings = False
 	End If
 End Function
 
@@ -252,7 +282,6 @@ End Sub
 &apos; 										работа вспомогательных контролов
 &apos; ===========================================================================================================================
 
-&apos;***************************************************************************
 &apos; сохранение fb2 данных в свойства документа
 Sub SavePropertiesToDoc()
 	&apos;проверка, все ли данные введены на форме
@@ -260,8 +289,16 @@ Sub SavePropertiesToDoc()
 		Exit Sub
 	End If
 	
-	&apos; сохраняем некоторые настройки формы
-	SaveFB2PropEditorDlgSettings()
+	&apos; все данные в списках и/или полях - корректные.
+	&apos; Теперь, если есть данные в полях, отличные от тех, что в Списках - добавляем их в Списки
+	If NOT IsGenreExsistInArray()	AND IsNewGenre()				&lt;&gt; &quot;&quot; Then _BookGenreAdd()
+	If IsBookAuthorInput()			AND IsNewBookAuthor()			&lt;&gt; &quot;&quot; Then _BookAuthorAdd()
+	If IsBookTranslatorInput()		AND IsNewBookTranslator()		&lt;&gt; &quot;&quot; Then _BookTranslatorAdd()
+	If IsBookSequenceInput()		AND IsNewBookSequence()			&lt;&gt; &quot;&quot; Then _BookSequenceAdd()
+	If IsFB2AuthorInput()			AND IsNewFB2Author()			&lt;&gt; &quot;&quot; Then _FB2AuthorAdd()
+	If IsPublisherSequenseInput()	AND IsNewPublisherSequence()	&lt;&gt; &quot;&quot; Then _PublisherSequenceAdd()
+	If IsCustomInfoInput()			AND IsNewCustomInfo()			&lt;&gt; &quot;&quot; Then _CustomInfoAdd()
+	
 	&apos; сохраняем fb2 данные в свойства документа
 	SaveFB2PropertiesToDoc()
 	
@@ -273,34 +310,40 @@ End Sub
 Function IsAllNeedDataExsist() As Boolean
 	IsAllNeedDataExsist = False
 
-	If oFB2PropertiesDlg.getControl(&quot;lbGenre&quot;).getItemCount() = 0 Then
-		MsgBox sFB2PED.sFB2PropEditorDlgSelectGenre, 64, sConvertorName
-		oFB2PropertiesDlg.Model.Step = 1
-		oFB2PropertiesDlg.getControl(&quot;optbtnTitleInfo&quot;).setState(True)
-		oFB2PropertiesDlg.getControl(&quot;GenreComboBox&quot;).setFocus()
-		Exit Function
-	End If
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один Жанр Книги
+		If .getControl(&quot;lbGenre&quot;).getItemCount() = 0 Then
+			If ( Not IsBookGenreInput() ) OR IsBookGroupeGenreSelect() Then
+				MsgBox sFB2PED.sFB2PropEditorDlgSelectGenre, 64, sConvertorName
+				.Model.Step = 1
+				.getControl(&quot;optbtnTitleInfo&quot;).setState(True)
+				.getControl(&quot;GenreComboBox&quot;).setFocus()
+				Exit Function
+			End If
+		End If
 
-	With oFB2PropertiesDlg.Model
-		If Trim(.BookTitleField.Text) = &quot;&quot; Then
+		&apos; проверка, задано ли Название Книги
+		If Trim(.Model.BookTitleField.Text) = &quot;&quot; Then
 			MsgBox sFB2PED.sFB2PropEditorDlgFillBookTitle, 64, sConvertorName
-			.Step = 1
-			oFB2PropertiesDlg.getControl(&quot;optbtnTitleInfo&quot;).setState(True)
-			oFB2PropertiesDlg.getControl(&quot;BookTitleField&quot;).setFocus()
+			.Model.Step = 1
+			.getControl(&quot;optbtnTitleInfo&quot;).setState(True)
+			.getControl(&quot;BookTitleField&quot;).setFocus()
 			Exit Function
 		End If
-		If Trim(.VersionField.Text) = &quot;&quot; Then
+		&apos; проверка, задана ли Версия fb2-файла
+		If Trim(.Model.VersionField.Text) = &quot;&quot; Then
 			MsgBox sFB2PED.sFB2PropEditorDlgFillVersion, 64, sConvertorName
-			.Step = 2
-			oFB2PropertiesDlg.getControl(&quot;optbtnDocumentInfo&quot;).setState(True)
-			oFB2PropertiesDlg.getControl(&quot;VersionField&quot;).setFocus()
+			.Model.Step = 2
+			.getControl(&quot;optbtnDocumentInfo&quot;).setState(True)
+			.getControl(&quot;VersionField&quot;).setFocus()
 			Exit Function
 		End If
-		If Trim(.IDField.Text) = &quot;&quot; Then
+		&apos; проверка, задан ли ID fb2-файла
+		If Trim(.Model.IDField.Text) = &quot;&quot; Then
 			MsgBox sFB2PED.sFB2PropEditorDlgFillID, 64, sConvertorName
-			.Step = 2
-			oFB2PropertiesDlg.getControl(&quot;optbtnDocumentInfo&quot;).setState(True)
-			oFB2PropertiesDlg.getControl(&quot;IDField&quot;).setFocus()
+			.Model.Step = 2
+			.getControl(&quot;optbtnDocumentInfo&quot;).setState(True)
+			.getControl(&quot;IDField&quot;).setFocus()
 			Exit Function
 		End If
 	End With
@@ -324,7 +367,7 @@ End Sub
 
 &apos;***************************************************************************
 &apos; перемещение выбранного ListBoxItem вверх
-Sub ListBoxItemUp( ByRef ListBox As Object )
+Sub ListBoxItemUp( ByRef ListBox As stardiv.Toolkit.UnoListBoxControl )
 	If ListBox.SelectedItemPos = -1 Then
 		Exit Sub
 	End If
@@ -341,7 +384,7 @@ End Sub
 
 &apos;***************************************************************************
 &apos; перемещение выбранного ListBoxItem вниз
-Sub ListBoxItemDown( ByRef ListBox As Object )
+Sub ListBoxItemDown( ByRef ListBox As stardiv.Toolkit.UnoListBoxControl )
 	If ListBox.SelectedItemPos = -1 Then
 		Exit Sub
 	End If
@@ -358,7 +401,7 @@ End Sub
 
 &apos;***************************************************************************
 &apos; удаление выбранного ListBoxItem
-Sub ListBoxItemRemove( ByRef ListBox As Object )
+Sub ListBoxItemRemove( ByRef ListBox As stardiv.Toolkit.UnoListBoxControl )
 	If ListBox.SelectedItemPos = -1 Then Exit Sub
     If MsgBox( sFB2PED.sFB2ExportFB2DeleteItem &amp; chr(10) &amp; ListBox.getSelectedItem() &amp; &quot; ?&quot;, _
     				32+1+128, sConvertorName ) &lt;&gt; 1 Then
@@ -376,48 +419,116 @@ Sub ListBoxItemRemove( ByRef ListBox As Object )
 End Sub
 
 &apos;***************************************************************************
+&apos; проверка, задан ли Жанр в выпадающем списке
+Function IsBookGenreInput() As Boolean
+	IsBookGenreInput = False
+	With oFB2PropertiesDlg
+		Dim oGenreComboBox As Object : oGenreComboBox = .getControl(&quot;GenreComboBox&quot;)
+		If oGenreComboBox.SelectedItem = &quot;&quot; OR oGenreComboBox.SelectedItemPos = 0 Then
+			Exit Function
+		End If
+	End With
+	IsBookGenreInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка, выбрана ли Группа Жанров в выпадающем списке
+Function IsBookGroupeGenreSelect() As Boolean
+	IsBookGroupeGenreSelect = True
+	With oFB2PropertiesDlg
+		Dim oGenreComboBox As Object : oGenreComboBox = .getControl(&quot;GenreComboBox&quot;)
+		&apos;ищем в массиве нужный жанр
+		Dim sGenreCode As String : sGenreCode = GetGenreInList( oGenreComboBox.SelectedItem )
+		If sGenreCode = &quot;?&quot; Then
+			Exit Function
+		End If
+	End With
+	IsBookGroupeGenreSelect = False
+End Function
+
+&apos;********************************************************************************
+&apos; проверяем, есть ли в списке добавляемый Жанр
+Function IsGenreExsistInArray() As Boolean
+	IsGenreExsistInArray = False
+	With oFB2PropertiesDlg
+		Dim i As Integer
+		Dim oGenreList : oGenreList = .getControl(&quot;lbGenre&quot;).Items
+		For i=0 To UBound( oGenreList )
+			If InStr( oGenreList(i), .getControl(&quot;GenreComboBox&quot;).SelectedItem ) = 1 Then
+				IsGenreExsistInArray = True
+				Exit For
+			End If
+		Next i
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; проверка выбранного Жанра на наличие в Списке добавленных Жанров
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Жанр | Match%&quot;. Иначе - &quot;&quot;
+Function IsNewGenre() As String
+	IsNewGenre = &quot;&quot;
+	With oFB2PropertiesDlg
+		If Not IsGenreExsistInArray() Then
+			IsNewGenre = MakeGenreWithMatchString( .getControl(&quot;GenreComboBox&quot;).SelectedItem, .Model.NumericFieldMatch.Value )
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление Жанра в ListBox
+Sub _BookGenreAdd()
+	With oFB2PropertiesDlg
+		Dim oGenreComboBox	As Object : oGenreComboBox	= .getControl(&quot;GenreComboBox&quot;)
+		Dim oListOfGenres	As Object : oListOfGenres	= .getControl(&quot;lbGenre&quot;)
+		Dim sGenreWithMatch	As String : sGenreWithMatch	= IsNewGenre()
+		&apos; проверяем, нет ли в списке добавляемого Жанра
+		If sGenreWithMatch &lt;&gt; &quot;&quot; Then
+			oListOfGenres.addItem( sGenreWithMatch, oListOfGenres.getItemCount() )
+			oGenreComboBox.selectItemPos( 0, True )
+			.Model.NumericFieldMatch.Value = &quot;0&quot;
+		End If
+	End With
+End Sub
+
+&apos;***************************************************************************
 &apos; добавление Жанра в ListBox
 Sub BookGenreAdd()
-	Dim oLB As Object : oLB = oFB2PropertiesDlg.getControl( &quot;GenreComboBox&quot; )
-	If oLB.SelectedItem = &quot;&quot; Then
-		MsgBox sFB2PED.sFB2PropEditorDlgSelectGenre, 64, sConvertorName
-		Exit Sub
-	End If
-	
-	&apos;ищем в массиве нужный жанр
-	Dim sGenreCode As String : sGenreCode = GetGenreInList( oLB.SelectedItem )
-	If sGenreCode = &quot;?&quot; Then
-		MsgBox sGD.sGenreGroup, 64, sConvertorName
-		Exit Sub
-	End If
-	
-	&apos; проверяем, нет ли в списке добавляемого жанра с Match
-	Dim oListOfGenres As Object : oListOfGenres = oFB2PropertiesDlg.getControl(&quot;lbGenre&quot;)
-	Dim sGenreWithMatch As String
-	sGenreWithMatch = MakeGenreWithMatchString(oLB.SelectedItem, sGenreCode, _
-												oFB2PropertiesDlg.Model.NumericFieldMatch.Value)
-
-	If IsExsistStringInArray(oListOfGenres.Items, sGenreWithMatch) = -1 Then
-		oListOfGenres.addItem(sGenreWithMatch, oListOfGenres.getItemCount())
-	End If
-
-	oFB2PropertiesDlg.Model.NumericFieldMatch.Value = &quot;0&quot;
-	oFB2PropertiesDlg.getControl(&quot;GenreComboBox&quot;).setFocus()
+	With oFB2PropertiesDlg
+		Dim oGenreComboBox As Object : oGenreComboBox = .getControl(&quot;GenreComboBox&quot;)
+		&apos; проверка, задан ли Жанр в выпадающем списке
+		If Not IsBookGenreInput() Then
+			MsgBox sFB2PED.sFB2PropEditorDlgSelectGenre, 64, sConvertorName
+			.Model.Step = 1
+			.getControl(&quot;optbtnTitleInfo&quot;).setState(True)
+			oGenreComboBox.setFocus()
+			Exit Sub
+		End If
+		&apos; проверка, выбрана ли Группа Жанров в выпадающем списке
+		If IsBookGroupeGenreSelect() Then
+			MsgBox sGD.sGenreGroup, 64, sConvertorName
+			.Model.Step = 1
+			.getControl(&quot;optbtnTitleInfo&quot;).setState(True)
+			oGenreComboBox.setFocus()
+			Exit Sub
+		End If
+		&apos; добавляем Жанр в ListBox 
+		_BookGenreAdd()
+		oGenreComboBox.setFocus()
+	End With
 End Sub
 
 &apos;***************************************************************************
 &apos; Проверка, соответствует ли введеный жанр стандартным
 Function GetGenreInList( sGenreName As String ) As String
+	GetGenreInList = &quot;&quot;
 	&apos;ищем в массиве нужный жанр
-	Dim sGenre As String : sGenre = &quot;&quot;
 	Dim i As Integer
-	For i=0 To UBound(sGLN())
-		If sGLN(i) = Trim(sGenreName) Then
-			sGenre = sGLC(i)
+	For i=0 To UBound( sGLN() )
+		If sGLN(i) = Trim( sGenreName ) Then
+			GetGenreInList = GetGenreCode( sGenreName )
 			Exit For
 		End If
 	Next i
-	GetGenreInList = sGenre
 End Function
 
 &apos;***************************************************************************
@@ -440,38 +551,75 @@ End Sub
 
 &apos;***************************************************************************
 &apos; генерация строки Жанра с Match
-Function MakeGenreWithMatchString(Genre As String, GenreCode As String, Match As String) As String
-	MakeGenreWithMatchString = Genre &amp; &quot; (&quot; &amp; GenreCode &amp; &quot;) | &quot; &amp; Match &amp; &quot;%&quot;
+Function MakeGenreWithMatchString(Genre As String, Match As String) As String
+	MakeGenreWithMatchString = Genre &amp; &quot; | &quot; &amp; Match &amp; &quot;%&quot;
+End Function
+
+&apos;***************************************************************************
+&apos; проверка, задан ли хоть один из данных на Автора Книги
+Function IsBookAuthorInput() As Boolean
+	IsBookAuthorInput = False
+	With oFB2PropertiesDlg.Model
+		If Trim(.tiFirst.Text) = &quot;&quot; AND Trim(.tiMiddle.Text) = &quot;&quot; AND Trim(.tiLast.Text) = &quot;&quot; AND _
+			Trim(.tiNickname.Text) = &quot;&quot; AND Trim(.tiEmail.Text) = &quot;&quot; AND Trim(.tiHomepage.Text) = &quot;&quot; Then
+			Exit Function
+		End If
+	End With
+	IsBookAuthorInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимого Автора Книги на наличие в Списке добавленных Авторов Книги
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Имя | Отчество |&quot; и т.д. Иначе - &quot;&quot;
+Function IsNewBookAuthor() As String
+	IsNewBookAuthor = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfBookAuthors As Object : oListOfBookAuthors = .getControl(&quot;lbBookAuthors&quot;)
+		Dim AuthorDataString As String
+		AuthorDataString = Trim( MakeAuthorDataString( .Model.tiFirst.Text, .Model.tiMiddle.Text, .Model.tiLast.Text, _
+													.Model.tiNickname.Text, .Model.tiEmail.Text, .Model.tiHomepage.Text ) )
+		If IsExsistStringInArray( oListOfBookAuthors.Items, AuthorDataString ) = -1 Then
+			IsNewBookAuthor = AuthorDataString
+		End If
+	End With
 End Function
 
 &apos;***************************************************************************
 &apos; добавление Автора Книги в ListBox
-Sub BookAuthorAdd()
-	With oFB2PropertiesDlg.Model
-		If Trim(.tiFirst.Text) = &quot;&quot; AND Trim(.tiMiddle.Text) = &quot;&quot; AND Trim(.tiLast.Text) = &quot;&quot; AND _
-			Trim(.tiNickname.Text) = &quot;&quot; AND Trim(.tiEmail.Text) = &quot;&quot; AND Trim(.tiHomepage.Text) = &quot;&quot; Then
-			MsgBox sFB2PED.sFB2PropEditorDlgFillBookAuthor, 64, sConvertorName
-			oFB2PropertiesDlg.getControl(&quot;tiFirst&quot;).setFocus()
-			Exit Sub
-		End If
-		
-		Dim oListOfBookAuthors As Object : oListOfBookAuthors = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
-		Dim AuthorDataString As String
-		AuthorDataString = MakeAuthorDataString(.tiFirst.Text, .tiMiddle.Text, .tiLast.Text, .tiNickname.Text, .tiEmail.Text, .tiHomepage.Text)
-		If IsExsistStringInArray(oListOfBookAuthors.Items, AuthorDataString) = -1 Then
-			oListOfBookAuthors.addItem(AuthorDataString, oListOfBookAuthors.getItemCount())
-			.tiFirst.Text		= &quot;&quot;
-			.tiMiddle.Text		= &quot;&quot;
-			.tiLast.Text		= &quot;&quot;
-			.tiNickname.Text	= &quot;&quot;
-			.tiEmail.Text		= &quot;&quot;
-			.tiHomepage.Text	= &quot;&quot;
+Sub _BookAuthorAdd()
+	&apos; проверка вводимого Автора Книги на наличие в Списке добавленных Авторов Книги
+	With oFB2PropertiesDlg
+		Dim oListOfBookAuthors	As Object : oListOfBookAuthors	= .getControl(&quot;lbBookAuthors&quot;)
+		Dim AuthorDataString	As String : AuthorDataString	= IsNewBookAuthor()
+		If AuthorDataString &lt;&gt; &quot;&quot; Then
+			oListOfBookAuthors.addItem( AuthorDataString, oListOfBookAuthors.getItemCount() )
+			.Model.tiFirst.Text		= &quot;&quot;
+			.Model.tiMiddle.Text	= &quot;&quot;
+			.Model.tiLast.Text		= &quot;&quot;
+			.Model.tiNickname.Text	= &quot;&quot;
+			.Model.tiEmail.Text		= &quot;&quot;
+			.Model.tiHomepage.Text	= &quot;&quot;
 		End If
 		If bComplexID = True Then
 			NewBookID( bComplexID )
 		End If
 	End With
-	oFB2PropertiesDlg.getControl(&quot;tiFirst&quot;).setFocus()
+End Sub
+
+&apos;***************************************************************************
+&apos; добавление Автора Книги в ListBox
+Sub BookAuthorAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один из данных на Автора Книги
+		If Not IsBookAuthorInput() Then
+			MsgBox sFB2PED.sFB2PropEditorDlgFillBookAuthor, 64, sConvertorName
+			.getControl(&quot;tiFirst&quot;).setFocus()
+			Exit Sub
+		End If
+		&apos; добавляем Автора Книги в ListBox
+		_BookAuthorAdd()
+		.getControl(&quot;tiFirst&quot;).setFocus()
+	End With
 End Sub
 
 &apos;***************************************************************************
@@ -492,7 +640,9 @@ Sub BookAuthorRemove()
 	Dim oListOfBookAuthors As Object : oListOfBookAuthors = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
 	ListBoxItemRemove( oListOfBookAuthors )
 	If oListOfBookAuthors.getItemCount() = 0 Then
-		Redim sAuthors(oListOfBookAuthors.getItemCount(), 5)
+		If oListOfBookAuthors.getItemCount() &gt; 0 Then
+			Redim sAuthors( oListOfBookAuthors.getItemCount(), 5 )
+		End If
 	End If
 	If bComplexID = True Then
 		NewBookID( bComplexID )
@@ -506,30 +656,67 @@ Function MakeAuthorDataString(First As String, Middle As String, Last As String,
 End Function
 
 &apos;***************************************************************************
-&apos; добавление Переводчика Книги в ListBox
-Sub BookTranslatorAdd()
+&apos; проверка, задан ли хоть один из данных на Переводчика Книги
+Function IsBookTranslatorInput() As Boolean
+	IsBookTranslatorInput = False
 	With oFB2PropertiesDlg.Model
 		If Trim(.tiTransFirst.Text) = &quot;&quot; AND Trim(.tiTransMiddle.Text) = &quot;&quot; AND Trim(.tiTransLast.Text) = &quot;&quot; AND _
 			Trim(.tiTransNickname.Text) = &quot;&quot; AND Trim(.tiTransEmail.Text) = &quot;&quot; AND Trim(.tiTransHomepage.Text) = &quot;&quot; Then
-			MsgBox sFB2PED.sFB2PropEditorDlgFillBookTrans, 64, sConvertorName
-			oFB2PropertiesDlg.getControl(&quot;tiTransFirst&quot;).setFocus()
-			Exit Sub
-		End If
-		
-		Dim oListOfBookTranslators As Object : oListOfBookTranslators = oFB2PropertiesDlg.getControl(&quot;lbTranslators&quot;)
-		Dim TranslatorDataString As String
-		TranslatorDataString = MakeAuthorDataString(.tiTransFirst.Text, .tiTransMiddle.Text, .tiTransLast.Text, .tiTransNickname.Text, .tiTransEmail.Text, .tiTransHomepage.Text)
-		If IsExsistStringInArray(oListOfBookTranslators.Items, TranslatorDataString) = -1 Then
-			oListOfBookTranslators.addItem(TranslatorDataString, oListOfBookTranslators.getItemCount())
-			.tiTransFirst.Text		= &quot;&quot;
-			.tiTransMiddle.Text		= &quot;&quot;
-			.tiTransLast.Text		= &quot;&quot;
-			.tiTransNickname.Text	= &quot;&quot;
-			.tiTransEmail.Text		= &quot;&quot;
-			.tiTransHomepage.Text	= &quot;&quot;
+			Exit Function
 		End If
 	End With
-	oFB2PropertiesDlg.getControl(&quot;tiTransFirst&quot;).setFocus()
+	IsBookTranslatorInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимого Переводчика Книги на наличие в Списке добавленных Переводчиков Книги
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Имя | Отчество |&quot; и т.д. Иначе - &quot;&quot;
+Function IsNewBookTranslator() As String
+	IsNewBookTranslator = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfBookTranslators As Object : oListOfBookTranslators = .getControl(&quot;lbTranslators&quot;)
+		Dim TranslatorDataString As String
+		TranslatorDataString = Trim( MakeAuthorDataString( .Model.tiTransFirst.Text, .Model.tiTransMiddle.Text, .Model.tiTransLast.Text, _
+															.Model.tiTransNickname.Text, .Model.tiTransEmail.Text, .Model.tiTransHomepage.Text ) )
+		If IsExsistStringInArray(oListOfBookTranslators.Items, TranslatorDataString) = -1 Then
+			IsNewBookTranslator = TranslatorDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление Переводчика Книги в ListBox
+Sub _BookTranslatorAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимого Переводчика Книги на наличие в Списке добавленных Переводчиков Книги
+		Dim oListOfBookTranslators	As Object : oListOfBookTranslators	= .getControl(&quot;lbTranslators&quot;)
+		Dim TranslatorDataString	As String : TranslatorDataString	= IsNewBookTranslator()
+		If TranslatorDataString &lt;&gt; &quot;&quot; Then
+			oListOfBookTranslators.addItem( TranslatorDataString, oListOfBookTranslators.getItemCount() )
+			.Model.tiTransFirst.Text	= &quot;&quot;
+			.Model.tiTransMiddle.Text	= &quot;&quot;
+			.Model.tiTransLast.Text		= &quot;&quot;
+			.Model.tiTransNickname.Text	= &quot;&quot;
+			.Model.tiTransEmail.Text	= &quot;&quot;
+			.Model.tiTransHomepage.Text	= &quot;&quot;
+		End If
+	End With
+End Sub
+
+&apos;***************************************************************************
+&apos; добавление Переводчика Книги в ListBox
+Sub BookTranslatorAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один из данных на Переводчика Книги
+		If Not IsBookTranslatorInput() Then
+			MsgBox sFB2PED.sFB2PropEditorDlgFillBookTrans, 64, sConvertorName
+			.getControl(&quot;tiTransFirst&quot;).setFocus()
+			Exit Sub
+		End If
+		&apos; добавляем Переводчика Книги в ListBox
+		_BookTranslatorAdd()
+		.getControl(&quot;tiTransFirst&quot;).setFocus()
+	End With
 End Sub
 
 &apos;***************************************************************************
@@ -551,25 +738,61 @@ Sub BookTranslatorRemove()
 End Sub
 
 &apos;***************************************************************************
-&apos; добавление Серии Книги в ListBox
-Sub BookSequenceAdd()
+&apos; проверка, задан ли хоть один из данных на Серию Электронной Книги
+Function IsBookSequenceInput() As Boolean
+	IsBookSequenceInput = False
 	With oFB2PropertiesDlg.Model
 		If Trim(.SequenceTextField.Text) = &quot;&quot; AND Trim(.SequenceNumberTextField.Text) = &quot;&quot; Then
-			MsgBox sFB2PED.sFB2PropEditorDlgFillBookSequence, 64, sConvertorName
-			oFB2PropertiesDlg.getControl(&quot;SequenceTextField&quot;).setFocus()
-			Exit Sub
-		End If
-		
-		Dim oListOfBookSequencies As Object : oListOfBookSequencies = oFB2PropertiesDlg.getControl(&quot;lbSequencies&quot;)
-		Dim BookSequenceDataString As String
-		BookSequenceDataString = MakeBookSequenceDataString(.SequenceTextField.Text, .SequenceNumberTextField.Text)
-		If IsExsistStringInArray(oListOfBookSequencies.Items, BookSequenceDataString) = -1 Then
-			oListOfBookSequencies.addItem(BookSequenceDataString, oListOfBookSequencies.getItemCount())
-			.SequenceTextField.Text			= &quot;&quot;
-			.SequenceNumberTextField.Text	= &quot;&quot;
+			Exit Function
 		End If
 	End With
-	oFB2PropertiesDlg.getControl(&quot;SequenceTextField&quot;).setFocus()
+	IsBookSequenceInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимой Серии Электронной Книги на наличие в Списке добавленных Серию Электронной Книги
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Серия | Номер&quot;. Иначе - &quot;&quot;
+Function IsNewBookSequence() As String
+	IsNewBookSequence = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfBookSequencies As Object : oListOfBookSequencies = .getControl(&quot;lbSequencies&quot;)
+		Dim BookSequenceDataString As String
+		BookSequenceDataString = MakeBookSequenceDataString( Trim(.Model.SequenceTextField.Text), Trim(.Model.SequenceNumberTextField.Text) )
+		If IsExsistStringInArray(oListOfBookSequencies.Items, BookSequenceDataString) = -1 Then
+			IsNewBookSequence = BookSequenceDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление Серии Книги в ListBox
+Sub _BookSequenceAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимой Серии Электронной Книги на наличие в Списке добавленных Серию Электронной Книги
+		Dim oListOfBookSequencies	As Object : oListOfBookSequencies	= .getControl(&quot;lbSequencies&quot;)
+		Dim BookSequenceDataString	As String : BookSequenceDataString	= IsNewBookSequence()
+		If IsNewBookSequence() &lt;&gt; &quot;&quot; Then
+			oListOfBookSequencies.addItem( BookSequenceDataString, oListOfBookSequencies.getItemCount() )
+			.Model.SequenceTextField.Text		= &quot;&quot;
+			.Model.SequenceNumberTextField.Text	= &quot;&quot;
+		End If
+	End With
+End Sub
+
+&apos;***************************************************************************
+&apos; добавление Серии Книги в ListBox
+Sub BookSequenceAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один из данных на Серию Электронной Книги
+		If Not IsBookSequenceInput() Then
+			MsgBox sFB2PED.sFB2PropEditorDlgFillBookSequence, 64, sConvertorName
+			.getControl(&quot;SequenceTextField&quot;).setFocus()
+			Exit Sub
+		End If
+		&apos; добавляем Серию Книги в ListBox
+		_BookSequenceAdd()
+		.getControl(&quot;SequenceTextField&quot;).setFocus()
+	End With
 End Sub
 
 &apos;***************************************************************************
@@ -599,37 +822,74 @@ End Function
 &apos;***************************************************************************
 &apos; генерация строки данных для 2-х колонок
 Function Make2ColDataString(Col1 As String, Col2 As String) As String
-	Make2ColDataString = Trim(Col1) &amp; &quot; | &quot; &amp; Trim(Col2)
+	Make2ColDataString = Trim( Col1 ) &amp; &quot; | &quot; &amp; Trim( Col2 )
+End Function
+
+&apos;***************************************************************************
+&apos; проверка, задан ли хоть один из данных на Автора fb2-файла
+Function IsFB2AuthorInput() As Boolean
+	IsFB2AuthorInput = False
+	With oFB2PropertiesDlg.Model
+		If Trim(.diFirstField.Text) = &quot;&quot; AND Trim(.diMiddleField.Text) = &quot;&quot; AND Trim(.diLastField.Text) = &quot;&quot; AND _
+			Trim(.diNicknameField.Text) = &quot;&quot; AND Trim(.diEmailField.Text) = &quot;&quot; AND Trim(.diHomepageField.Text) = &quot;&quot; Then
+			Exit Function
+		End If
+	End With
+	IsFB2AuthorInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимого Автора fb2-файла на наличие в Списке добавленных Авторов fb2-файла
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Имя | Отчество |&quot; и т.д. Иначе - &quot;&quot;
+Function IsNewFB2Author() As String
+	IsNewFB2Author = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfFB2Authors	As Object : oListOfFB2Authors = .getControl(&quot;lbFB2Author&quot;)
+		Dim FB2AuthorDataString	As String
+		FB2AuthorDataString = Trim( MakeAuthorDataString( .Model.diFirstField.Text, .Model.diMiddleField.Text, .Model.diLastField.Text, _
+														.Model.diNicknameField.Text, .Model.diEmailField.Text, .Model.diHomepageField.Text ) )
+		If IsExsistStringInArray(oListOfFB2Authors.Items, FB2AuthorDataString) = -1 Then
+			IsNewFB2Author = FB2AuthorDataString
+		End If
+	End With
 End Function
 
 &apos;***************************************************************************
 &apos; добавление Автора fb2-файла в ListBox
-Sub FB2AuthorAdd()
-	With oFB2PropertiesDlg.Model
-		If Trim(.diFirstField.Text) = &quot;&quot; AND Trim(.diMiddleField.Text) = &quot;&quot; AND Trim(.diLastField.Text) = &quot;&quot; AND _
-			Trim(.diNicknameField.Text) = &quot;&quot; AND Trim(.diEmailField.Text) = &quot;&quot; AND Trim(.diHomepageField.Text) = &quot;&quot; Then
-			MsgBox sFB2PED.sFB2PropEditorDlgFillFB2Author, 64, sConvertorName
-			oFB2PropertiesDlg.getControl(&quot;diFirstField&quot;).setFocus()
-			Exit Sub
-		End If
-		
-		Dim oListOfFB2Authors As Object : oListOfFB2Authors = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
-		Dim FB2AuthorDataString As String
-		FB2AuthorDataString = MakeAuthorDataString(.diFirstField.Text, .diMiddleField.Text, .diLastField.Text, .diNicknameField.Text, .diEmailField.Text, .diHomepageField.Text)
-		If IsExsistStringInArray(oListOfFB2Authors.Items, FB2AuthorDataString) = -1 Then
+Sub _FB2AuthorAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимого Автора fb2-файла на наличие в Списке добавленных Авторов fb2-файла
+		Dim oListOfFB2Authors	As Object : oListOfFB2Authors	= .getControl(&quot;lbFB2Author&quot;)
+		Dim FB2AuthorDataString	As String : FB2AuthorDataString	= IsNewFB2Author()
+		If FB2AuthorDataString &lt;&gt; &quot;&quot; Then
 			oListOfFB2Authors.addItem(FB2AuthorDataString, oListOfFB2Authors.getItemCount())
-			.diFirstField.Text		= &quot;&quot;
-			.diMiddleField.Text		= &quot;&quot;
-			.diLastField.Text		= &quot;&quot;
-			.diNicknameField.Text	= &quot;&quot;
-			.diEmailField.Text		= &quot;&quot;
-			.diHomepageField.Text	= &quot;&quot;
+			.Model.diFirstField.Text	= &quot;&quot;
+			.Model.diMiddleField.Text	= &quot;&quot;
+			.Model.diLastField.Text		= &quot;&quot;
+			.Model.diNicknameField.Text	= &quot;&quot;
+			.Model.diEmailField.Text	= &quot;&quot;
+			.Model.diHomepageField.Text	= &quot;&quot;
 		End If
 		If bComplexID = True Then
 			NewBookID( bComplexID )
 		End If
 	End With
-	oFB2PropertiesDlg.getControl(&quot;diFirstField&quot;).setFocus()
+End Sub
+	
+&apos;***************************************************************************
+&apos; добавление Автора fb2-файла в ListBox
+Sub FB2AuthorAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один из данных на Автора fb2-файла
+		If NOT IsFB2AuthorInput() Then
+			MsgBox sFB2PED.sFB2PropEditorDlgFillFB2Author, 64, sConvertorName
+			.getControl(&quot;diFirstField&quot;).setFocus()
+			Exit Sub
+		End If
+		&apos; добавляем Автора fb2-файла в ListBox
+		_FB2AuthorAdd()
+		.getControl(&quot;diFirstField&quot;).setFocus()
+	End With
 End Sub
 
 &apos;***************************************************************************
@@ -650,7 +910,9 @@ Sub FB2AuthorRemove()
 	Dim oListOfFB2Authors As Object : oListOfFB2Authors = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
 	ListBoxItemRemove( oListOfFB2Authors )
 	If oListOfFB2Authors.getItemCount() = 0 Then
-		Redim sDocAuthors(oListOfFB2Authors.getItemCount(), 5)
+		If oListOfFB2Authors.getItemCount() &gt; 0 Then
+			Redim sDocAuthors(oListOfFB2Authors.getItemCount(), 5)
+		End If
 	End If
 	If bComplexID = True Then
 		NewBookID( bComplexID )
@@ -658,25 +920,61 @@ Sub FB2AuthorRemove()
 End Sub
 
 &apos;***************************************************************************
-&apos; добавление Серии Бумажной Книги
-Sub PublisherSequenceAdd()
+&apos; проверка, задан ли хоть один из данных на Серию Бумажной Книги
+Function IsPublisherSequenseInput() As Boolean
+	IsPublisherSequenseInput = False
 	With oFB2PropertiesDlg.Model
 		If Trim(.pubSequenseTextField.Text) = &quot;&quot; AND Trim(.pubSequenseNumberTextField.Text) = &quot;&quot; Then
-			MsgBox sFB2PED.sFB2PropEditorDlgFillPaperBookSequence, 64, sConvertorName
-			oFB2PropertiesDlg.getControl(&quot;pubSequenseTextField&quot;).setFocus()
-			Exit Sub
-		End If
-		
-		Dim oListOfPaperBookSequencies As Object : oListOfPaperBookSequencies = oFB2PropertiesDlg.getControl(&quot;lbPubSequensies&quot;)
-		Dim PaperBookSequenceDataString As String
-		PaperBookSequenceDataString = MakeBookSequenceDataString(.pubSequenseTextField.Text, .pubSequenseNumberTextField.Text)
-		If IsExsistStringInArray(oListOfPaperBookSequencies.Items, PaperBookSequenceDataString) = -1 Then
-			oListOfPaperBookSequencies.addItem(PaperBookSequenceDataString, oListOfPaperBookSequencies.getItemCount())
-			.pubSequenseTextField.Text			= &quot;&quot;
-			.pubSequenseNumberTextField.Text	= &quot;&quot;
+			Exit Function
 		End If
 	End With
-	oFB2PropertiesDlg.getControl(&quot;pubSequenseTextField&quot;).setFocus()
+	IsPublisherSequenseInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимой Серии Бумажной Книги на наличие в Списке добавленных Серию Бумажной Книги
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Серия | Номер&quot;. Иначе - &quot;&quot;
+Function IsNewPublisherSequence() As String
+	IsNewPublisherSequence = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfPaperBookSequencies As Object : oListOfPaperBookSequencies = .getControl(&quot;lbPubSequensies&quot;)
+		Dim PaperBookSequenceDataString As String
+		PaperBookSequenceDataString = MakeBookSequenceDataString( Trim(.Model.pubSequenseTextField.Text), Trim(.Model.pubSequenseNumberTextField.Text) )
+		If IsExsistStringInArray( oListOfPaperBookSequencies.Items, PaperBookSequenceDataString ) = -1 Then
+			IsNewPublisherSequence = PaperBookSequenceDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление Серии Бумажной Книги
+Sub _PublisherSequenceAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимой Серии Бумажной Книги на наличие в Списке добавленных Серию Бумажной Книги
+		Dim oListOfPaperBookSequencies	As Object	: oListOfPaperBookSequencies = .getControl(&quot;lbPubSequensies&quot;)
+		Dim PaperBookSequenceDataString	As String	: PaperBookSequenceDataString = IsNewPublisherSequence()
+		If PaperBookSequenceDataString &lt;&gt; &quot;&quot; Then
+			oListOfPaperBookSequencies.addItem(PaperBookSequenceDataString, oListOfPaperBookSequencies.getItemCount())
+			.Model.pubSequenseTextField.Text		= &quot;&quot;
+			.Model.pubSequenseNumberTextField.Text	= &quot;&quot;
+		End If
+	End With
+End Sub
+	
+&apos;***************************************************************************
+&apos; добавление Серии Бумажной Книги
+Sub PublisherSequenceAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один из данных на Серию Бумажной Книги
+		If NOT IsPublisherSequenseInput() Then
+			MsgBox sFB2PED.sFB2PropEditorDlgFillPaperBookSequence, 64, sConvertorName
+			.getControl(&quot;pubSequenseTextField&quot;).setFocus()
+			Exit Sub
+		End If
+		&apos; добавляем Серию Бумажной Книги
+		_PublisherSequenceAdd()
+		.getControl(&quot;pubSequenseTextField&quot;).setFocus()
+	End With
 End Sub
 
 &apos;***************************************************************************
@@ -698,29 +996,65 @@ Sub PublisherSequenceRemove()
 End Sub
 
 &apos;***************************************************************************
-&apos; добавление Custom Info
-Sub CustomInfoAdd()
+&apos; проверка, задан ли хоть один из данных на Custom Info
+Function IsCustomInfoInput() As Boolean
+	IsCustomInfoInput = False
 	With oFB2PropertiesDlg.Model
 		If Trim(.cusTypeTextField.Text) = &quot;&quot; OR Trim(.cusValueTextField.Text) = &quot;&quot; Then
+			Exit Function
+		End If
+	End With
+	IsCustomInfoInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимой Custom Info на наличие в Списке добавленных Custom Info
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
+Function IsNewCustomInfo() As String
+	IsNewCustomInfo = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim CustomInfoDataString As String
+		CustomInfoDataString = Make2ColDataString( Trim(.Model.cusTypeTextField.Text), Trim(.Model.cusValueTextField.Text) )
+		If IsExsistStringInArray(oListOfCustomInfos.Items, CustomInfoDataString) = -1 Then
+			IsNewCustomInfo = CustomInfoDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление Custom Info
+Sub _CustomInfoAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимой Custom Info на наличие в Списке добавленных Custom Info
+		Dim oListOfCustomInfos		As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim CustomInfoDataString	As String : CustomInfoDataString = IsNewCustomInfo()
+		If CustomInfoDataString &lt;&gt; &quot;&quot; Then
+			oListOfCustomInfos.addItem( CustomInfoDataString, oListOfCustomInfos.getItemCount() )
+			.Model.cusTypeTextField.Text	= &quot;&quot;
+			.Model.cusValueTextField.Text	= &quot;&quot;
+		End If
+	End With
+End Sub	
+	
+&apos;***************************************************************************
+&apos; добавление Custom Info
+Sub CustomInfoAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка, задан ли хоть один из данных на Custom Info
+		If NOT IsCustomInfoInput() Then
 			MsgBox sFB2PED.sFB2PropEditorDlgFillCustomInfo, 64, sConvertorName
-			If Trim(.cusTypeTextField.Text) = &quot;&quot; Then
-				oFB2PropertiesDlg.getControl(&quot;cusTypeTextField&quot;).setFocus()
+			If Trim(.Model.cusTypeTextField.Text) = &quot;&quot; Then
+				.getControl(&quot;cusTypeTextField&quot;).setFocus()
 			Else
-				oFB2PropertiesDlg.getControl(&quot;cusValueTextField&quot;).setFocus()
+				.getControl(&quot;cusValueTextField&quot;).setFocus()
 			End If
 			Exit Sub
 		End If
-		
-		Dim oListOfCustomInfos As Object : oListOfCustomInfos = oFB2PropertiesDlg.getControl(&quot;lbCustomInfos&quot;)
-		Dim CustomInfoDataString As String
-		CustomInfoDataString = Make2ColDataString(.cusTypeTextField.Text, .cusValueTextField.Text)
-		If IsExsistStringInArray(oListOfCustomInfos.Items, CustomInfoDataString) = -1 Then
-			oListOfCustomInfos.addItem(CustomInfoDataString, oListOfCustomInfos.getItemCount())
-			.cusTypeTextField.Text	= &quot;&quot;
-			.cusValueTextField.Text	= &quot;&quot;
-		End If
+		&apos; добавляем Custom Info
+		_CustomInfoAdd()
+		.getControl(&quot;cusTypeTextField&quot;).setFocus()
 	End With
-	oFB2PropertiesDlg.getControl(&quot;cusTypeTextField&quot;).setFocus()
 End Sub
 
 &apos;***************************************************************************
@@ -745,46 +1079,6 @@ End Sub
 &apos; 								сохранение fb2 данных в свойства документа
 &apos; ===========================================================================================================================
 
-&apos;***************************************************************************
-&apos; добавление свойств документа для Автора, Переводчика Книги, а так же создателя fb2-файла
-Sub SetPropertyForAuthor( _FN As String, _MN As String, _LN As String, _NN As String, _Email As String, _HP As String, _
-						ByRef ListBox As stardiv.Toolkit.UnoListBoxControl )
-	Dim aTemp() As String
-	Dim i As Integer
-	If ListBox.getItemCount() &gt; 0 Then
-		For i = 0 To ListBox.getItemCount()-1
-			&apos; раскадываем строку из ListBox на данные Автора (Переводчика)
-			aTemp() = Split(ListBox.getItem(i), &quot; | &quot;)
-			&apos; сохраняем данные Авторов (Переводчика) в свойства
-			&apos; aTemp(0) First; aTemp(1) Middle; aTemp(2) Last; aTemp(3) Nickname; aTemp(4) Email; aTemp(5) Homepage
-			SetUserProperty( _FN	&amp; i, Trim( aTemp(0) ) )
-			SetUserProperty( _MN	&amp; i, Trim( aTemp(1) ) )
-			SetUserProperty( _LN	&amp; i, Trim( aTemp(2) ) )
-			SetUserProperty( _NN	&amp; i, Trim( aTemp(3) ) )
-			SetUserProperty( _Email	&amp; i, Trim( aTemp(4) ) )
-			SetUserProperty( _HP	&amp; i, Trim( aTemp(5) ) )
-		Next i
-	End If
-End Sub
-
-&apos;***************************************************************************
-&apos; добавление свойств документа для Серии книги
-Sub SetPropertyForSequences(_Sequence As String, _SequenceNumber As String, ByRef ListBox As stardiv.Toolkit.UnoListBoxControl)
-	Dim aTemp() As String
-	Dim i As Integer
-	If ListBox.getItemCount() &gt; 0 Then
-		For i = 0 To ListBox.getItemCount()-1
-			&apos; раскадываем строку из ListBox на данные Серии
-			aTemp() = Split(ListBox.getItem(i), &quot; | &quot;)
-			&apos; сохраняем данные Серии в свойства
-			&apos; aTemp(0) Sequence; aTemp(1) SequenceNumber;
-			SetUserProperty( _Sequence			&amp; i, Trim( aTemp(0) ) )
-			SetUserProperty( _SequenceNumber	&amp; i, Trim( aTemp(1) ) )
-		Next i
-	End If
-End Sub
-
-&apos;***************************************************************************
 &apos; сохранение fb2 данных в свойства документа
 Sub SaveFB2PropertiesToDoc()
 	&apos; удаляем все fb2 свойства из документа
@@ -800,7 +1094,7 @@ Sub SaveFB2PropertiesToDoc()
 			SetUserProperty( _fb2_ti_Keywords, Trim(.KeywordsField.Text) )
 		End If
 		If Trim(.tiDateValueField.Text) &lt;&gt; &quot;&quot;  Then
-			SetUserProperty( _fb2_ti_Date, Trim(.tiDateValueField.Text) )
+			SetUserProperty( _fb2_ti_DateValue, Trim(.tiDateValueField.Text) )
 		End If
 		If Trim(.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_ti_DateText, Trim(.tiDateTextField.Text) )
@@ -816,41 +1110,38 @@ Sub SaveFB2PropertiesToDoc()
 		
 		&apos; Массивы свойств
 		Dim oListOfData As Object
-		Dim aTemp() As String
 		Dim i As Integer
 		&apos; для Жанров Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbGenre&quot;)
-		Dim sGenreFromListBox As String
 		If oListOfData.getItemCount() &gt; 0 Then
 			For i = 0 To oListOfData.getItemCount()-1
-				&apos; раскадываем строку из ListBox на Жанр и Соответствие
-				sGenreFromListBox = oListOfData.getItem(i)
-				aTemp() = Split( sGenreFromListBox, &quot; | &quot; )
-				&apos; сохраняем текущий Жанр и его Соответствие в Свойства Документа
-				SetUserProperty( _fb2_ti_Genre &amp; i, 		aTemp(0) ) &apos; Genre
-				SetUserProperty( _fb2_ti_GenreMatch &amp; i,	aTemp(1) ) &apos; GenreMatch
+				SetUserProperty( _fb2_ti_GenreCM &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
 		
 		&apos; для Авторов Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			SetPropertyForAuthor(_fb2_ti_Author_FN, _fb2_ti_Author_MN, _fb2_ti_Author_LN, _fb2_ti_Author_NN, _
-								 _fb2_ti_Author_Email, _fb2_ti_Author_HP, oListOfData)	
+			For i = 0 To oListOfData.getItemCount()-1
+				SetUserProperty( _fb2_ti_BookAuthor &amp; i, oListOfData.getItem(i) )
+			Next i
 		End If
 		
 		&apos; для Переводчиков Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbTranslators&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			SetPropertyForAuthor( _fb2_ti_Translator_FN, _fb2_ti_Translator_MN, _fb2_ti_Translator_LN, _fb2_ti_Translator_NN, _
-								 _fb2_ti_Translator_Email, _fb2_ti_Translator_HP, oListOfData )
+			For i = 0 To oListOfData.getItemCount()-1
+				SetUserProperty( _fb2_ti_Translator &amp; i, oListOfData.getItem(i) )
+			Next i
 		End If
 		
 		
 		&apos; для Серий Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbSequencies&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			SetPropertyForSequences( _fb2_ti_Sequence, _fb2_ti_SequenceNumber, oListOfData )
+			For i = 0 To oListOfData.getItemCount()-1
+				SetUserProperty( _fb2_ti_Sequence &amp; i, oListOfData.getItem(i) )
+			Next i
 		End If
 		
 
@@ -874,8 +1165,9 @@ Sub SaveFB2PropertiesToDoc()
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			SetPropertyForAuthor( _fb2_di_Author_FN, _fb2_di_Author_MN, _fb2_di_Author_LN, _fb2_di_Author_NN, _
-							 	_fb2_di_Author_Email, _fb2_di_Author_HP, oListOfData )
+			For i = 0 To oListOfData.getItemCount()-1
+				SetUserProperty( _fb2_di_FB2Author &amp; i, oListOfData.getItem(i) )
+			Next i
 		End If
 		
 		&apos; = Publish Info =
@@ -899,7 +1191,9 @@ Sub SaveFB2PropertiesToDoc()
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbPubSequensies&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			SetPropertyForSequences( _fb2_pi_Sequence, _fb2_pi_SequenceNumber, oListOfData )
+			For i = 0 To oListOfData.getItemCount()-1
+				SetUserProperty( _fb2_pi_Sequence &amp; i, oListOfData.getItem(i) )
+			Next i
 		End If
 		
 		&apos; = Custom Info =
@@ -907,16 +1201,7 @@ Sub SaveFB2PropertiesToDoc()
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbCustomInfos&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
 			For i = 0 To oListOfData.getItemCount()-1
-				&apos; раскадываем строку из ListBox на данные Custom Info
-				aTemp() = Split(oListOfData.getItem(i), &quot; | &quot;)
-				&apos; сохраняем данные Custom Info в свойства
-				&apos; aTemp(0) Type; aTemp(1) Value;
-				If Trim( aTemp(0) ) &lt;&gt; &quot;&quot; Then
-					SetUserProperty( _fb2_ci_Type &amp; i, Trim( aTemp(0) ) )
-				End If
-				If Trim( aTemp(1) ) &lt;&gt; &quot;&quot; Then
-					SetUserProperty( _fb2_ci_Value &amp; i, Trim( aTemp(1) ) )
-				End If
+				SetUserProperty( _fb2_ci_CustomInfo &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
 
@@ -941,7 +1226,7 @@ End Sub
 &apos; ===========================================================================================================================
 &apos; 								загрузка fb2 данных из свойств документа в контролы формы
 &apos; ===========================================================================================================================
-&apos;***************************************************************************
+
 &apos; загрузка fb2 данных из свойств документа в контролы формы
 Sub GetFB2PropertiesFromDoc()
 	With oFB2PropertiesDlg.Model
@@ -956,7 +1241,7 @@ Sub GetFB2PropertiesFromDoc()
 		oLB.selectItem( GetLangFromProperty(), True )
 		oLB = oFB2PropertiesDlg.getControl(&quot;SrcLangComboBox&quot;)
 		oLB.selectItem( GetSrcLangFromProperty(), True )
-		
+
 		GetGenresArray()
 		GetBookAuthorsArray()
 		GetBookTranslatorsArray()
@@ -986,13 +1271,12 @@ Sub GetFB2PropertiesFromDoc()
 		oLB = oFB2PropertiesDlg.getControl(&quot;Codepage&quot;)
 		oLB.selectItem( GetEncodingFromProperty(), True )
 	End With
-
 End Sub
 
 &apos; ===========================================================================================================================
 &apos;									взаимодействие с диалогом Избранных Жанров
 &apos; ===========================================================================================================================
-&apos;***************************************************************************
+
 Sub GenreElite_Focus()
 	Dim aArray() As String
 	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
@@ -1013,7 +1297,7 @@ End Sub
 &apos; ===========================================================================================================================
 &apos;										генерация ID
 &apos; ===========================================================================================================================
-&apos;***************************************************************************
+
 &apos; генерация нового ID
 Sub NewBookID()
 	oFB2PropertiesDlg.Model.IDField.Text = GetNewBookID( bComplexID )
@@ -1046,26 +1330,28 @@ Function GetNewBookIDBookAuthors( ByRef ListBox As stardiv.Toolkit.UnoListBoxCon
 		&apos; раскадываем строку из ListBox на данные Автора Книги (fb2 файла)
 		Dim aAuthorData() As String
 		For i=0 To ListBox.getItemCount()-1
-			aAuthorData() = Split(ListBox.getItem(i), &quot; | &quot;)
-			If aAuthorData(3) &lt;&gt; &quot;&quot; Then
-				ID = ID &amp; &quot;-&quot; &amp; i+1 &amp; &quot;-&quot;
-				If getOOoLocal() = &quot;ru&quot; Then
-					ID = ID &amp; StrictString( RusTransliterationString( saTranslitLetters(), aAuthorData(3) ) )
+			aAuthorData() = SplitStringToArray(ListBox.getItem(i))
+			If UBound( aAuthorData() ) &lt;&gt; -1 Then
+				If Trim( aAuthorData(3) ) &lt;&gt; &quot;&quot; Then
+					ID = ID &amp; &quot;-&quot; &amp; i+1 &amp; &quot;-&quot;
+					If getOOoLocal() = &quot;ru&quot; Then
+						ID = ID &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(3) ) ) )
+					Else
+						ID = ID &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(3) ) )
+					End if
 				Else
-					ID = ID &amp; StrictString( saTranslitLetters(), aAuthorData(3) )
-				End if
-			Else
-				If aAuthorData(2) &lt;&gt; &quot;&quot; Or aAuthorData(0) &lt;&gt; &quot;&quot; Then
-					ID = ID &amp; &quot;-&quot; &amp; i+1
-				End If
-				If getOOoLocal() = &quot;ru&quot; Then
-					If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), aAuthorData(2) ) )
-					If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), aAuthorData(0) ) )
-&apos;					If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), aAuthorData(1) ) )
-				Else
-					If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), aAuthorData(2) )
-					If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), aAuthorData(0) )
-&apos;					If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), aAuthorData(1) )
+					If Trim( aAuthorData(2) ) &lt;&gt; &quot;&quot; Or Trim( aAuthorData(0) ) &lt;&gt; &quot;&quot; Then
+						ID = ID &amp; &quot;-&quot; &amp; i+1
+					End If
+					If getOOoLocal() = &quot;ru&quot; Then
+						If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(2) ) ) )
+						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(0) ) ) )
+&apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(1) ) ) )
+					Else
+						If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(2) ) )
+						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(0) ) )
+&apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(1) ) )
+					End If
 				End If
 			End If
 		Next i

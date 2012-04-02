@@ -6,7 +6,7 @@
 &apos; ===================================================================================
 Option Explicit
 
-Public sGLN() As String, sGLC() As String &apos;списки названий и кодов жанров
+Public sGLN() As String &apos;списки названий жанров
 
 &apos; для хранения сообщений для формы Редактора fb2 свойст
 Type tFB2PropertiesDlgData	
@@ -92,7 +92,7 @@ Sub InitFB2PropertiesDlg()
 			.lblMatch.Label				= &quot;Соответствие&quot;
 			
 			.lblLang.Label			= &quot;Язык:&quot;
-			.lblLangOriginal.Label	= &quot;Оригинал:&quot;
+			.lblLangOriginal.Label	= &quot;Язык оригинала:&quot;
 			
 			.fcTIAuthors.Label			= &quot; Авторы &quot;
 			.lblTIAuthorsFirst.Label	= &quot;Имя:&quot;
@@ -117,7 +117,7 @@ Sub InitFB2PropertiesDlg()
 			
 			
 			.fcSequencies.Label				= &quot; Серии &quot;
-			.lblTISequence.Label			= &quot;Серия:&quot;
+			.lblTISequence.Label			= &quot;Название:&quot;
 			.lblTISequenceNumber.Label		= &quot;Номер:&quot;
 			
 			&apos; Document Info
@@ -145,7 +145,7 @@ Sub InitFB2PropertiesDlg()
 			.lblPIPublisher.Label		= &quot;Издатель:&quot;
 			.lblPICity.Label			= &quot;Город:&quot;
 			.fcPubSequencies.Label		= &quot; Серии &quot;
-			.lblPISequence.Label		= &quot;Серия:&quot;
+			.lblPISequence.Label		= &quot;Название:&quot;
 			.lblPISequenceNumber.Label	= &quot;Номер:&quot;
 			.lblPIISBN.Label			= &quot;ISBN:&quot;
 			.lblPIYear.Label			= &quot;Год:&quot;
@@ -186,7 +186,7 @@ Sub InitFB2PropertiesDlg()
 			.lblMatch.Label				= &quot;Match&quot;
 			
 			.lblLang.Label				= &quot;Lang:&quot;
-			.lblLangOriginal.Label		= &quot;Original:&quot;
+			.lblLangOriginal.Label		= &quot;Original Lang:&quot;
 			
 			.fcTIAuthors.Label			= &quot; Authors &quot;
 			.lblTIAuthorsFirst.Label	= &quot;First:&quot;
@@ -210,7 +210,7 @@ Sub InitFB2PropertiesDlg()
 			.lblTITranslatorsWebcite.Label	= &quot;Webcite:&quot;
 			
 			.fcSequencies.Label				= &quot; Sequencies &quot;
-			.lblTISequence.Label			= &quot;Sequence:&quot;
+			.lblTISequence.Label			= &quot;Name:&quot;
 			.lblTISequenceNumber.Label		= &quot;Number:&quot;
 			
 			&apos; Document Info
@@ -238,7 +238,7 @@ Sub InitFB2PropertiesDlg()
 			.lblPIPublisher.Label		= &quot;Publisher:&quot;
 			.lblPICity.Label			= &quot;City:&quot;
 			.fcPubSequencies.Label		= &quot; Sequencies &quot;
-			.lblPISequence.Label		= &quot;Sequence:&quot;
+			.lblPISequence.Label		= &quot;Name:&quot;
 			.lblPISequenceNumber.Label	= &quot;Number:&quot;
 			.lblPIISBN.Label			= &quot;ISBN:&quot;
 			.lblPIYear.Label			= &quot;Year:&quot;
@@ -390,162 +390,132 @@ End Sub
 &apos; жанры схемы fb2.1 - Инициализация жанрами схемы FictionBook 2.1
 Sub GenreFB21()
 	If getOOoLocal() = &quot;ru&quot; Then
-		sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
-				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
-				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
-				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
-				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
-				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
-				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
-				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Проза: Прочее&quot;,_
-				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
-				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,_
-				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
-				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
-				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
-				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
-				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
-				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
-				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
-				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
-				&quot;Политика&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
-				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
-				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
-				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
-				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;Справочная Литература: Прочее&quot;,_
-				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Документальное: Прочее&quot;,_
-				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
-				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
-				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
-				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;)
+		sGLN = Array(&quot;&quot;,_
+				&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история (sf_history)&quot;, &quot;Боевая Фантастика (sf_action)&quot;, &quot;Эпическая Фантастика (sf_epic)&quot;,_
+				&quot;Героическая фантастика (sf_heroic)&quot;, &quot;Детективная Фантастика(sf_detective)&quot;, &quot;Киберпанк (sf_cyberpunk)&quot;, &quot;Космическая Фантастика (sf_space)&quot;, &quot;Социальная фантастика (sf_social)&quot;,_
+				&quot;Ужасы и Мистика (sf_horror)&quot;, &quot;Юмористическая фантастика (sf_humor)&quot;, &quot;Фэнтези (sf_fantasy)&quot;, &quot;Научная Фантастика (sf)&quot;, &quot;Научная Фантастика для детей (child_sf)&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив (det_classic)&quot;, &quot;Полицейский Детектив (det_police)&quot;, &quot;Боевики (det_action)&quot;, &quot;Иронический Детектив (det_irony)&quot;,_
+				&quot;Исторический Детектив (det_history)&quot;, &quot;Шпионский Детектив (det_espionage)&quot;, &quot;Криминальный Детектив (det_crime)&quot;, &quot;Политический детектив (det_political)&quot;,_
+				&quot;Маньяки (det_maniac)&quot;, &quot;Крутой Детектив (det_hard)&quot;, &quot;Триллеры (thriller)&quot;, &quot;Детектив (detective)&quot; , &quot;Научная Фантастический детектив (sf_detective)&quot;, &quot;Любовный детектив (love_detective)&quot;, &quot;Detectives &amp; Thrillers: Прочее (child_det)&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза (prose_classic)&quot;, &quot;Историческая Проза (prose_history)&quot;, &quot;Современная Проза (prose_contemporary)&quot;, &quot;Контркультура (prose_counter)&quot;,_
+				&quot;Русская Классика (prose_rus_classic)&quot;, &quot;Советская Классика (prose_su_classics)&quot;, &quot;Юмористическая проза (humor_prose)&quot;, &quot;Проза: Прочее (child_prose)&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы (love_contemporary)&quot;, &quot;Исторические Любовные Романы (love_history)&quot;,_
+				&quot;Остросюжетные Любовные Романы (love_detective)&quot;, &quot;Короткие Любовные Романы (love_short)&quot;, &quot;Эротика (love_erotica)&quot;,_
+				&quot;== Приключения ==&quot;, &quot;Вестерны (adv_western)&quot;, &quot;Исторические Приключения (adv_history)&quot;, &quot;Приключения: Индейцы (adv_indian)&quot;, &quot;Морские Приключения (adv_maritime)&quot;,_
+				&quot;Путешествия и География (adv_geo)&quot;, &quot;Природа и Животные (adv_animal)&quot;, &quot;Приключения для детей (child_adv)&quot;, &quot;Приключения: Прочее (adventure)&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки (child_tale)&quot;, &quot;Детские Стихи (child_verse)&quot;, &quot;Детская Проза (child_prose)&quot;, &quot;Детская Фантастика (child_sf)&quot;, &quot;Детские Остросюжетные (child_det)&quot;,_
+				&quot;Детские Приключения (child_adv)&quot;, &quot;Детская Образовательная литература (child_education)&quot;, &quot;Детское: Прочее (children)&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия (poetry)&quot;, &quot;Драматургия (dramaturgy)&quot;,&quot;Юмористические стихи (humor_verse)&quot;,&quot;Стихи: Прочее (child_verse)&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература (antique_ant)&quot;, &quot;Европейская Старинная Литература (antique_european)&quot;, &quot;Древнерусская Литература (antique_russian)&quot;,_
+				&quot;Древневосточная Литература (antique_east)&quot;, &quot;Мифы. Легенды. Эпос (antique_myths)&quot;, &quot;Старинная Литература: Прочее (antique)&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История (sci_history)&quot;, &quot;Психология (sci_psychology)&quot;, &quot;Культурология (sci_culture)&quot;, &quot;Религиоведение (sci_religion)&quot;, &quot;Философия (sci_philosophy)&quot;,_
+				&quot;Политика (sci_politics)&quot;, &quot;Юриспруденция (sci_juris)&quot;, &quot;Языкознание (sci_linguistic)&quot;, &quot;Медицина (sci_medicine)&quot;, &quot;Физика (sci_phys)&quot;, &quot;Математика (sci_math)&quot;,_
+				&quot;Химия (sci_chem)&quot;, &quot;Биология (sci_biology)&quot;, &quot;Технические (sci_tech)&quot;, &quot;Природа и Животные (adv_animal)&quot;, &quot;Научно-образовательная: Прочее (science)&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет (comp_www)&quot;, &quot;Программирование (comp_programming)&quot;, &quot;Компьютерное Железо (comp_hard)&quot;, &quot;Программы (comp_soft)&quot;, &quot;Базы данных (comp_db)&quot;,_
+				&quot;ОС и Сети (comp_osnet)&quot;, &quot;Компьютеры: Прочее (computers)&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии (ref_encyc)&quot;, &quot;Словари (ref_dict)&quot;, &quot;Справочники (ref_ref)&quot;, &quot;Руководства (ref_guide)&quot;, &quot;Справочная Литература: Прочее (reference)&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары (nonf_biography)&quot;, &quot;Публицистика (nonf_publicism)&quot;, &quot;Критика (nonf_criticism)&quot;, &quot;Искусство, Дизайн (design)&quot;, &quot;Документальное: Прочее (nonfiction)&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия (religion_rel)&quot;, &quot;Эзотерика (religion_esoterics)&quot;, &quot;Самосовершенствование (religion_self)&quot;, &quot;Религиозные исследования (sci_religion)&quot;, &quot;Религия и духовность: Прочее (Religious)&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты (humor_anecdote)&quot;, &quot;Юмористическая Проза (humor_prose)&quot;, &quot;Юмористические Стихи (humor_verse)&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария (home_cooking)&quot;, &quot;Домашние Животные (home_pets)&quot;, &quot;Хобби, Ремесла (home_crafts)&quot;, &quot;Развлечения (home_entertain)&quot;, &quot;Здоровье (home_health)&quot;, &quot;Сад и Огород (home_garden)&quot;,_
+				&quot;Сделай Сам (home_diy)&quot;, &quot;Спорт (home_sport)&quot;, &quot;Эротика, Секс (home_sex)&quot;, &quot;Дом и Семья: Прочее (home)&quot;)
 	Else
-		sGLN = Array(&quot;== SF, Fantasy ==&quot;, &quot;Alternative history&quot;, &quot;Action SF&quot;, &quot;Epic SF&quot;, &quot;Heroic SF&quot;, &quot;Detective SF&quot;, &quot;Cyberpunk&quot;, _
-				&quot;Space SF&quot;, &quot;Social SF&quot;, &quot;Horror &amp; Mystic&quot;, &quot;Humor SF&quot;, &quot;Fantasy&quot;, &quot;Science Fiction&quot;, &quot;Science Fiction for Kids&quot;,_
-				&quot;== Detectives, Thrillers ==&quot;, &quot;Classical Detective&quot;, &quot;Police Stories&quot;, &quot;Action&quot;, &quot;Ironical Detective&quot;,_
-				&quot;Historical Detective&quot;, &quot;Espionage Detective&quot;, &quot;Crime Detective&quot;, &quot;Political Detective&quot;,_
-				&quot;Maniacs&quot;, &quot;Hard-boiled Detective&quot;, &quot;Thrillers&quot;, &quot;Detective&quot; , &quot;Detective SF&quot;, &quot;Detective Romance&quot;, &quot;Detectives &amp; Thrillers: Misk&quot;,_
-				&quot;== Prose ==&quot;, &quot;Classics Prose&quot;, &quot;Historical Prose&quot;, &quot;Contemporary Prose&quot;, &quot;Counterculture&quot;,_
-				&quot;Russian Classics&quot;, &quot;Soviet Classics&quot;, &quot;Humor Prose&quot;, &quot;Prose: Misk&quot;,_
-				&quot;== Romance ==&quot;, &quot;Contemporary Romance&quot;, &quot;Historical Romance&quot;, &quot;Detective Romance&quot;, &quot;Short Romance&quot;, &quot;Erotica&quot;,_
-				&quot;== Adventure ==&quot;, &quot;Western&quot;, &quot;History&quot;, &quot;Indians&quot;, &quot;Maritime Fiction&quot;,_
-				&quot;Travel &amp; Geography&quot;, &quot;Nature &amp; Animals&quot;, &quot;Adventures for Kids&quot;, &quot;Misk Adventures&quot;,_
-				&quot;== Children&apos;s ==&quot;, &quot;Fairy Tales&quot;, &quot;Verses&quot;, &quot;Prose for Kids&quot;, &quot;Science Fiction for Kids&quot;, &quot;Detectives &amp; Thrillers&quot;,_
-				&quot;Adventures for Kids&quot;, &quot;Education for Kids&quot;, &quot;For Kids: Misk&quot;,_
-				&quot;== Poetry, Dramaturgy ==&quot;, &quot;Poetry&quot;, &quot;Dramaturgy&quot;, &quot;Humor Verses&quot;, &quot;Verses: Misk&quot;,_
-				&quot;== Antique ==&quot;, &quot;Antique Literature&quot;, &quot;European Literature&quot;, &quot;Antique Russian Literature&quot;,_
-				&quot;Antique East Literature&quot;, &quot;Myths. Legends. Epos&quot;, &quot;Other Antique&quot;,_
-				&quot;== Science, Education ==&quot;, &quot;History&quot;, &quot;Psychology&quot;, &quot;Cultural Science&quot;, &quot;Religious Studies&quot;, &quot;Philosophy&quot;,_
-				&quot;Politics&quot;, &quot;Jurisprudence&quot;, &quot;Linguistics&quot;, &quot;Medicine&quot;, &quot;Physics&quot;, &quot;Mathematics&quot;,_
-				&quot;Chemistry&quot;, &quot;Biology&quot;, &quot;Technical&quot;, &quot;Nature &amp; Animals&quot;, &quot;Misk Science, Education&quot;,_
-				&quot;== Computers ==&quot;, &quot;Internet&quot;, &quot;Programming&quot;, &quot;Hardware&quot;, &quot;Software&quot;, &quot;Databases&quot;, &quot;OS &amp; Networking&quot;, &quot;Computers: Misk&quot;,_
-				&quot;== Reference ==&quot;, &quot;Encyclopedias&quot;, &quot;Dictionaries&quot;, &quot;Reference&quot;, &quot;Guidebooks&quot;, &quot;Misk References&quot;,_
-				&quot;== Nonfiction ==&quot;, &quot;Biography &amp; Memoirs&quot;, &quot;Publicism&quot;, &quot;Criticism&quot;, &quot;Art, Design&quot;, &quot;Misk Nonfiction&quot;,_
-				&quot;== Religion ==&quot;, &quot;Religion&quot;, &quot;Esoterics&quot;, &quot;Self-perfection&quot;, &quot;Other&quot;, &quot;Religious Studies&quot;,_
-				&quot;== Humor ==&quot;, &quot;Anecdote&quot;, &quot;Humor Prose&quot;, &quot;Humor Verses&quot;, &quot;Misk Humor&quot;,_
-				&quot;== Home, Family ==&quot;, &quot;Cooking&quot;, &quot;Pets&quot;, &quot;Hobbies &amp; Crafts&quot;, &quot;Entertaining&quot;, &quot;Health&quot;, &quot;Garden&quot;,_
-				&quot;Do it yourself&quot;, &quot;Sports&quot;, &quot;Erotica, Sex&quot;, &quot;Home: Other&quot;)
+		sGLN = Array(&quot;&quot;,_
+				&quot;== SF, Fantasy ==&quot;, &quot;Alternative history (sf_history)&quot;, &quot;Action SF (sf_action)&quot;, &quot;Epic SF (sf_epic)&quot;, &quot;Heroic SF (sf_heroic)&quot;, &quot;Detective SF (sf_detective)&quot;, &quot;Cyberpunk (sf_cyberpunk)&quot;, _
+				&quot;Space SF (sf_space)&quot;, &quot;Social SF (sf_social)&quot;, &quot;Horror &amp; Mystic (sf_horror)&quot;, &quot;Humor SF (sf_humor)&quot;, &quot;Fantasy (sf_fantasy)&quot;, &quot;Science Fiction (sf)&quot;, &quot;Science Fiction for Kids (child_sf)&quot;,_
+				&quot;== Detectives, Thrillers ==&quot;, &quot;Classical Detective (det_classic)&quot;, &quot;Police Stories (det_police)&quot;, &quot;Action (det_action)&quot;, &quot;Ironical Detective (det_irony)&quot;,_
+				&quot;Historical Detective (det_history)&quot;, &quot;Espionage Detective (det_espionage)&quot;, &quot;Crime Detective (det_crime)&quot;, &quot;Political Detective (det_political)&quot;,_
+				&quot;Maniacs (det_maniac)&quot;, &quot;Hard-boiled Detective (det_hard)&quot;, &quot;Thrillers (thriller)&quot;, &quot;Detective (detective)&quot; , &quot;Detective SF (sf_detective)&quot;, &quot;Detective Romance (love_detective)&quot;, &quot;Detectives &amp; Thrillers: Misk (child_det)&quot;,_
+				&quot;== Prose ==&quot;, &quot;Classics Prose (prose_classic)&quot;, &quot;Historical Prose (prose_history)&quot;, &quot;Contemporary Prose (prose_contemporary)&quot;, &quot;Counterculture (prose_counter)&quot;,_
+				&quot;Russian Classics (prose_rus_classic)&quot;, &quot;Soviet Classics (prose_su_classics)&quot;, &quot;Humor Prose (humor_prose)&quot;, &quot;Prose: Misk (child_prose)&quot;,_
+				&quot;== Romance ==&quot;, &quot;Contemporary Romance (love_contemporary)&quot;, &quot;Historical Romance (love_history)&quot;, &quot;Detective Romance (love_detective)&quot;, &quot;Short Romance (love_short)&quot;, &quot;Erotica (love_erotica)&quot;,_
+				&quot;== Adventure ==&quot;, &quot;Western (adv_western)&quot;, &quot;History (adv_history)&quot;, &quot;Indians (adv_indian)&quot;, &quot;Maritime Fiction (adv_maritime)&quot;,_
+				&quot;Travel &amp; Geography (adv_geo)&quot;, &quot;Nature &amp; Animals (adv_animal)&quot;, &quot;Adventures for Kids (child_adv)&quot;, &quot;Misk Adventures (adventure)&quot;,_
+				&quot;== Children&apos;s ==&quot;, &quot;Fairy Tales (child_tale)&quot;, &quot;Verses (child_verse)&quot;, &quot;Prose for Kids (child_prose)&quot;, &quot;Science Fiction for Kids (child_sf)&quot;, &quot;Detectives &amp; Thrillers (child_det)&quot;,_
+				&quot;Adventures for Kids (child_adv)&quot;, &quot;Education for Kids (child_education)&quot;, &quot;For Kids: Misk (children)&quot;,_
+				&quot;== Poetry, Dramaturgy ==&quot;, &quot;Poetry (poetry)&quot;, &quot;Dramaturgy (dramaturgy)&quot;, &quot;Humor Verses (humor_verse)&quot;, &quot;Verses: Misk (child_verse)&quot;,_
+				&quot;== Antique ==&quot;, &quot;Antique Literature (antique_ant)&quot;, &quot;European Literature (antique_european)&quot;, &quot;Antique Russian Literature (antique_russian)&quot;,_
+				&quot;Antique East Literature (antique_east)&quot;, &quot;Myths. Legends. Epos (antique_myths)&quot;, &quot;Other Antique (antique)&quot;,_
+				&quot;== Science, Education ==&quot;, &quot;History (sci_history)&quot;, &quot;Psychology (sci_psychology)&quot;, &quot;Cultural Science (sci_culture)&quot;, &quot;Religious Studies (sci_religion)&quot;, &quot;Philosophy (sci_philosophy)&quot;,_
+				&quot;Politics (sci_politics)&quot;, &quot;Jurisprudence (sci_juris)&quot;, &quot;Linguistics (sci_linguistic)&quot;, &quot;Medicine (sci_medicine)&quot;, &quot;Physics (sci_phys)&quot;, &quot;Mathematics (sci_math)&quot;,_
+				&quot;Chemistry (sci_chem)&quot;, &quot;Biology (sci_biology)&quot;, &quot;Technical (sci_tech)&quot;, &quot;Nature &amp; Animals (adv_animal)&quot;, &quot;Misk Science, Education (science)&quot;,_
+				&quot;== Computers ==&quot;, &quot;Internet (comp_www)&quot;, &quot;Programming (comp_programming)&quot;, &quot;Hardware (comp_hard)&quot;, &quot;Software (comp_soft)&quot;, &quot;Databases (comp_db)&quot;, &quot;OS &amp; Networking (comp_osnet)&quot;, &quot;Computers: Misk (computers)&quot;,_
+				&quot;== Reference ==&quot;, &quot;Encyclopedias (ref_encyc)&quot;, &quot;Dictionaries (ref_dict)&quot;, &quot;Reference (ref_ref)&quot;, &quot;Guidebooks (ref_guide)&quot;, &quot;Misk References (reference)&quot;,_
+				&quot;== Nonfiction ==&quot;, &quot;Biography &amp; Memoirs (nonf_biography)&quot;, &quot;Publicism (nonf_publicism)&quot;, &quot;Criticism (nonf_criticism)&quot;, &quot;Art, Design (design)&quot;, &quot;Misk Nonfiction (nonfiction)&quot;,_
+				&quot;== Religion ==&quot;, &quot;Religion (religion_rel)&quot;, &quot;Esoterics (religion_esoterics)&quot;, &quot;Self-perfection (religion_self)&quot;, &quot;Religious Studies (sci_religion)&quot;, &quot;Religious: Other (religion)&quot;,_
+				&quot;== Humor ==&quot;, &quot;Anecdote (humor_anecdote)&quot;, &quot;Humor Prose (humor_prose)&quot;, &quot;Humor Verses (humor_verse)&quot;, &quot;Misk Humor (humor)&quot;,_
+				&quot;== Home, Family ==&quot;, &quot;Cooking (home_cooking)&quot;, &quot;Pets (home_pets)&quot;, &quot;Hobbies &amp; Crafts (home_crafts)&quot;, &quot;Entertaining (home_entertain)&quot;, &quot;Health (home_health)&quot;, &quot;Garden (home_garden)&quot;,_
+				&quot;Do it yourself (home_diy)&quot;, &quot;Sports (home_sport)&quot;, &quot;Erotica, Sex (home_sex)&quot;, &quot;Home: Other (home)&quot;)
 	End If
-
- 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
-			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
-			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;child_prose&quot;,_
-			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,_
-			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
-			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
-			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
-			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
-			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
-			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
-			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;reference&quot;,_
-			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;nonfiction&quot;,_
-			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
-			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
-			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot; )
 End Sub
 
 &apos; жанры схемы fb2.2 - Инициализация жанрами схемы FictionBook 2.2
 Sub GenreFB22()
 	If getOOoLocal() = &quot;ru&quot; Then
-		sGLN = Array(&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история&quot;, &quot;Боевая Фантастика&quot;, &quot;Эпическая Фантастика&quot;,_
-				&quot;Героическая фантастика&quot;, &quot;Детективная Фантастика&quot;, &quot;Киберпанк&quot;, &quot;Космическая Фантастика&quot;, &quot;Социальная фантастика&quot;,_
-				&quot;Ужасы и Мистика&quot;, &quot;Юмористическая фантастика&quot;, &quot;Фэнтези&quot;, &quot;Научная Фантастика&quot;, &quot;Научная Фантастика для детей&quot;,_
-				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив&quot;, &quot;Полицейский Детектив&quot;, &quot;Боевики&quot;, &quot;Иронический Детектив&quot;,_
-				&quot;Исторический Детектив&quot;, &quot;Шпионский Детектив&quot;, &quot;Криминальный Детектив&quot;, &quot;Политический детектив&quot;,_
-				&quot;Маньяки&quot;, &quot;Крутой Детектив&quot;, &quot;Триллеры&quot;, &quot;Детектив&quot; , &quot;Научная Фантастический детектив&quot;, &quot;Любовный детектив&quot;, &quot;Детективы, Боевики: Прочее&quot;,_
-				&quot;== Проза ==&quot;, &quot;Классическая Проза&quot;, &quot;Историческая Проза&quot;, &quot;Современная Проза&quot;, &quot;Контркультура&quot;,_
-				&quot;Русская Классика&quot;, &quot;Советская Классика&quot;, &quot;Юмористическая проза&quot;, &quot;Военная проза&quot;, &quot;Проза: Прочее&quot;,_
-				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы&quot;, &quot;Исторические Любовные Романы&quot;,_
-				&quot;Остросюжетные Любовные Романы&quot;, &quot;Короткие Любовные Романы&quot;, &quot;Эротика&quot;,&quot;Фантастическая любовь&quot;,_
-				&quot;== Приключения ==&quot;, &quot;Вестерны&quot;, &quot;Исторические Приключения&quot;, &quot;Приключения: Индейцы&quot;, &quot;Морские Приключения&quot;,_
-				&quot;Путешествия и География&quot;, &quot;Природа и Животные&quot;, &quot;Приключения для детей&quot;, &quot;Приключения: Прочее&quot;,_
-				&quot;== Детское ==&quot;, &quot;Сказки&quot;, &quot;Детские Стихи&quot;, &quot;Детская Проза&quot;, &quot;Детская Фантастика&quot;, &quot;Детские Остросюжетные&quot;,_
-				&quot;Детские Приключения&quot;, &quot;Детская Образовательная литература&quot;, &quot;Детское: Прочее&quot;,_
-				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия&quot;, &quot;Драматургия&quot;,&quot;Юмористические стихи&quot;,&quot;Стихи: Прочее&quot;,_
-				&quot;== Старинное ==&quot;, &quot;Античная Литература&quot;, &quot;Европейская Старинная Литература&quot;, &quot;Древнерусская Литература&quot;,_
-				&quot;Древневосточная Литература&quot;, &quot;Мифы. Легенды. Эпос&quot;, &quot;Старинная Литература: Прочее&quot;,_
-				&quot;== Наука, Образование ==&quot;, &quot;История&quot;, &quot;Психология&quot;, &quot;Культурология&quot;, &quot;Религиоведение&quot;, &quot;Философия&quot;,_
-				&quot;Политика&quot;, &quot;Деловая литература&quot;, &quot;Юриспруденция&quot;, &quot;Языкознание&quot;, &quot;Медицина&quot;, &quot;Физика&quot;, &quot;Математика&quot;,_
-				&quot;Химия&quot;, &quot;Биология&quot;, &quot;Технические&quot;, &quot;Природа и Животные&quot;, &quot;Научно-образовательная: Прочее&quot;,_
-				&quot;== Компьютеры ==&quot;, &quot;Интернет&quot;, &quot;Программирование&quot;, &quot;Компьютерное Железо&quot;, &quot;Программы&quot;, &quot;Базы данных&quot;,_
-				&quot;ОС и Сети&quot;, &quot;Компьютеры: Прочее&quot;,_
-				&quot;== Справочники ==&quot;, &quot;Энциклопедии&quot;, &quot;Словари&quot;, &quot;Справочники&quot;, &quot;Руководства&quot;, &quot;GEO Справочники&quot;, &quot;Справочная Литература: Прочее&quot;,_
-				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары&quot;, &quot;Публицистика&quot;, &quot;Критика&quot;, &quot;Искусство, Дизайн&quot;, &quot;Периодика&quot;, &quot;Документальное: Прочее&quot;,_
-				&quot;== Религия ==&quot;, &quot;Религия&quot;, &quot;Эзотерика&quot;, &quot;Самосовершенствование&quot;, &quot;Религиозные исследования&quot;, &quot;Религия и духовность: Прочее&quot;,_
-				&quot;== Юмор ==&quot;, &quot;Анекдоты&quot;, &quot;Юмористическая Проза&quot;, &quot;Юмористические Стихи&quot;, &quot;Юмор: Прочее&quot;,_
-				&quot;== Дом, Семья ==&quot;, &quot;Кулинария&quot;, &quot;Домашние Животные&quot;, &quot;Хобби, Ремесла&quot;, &quot;Развлечения&quot;, &quot;Здоровье&quot;, &quot;Сад и Огород&quot;,_
-				&quot;Сделай Сам&quot;, &quot;Спорт&quot;, &quot;Эротика, Секс&quot;, &quot;Дом и Семья: Прочее&quot;,_
-				&quot;== Экономика и Бизнес ==&quot;, &quot;Поиск работы&quot;, &quot;Подбор персонала&quot;, &quot;Продажи, Реклама, PR&quot;, &quot;Банковское дело&quot;,_
-				&quot;Ценные бумаги, Инвестиции&quot;, &quot;Бухучет, Налогообложение, Аудит&quot;, &quot;Внешнеэкономическая деятельность&quot;,_
-				&quot;Экономика&quot;, &quot;Отраслевые издания&quot;, &quot;Корпоративная культура&quot;, &quot;Личные финансы&quot;, &quot;Недвижимость&quot;, &quot;Популярно о бизнесе&quot;,_
-				&quot;Малый бизнес&quot;, &quot;Делопроизводство&quot;, &quot;Справочники&quot; )
+		sGLN = Array(&quot;&quot;,_
+				&quot;== Научная фантастика и Фэнтези ==&quot;, &quot;Альтернативная история (sf_history)&quot;, &quot;Боевая Фантастика (sf_action)&quot;, &quot;Эпическая Фантастика (sf_epic)&quot;,_
+				&quot;Героическая фантастика (sf_heroic)&quot;, &quot;Детективная Фантастика(sf_detective)&quot;, &quot;Киберпанк (sf_cyberpunk)&quot;, &quot;Космическая Фантастика (sf_space)&quot;, &quot;Социальная фантастика (sf_social)&quot;,_
+				&quot;Ужасы и Мистика (sf_horror)&quot;, &quot;Юмористическая фантастика (sf_humor)&quot;, &quot;Фэнтези (sf_fantasy)&quot;, &quot;Научная Фантастика (sf)&quot;, &quot;Научная Фантастика для детей (child_sf)&quot;,_
+				&quot;== Детективы, Боевики ==&quot;, &quot;Классический Детектив (det_classic)&quot;, &quot;Полицейский Детектив (det_police)&quot;, &quot;Боевики (det_action)&quot;, &quot;Иронический Детектив (det_irony)&quot;,_
+				&quot;Исторический Детектив (det_history)&quot;, &quot;Шпионский Детектив (det_espionage)&quot;, &quot;Криминальный Детектив (det_crime)&quot;, &quot;Политический детектив (det_political)&quot;,_
+				&quot;Маньяки (det_maniac)&quot;, &quot;Крутой Детектив (det_hard)&quot;, &quot;Триллеры (thriller)&quot;, &quot;Детектив (detective)&quot; , &quot;Научная Фантастический детектив (sf_detective)&quot;, &quot;Любовный детектив (love_detective)&quot;, &quot;Detectives &amp; Thrillers: Прочее (child_det)&quot;,_
+				&quot;== Проза ==&quot;, &quot;Классическая Проза (prose_classic)&quot;, &quot;Историческая Проза (prose_history)&quot;, &quot;Современная Проза (prose_contemporary)&quot;, &quot;Контркультура (prose_counter)&quot;,_
+				&quot;Русская Классика (prose_rus_classic)&quot;, &quot;Советская Классика (prose_su_classics)&quot;, &quot;Юмористическая проза (humor_prose)&quot;, &quot;Военная проза (prose_military)&quot;, &quot;Проза: Прочее (child_prose)&quot;,_
+				&quot;== Любовные романы ==&quot;, &quot;Современные Любовные Романы (love_contemporary)&quot;, &quot;Исторические Любовные Романы (love_history)&quot;,_
+				&quot;Остросюжетные Любовные Романы (love_detective)&quot;, &quot;Короткие Любовные Романы (love_short)&quot;, &quot;Эротика (love_erotica)&quot;, &quot;Фантастическая любовь (love_sf)&quot;, _
+				&quot;== Приключения ==&quot;, &quot;Вестерны (adv_western)&quot;, &quot;Исторические Приключения (adv_history)&quot;, &quot;Приключения: Индейцы (adv_indian)&quot;, &quot;Морские Приключения (adv_maritime)&quot;,_
+				&quot;Путешествия и География (adv_geo)&quot;, &quot;Природа и Животные (adv_animal)&quot;, &quot;Приключения для детей (child_adv)&quot;, &quot;Приключения: Прочее (adventure)&quot;,_
+				&quot;== Детское ==&quot;, &quot;Сказки (child_tale)&quot;, &quot;Детские Стихи (child_verse)&quot;, &quot;Детская Проза (child_prose)&quot;, &quot;Детская Фантастика (child_sf)&quot;, &quot;Детские Остросюжетные (child_det)&quot;,_
+				&quot;Детские Приключения (child_adv)&quot;, &quot;Детская Образовательная литература (child_education)&quot;, &quot;Детское: Прочее (children)&quot;,_
+				&quot;== Поэзия, Драматургия ==&quot;, &quot;Поэзия (poetry)&quot;, &quot;Драматургия (dramaturgy)&quot;,&quot;Юмористические стихи (humor_verse)&quot;,&quot;Стихи: Прочее (child_verse)&quot;,_
+				&quot;== Старинное ==&quot;, &quot;Античная Литература (antique_ant)&quot;, &quot;Европейская Старинная Литература (antique_european)&quot;, &quot;Древнерусская Литература (antique_russian)&quot;,_
+				&quot;Древневосточная Литература (antique_east)&quot;, &quot;Мифы. Легенды. Эпос (antique_myths)&quot;, &quot;Старинная Литература: Прочее (antique)&quot;,_
+				&quot;== Наука, Образование ==&quot;, &quot;История (sci_history)&quot;, &quot;Психология (sci_psychology)&quot;, &quot;Культурология (sci_culture)&quot;, &quot;Религиоведение (sci_religion)&quot;, &quot;Философия (sci_philosophy)&quot;,_
+				&quot;Политика (sci_politics)&quot;, &quot;Деловая литература (sci_business)&quot;, &quot;Юриспруденция (sci_juris)&quot;, &quot;Языкознание (sci_linguistic)&quot;, &quot;Медицина (sci_medicine)&quot;, &quot;Физика (sci_phys)&quot;, &quot;Математика (sci_math)&quot;,_
+				&quot;Химия (sci_chem)&quot;, &quot;Биология (sci_biology)&quot;, &quot;Технические (sci_tech)&quot;, &quot;Природа и Животные (adv_animal)&quot;, &quot;Научно-образовательная: Прочее (science)&quot;,_
+				&quot;== Компьютеры ==&quot;, &quot;Интернет (comp_www)&quot;, &quot;Программирование (comp_programming)&quot;, &quot;Компьютерное Железо (comp_hard)&quot;, &quot;Программы (comp_soft)&quot;, &quot;Базы данных (comp_db)&quot;,_
+				&quot;ОС и Сети (comp_osnet)&quot;, &quot;Компьютеры: Прочее (computers)&quot;,_
+				&quot;== Справочники ==&quot;, &quot;Энциклопедии (ref_encyc)&quot;, &quot;Словари (ref_dict)&quot;, &quot;Справочники (ref_ref)&quot;, &quot;Руководства (ref_guide)&quot;, &quot;GEO Справочники (geo_guides)&quot;, &quot;Справочная Литература: Прочее (reference)&quot;,_
+				&quot;== Документальное ==&quot;, &quot;Биографии и Мемуары (nonf_biography)&quot;, &quot;Публицистика (nonf_publicism)&quot;, &quot;Критика (nonf_criticism)&quot;, &quot;Искусство, Дизайн (design)&quot;, &quot;Периодика (periodic)&quot;, &quot;Документальное: Прочее (nonfiction)&quot;,_
+				&quot;== Религия ==&quot;, &quot;Религия (religion_rel)&quot;, &quot;Эзотерика (religion_esoterics)&quot;, &quot;Самосовершенствование (religion_self)&quot;, &quot;Религиозные исследования (sci_religion)&quot;, &quot;Религия и духовность: Прочее (Religious)&quot;,_
+				&quot;== Юмор ==&quot;, &quot;Анекдоты (humor_anecdote)&quot;, &quot;Юмористическая Проза (humor_prose)&quot;, &quot;Юмористические Стихи (humor_verse)&quot;, &quot;Юмор: Прочее&quot;,_
+				&quot;== Дом, Семья ==&quot;, &quot;Кулинария (home_cooking)&quot;, &quot;Домашние Животные (home_pets)&quot;, &quot;Хобби, Ремесла (home_crafts)&quot;, &quot;Развлечения (home_entertain)&quot;, &quot;Здоровье (home_health)&quot;, &quot;Сад и Огород (home_garden)&quot;,_
+				&quot;Сделай Сам (home_diy)&quot;, &quot;Спорт (home_sport)&quot;, &quot;Эротика, Секс (home_sex)&quot;, &quot;Дом и Семья: Прочее (home)&quot;, _
+				&quot;== Экономика и Бизнес ==&quot;, &quot;Поиск работы (periodic)&quot;, &quot;Подбор персонала (management)&quot;, &quot;Продажи, Реклама, PR (marketing)&quot;, &quot;Банковское дело (banking)&quot;,_
+				&quot;Ценные бумаги, Инвестиции (stock)&quot;, &quot;Бухучет, Налогообложение, Аудит (accounting)&quot;, &quot;Внешнеэкономическая деятельность (global_economy)&quot;,_
+				&quot;Экономика (economics)&quot;, &quot;Отраслевые издания (industries)&quot;, &quot;Корпоративная культура (org_behavior)&quot;, &quot;Личные финансы (personal_finance)&quot;, &quot;Недвижимость (real_estate)&quot;, &quot;Популярно о бизнесе (popular_business)&quot;,_
+				&quot;Малый бизнес (small_business)&quot;, &quot;Делопроизводство (paper_work)&quot;, &quot;Справочники (economics_ref)&quot; )
 	Else
-		sGLN = Array(&quot;== SF, Fantasy ==&quot;, &quot;Alternative history&quot;, &quot;Action SF&quot;, &quot;Epic SF&quot;, &quot;Heroic SF&quot;, &quot;Detective SF&quot;, &quot;Cyberpunk&quot;, _
-				&quot;Space SF&quot;, &quot;Social SF&quot;, &quot;Horror &amp; Mystic&quot;, &quot;Humor SF&quot;, &quot;Fantasy&quot;, &quot;Fiction&quot;, &quot;Science Fiction for Kids&quot;,_
-				&quot;== Detectives, Thrillers ==&quot;, &quot;Classical Detective&quot;, &quot;Police Stories&quot;, &quot;Action&quot;, &quot;Ironical Detective&quot;,_
-				&quot;Historical Detective&quot;, &quot;Espionage Detective&quot;, &quot;Crime Detective&quot;, &quot;Political Detective&quot;, &quot;Maniacs&quot;, _
-				&quot;Hard-boiled Detective&quot;, &quot;Thrillers&quot;, &quot;Detective&quot; , &quot;Detective SF&quot;, &quot;Detective Romance&quot;, &quot;Detectives &amp; Thrillers: Прочее&quot;,_
-				&quot;== Prose ==&quot;, &quot;Classics Prose&quot;, &quot;Historical Prose&quot;, &quot;Contemporary Prose&quot;, &quot;Counterculture&quot;,_
-				&quot;Russian Classics&quot;, &quot;Soviet Classics&quot;, &quot;Humor Prose&quot;, &quot;Military&quot;, &quot;Prose: Misk&quot;,_
-				&quot;== Romance ==&quot;, &quot;Contemporary Romance&quot;, &quot;Historical Romance&quot;,_
-				&quot;Detective Romance&quot;, &quot;Short Romance&quot;, &quot;Erotica&quot;, &quot;Science Fiction&quot;,_
-				&quot;== Adventure ==&quot;, &quot;Western&quot;, &quot;History&quot;, &quot;Indians&quot;, &quot;Maritime Fiction&quot;,_
-				&quot;Travel &amp; Geography&quot;, &quot;Nature &amp; Animals&quot;, &quot;Adventures for Kids&quot;, &quot;Misk Adventures&quot;,_
-				&quot;== Children&apos;s ==&quot;, &quot;Fairy Tales&quot;, &quot;Verses&quot;, &quot;Prose for Kids&quot;, &quot;Science Fiction for Kids&quot;, &quot;Detectives &amp; Thrillers&quot;,_
-				&quot;Adventures for Kids&quot;, &quot;Education for Kids&quot;, &quot;For Kids: Misk&quot;,_
-				&quot;== Poetry, Dramaturgy ==&quot;, &quot;Poetry&quot;, &quot;Dramaturgy&quot;, &quot;Humor Verses&quot;,&quot;Verses: Misk&quot;,_
-				&quot;== Antique ==&quot;, &quot;Antique Literature&quot;, &quot;European Literature&quot;, &quot;Antique Russian Literature&quot;,_
-				&quot;Antique East Literature&quot;, &quot;Myths. Legends. Epos&quot;, &quot;Other Antique&quot;,_
-				&quot;== Science, Education ==&quot;, &quot;History&quot;, &quot;Psychology&quot;, &quot;Cultural Science&quot;, &quot;Religious Studies&quot;, &quot;Philosophy&quot;,_
-				&quot;Politics&quot;, &quot;The business Literature&quot;, &quot;Jurisprudence&quot;, &quot;Linguistics&quot;, &quot;Medicine&quot;, &quot;Physics&quot;, &quot;Mathematics&quot;,_
-				&quot;Chemistry&quot;, &quot;Biology&quot;, &quot;Technical&quot;, &quot;Nature &amp; Animals&quot;, &quot;Misk Science, Education&quot;,_
-				&quot;== Computers ==&quot;, &quot;Internet&quot;, &quot;Programming&quot;, &quot;Hardware&quot;, &quot;Software&quot;, &quot;Databases&quot;, &quot;OS &amp; Networking&quot;, &quot;Computers: Misk&quot;,_
-				&quot;== Reference ==&quot;, &quot;Encyclopedias&quot;, &quot;Dictionaries&quot;, &quot;Reference&quot;, &quot;Guidebooks&quot;, &quot;GEO References&quot;, &quot;Misk References&quot;,_
-				&quot;== Nonfiction ==&quot;, &quot;Biography &amp; Memoirs&quot;, &quot;Publicism&quot;, &quot;Criticism&quot;, &quot;Art, Design&quot;, &quot;Periodic&quot;, &quot;Misk Nonfiction&quot;,_
-				&quot;== Religion ==&quot;, &quot;Religion&quot;, &quot;Esoterics&quot;, &quot;Self-perfection&quot;, &quot;Religious Studies&quot;, &quot;Religion: Other&quot;,_
-				&quot;== Humor ==&quot;, &quot;Anecdote&quot;, &quot;Humor Prose&quot;, &quot;Humor Verses&quot;, &quot;Misk Humor&quot;,_
-				&quot;== Home, Family ==&quot;, &quot;Cooking&quot;, &quot;Pets&quot;, &quot;Hobbies &amp; Crafts&quot;, &quot;Entertaining&quot;, &quot;Health&quot;, &quot;Garden&quot;,_
-				&quot;Do it yourself&quot;, &quot;Sports&quot;, &quot;Erotica, Sex&quot;, &quot;Home: Other&quot;,_
-				&quot;== Economy, Business ==&quot;, &quot;Job Hunting&quot;, &quot;Management&quot;, &quot;Marketing&quot;, &quot;Banking&quot;,_
-				&quot;Stock&quot;, &quot;Accounting&quot;, &quot;Global Economy&quot;, &quot;Economics&quot;, &quot;Industries&quot;, &quot;Corporate Culture&quot;, &quot;Personal Finance&quot;,_
-				&quot;Real Estate&quot;, &quot;Popular Business&quot;, &quot;Small Business&quot;, &quot;Paper Work&quot;, &quot;Economics Reference Book&quot; )
+		sGLN = Array(&quot;&quot;,_
+				&quot;== SF, Fantasy ==&quot;, &quot;Alternative history (sf_history)&quot;, &quot;Action SF (sf_action)&quot;, &quot;Epic SF (sf_epic)&quot;, &quot;Heroic SF (sf_heroic)&quot;, &quot;Detective SF (sf_detective)&quot;, &quot;Cyberpunk (sf_cyberpunk)&quot;, _
+				&quot;Space SF (sf_space)&quot;, &quot;Social SF (sf_social)&quot;, &quot;Horror &amp; Mystic (sf_horror)&quot;, &quot;Humor SF (sf_humor)&quot;, &quot;Fantasy (sf_fantasy)&quot;, &quot;Science Fiction (sf)&quot;, &quot;Science Fiction for Kids (child_sf)&quot;,_
+				&quot;== Detectives, Thrillers ==&quot;, &quot;Classical Detective (det_classic)&quot;, &quot;Police Stories (det_police)&quot;, &quot;Action (det_action)&quot;, &quot;Ironical Detective (det_irony)&quot;,_
+				&quot;Historical Detective (det_history)&quot;, &quot;Espionage Detective (det_espionage)&quot;, &quot;Crime Detective (det_crime)&quot;, &quot;Political Detective (det_political)&quot;,_
+				&quot;Maniacs (det_maniac)&quot;, &quot;Hard-boiled Detective (det_hard)&quot;, &quot;Thrillers (thriller)&quot;, &quot;Detective (detective)&quot; , &quot;Detective SF (sf_detective)&quot;, &quot;Detective Romance (love_detective)&quot;, &quot;Detectives &amp; Thrillers: Misk (child_det)&quot;,_
+				&quot;== Prose ==&quot;, &quot;Classics Prose (prose_classic)&quot;, &quot;Historical Prose (prose_history)&quot;, &quot;Contemporary Prose (prose_contemporary)&quot;, &quot;Counterculture (prose_counter)&quot;,_
+				&quot;Russian Classics (prose_rus_classic)&quot;, &quot;Soviet Classics (prose_su_classics)&quot;, &quot;Humor Prose (humor_prose)&quot;, &quot;Military (prose_military)&quot;, &quot;Prose: Misk (child_prose)&quot;,_
+				&quot;== Romance ==&quot;, &quot;Contemporary Romance (love_contemporary)&quot;, &quot;Historical Romance (love_history)&quot;, &quot;Detective Romance (love_detective)&quot;, &quot;Short Romance (love_short)&quot;, &quot;Erotica (love_erotica)&quot;,&quot;Science Fiction (love_sf)&quot;,_
+				&quot;== Adventure ==&quot;, &quot;Western (adv_western)&quot;, &quot;History (adv_history)&quot;, &quot;Indians (adv_indian)&quot;, &quot;Maritime Fiction (adv_maritime)&quot;,_
+				&quot;Travel &amp; Geography (adv_geo)&quot;, &quot;Nature &amp; Animals (adv_animal)&quot;, &quot;Adventures for Kids (child_adv)&quot;, &quot;Misk Adventures (adventure)&quot;,_
+				&quot;== Children&apos;s ==&quot;, &quot;Fairy Tales (child_tale)&quot;, &quot;Verses (child_verse)&quot;, &quot;Prose for Kids (child_prose)&quot;, &quot;Science Fiction for Kids (child_sf)&quot;, &quot;Detectives &amp; Thrillers (child_det)&quot;,_
+				&quot;Adventures for Kids (child_adv)&quot;, &quot;Education for Kids (child_education)&quot;, &quot;For Kids: Misk (children)&quot;,_
+				&quot;== Poetry, Dramaturgy ==&quot;, &quot;Poetry (poetry)&quot;, &quot;Dramaturgy (dramaturgy)&quot;, &quot;Humor Verses (humor_verse)&quot;, &quot;Verses: Misk (child_verse)&quot;,_
+				&quot;== Antique ==&quot;, &quot;Antique Literature (antique_ant)&quot;, &quot;European Literature (antique_european)&quot;, &quot;Antique Russian Literature (antique_russian)&quot;,_
+				&quot;Antique East Literature (antique_east)&quot;, &quot;Myths. Legends. Epos (antique_myths)&quot;, &quot;Other Antique (antique)&quot;,_
+				&quot;== Science, Education ==&quot;, &quot;History (sci_history)&quot;, &quot;Psychology (sci_psychology)&quot;, &quot;Cultural Science (sci_culture)&quot;, &quot;Religious Studies (sci_religion)&quot;, &quot;Philosophy (sci_philosophy)&quot;,_
+				&quot;Politics (sci_politics)&quot;, &quot;The business Literature (sci_business)&quot;, &quot;Jurisprudence (sci_juris)&quot;, &quot;Linguistics (sci_linguistic)&quot;, &quot;Medicine (sci_medicine)&quot;, &quot;Physics (sci_phys)&quot;, &quot;Mathematics (sci_math)&quot;,_
+				&quot;Chemistry (sci_chem)&quot;, &quot;Biology (sci_biology)&quot;, &quot;Technical (sci_tech)&quot;, &quot;Nature &amp; Animals (adv_animal)&quot;, &quot;Misk Science, Education (science)&quot;,_
+				&quot;== Computers ==&quot;, &quot;Internet (comp_www)&quot;, &quot;Programming (comp_programming)&quot;, &quot;Hardware (comp_hard)&quot;, &quot;Software (comp_soft)&quot;, &quot;Databases (comp_db)&quot;, &quot;OS &amp; Networking (comp_osnet)&quot;, &quot;Computers: Misk (computers)&quot;,_
+				&quot;== Reference ==&quot;, &quot;Encyclopedias (ref_encyc)&quot;, &quot;Dictionaries (ref_dict)&quot;, &quot;Reference (ref_ref)&quot;, &quot;Guidebooks (ref_guide)&quot;, &quot;GEO References (geo_guides)&quot;, &quot;Misk References (reference)&quot;,_
+				&quot;== Nonfiction ==&quot;, &quot;Biography &amp; Memoirs (nonf_biography)&quot;, &quot;Publicism (nonf_publicism)&quot;, &quot;Criticism (nonf_criticism)&quot;, &quot;Art, Design (design)&quot;, &quot;Periodic (periodic)&quot;, &quot;Misk Nonfiction (nonfiction)&quot;,_
+				&quot;== Religion ==&quot;, &quot;Religion (religion_rel)&quot;, &quot;Esoterics (religion_esoterics)&quot;, &quot;Self-perfection (religion_self)&quot;, &quot;Religious Studies (sci_religion)&quot;, &quot;Religious: Other (religion)&quot;,_
+				&quot;== Humor ==&quot;, &quot;Anecdote (humor_anecdote)&quot;, &quot;Humor Prose (humor_prose)&quot;, &quot;Humor Verses (humor_verse)&quot;, &quot;Misk Humor (humor)&quot;,_
+				&quot;== Home, Family ==&quot;, &quot;Cooking (home_cooking)&quot;, &quot;Pets (home_pets)&quot;, &quot;Hobbies &amp; Crafts (home_crafts)&quot;, &quot;Entertaining (home_entertain)&quot;, &quot;Health (home_health)&quot;, &quot;Garden (home_garden)&quot;,_
+				&quot;Do it yourself (home_diy)&quot;, &quot;Sports (home_sport)&quot;, &quot;Erotica, Sex (home_sex)&quot;, &quot;Home: Other (home)&quot;, _
+				&quot;== Economy, Business ==&quot;, &quot;Job Hunting (periodic)&quot;, &quot;Management (management)&quot;, &quot;Marketing (marketing)&quot;, &quot;Banking (banking)&quot;,_
+				&quot;Stock (stock)&quot;, &quot;Accounting (accounting)&quot;, &quot;Global Economy (global_economy)&quot;, &quot;Economics (economics)&quot;, &quot;Industries (industries)&quot;, &quot;Corporate Culture (org_behavior)&quot;, &quot;Personal Finance (personal_finance)&quot;,_
+				&quot;Real Estate (real_estate)&quot;, &quot;Popular Business (popular_business)&quot;, &quot;Small Business (small_business)&quot;, &quot;Paper Work (paper_work)&quot;, &quot;Economics Reference Book (economics_ref)&quot; )
 	End If
-	
- 	sGLC = Array(&quot;?&quot;,&quot;sf_history&quot;,&quot;sf_action&quot;,&quot;sf_epic&quot;,&quot;sf_heroic&quot;,&quot;sf_detective&quot;,&quot;sf_cyberpunk&quot;,&quot;sf_space&quot;,&quot;sf_social&quot;,&quot;sf_horror&quot;,&quot;sf_humor&quot;,&quot;sf_fantasy&quot;,&quot;sf&quot;, &quot;child_sf&quot;,_
-			&quot;?&quot;,&quot;det_classic&quot;,&quot;det_police&quot;,&quot;det_action&quot;,&quot;det_irony&quot;,&quot;det_history&quot;,&quot;det_espionage&quot;,&quot;det_crime&quot;,&quot;det_political&quot;,&quot;det_maniac&quot;,&quot;det_hard&quot;,&quot;thriller&quot;,&quot;detective&quot;,&quot;sf_detective&quot;,&quot;love_detective&quot;,&quot;child_det&quot;,_
-			&quot;?&quot;,&quot;prose_classic&quot;,&quot;prose_history&quot;,&quot;prose_contemporary&quot;,&quot;prose_counter&quot;,&quot;prose_rus_classic&quot;,&quot;prose_su_classics&quot;,&quot;humor_prose&quot;,&quot;prose_military&quot;,&quot;child_prose&quot;,_
-			&quot;?&quot;,&quot;love_contemporary&quot;,&quot;love_history&quot;,&quot;love_detective&quot;,&quot;love_short&quot;,&quot;love_erotica&quot;,&quot;love_sf&quot;,_
-			&quot;?&quot;,&quot;adv_western&quot;,&quot;adv_history&quot;,&quot;adv_indian&quot;,&quot;adv_maritime&quot;,&quot;adv_geo&quot;,&quot;adv_animal&quot;,&quot;child_adv&quot;,&quot;adventure&quot;,_
-			&quot;?&quot;,&quot;child_tale&quot;,&quot;child_verse&quot;,&quot;child_prose&quot;,&quot;child_sf&quot;,&quot;child_det&quot;,&quot;child_adv&quot;,&quot;child_education&quot;,&quot;children&quot;,_
-			&quot;?&quot;,&quot;poetry&quot;,&quot;dramaturgy&quot;,&quot;humor_verse&quot;,&quot;child_verse&quot;,_
-			&quot;?&quot;,&quot;antique_ant&quot;,&quot;antique_european&quot;,&quot;antique_russian&quot;,&quot;antique_east&quot;,&quot;antique_myths&quot;,&quot;antique&quot;,_
-			&quot;?&quot;,&quot;sci_history&quot;,&quot;sci_psychology&quot;,&quot;sci_culture&quot;,&quot;sci_religion&quot;,&quot;sci_philosophy&quot;,&quot;sci_politics&quot;,&quot;sci_business&quot;,&quot;sci_juris&quot;,&quot;sci_linguistic&quot;,&quot;sci_medicine&quot;,&quot;sci_phys&quot;,&quot;sci_math&quot;,&quot;sci_chem&quot;,&quot;sci_biology&quot;,&quot;sci_tech&quot;,&quot;adv_animal&quot;,&quot;science&quot;,_
-			&quot;?&quot;,&quot;comp_www&quot;,&quot;comp_programming&quot;,&quot;comp_hard&quot;,&quot;comp_soft&quot;,&quot;comp_db&quot;,&quot;comp_osnet&quot;,&quot;computers&quot;,_
-			&quot;?&quot;,&quot;ref_encyc&quot;,&quot;ref_dict&quot;,&quot;ref_ref&quot;,&quot;ref_guide&quot;,&quot;geo_guides&quot;,&quot;reference&quot;,_
-			&quot;?&quot;,&quot;nonf_biography&quot;,&quot;nonf_publicism&quot;,&quot;nonf_criticism&quot;,&quot;design&quot;,&quot;periodic&quot;,&quot;nonfiction&quot;,_
-			&quot;?&quot;,&quot;religion_rel&quot;,&quot;religion_esoterics&quot;,&quot;religion_self&quot;,&quot;sci_religion&quot;,&quot;religion&quot;,_
-			&quot;?&quot;,&quot;humor_anecdote&quot;,&quot;humor_prose&quot;,&quot;humor_verse&quot;,&quot;humor&quot;,_
-			&quot;?&quot;,&quot;home_cooking&quot;,&quot;home_pets&quot;,&quot;home_crafts&quot;,&quot;home_entertain&quot;,&quot;home_health&quot;,&quot;home_garden&quot;,&quot;home_diy&quot;,&quot;home_sport&quot;,&quot;home_sex&quot;,&quot;home&quot;,_
-			&quot;?&quot;,&quot;job_hunting&quot;,&quot;management&quot;,&quot;marketing&quot;,&quot;banking&quot;,&quot;stock&quot;,&quot;accounting&quot;,&quot;global_economy&quot;,&quot;economics&quot;,&quot;industries&quot;,&quot;org_behavior&quot;,&quot;personal_finance&quot;,&quot;real_estate&quot;,&quot;popular_business&quot;,&quot;small_business&quot;,&quot;paper_work&quot;,&quot;economics_ref&quot; )
 End Sub
 
 </script:module>
