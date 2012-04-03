@@ -15,6 +15,7 @@ Type tFB2PropertiesDlgData
 	sFB2PropEditorDlgTitle					As String &apos; Заголовок основной формы редактора fb2 свойств
 	sFB2PropEditorDlgInit					As String &apos; Инициализация
 	sFB2PropEditorDlgLoadFB2Properties		As String &apos; Загрузка fb2 свойств
+	sFB2PropEditorDlgSaveFB2Properties		As String &apos; Сохранение fb2 свойств
 	sFB2PropEditorDlgSelectGenre			As String &apos; Выберите, пожалуйста, Жанр Книги
 	sFB2PropEditorDlgFillBookTitle			As String &apos; Заполните, пожалуйста, поля Названия Книги
 	sFB2PropEditorDlgFillVersion			As String &apos; Заполните, пожалуйста, поле Версии Книги (например, 1.0)
@@ -89,10 +90,10 @@ Sub InitFB2PropertiesDlg()
 			.lblGenre.Label				= &quot;Жанр:&quot;
 			.cmbtnFavorites.Label		= &quot;Избранное ...&quot;
 			.cmbtnFavorites.HelpText	= &quot;Работа со списком Избранных Жанров...&quot;
-			.lblMatch.Label				= &quot;Соответствие&quot;
+			.lblMatch.Label				= &quot;Соответствие:&quot;
 			
 			.lblLang.Label			= &quot;Язык:&quot;
-			.lblLangOriginal.Label	= &quot;Язык оригинала:&quot;
+			.lblLangOriginal.Label	= &quot;Оригинал:&quot;
 			
 			.fcTIAuthors.Label			= &quot; Авторы &quot;
 			.lblTIAuthorsFirst.Label	= &quot;Имя:&quot;
@@ -103,9 +104,9 @@ Sub InitFB2PropertiesDlg()
 			.lblTIAuthorsWebcite.Label	= &quot;Сайт:&quot;
 			
 			.lblTIName.Label		= &quot;Название:&quot;
-			.lblTIKeywords.Label	= &quot;Keywords:&quot;
-			.lblTIDateText.Label	= &quot;Date text:&quot;
-			.lblTIDateValue.Label	= &quot;Date value:&quot;
+			.lblTIKeywords.Label	= &quot;Ключевые слова:&quot;
+			.lblTIDateText.Label	= &quot;Дата (текст):&quot;
+			.lblTIDateValue.Label	= &quot;Дата (значение):&quot;
 			
 			.fcTITranslators.Label			= &quot; Переводчики &quot;
 			.lblTITranslatorsFirst.Label	= &quot;Имя:&quot;
@@ -124,6 +125,7 @@ Sub InitFB2PropertiesDlg()
 			.fcDI.Label				= &quot; FB2 Документ (Document Info) &quot;
 			.lblDIVersion.Label		= &quot;Версия:&quot;
 			.lblDIID.Label			= &quot;ID:&quot;
+			.cmdbtnNewID.Label		= &quot;Новый ID&quot;
 			.cmdbtnNewID.HelpText	= &quot;Сгенерировать уникальный ID Книги заново&quot;
 			.fcDIAuthors.Label			= &quot; Авторы fb2&quot;
 			.lblDIAuthorsFirst.Label	= &quot;Имя:&quot;
@@ -135,9 +137,13 @@ Sub InitFB2PropertiesDlg()
 			
 			.lblPrograms.Label		= &quot;Программа:&quot;
 			.lblSourceOCR.Label		= &quot;Источник OCR:&quot;
-			.lblSourceURLs.Label	= &quot;Адрес URLs:&quot;
+			.lblSourceURLs.Label	= &quot;Источник URLs:&quot;
+			.LoadProfileCommandButton.Label		= &quot;Загрузить профиль&quot;
+			.SaveProfileCommandButton.Label		= &quot;Сохранить профиль&quot;
 			.LoadProfileCommandButton.HelpText	= &quot;Загрузить профиль Автора fb2 документа, Source OCR и Истории создания fb2 документа&quot;
 			.SaveProfileCommandButton.HelpText	= &quot;Сохранить профиль Автора fb2 документа, Source OCR и Истории создания fb2 документа&quot;
+			.LoadProfileFB2Author.Label			= &quot;Загрузить профиль как...&quot;
+			.SaveProfileFB2Author.Label			= &quot;Сохранить профиль как...&quot;
 			
 			&apos; Publish Info
 			.fcPI.Label					= &quot; Бумажная Книга (Publish Info) &quot;
@@ -183,10 +189,10 @@ Sub InitFB2PropertiesDlg()
 			.lblGenre.Label				= &quot;Genre:&quot;
 			.cmbtnFavorites.Label		= &quot;Favorites ...&quot;
 			.cmbtnFavorites.HelpText	= &quot;Work with the Elite Genres List...&quot;
-			.lblMatch.Label				= &quot;Match&quot;
+			.lblMatch.Label				= &quot;Match:&quot;
 			
 			.lblLang.Label				= &quot;Lang:&quot;
-			.lblLangOriginal.Label		= &quot;Original Lang:&quot;
+			.lblLangOriginal.Label		= &quot;Original:&quot;
 			
 			.fcTIAuthors.Label			= &quot; Authors &quot;
 			.lblTIAuthorsFirst.Label	= &quot;First:&quot;
@@ -217,6 +223,7 @@ Sub InitFB2PropertiesDlg()
 			.fcDI.Label				= &quot; FB2 Document (Document Info) &quot;
 			.lblDIVersion.Label 	= &quot;Version:&quot;
 			.lblDIID.Label			= &quot;ID:&quot;
+			.cmdbtnNewID.Label		= &quot;New ID&quot;
 			.cmdbtnNewID.HelpText	= &quot;Generate new ID again&quot;
 			.fcDIAuthors.Label			= &quot; FB2 Authors &quot;
 			.lblDIAuthorsFirst.Label	= &quot;First:&quot;
@@ -229,8 +236,12 @@ Sub InitFB2PropertiesDlg()
 			.lblPrograms.Label		= &quot;Programs used:&quot;
 			.lblSourceOCR.Label		= &quot;Source OCR:&quot;
 			.lblSourceURLs.Label	= &quot;Source URLs:&quot;
+			.LoadProfileFB2Author.Label			= &quot;Load default Profile&quot;
+			.SaveProfileFB2Author.Label			= &quot;Save default Profile&quot;
 			.LoadProfileCommandButton.HelpText	= &quot;Load the Profile of Author fb2 File, Source OCR and Histories of creation fb2 file&quot;
 			.SaveProfileCommandButton.HelpText	= &quot;Save the Profile of Author fb2 File, Source OCR and Histories of creation fb2 file&quot;
+			.LoadProfileFB2Author.Label			= &quot;Load Profile As...&quot;
+			.SaveProfileFB2Author.Label			= &quot;Save Profile As...&quot;
 			
 			&apos; Publish Info
 			.fcPI.Label					= &quot; Paper Book (Publish Info) &quot;
@@ -276,6 +287,7 @@ Sub InitFB2PropertiesDlgMessage()
 			.sFB2PropEditorDlgCreateDialog	= &quot;Создание диалога&quot;
 			.sFB2PropEditorDlgInit			= &quot;Инициализация&quot;
 			.sFB2PropEditorDlgLoadFB2Properties = &quot;Загрузка fb2 свойств&quot;
+			.sFB2PropEditorDlgSaveFB2Properties	= &quot;Сохранение fb2 свойств&quot;
 			.sFB2PropEditorDlgSelectGenre	= &quot;Выберите, пожалуйста, Жанр Книги.&quot;
 			.sFB2PropEditorDlgFillBookTitle	= &quot;Заполните, пожалуйста, поля Названия Книги.&quot;
 			.sFB2PropEditorDlgFillVersion	= &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;
@@ -309,6 +321,7 @@ Sub InitFB2PropertiesDlgMessage()
 			.sFB2PropEditorDlgCreateDialog	= &quot;Creating the Dialog&quot;
 			.sFB2PropEditorDlgInit			= &quot;Initialization&quot;
 			.sFB2PropEditorDlgLoadFB2Properties = &quot;FB2 Properties Loading&quot;
+			.sFB2PropEditorDlgSaveFB2Properties	= &quot;FB2 Properties2 Saving&quot;
 			.sFB2PropEditorDlgSelectGenre	= &quot;Please, select the Genre of the Book.&quot;
 			.sFB2PropEditorDlgFillBookTitle	= &quot;Please, fiil the Field of the Book Title.&quot;
 			.sFB2PropEditorDlgFillVersion	= &quot;Please, fiil the Field of the Book Version (for example, 1.0)&quot;

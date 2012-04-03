@@ -1308,18 +1308,16 @@ End Function
 
 &apos; Версия расширения
 Function getMyVersion( sOXTName As String ) As String
-	Dim oPIP As Object
-	Dim aaExtensionList
+	getMyVersion = &quot;&quot;
+	Dim oPIP As Object : oPIP = GetDefaultContext().getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
+	Dim aaExtensionList : aaExtensionList = oPIP.getExtensionList()
 	Dim aExtensionList
-	oPIP = GetDefaultContext().getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
-	aaExtensionList = oPIP.getExtensionList
 	For Each aExtensionList In aaExtensionList
 		If aExtensionList(0) = sOXTName Then
 			 getMyVersion = aExtensionList(1)
 			 Exit Function
 		End If
 	Next
-	getMyVersion = &quot;&quot;
 End Function
 
 &apos; Возвращает локаль

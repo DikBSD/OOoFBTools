@@ -102,23 +102,27 @@ Sub FB2PropertiesEditorDlgExec()
 	oProgressBar.end
 	
 	&apos; заполнение контролов формы
-	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog+&quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgLoadFB2Properties, 3 )
+	Dim ProgressCount As Integer : ProgressCount = 3
+	If bFB2AnyPropertyIsExsist Then ProgressCount = 43
+	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog+&quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgLoadFB2Properties, ProgressCount )
 	oProgressBar.setValue(0)
 	With oFB2PropertiesDlg
 		.getControl( &quot;SrcLangComboBox&quot; ).AddItem( &quot;&quot;, 0 )
 		.getControl( &quot;Codepage&quot; ).addItems(Array( &quot;utf-8&quot;, &quot;windows-1251&quot;), 0 )
 		.getControl( &quot;Codepage&quot; ).SelectItemPos( 0, True )
 	End With
-	oProgressBar.setValue(1)
+	Dim Iter As Integer : Iter = 1
+	oProgressBar.setValue(Iter) : Iter = Iter + 1
 	Dim sNow As String : sNow = Now
 	With oFB2PropertiesDlg.Model
 		.LangComboBox.StringItemList	= sLangList()
 		.SrcLangComboBox.StringItemList	= sLangList()
 		.ProgrammUsedField.Text		= &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot; &quot; &amp; &quot;(ExportToFB21)&quot;
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.NumericFieldMatch.Value	= &quot;0&quot;
 		If bFB2AnyPropertyIsExsist Then
 			&apos; загрузка из свойств документа fb2 свойств в контролы формы
-			GetFB2PropertiesFromDoc()
+			GetFB2PropertiesFromDoc( oProgressBar, Iter )
 		Else
 			&apos; Читаем стили и задаем значения переменным
 			LoadStylesToVars()
@@ -128,20 +132,22 @@ Sub FB2PropertiesEditorDlgExec()
 			SetBookLangOOoDefaultLocal( oFB2PropertiesDlg, &quot;LangComboBox&quot; )
 		End If
 	End With
-	oProgressBar.setValue(2)
+	oProgressBar.setValue(Iter)
 	
 	If Not bFB2AnyPropertyIsExsist Then
 		&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 		_ReadProfile( getOOoFBToolsSettingsDir() &amp; sConstFB2AuthorProfile, 1 )
-		If NOT IsFB2AuthorInput() Then
-			&apos; добавляем Автора fb2-файла в ListBox
-			_FB2AuthorAdd()
+		If IsFB2AuthorInput() Then
+			If IsNewFB2Author() &lt;&gt; &quot;&quot; Then
+				&apos; добавляем Автора fb2-файла в ListBox
+				_FB2AuthorAdd()
+			End If
 		End If
 	End If
 
 	&apos; генерируем ID Книги
 	oFB2PropertiesDlg.Model.IDField.Text = GetNewBookID( bComplexID )
-	oProgressBar.setValue(3)
+	oProgressBar.setValue(Iter)
 	oProgressBar.end
 	
 	bWorkEnd = False
@@ -156,6 +162,12 @@ Sub FB2PropertiesEditorDlgExec()
 	Wend
 	
 	oFB2PropertiesDlg.setVisible( False )
+End Sub
+
+Sub CloseDlg()
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
+	oFB2PropertiesDlg.endExecute()
 End Sub
 
 &apos;***************************************************************************
@@ -289,6 +301,11 @@ Sub SavePropertiesToDoc()
 		Exit Sub
 	End If
 	
+	oFB2PropertiesDlg.setEnable(False)
+	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sFB2PED.sFB2PropEditorDlgSaveFB2Properties, 27 )
+	oProgressBar.setValue(0)
+	Dim Iter As Integer : Iter = 1
 	&apos; все данные в списках и/или полях - корректные.
 	&apos; Теперь, если есть данные в полях, отличные от тех, что в Списках - добавляем их в Списки
 	If NOT IsGenreExsistInArray()	AND IsNewGenre()				&lt;&gt; &quot;&quot; Then _BookGenreAdd()
@@ -298,11 +315,13 @@ Sub SavePropertiesToDoc()
 	If IsFB2AuthorInput()			AND IsNewFB2Author()			&lt;&gt; &quot;&quot; Then _FB2AuthorAdd()
 	If IsPublisherSequenseInput()	AND IsNewPublisherSequence()	&lt;&gt; &quot;&quot; Then _PublisherSequenceAdd()
 	If IsCustomInfoInput()			AND IsNewCustomInfo()			&lt;&gt; &quot;&quot; Then _CustomInfoAdd()
-	
+	oProgressBar.setValue(0) : Iter = Iter + 1
 	&apos; сохраняем fb2 данные в свойства документа
-	SaveFB2PropertiesToDoc()
-	
-	oFB2PropertiesDlg.endExecute()
+	SaveFB2PropertiesToDoc( oProgressBar, Iter )
+	&apos; закрываем диалог
+	oFB2PropertiesDlg.setEnable(True)
+	CloseDlg()
+	oProgressBar.end
 End Sub
 
 &apos;***************************************************************************
@@ -1080,9 +1099,10 @@ End Sub
 &apos; ===========================================================================================================================
 
 &apos; сохранение fb2 данных в свойства документа
-Sub SaveFB2PropertiesToDoc()
+Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 	&apos; удаляем все fb2 свойства из документа
 	RemoveAllUserPropertyFromTemplate()
+	oProgressBar.setValue(Iter) : Iter = Iter + 1
 	
 	&apos; добавление данных в свойства документа
 	With oFB2PropertiesDlg.Model
@@ -1090,23 +1110,29 @@ Sub SaveFB2PropertiesToDoc()
 		If Trim(.BookTitleField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_ti_BookTitle, Trim(.BookTitleField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.KeywordsField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_ti_Keywords, Trim(.KeywordsField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.tiDateValueField.Text) &lt;&gt; &quot;&quot;  Then
 			SetUserProperty( _fb2_ti_DateValue, Trim(.tiDateValueField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.tiDateTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_ti_DateText, Trim(.tiDateTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		Dim oLB As Object
 		oLB = oFB2PropertiesDlg.getControl(&quot;LangComboBox&quot;)
 		SetUserProperty( _fb2_ti_Lang, oLB.SelectedItem )
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		oLB = oFB2PropertiesDlg.getControl(&quot;SrcLangComboBox&quot;)
 		If oLB.SelectedItemPos &gt; 0 Then
 			SetUserProperty( _fb2_ti_SrcLang, oLB.SelectedItem )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; Массивы свойств
 		Dim oListOfData As Object
@@ -1118,6 +1144,7 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_ti_GenreCM &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; для Авторов Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
@@ -1126,6 +1153,7 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_ti_BookAuthor &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; для Переводчиков Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbTranslators&quot;)
@@ -1134,7 +1162,7 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_ti_Translator &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
-		
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; для Серий Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbSequencies&quot;)
@@ -1143,25 +1171,30 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_ti_Sequence &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
-		
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 
 		&apos; = Document Info =
 		&apos; Единичные свойства
 		If Trim(.IDField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_di_ID, Trim(.IDField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.VersionField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_di_Version, Trim(.VersionField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.diURLField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_di_SrcUrl, Trim(.diURLField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.diOCRField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_di_OCR, Trim(.diOCRField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.HistoryTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_di_History, Trim(.HistoryTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
@@ -1169,24 +1202,30 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_di_FB2Author &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Publish Info =
 		&apos; Единичные свойства
 		If Trim(.pubBookNameTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_pi_BookName, Trim(.pubBookNameTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.pubPublisherTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_pi_Publisher, Trim(.pubPublisherTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.pubCityTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_pi_City, Trim(.pubCityTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.pubYearTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_pi_Year, Trim(.pubYearTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		If Trim(.pubISBNTextField.Text) &lt;&gt; &quot;&quot; Then
 			SetUserProperty( _fb2_pi_ISBN, Trim(.pubISBNTextField.Text) )
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbPubSequensies&quot;)
@@ -1195,6 +1234,7 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_pi_Sequence &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Custom Info =
 		&apos; Массивы свойств
@@ -1204,11 +1244,13 @@ Sub SaveFB2PropertiesToDoc()
 				SetUserProperty( _fb2_ci_CustomInfo &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 
 		&apos; = Разное =
 		&apos; Единичные свойства
 		oLB = oFB2PropertiesDlg.getControl(&quot;Codepage&quot;)
 		SetUserProperty( _fb2_Encoding, oLB.SelectedItem )
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 
 		&apos; сохраняем документ с заданными свойствами
 		If (ThisComponent.isModified) Then
@@ -1217,7 +1259,8 @@ Sub SaveFB2PropertiesToDoc()
 			Else
 				ThisComponent.setModified(False)
 			End If
-		End If 
+		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
     
     End With
 
@@ -1228,48 +1271,72 @@ End Sub
 &apos; ===========================================================================================================================
 
 &apos; загрузка fb2 данных из свойств документа в контролы формы
-Sub GetFB2PropertiesFromDoc()
+Sub GetFB2PropertiesFromDoc( ByRef oProgressBar, ByRef Iter As Integer )
 	With oFB2PropertiesDlg.Model
 		&apos; = Title Info =
 		.BookTitleField.Text	= GetBookTitleFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.KeywordsField.Text		= GetKeywordsFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.tiDateValueField.Text	= GetBookDateFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.tiDateTextField.Text	= GetBookDateTextFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		Dim oLB As Object
 		oLB = oFB2PropertiesDlg.getControl(&quot;LangComboBox&quot;)
 		oLB.selectItem( GetLangFromProperty(), True )
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		oLB = oFB2PropertiesDlg.getControl(&quot;SrcLangComboBox&quot;)
 		oLB.selectItem( GetSrcLangFromProperty(), True )
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 
 		GetGenresArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		GetBookAuthorsArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		GetBookTranslatorsArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		GetBookSequenceArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Document Info =
 		.IDField.Text			= GetIDFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.VersionField.Text		= GetVersionFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.diURLField.Text		= GetSrcUrlFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.diOCRField.Text		= GetOCRFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.HistoryTextField.Text	= GetHistoryFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		GetFB2AuthorsArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Publish Info =
 		.pubBookNameTextField.Text	= GetPubBookNameFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.pubPublisherTextField.Text	= GetPublisherFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.pubCityTextField.Text		= GetCityFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.pubYearTextField.Text		= GetYearFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.pubISBNTextField.Text		= GetISBNFromProperty()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		GetPublishSequenceArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Custom Info =
 		GetCustomInfosArray()
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		&apos; = Разное =
 		oLB = oFB2PropertiesDlg.getControl(&quot;Codepage&quot;)
 		oLB.selectItem( GetEncodingFromProperty(), True )
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 	End With
 End Sub
 
