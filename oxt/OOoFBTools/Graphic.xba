@@ -358,11 +358,8 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 &apos;				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
 		sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\base64.exe&quot;&quot; &quot; &amp; _
 				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
-		Dim sBatFile As String : sBatFile = getOOoFBToolsTempPath() &amp; &quot;\OOoFBTools-base64.bat&quot;
-		SaveText( sBatFile, sScript, &quot;utf-8&quot; )
-		
 		&apos; конвертируем картинку в base64
-		Shell( sBatFile, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
+		Shell( sScript, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
 	ElseIf GetOS() = 1 Then &apos; для mac Os X
 		&apos; данные картинки и ее расширение
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
