@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FootNoteInteractiveMaker" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ===========================================================================================================================
+&apos; 											модуль инструментов:
+&apos; 										Интерактивная вставка сносок
+&apos; ===========================================================================================================================
+Option Explicit
+
+Public oFootNoteInteractiveMakerDlg As Object
+
+Private oDocControl &apos; 
+Private ovCurs		As Object	&apos; видимый курсор
+Private otxtCurs	&apos; текстовый курсор для перебора найденного
+Private oPosTxtCurs	&apos; текстовый курсор - хранение текущей позиции найденного символа по заданному условию
+Private bWorkStart	As Boolean &apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd	As Boolean &apos; флаг конца работы инструмента - закрытия диалога (True)
+Private bEnd		As Boolean &apos; флаг конца поиска (признак конца документа) - закрытия диалога (True)
+
+Private Const sConstFootNoteFindFromBookMark	As String = &quot;_ooo_foot_note_find_from_dikbsd_&quot;	&apos; временная закладка
+Private Const sConstFootNoteListBookMark		As String = &quot;_ooo_foot_note_list_dikbsd_&quot;		&apos; временная закладка
+
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub FootNoteInteractiveMakerDlg_windowActivated(oEv)
+	oDocControl = ThisComponent.getCurrentController()
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_windowDeactivated(oEv)
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_windowClosing(oEv)
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_windowClosed(oEv)
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_windowMinimized(oEv)
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_windowNormalized(oEv)
+End Sub
+
+Sub FootNoteInteractiveMakerDlg_disposing(oEv)
+End Sub
+
+&apos; ===========================================================================================================================
+&apos; 										запуск формы интерактивного создания сноски
+&apos; ===========================================================================================================================
+&apos; инициализация и запуск диалога поиска
+Sub FootNoteInteractiveMakerStart()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
+	oFootNoteInteractiveMakerDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;FootNoteInteractiveMakerDlg&quot; )
+	
+	&apos; создание и инициализация курсоров
+	oDocControl = ThisComponent.getCurrentController()
+	&apos; инициализация позиции видимого курсора
+	ovCurs = oDocControl.getViewCursor()
+	&apos; создаем текстовый курсор - хранение текущей позиции найденного символа по заданному условию
+	oPosTxtCurs = ovCurs.Text.createTextCursor()
+	otxtCurs = ovCurs.Text.createTextCursor() 
+	
+	&apos; инициализация диалога в зависимости от локали
+	InitFindUpIndexFootNoteMakerDlg()
+	
+	&apos; файл начтроек
+	Dim sFUIMSettingsFilename As String : sFUIMSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;FootNoteInteractiveMaker.txt&quot;
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg,  nX, nY )
+	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 42, 230, com.sun.star.awt.PosSize.POS )
+
+	bWorkEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;FootNoteInteractiveMakerDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	With oFootNoteInteractiveMakerDlg
+		.addTopWindowListener( oList )
+		.setVisible( True )
+	End With
+	While Not bWorkEnd
+		Wait 200     
+	Wend
+	
+	&apos; записываем настройки диалога
+	SaveSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg )
+	oFootNoteInteractiveMakerDlg.setVisible( False )
+End Sub
+
+&apos; ===========================================================================================================================
+&apos; 										1. вырезание выделенного текста в буфер обмена
+&apos; ===========================================================================================================================
+Sub CutSelectedTextInBuffer()
+	&apos; вырезаем выделенный текст в буфер обмена
+	_UnoCut()
+	&apos; удаляем неактуальную закладку списка сносок и ставим новуб в место выреза текста
+	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
+		_UnoDeleteBookMark( sConstFootNoteListBookMark )
+	End If
+	ovCurs.goDown( 1, False )
+	_UnoInsertBookmark( sConstFootNoteListBookMark )
+End Sub
+
+&apos; ===========================================================================================================================
+&apos; 										2. поиск номера сноски в верхнем индексе
+&apos; ===========================================================================================================================
+&apos; Поиск номера сноски в верхнем индексе
+Sub FindFootNoteUpIndex()
+	bEnd = False &apos; признак конца документа
+	&apos; переход на закладку sConstFootNoteFindFromBookMark, если она есть
+	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+	If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
+		GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
+		_UnoDeleteBookMark( sConstFootNoteFindFromBookMark )
+	End If
+
+	&apos; проверка, является ли объект, где производится поиск - текстом
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sFNUIMD.sImpossibleToFind, 64, sFNUIMD.sTitle
+		Exit Sub
+	End If
+	&apos; переместить курсор на позицию видимого курсора
+	otxtCurs.gotoRange( ovCurs.getStart(), False )
+
+	&apos; ищем заданное регулярное выражение
+	FindRegInText( ovCurs, &quot;[:digit:]+&quot;, sFNUIMD.sTitle )
+	
+	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
+End Sub
+
+&apos;***************************************************************************
+&apos; ищем заданный регекс
+Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sFNUIMD.sImpossibleToFind, 64, sTitle
+		Exit Sub
+	End If
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
+	&apos; поиск и обработка искомого слова
+	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
+		&apos; только для символов верхнего индекса
+		If otxtCurs.CharEscapement &lt; 0 Then
+			&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+			ovCurs.collapseToEnd()
+			oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
+			FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
+		Else
+			oPosTxtCurs.GotoRange( otxtCurs, False )
+		End If
+		If bEnd = False Then
+			oDocControl.Select( otxtCurs )
+		Else
+			oDocControl.Select( oPosTxtCurs )
+		End If
+	Else &apos; конец документа
+		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+		ovCurs.collapseToEnd()
+		If MsgBox( sFNUIMD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then
+			bEnd = True : Exit Sub
+		End If
+		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
+		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
+	End If
+End Sub
+
+&apos;***************************************************************************
+&apos; поиск следующего заданного регекса в документе
+Function FindNextInText( sFind ) As Boolean
+	&apos; задаем поиск верхнего индекса
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharEscapement&quot;
+
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchRegularExpression = True
+		.SetSearchAttributes(SrchAttributes())
+		.SearchString = sFind
+&apos;		.SearchStyles = True
+		.ValueSearch = False
+	End With
+	
+	otxtCurs.collapseToEnd()
+	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
+	
+	if IsNull( Found ) Then &apos; конец документа - ничего не нашли
+		otxtCurs = ThisComponent.Text.createTextCursor() 
+		otxtCurs.gotorange( ThisComponent.Text.getStart(), False )
+		FindNextInText = False &apos; конец документа - ничего не нашли
+		Exit Function
+	End If
+
+	otxtCurs = Found.Text.createTextCursor()
+	With otxtCurs
+		.gotorange( Found.getStart(), False )
+		.gotorange( Found.getEnd(), True )
+	End With
+
+	FindNextInText = True &apos; нашли искомое регулярное выражение
+End Function
+
+&apos; ===========================================================================================================================
+&apos; 										3. вставка текста сноски из буфер обмена
+&apos; ===========================================================================================================================
+Sub InsertNoteText()
+	&apos; очистить стиль - на случай верхнего регистра и т.д.
+	ClearParaStyleToBase()
+	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
+	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
+	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
+	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
+		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
+	End If
+End Sub
+
+</script:module>

@@ -87,7 +87,35 @@ Sub FB2Validate()
 	End If
 
 	Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text )
+
+End Sub
+
+&apos; /// Валидация ///
+
+Sub Validate( sFB2File As String )
+	If GetOS() &gt; 0 Then
+		MsgBox( &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;, 64, &quot;Валидация fb2-файлов&quot; )
+		Exit Sub
+	End If
+	Dim sFB2VBSFile As String, sFB2VBS As String
+	sFB2VBSFile = getTempPath() &amp; &quot;/fb2-valid-win32.vbs&quot;
+	sFB2VBS = &quot;Set doc = WScript.CreateObject(&quot;&quot;MSXML2.DOMDocument.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
+				&quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
+				&quot;doc.async=false&quot; &amp; chr(10) &amp; _
+				&quot;doc.validateOnParse=true&quot; &amp; chr(10) &amp; _
+				&quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp; _
+				&quot;&quot;&quot;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\fb2-schema\FictionBook.xsd&quot;&quot;&quot; &amp; chr(10) &amp; _
+				&quot;doc.schemas=cache&quot; &amp; chr(10) &amp; _
+				&quot;if not doc.load(&quot;&quot;&quot; &amp; ConvertFromURL(sFB2File) &amp; &quot;&quot;&quot;) then&quot; &amp; chr(10) &amp; _
+				&quot;WScript.Echo &quot;&quot;Error at&quot;&quot;, &quot;&quot;&quot; &amp; ConvertFromURL(sFB2File) &amp; &quot;&quot;&quot;+&quot;&quot;, line&quot;&quot;, cstr(doc.parseError.line)+&quot; &amp; &quot;&quot;&quot;, column&quot;&quot;, cstr(doc.parseError.linepos)+&quot;&quot;&quot; &amp; &quot;:&quot;&quot;&quot; &amp; &quot;, doc.parseError.reason&quot; &amp; chr(10) &amp; _
+				&quot;else WScript.Echo &quot; &amp; &quot;&quot;&quot;&quot; &amp; &quot;File: &quot; &amp; ConvertFromURL(sFB2File) &amp; &quot; - No errors found&quot;&quot;&quot; &amp; chr(10) &amp; _
+				&quot;end if&quot;
+				
+	SaveText( sFB2VBSFile, sFB2VBS, &quot;windows-1251&quot; )
 	
+	Dim oSSE As Object
+	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
 End Sub
 
 </script:module>

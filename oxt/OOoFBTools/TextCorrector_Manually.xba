@@ -260,7 +260,10 @@ End Function
 Sub FindRegWord( sFind As String, sTitle As String )
 	oDocControl = ThisComponent.getCurrentController()
 	&apos; проверка, является ли объект, где производится поиск - текстом
-	If Not IsSelTextRange( sTitle ) Then Exit Sub
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sTDFD.sImpossibleToFind, 64, sTitle
+		Exit Sub
+	End If
 
 	&apos; инициализация позиции курсора
 	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
@@ -311,21 +314,13 @@ Function FindNextInText( sFind ) As Boolean
 End Function
 
 &apos; ////////////////////////////////////////////////////////////////
-&apos; проверка, является ли объект, где производится поиск - текстом
-Function IsSelTextRange( sTitle As String ) As Boolean
-	If oDocControl.getSelection().supportsService(&quot;com.sun.star.text.TextRanges&quot;) Then
-		IsSelTextRange = True
-	Else &apos; защита от поиска в выделенных врезках, ячейках таблицы, картинках...
-		IsSelTextRange = False
-		MsgBox sTDFD.sImpossibleToFind, 64, sTitle
-	End If 
-End Function
-
-&apos; ////////////////////////////////////////////////////////////////
 &apos; ищем заданный регекс
 Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
 NextWord:
-	If Not IsSelTextRange( sTitle ) Then Exit Sub
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sTDFD.sImpossibleToFind, 64, sTitle
+		Exit Sub
+	End If
 	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
 	&apos; поиск и обработка искомого слова
 	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
