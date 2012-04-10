@@ -20,6 +20,9 @@ Private bEnd		As Boolean &apos; флаг конца поиска (признак
 Private Const sConstFootNoteFindFromBookMark	As String = &quot;_ooo_foot_note_find_from_dikbsd_&quot;	&apos; временная закладка
 Private Const sConstFootNoteListBookMark		As String = &quot;_ooo_foot_note_list_dikbsd_&quot;		&apos; временная закладка
 
+Private IsFirstStep As Boolean &apos; True, если сделано нажатие кнопки поиска
+
+
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub FootNoteInteractiveMakerDlg_windowActivated(oEv)
 	oDocControl = ThisComponent.getCurrentController()
@@ -92,6 +95,7 @@ Sub FootNoteInteractiveMakerStart()
 	&apos; записываем настройки диалога
 	SaveSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg )
 	oFootNoteInteractiveMakerDlg.setVisible( False )
+	IsFirstStep = False &apos; еще не нажимали кнопку поиска
 End Sub
 
 &apos; ===========================================================================================================================
@@ -107,6 +111,7 @@ Sub CutSelectedTextInBuffer()
 	End If
 	ovCurs.goDown( 1, False )
 	_UnoInsertBookmark( sConstFootNoteListBookMark )
+	IsFirstStep = False &apos; теперь нужен поиск номера сноски в тексте
 End Sub
 
 &apos; ===========================================================================================================================
@@ -115,11 +120,13 @@ End Sub
 &apos; Поиск номера сноски в верхнем индексе
 Sub FindFootNoteUpIndex()
 	bEnd = False &apos; признак конца документа
-	&apos; переход на закладку sConstFootNoteFindFromBookMark, если она есть
-	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
-	If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
-		GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
-		_UnoDeleteBookMark( sConstFootNoteFindFromBookMark )
+	
+	If Not IsFirstStep Then &apos; только для случая, когда после вырезания текста в буфер ни разу не производили поиск
+		&apos; переход на закладку sConstFootNoteFindFromBookMark, если она есть
+		Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+		If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
+			GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
+		End If
 	End If
 
 	&apos; проверка, является ли объект, где производится поиск - текстом
@@ -133,7 +140,7 @@ Sub FindFootNoteUpIndex()
 	&apos; ищем заданное регулярное выражение
 	FindRegInText( ovCurs, &quot;[:digit:]+&quot;, sFNUIMD.sTitle )
 	
-	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
+	IsFirstStep = True
 End Sub
 
 &apos;***************************************************************************
@@ -210,12 +217,17 @@ End Function
 &apos; 										3. вставка текста сноски из буфер обмена
 &apos; ===========================================================================================================================
 Sub InsertNoteText()
+	&apos; удаляем временную неактуальную уже закладку номера сноски и ставим актуальную
+	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+	If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
+		_UnoDeleteBookMark( sConstFootNoteFindFromBookMark )
+	End If
+	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
 	&apos; очистить стиль - на случай верхнего регистра и т.д.
 	ClearParaStyleToBase()
 	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
 	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
 	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
-	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
 	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
 		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
 	End If
