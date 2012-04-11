@@ -223,8 +223,9 @@ Sub InsertNoteText()
 		_UnoDeleteBookMark( sConstFootNoteFindFromBookMark )
 	End If
 	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
-	&apos; очистить стиль - на случай верхнего регистра и т.д.
-	ClearParaStyleToBase()
+	&apos; очистить стиль - на случай верхнего регистра.
+	Dim oDispatcher As Object : oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	oDispatcher.executeDispatch( oDocControl, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
 	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
 	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
 	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
