@@ -11,17 +11,17 @@ Public oFootNoteInteractiveMakerDlg As Object
 
 Private oDocControl &apos; 
 Private ovCurs		As Object	&apos; видимый курсор
-Private otxtCurs	&apos; текстовый курсор для перебора найденного
-Private oPosTxtCurs	&apos; текстовый курсор - хранение текущей позиции найденного символа по заданному условию
-Private bWorkStart	As Boolean &apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
-Private bWorkEnd	As Boolean &apos; флаг конца работы инструмента - закрытия диалога (True)
-Private bEnd		As Boolean &apos; флаг конца поиска (признак конца документа) - закрытия диалога (True)
+Private otxtCurs	As Object	&apos; текстовый курсор для перебора найденного
+Private oPosTxtCurs	As Object	&apos; текстовый курсор - хранение текущей позиции найденного символа по заданному условию
+Private bWorkStart	As Boolean	&apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd	As Boolean	&apos; флаг конца работы инструмента - закрытия диалога (True)
+Private bEnd		As Boolean	&apos; флаг конца поиска (признак конца документа) (True)
+Private bStart		As Boolean	&apos; флаг конца поиска (признак начала документа) (True)
+Private IsFirstStep As Boolean	&apos; True, если сделано нажатие кнопки поиска, т.е. поиск уже был
+Private IsFirstCut	As Boolean	&apos; True, если сделано первое нажатие кнопки вырезать в буфер
 
 Private Const sConstFootNoteFindFromBookMark	As String = &quot;_ooo_foot_note_find_from_dikbsd_&quot;	&apos; временная закладка
 Private Const sConstFootNoteListBookMark		As String = &quot;_ooo_foot_note_list_dikbsd_&quot;		&apos; временная закладка
-
-Private IsFirstStep As Boolean &apos; True, если сделано нажатие кнопки поиска
-
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub FootNoteInteractiveMakerDlg_windowActivated(oEv)
@@ -79,9 +79,11 @@ Sub FootNoteInteractiveMakerStart()
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg,  nX, nY )
-	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 42, 230, com.sun.star.awt.PosSize.POS )
+	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 35, 360, com.sun.star.awt.PosSize.POS )
 
-	bWorkEnd = False
+	bWorkEnd	= False &apos; еще не достигнут конец документа
+	IsFirstStep	= False	&apos; еще не нажимали кнопку поиска
+	IsFirstCut	= True	&apos; еще не нажимали кнопку вырезать в буфер
 	
 	Dim oList : oList = createUnoListener( &quot;FootNoteInteractiveMakerDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
 	With oFootNoteInteractiveMakerDlg
@@ -95,30 +97,166 @@ Sub FootNoteInteractiveMakerStart()
 	&apos; записываем настройки диалога
 	SaveSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg )
 	oFootNoteInteractiveMakerDlg.setVisible( False )
-	IsFirstStep = False &apos; еще не нажимали кнопку поиска
 End Sub
 
 &apos; ===========================================================================================================================
-&apos; 										1. вырезание выделенного текста в буфер обмена
+&apos; 					1. вырезание выделенного текста в буфер обмена и переход на номер сноски в верхнем индексе
 &apos; ===========================================================================================================================
+Sub CutSelectedTextInBufferAndGoToFootNoteUpIndex()
+	&apos; вырезать выделенный текст в буфер обмена
+	CutSelectedTextInBuffer()
+	&apos; только первого поиска номера сноски:
+	If IsFirstCut Then
+		&apos; переход на 20 абзацев выше - с этого места будем искать номер сноски
+		Dim otxtCursor : otxtCursor = ThisComponent.Text.createTextCursor()
+		otxtCursor.gotoRange( ovCurs.getStart(), False )
+		Dim i As Integer
+		For i=0 To 19
+			otxtCursor.gotoPreviousParagraph(False)
+		Next i
+		ovCurs.gotoRange( otxtCursor, False )
+	End If
+	IsFirstCut = False &apos; с этого момента поиск делаем только от временной закладки
+	&apos; переход на номер сноски в верхнем индексе
+	FindNextFootNoteUpIndex()
+End Sub
+
+&apos;***************************************************************************
+&apos; вырезать выделенный текст в буфер обмена
 Sub CutSelectedTextInBuffer()
 	&apos; вырезаем выделенный текст в буфер обмена
 	_UnoCut()
-	&apos; удаляем неактуальную закладку списка сносок и ставим новуб в место выреза текста
-	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
-	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
-		_UnoDeleteBookMark( sConstFootNoteListBookMark )
-	End If
+	&apos; удаляем неактуальную закладку списка сносок и ставим новую в место выреза текста
+	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteListBookMark )
 	ovCurs.goDown( 1, False )
 	_UnoInsertBookmark( sConstFootNoteListBookMark )
 	IsFirstStep = False &apos; теперь нужен поиск номера сноски в тексте
 End Sub
 
 &apos; ===========================================================================================================================
-&apos; 										2. поиск номера сноски в верхнем индексе
+&apos; 										2. вставка текста сноски из буфер обмена
+&apos; ===========================================================================================================================
+Sub InsertNoteText()
+	&apos; удаляем временную неактуальную уже закладку номера сноски и ставим актуальную
+	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMark )
+	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
+	&apos; очистить стиль - на случай верхнего регистра.
+	Dim oDispatcher As Object : oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	oDispatcher.executeDispatch( oDocControl, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
+	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
+	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
+	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
+	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
+		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
+	End If
+End Sub
+
+&apos; ===========================================================================================================================
+&apos; 											поиск предыдущего номера сноски в верхнем индексе
 &apos; ===========================================================================================================================
 &apos; Поиск номера сноски в верхнем индексе
-Sub FindFootNoteUpIndex()
+Sub FindPreviousFootNoteUpIndex()
+	bStart = False &apos; признак начала документа
+	
+	If Not IsFirstStep Then &apos; только для случая, когда после вырезания текста в буфер ни разу не производили поиск
+		&apos; переход на закладку sConstFootNoteFindFromBookMark, если она есть
+		Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+		If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
+			GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
+		End If
+	End If
+
+	&apos; проверка, является ли объект, где производится поиск - текстом
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sFNUIMD.sImpossibleToFind, 64, sFNUIMD.sTitle
+		Exit Sub
+	End If
+	&apos; переместить курсор на позицию видимого курсора
+	otxtCurs.gotoRange( ovCurs.getStart(), False )
+
+	&apos; ищем заданное регулярное выражение
+	FindRegInTextPrevious( ovCurs, &quot;[:digit:]+&quot;, sFNUIMD.sTitle )
+	
+	IsFirstStep = True
+End Sub
+
+&apos;***************************************************************************
+&apos; ищем заданный регекс
+Sub FindRegInTextPrevious( ovCurs, sFind As String, sTitle As String )
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sFNUIMD.sImpossibleToFind, 64, sTitle
+		Exit Sub
+	End If
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
+	&apos; поиск и обработка искомого слова
+	If FindPreviousInText( sFind ) Then &apos; еще не дошли до начала документа
+		&apos; только для символов верхнего индекса
+		If otxtCurs.CharEscapement &lt; 0 Then
+			&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+			ovCurs.collapseToStart()
+			oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с конца документа
+			FindRegInTextPrevious( ovCurs, sFind, sTitle ) &apos; рекурсия
+		Else
+			oPosTxtCurs.GotoRange( otxtCurs, False )
+		End If
+		If bStart = False Then
+			oDocControl.Select( otxtCurs )
+		Else
+			oDocControl.Select( oPosTxtCurs )
+		End If
+	Else &apos; начало документа
+		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+		ovCurs.collapseToEnd()
+		If MsgBox( sFNUIMD.sToContinuePreviousSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then
+			bStart = True : Exit Sub
+		End If
+		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с конца документа
+		FindRegInTextPrevious( ovCurs, sFind, sTitle ) &apos; рекурсия
+	End If
+End Sub
+
+&apos;***************************************************************************
+&apos; поиск предыдущего заданного регекса в документе
+Function FindPreviousInText( sFind ) As Boolean
+	&apos; задаем поиск верхнего индекса
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharEscapement&quot;
+
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchRegularExpression = True
+		.SetSearchAttributes(SrchAttributes())
+		.SearchString = sFind
+&apos;		.SearchStyles = True
+		.ValueSearch = False
+		.SearchBackwards = True
+	End With
+	
+	otxtCurs.collapseToStart()
+	Dim Found : Found = ThisComponent.findNext( otxtCurs.getEnd(), oDesc )
+	
+	if IsNull( Found ) Then &apos; начало документа - ничего не нашли
+		otxtCurs = ThisComponent.Text.createTextCursor() 
+		otxtCurs.gotorange( ThisComponent.Text.getEnd(), False )
+		FindPreviousInText = False &apos; начало документа - ничего не нашли
+		Exit Function
+	End If
+
+	otxtCurs = Found.Text.createTextCursor()
+	With otxtCurs
+		.gotorange( Found.getStart(), False )
+		.gotorange( Found.getEnd(), True )
+	End With
+
+	FindPreviousInText = True &apos; нашли искомое регулярное выражение
+End Function
+
+&apos; ===========================================================================================================================
+&apos; 											поиск следующего номера сноски в верхнем индексе
+&apos; ===========================================================================================================================
+&apos; Поиск номера сноски в верхнем индексе
+Sub FindNextFootNoteUpIndex()
 	bEnd = False &apos; признак конца документа
 	
 	If Not IsFirstStep Then &apos; только для случая, когда после вырезания текста в буфер ни разу не производили поиск
@@ -192,8 +330,9 @@ Function FindNextInText( sFind ) As Boolean
 		.SearchString = sFind
 &apos;		.SearchStyles = True
 		.ValueSearch = False
+		.SearchBackwards = False
 	End With
-	
+
 	otxtCurs.collapseToEnd()
 	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
 	
@@ -213,25 +352,6 @@ Function FindNextInText( sFind ) As Boolean
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
 
-&apos; ===========================================================================================================================
-&apos; 										3. вставка текста сноски из буфер обмена
-&apos; ===========================================================================================================================
-Sub InsertNoteText()
-	&apos; удаляем временную неактуальную уже закладку номера сноски и ставим актуальную
-	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
-	If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
-		_UnoDeleteBookMark( sConstFootNoteFindFromBookMark )
-	End If
-	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
-	&apos; очистить стиль - на случай верхнего регистра.
-	Dim oDispatcher As Object : oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	oDispatcher.executeDispatch( oDocControl, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
-	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
-	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
-	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
-	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
-		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
-	End If
-End Sub
+&apos;***************************************************************************
 
 </script:module>
