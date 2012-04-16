@@ -2,9 +2,9 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Local_BuildFootEndNote" script:language="StarBasic">REM  *****  BASIC  *****
 
-&apos; ////////////////////////////////////////
-&apos; модуль локализации работы с примечаниями
-&apos; ////////////////////////////////////////
+&apos; ====================================================================
+&apos; 				модуль локализации работы с примечаниями
+&apos; ====================================================================
 Option Explicit
 
 &apos; для хранения сообщений для работы с примечаниями
@@ -25,27 +25,7 @@ Type tBuildFootEndNoteData
 	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!
 	sBuildFootNoteComplexVerify			As String &apos;
 	sDocumentIsProcessing				As String &apos; Документ обработан.
-	sInsertBookmarkForNumberNoteZone	As String &apos; Вставка служебной закладки для Главы книги
-	sInsertedBookmarkForNumberNoteZone	As String &apos; Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.
-	sNotInsertedBookmarkForNumberNoteZone	As String &apos;
-	sInsertBookmarkForListNoteZone		As String &apos; Вставка служебной закладки для списка примечаний
 	sOnlyOneTextZone					As String &apos; Выделено ... областей текста. Пожалуйста, выделите только 1 список примечаний! Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.
-	sSelected							As String &apos; Выделено
-	sNotInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний НЕ вставлена:
-	sNotInsertedBookmarkForTextNoteZone	As String &apos; Закладка-шаблон для Главы Книги НЕ вставлена:
-	sSelectedZoneCoincideExsistBookmark	As String &apos; Выделенная область текста полностью совпадает с уже имеющейся закладкой
-	sSelectedZoneTopBottomOverlapExsistBookmark	As String &apos; Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку
-	sSelectedZoneInsideExsistBookmark	As String &apos; Выделенная область текста находится внутри уже имеющейся закладки
-	sSelectedZonePartlyCoincideExsistBookmark	As String &apos; Выделенная область текста частично совпадает с уже имеющейся закладкой
-	sForChapterBookMark					As String &apos; для Главы Книги
-	sForFootNotesListBookMark			As String &apos; для Списка примечаний
-	sInsertedBookmarkForListNoteZone	As String &apos; Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.
-	sDeleteBookmarks					As String &apos; Удаление рабочих закладок
-	sDeleteBookmarksQuestion			As String &apos; Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?
-	sNotFoundNoteBookmark				As String &apos; Не найдено ни одной закладки-пометки зон поиска примечаний!
-	sDeletedSearchingZoneBookmark		As String &apos; Удалено закладок-пометок зон поиска:
-	sNoteNumbers						As String &apos; НОМЕРОВ примечаний:
-	sNoteText							As String &apos; ТЕКСТА примечаний:
 	sText								As String &apos; текст
 	sSText								As String &apos; Текст
 	sNoteTransforming					As String &apos; Преобразование примечаний:
@@ -90,7 +70,6 @@ Type tBuildFootEndNoteData
 	sTestNeedyCorrect					As String &apos; требующие ручной корректуры
 	sTestChapterBookmarkName			As String &apos; Название Закладки для Главы
 	sTestListNotesBookmarkName			As String &apos; Название Закладки для Списка примечаний этой Главы
-	sNotSelectedText					As String &apos; Можно выделять только текст!
 	sTestResultOK						As String &apos; Все в порядке!
 	sTestResultOKMess					As String &apos; Для каждого Номера примечаний в Главе найден соответствующий ему текст в Списке примечаний.
 	sTestResultOKMess1					As String &apos; Ни одна Глава Книги и ни один Список примечаний не нуждается в корректировке!
@@ -139,31 +118,9 @@ Sub InitBuildFootEndNoteMessage()
 					&quot;и соответствующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
 					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
 			.sDocumentIsProcessing				= &quot;Документ обработан.&quot;
-			.sInsertBookmarkForNumberNoteZone	= &quot;Вставка служебной закладки для Главы Книги&quot;
-			.sInsertedBookmarkForNumberNoteZone	= &quot;Закладка для Главы с НОМЕРАМИ примечаний ВСТАВЛЕНА.&quot;
-			.sNotInsertedBookmarkForNumberNoteZone	= &quot;Закладка-шаблон для зоны поиска номеров примечаний НЕ ВСТАВЛЕНА:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
-				&quot;Для того, чтобы пометить начало очередной области поиска номера примечаний НЕ НУЖНО выделять текст!&quot; &amp; chr(10) &amp; _
-				&quot;Просто поставьте курсор на начало абзаца каждой главы, в которой есть номера примечаний и запустите этот макрос.&quot; &amp; chr(10) &amp; _
-				&quot;Проделайте эти действия для каждой главы, где есть номера примечаний.&quot; &amp; chr(10)
-			.sInsertBookmarkForListNoteZone		= &quot;Вставка служебной закладки для списка примечаний&quot;
 			.sOnlyOneTextZone					= &quot;областей текста.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выделите только 1 список примечаний!&quot; &amp; chr(10) &amp; _
 				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;
-			.sSelected							= &quot;Выделено&quot;
-			.sNotInsertedBookmarkForListNoteZone	= &quot;Закладка-шаблон для СПИСКА примечаний НЕ вставлена:&quot;
 			.sNotInsertedBookmarkForTextNoteZone	= &quot;Закладка-шаблон для Главы Книги НЕ вставлена:&quot;
-			.sSelectedZoneCoincideExsistBookmark	= &quot;Выделенная область текста полностью совпадает с уже имеющейся закладкой&quot;
-			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;Выделенная область текста перекрывает и сверху и снизу уже имеющуюся закладку&quot;
-			.sSelectedZoneInsideExsistBookmark		= &quot;Выделенная область текста находится внутри уже имеющейся закладки&quot;
-			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;Выделенная область текста частично совпадает с уже имеющейся закладкой&quot;
-			.sForChapterBookMark						= &quot;для Главы Книги&quot;
-			.sForFootNotesListBookMark				= &quot;для Списка примечаний&quot;
-			.sInsertedBookmarkForListNoteZone		= &quot;Закладка-шаблон для СПИСКА примечаний ВСТАВЛЕНА.&quot;
-			.sDeleteBookmarks					= &quot;Удаление рабочих закладок&quot;
-			.sDeleteBookmarksQuestion			= &quot;Вы действительно хотите удалить все рабочие закладки для зон поиска номеров и текста примечаний?&quot;
-			.sNotFoundNoteBookmark				= &quot;Не найдено ни одной закладки-пометки зон поиска примечаний!&quot;
-			.sDeletedSearchingZoneBookmark		= &quot;Удалено закладок-пометок зон поиска:&quot;
-			.sNoteNumbers						= &quot;НОМЕРОВ примечаний:&quot;
-			.sNoteText							= &quot;ТЕКСТА примечаний:&quot;
 			.sText								= &quot;текст&quot;
 			.sSText								= &quot;Текст&quot;
 			.sNoteTransforming					= &quot;Преобразование примечаний:&quot;
@@ -209,7 +166,6 @@ Sub InitBuildFootEndNoteMessage()
 			.sTestNeedyCorrect					= &quot;требующие ручной корректировки&quot;
 			.sTestChapterBookmarkName			= &quot;Название Закладки для Главы&quot;
 			.sTestListNotesBookmarkName			= &quot;Название Закладки для Списка примечаний этой Главы&quot;
-			.sNotSelectedText					= &quot;Можно выделять только текст!&quot;
 			.sTestResultOK						= &quot;Все в порядке!&quot;
 			.sTestResultOKMess					= &quot;Для каждого Номера примечаний в Главе найден соответствующий ему текст в Списке примечаний.&quot;
 			.sTestResultOKMess1					= &quot;Ни одна Глава Книги и ни один Список примечаний не нуждается в корректировке!&quot;
@@ -258,31 +214,9 @@ Sub InitBuildFootEndNoteMessage()
 					&quot;and corresponding to these chapters lists of notes! And then - for all chapters where is № Notes - to put in the beginning of the chapter of a bookmark of zones of search № Notes, &quot; &amp; _
 					&quot;and in the end of the book - on each list of notes - a bookmark of a zone of search of the list of notes.&quot; &amp; chr(10)
 			.sDocumentIsProcessing				= &quot;The Socument is processed.&quot;
-			.sInsertBookmarkForNumberNoteZone	= &quot;Inserting the Service Bookmark for Chapter of the Book&quot;
-			.sInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark for the Chapter with NUMBERS of Notes is inserted.&quot;
-			.sNotInsertedBookmarkForNumberNoteZone	= &quot;The Bookmark-Pattern for a Zone of Search of Numbers of Notes is not inserted:&quot; &amp; chr(10) &amp;  chr(10) &amp; _
-				&quot;To mark the beginning of the next area of search of Number of Notes it is not necessary to allocate the Text!&quot; &amp; chr(10) &amp; _
-				&quot;Simply put the cursor on the beginning of the paragraph of each chapter in which there are numbers of notes and start this macros.&quot; &amp; chr(10) &amp; _
-				&quot;Do these Actions for each Chapter where there are Numbers of Notes.&quot; &amp; chr(10)
-			.sInsertBookmarkForListNoteZone		= &quot;Insert of a service Bookmark for the List of Notes&quot;
 			.sOnlyOneTextZone					= &quot;Areas of the Text.&quot; &amp; chr(10) &amp; &quot;Please, allocate only 1 List of Notes!&quot; &amp; chr(10) &amp; _
 				&quot;If in Your Document of Lists of Notes a little (for each Chapter...) to put a Bookmark it is necessary FOR EACH List SEPARATELY.&quot;
-			.sSelected							= &quot;Selected&quot;
-			.sNotInsertedBookmarkForListNoteZone	= &quot;The Bookmark-Pattern for the LIST of notes is NOT inserted:&quot;
 			.sNotInsertedBookmarkForTextNoteZone	= &quot;The Bookmark-Pattern for the Chapter of the Book is NOT inserted:&quot;
-			.sSelectedZoneCoincideExsistBookmark	= &quot;The allocated Area of the Text completely coincides with already available Bookmark&quot;
-			.sSelectedZoneTopBottomOverlapExsistBookmark	= &quot;The allocated Area of the Text Blocks both from above and from below already available Bookmark&quot;
-			.sSelectedZoneInsideExsistBookmark		= &quot;The allocated Area of the Text is inside already available Bookmark&quot;
-			.sSelectedZonePartlyCoincideExsistBookmark	= &quot;The allocated Area of the Text partially coincides with already available Bookmark&quot;
-			.sForChapterBookMark						= &quot;for the Chapter of Book&quot;
-			.sForFootNotesListBookMark				= &quot;for the List of Notes&quot;
-			.sInsertedBookmarkForListNoteZone		= &quot;The Bookmark-Pattern for the LIST of Notes is INSERTED.&quot;
-			.sDeleteBookmarks					= &quot;Removal of working Bookmarks&quot;
-			.sDeleteBookmarksQuestion			= &quot;You really wish to remove all working Bookmarks for Zones of Search of Numbers and the Text of Notes?&quot;
-			.sNotFoundNoteBookmark				= &quot;It is not found any Bookmark-Mark of Zones of search of Notes!&quot;
-			.sDeletedSearchingZoneBookmark		= &quot;It is removed Bookmarks-Marks of Zones of Search:&quot;
-			.sNoteNumbers						= &quot;NUMBERS of Notes:&quot;
-			.sNoteText							= &quot;The TEXT of Notes:&quot;
 			.sText								= &quot;the text&quot;
 			.sSText								= &quot;the Text&quot;
 			.sNoteTransforming					= &quot;Transformation of Notes:&quot;
@@ -328,7 +262,6 @@ Sub InitBuildFootEndNoteMessage()
 			.sTestNeedyCorrect					= &quot;demanding manual Updating&quot;
 			.sTestChapterBookmarkName			= &quot;Name for Chapter Bookmark&quot;
 			.sTestListNotesBookmarkName			= &quot;Name for List of FootNotes&quot;
-			.sNotSelectedText					= &quot;It Is Allowed select only text!&quot;
 			.sTestResultOK						= &quot;All Right!&quot;
 			.sTestResultOKMess					= &quot;For each Number of the Notes in Chapter is found corresponding to him text in List of the notes.&quot;
 			.sTestResultOKMess1					= &quot;Nor one Chapter of the Book and nor a one List of the Notes not needs for adjustment!&quot;
@@ -349,7 +282,7 @@ End Sub
 
 &apos; инициализация диалога генерации сносок в зависимости от локали
 Sub InitBuildFootEndNoteDlg()
-	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	&apos; инициализация сообщений работы со сносками в зависимости от локали
 	InitBuildFootEndNoteMessage()
 	
 	If getOOoLocal() = &quot;ru&quot; Then
@@ -393,7 +326,7 @@ End Sub
 
 &apos; инициализация диалога преобразования номеров примечаний в верхнем индексе по шаблону в зависимости от локали
 Sub InitFootNoteLinkTransDlg()
-	&apos; инициализация сообщений работы со сноскамиа в зависимости от локали
+	&apos; инициализация сообщений работы со сносками в зависимости от локали
 	InitBuildFootEndNoteMessage()
 	
 	If getOOoLocal() = &quot;ru&quot; Then

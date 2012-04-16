@@ -1687,6 +1687,31 @@ Sub ClearParaStyleToBase()
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
 End Sub
 
+Sub ClearSymbolFormat()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	
+	Dim args1(2) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Underline.LineStyle&quot;
+	args1(0).Value = 0
+	args1(1).Name = &quot;Underline.HasColor&quot;
+	args1(1).Value = False
+	args1(2).Name = &quot;Underline.Color&quot;
+	args1(2).Value = -1
+	dispatcher.executeDispatch(document, &quot;.uno:Underline&quot;, &quot;&quot;, 0, args1())
+
+	Dim args2(0) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Italic&quot;
+	args2(0).Value = False
+	dispatcher.executeDispatch(document, &quot;.uno:Italic&quot;, &quot;&quot;, 0, args2())
+
+	Dim args3(0) As New com.sun.star.beans.PropertyValue
+	args3(0).Name = &quot;Bold&quot;
+	args3(0).Value = False
+	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args3())
+	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
+End Sub
+
 &apos;//////////////////// Удаление всех объектов /////////////////////
 &apos; удаление всех закладок
 Sub DeleteAllBookMarks()

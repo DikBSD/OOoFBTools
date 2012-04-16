@@ -9,7 +9,7 @@ Option Explicit
 
 Public oFootNoteInteractiveMakerDlg As Object
 
-Private oDocControl &apos; 
+Private oDocControl As Object	&apos; 
 Private ovCurs		As Object	&apos; видимый курсор
 Private otxtCurs	As Object	&apos; текстовый курсор для перебора найденного
 Private oPosTxtCurs	As Object	&apos; текстовый курсор - хранение текущей позиции найденного символа по заданному условию
@@ -38,6 +38,9 @@ End Sub
 Sub FootNoteInteractiveMakerDlg_windowClosing(oEv)
 	bWorkEnd	= True	&apos; флаг закрытия дмалога
 	bWorkStart	= False	&apos; готовность к новому запуску диалога
+	&apos; удаляем временные закладки
+	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMark )
+	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteListBookMark )
 End Sub
 
 Sub FootNoteInteractiveMakerDlg_windowClosed(oEv)
@@ -140,9 +143,8 @@ Sub InsertNoteText()
 	&apos; удаляем временную неактуальную уже закладку номера сноски и ставим актуальную
 	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMark )
 	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
-	&apos; очистить стиль - на случай верхнего регистра.
-	Dim oDispatcher As Object : oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	oDispatcher.executeDispatch( oDocControl, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
+	&apos; очистить стиль символа - на случай верхнего регистра и т.д.
+	ClearSymbolFormat()
 	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
 	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
 	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
