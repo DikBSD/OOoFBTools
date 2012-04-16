@@ -143,6 +143,7 @@ Sub InsertChapterBookMark()
 		If Not bBookMarkInSel Then
 			&apos; На этом месте документа нет закладки-шаблона для Главы. Можно вставлять!
 			_UnoInsertBookmark( sConstBookMarkNZoneNote )
+			If ThisComponent.hasLocation Then ThisComponent.setModified(True)
 			MsgBox sBMFNGD.sInsertedBookmarkForNumberNoteZone, 64, sBMFNGD.sInsertBookmarkForNumberNoteZone
 		End If
 	End If
@@ -238,6 +239,7 @@ Sub InsertFootNoteTextListBookMark()
 		If Not bBookMarkInSel Then
 			&apos; На этом месте документа нет закладки-шаблона для списка примечаний. Можно вставлять!
 			_UnoInsertBookmark( sConstBookMarkListNote )
+			If ThisComponent.hasLocation Then ThisComponent.setModified(True)
 			MsgBox sBMFNGD.sInsertedBookmarkForListNoteZone, 64, sBMFNGD.sInsertBookmarkForListNoteZone
 		End If
 	End If
@@ -255,6 +257,7 @@ Sub DeleteAllWorkFootNoteBookMark()
 			MsgBox sBMFNGD.sNotFoundNoteBookmark, 64, sBMFNGD.sDeleteBookmarks
 		Else
 			MsgBox sBMFNGD.sDeletedSearchingZoneBookmark &amp; chr(10) &amp; sBMFNGD.sNoteNumbers &amp; &quot; &quot; &amp; nN &amp; chr(10) &amp; sBMFNGD.sNoteText &amp; &quot; &quot; &amp; nL, 64, sBMFNGD.sDeleteBookmarks
+			If ThisComponent.hasLocation Then ThisComponent.setModified(True)
 		End If
 	End If
 End Sub
