@@ -1,185 +1,232 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="AccentMarkVowelRussian" script:language="StarBasic">Rem  *****  BASIC  *****
+&apos;======================================================================================================================
+&apos; 				модуль расстановки ударений над русскими гласными буквами по признаку - ударному символу в тексте
+&apos;======================================================================================================================
+
 Option Explicit
 
-&apos; Замена апострофа справа от русской гласной на U0769 - Ударная гласная
-Sub ApostrofToU0769()
-	&apos; инициализация сообщений работы с расстановкой ударения над русскими гласными буквами
-	InitAccentMarkVowelRussianMessage()
+&apos;***************************************************************************
+&apos; Структура поискового запроса
+Type FindReplaceAccentMarkRule
+	SearchStr As String
+	ReplaceStr As String
+End Type
+
+Private AccentMarkRuleArray() As FindReplaceAccentMarkRule &apos; Массив поиска и замен
+Private Const sConstAccentMarkDlgSettings	As String = &quot;AccentMarkDlgSettings.txt&quot;
+
+Public Const _fb2_AccentMark	As String = &quot;_fb2_AccentMark&quot; &apos; если задано True, но есть ударные гласные - нужна кодировка utf-8
+Public oAccentMarkDlg			As Object
+
+&apos;***************************************************************************
+&apos; запуск диалога расстановки ударений
+Sub AccentMarkDlgExec()
+	&apos; Создание формы
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oAccentMarkDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.AccentMarkDlg )
 	
-	Dim oDoc, oReplace, oProgressBar
-	Dim nProg : nProg = 1
-	oDoc = ThisComponent
-	oProgressBar = oDoc.CurrentController.StatusIndicator
+	&apos; инициализация диалога
+	InitAccentMarkDlg()
+	
+	&apos; читаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstAccentMarkDlgSettings, oAccentMarkDlg, nX, nY )
+	oAccentMarkDlg.setPosSize( nX, nY, 231, 30, com.sun.star.awt.PosSize.POS )
+	
+	&apos; доступность поля tfOther
+	SetEnableOtherField()
+	
+	oAccentMarkDlg.execute()
+End Sub
+
+&apos;***************************************************************************
+&apos; нажатие кнопки Ok
+Sub StartAccentMarkToU0769()
+	Dim AccentMarkSymbol As String
+	If oAccentMarkDlg.GetControl( &quot;optBtnApostrof&quot; ).State Then	&apos; апостроф
+		AccentMarkSymbol = &quot;&apos;&quot;
+	ElseIf oAccentMarkDlg.GetControl( &quot;optBtnGrave&quot; ).State Then	&apos; ударение
+		AccentMarkSymbol = &quot;`&quot;
+	Else &apos; другое
+		AccentMarkSymbol = oAccentMarkDlg.GetControl( &quot;tfOther&quot; ).Text
+	End If
+	&apos; заполнение массива поиска и замен
+	SetAccentMarkRuleArrayRule( AccentMarkRuleArray(), AccentMarkSymbol )
+	&apos; закрываем диалог
+	oAccentMarkDlg.endExecute()
+	&apos; сохранение настроек
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstAccentMarkDlgSettings, oAccentMarkDlg )
+	&apos; замена символа признака ударения справа от русской гласной на U0769 - Ударная гласная
+	ApostrofToU0769()
+End Sub
+
+&apos;***************************************************************************
+&apos; доступность поля tfOther
+Sub SetEnableOtherField()
+	With oAccentMarkDlg
+		If .GetControl( &quot;optBtnApostrof&quot; ).State = 0 AND .GetControl( &quot;optBtnGrave&quot; ).State = 0 Then
+			.GetControl( &quot;tfOther&quot; ).Enable	= True
+		Else
+			.GetControl( &quot;tfOther&quot; ).Enable	= False
+		End If
+	End With
+End Sub
+&apos;***************************************************************************
+&apos; замена символа признака ударения справа от русской гласной на U0769 - Ударная гласная
+Sub ApostrofToU0769()
+	Dim oDoc			As Object : oDoc = ThisComponent
+	Dim oProgressBar	As Object : oProgressBar = oDoc.CurrentController.StatusIndicator
 	oProgressBar.start( sAMVRD.sTextCorrecting, 18 )
 	
-	oReplace = oDoc.createReplaceDescriptor
-	oReplace.SearchRegularExpression	= True
-	oReplace.SearchCaseSensitive		= True
+	Dim nProg	As Integer : nProg	= 1 &apos; счетчик выполнения работы (прогресс)
+	Dim nTotal	As Integer : nTotal	= 0 &apos; счетчик всех замен
 	
+	Dim oReplace As Object : oReplace = oDoc.createReplaceDescriptor
 	With oReplace
-		.SearchString = &quot;А&apos;&quot;
-		.ReplaceString = &quot;А́&quot;
+		.SearchRegularExpression	= True
+		.SearchCaseSensitive		= True
 	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;а&apos;&quot;
-		.ReplaceString = &quot;а́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;У&apos;&quot;
-		.ReplaceString = &quot;У́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;у&apos;&quot;
-		.ReplaceString = &quot;у́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;Е&apos;&quot;
-		.ReplaceString = &quot;Е́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;е&apos;&quot;
-		.ReplaceString = &quot;е́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;Ы&apos;&quot;
-		.ReplaceString = &quot;Ы́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;ы&apos;&quot;
-		.ReplaceString = &quot;ы́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;О&apos;&quot;
-		.ReplaceString = &quot;О́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;о&apos;&quot;
-		.ReplaceString = &quot;о́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;Э&apos;&quot;
-		.ReplaceString = &quot;Э́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;э&apos;&quot;
-		.ReplaceString = &quot;э́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;Я&apos;&quot;
-		.ReplaceString = &quot;Я́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;я&apos;&quot;
-		.ReplaceString = &quot;я́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;И&apos;&quot;
-		.ReplaceString = &quot;И́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;и&apos;&quot;
-		.ReplaceString = &quot;и́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;Ю&apos;&quot;
-		.ReplaceString = &quot;Ю́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	With oReplace
-		.SearchString = &quot;ю&apos;&quot;
-		.ReplaceString = &quot;ю́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
 	
-	With oReplace
-		.SearchString = &quot;Ё&apos;&quot;
-		.ReplaceString = &quot;Ё́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
+	Dim i As Integer
+	Dim oFoundAll As Object
+	For i = LBound( AccentMarkRuleArray() ) To UBound( AccentMarkRuleArray() ) 
+		With AccentMarkRuleArray(i)
+			oReplace.SearchString	= .SearchStr
+			oReplace.ReplaceString	= .ReplaceStr
+		End With
+		oFoundAll = oDoc.findAll(oReplace)
+		If oFoundAll.Count &gt; 0 Then
+			nTotal = nTotal + oFoundAll.Count
+			oDoc.ReplaceAll(oReplace)
+		End If
+		oProgressBar.setValue(nProg)
+		nProg = nProg+1
+	Next i
 
-	With oReplace
-		.SearchString = &quot;ё&apos;&quot;
-		.ReplaceString = &quot;ё́&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	oProgressBar.setValue(nProg)
-	nProg = nProg+1
-
-	MsgBox sAMVRD.sEndWork, 64, sAMVRD.sTitleName
+	If nTotal &gt; 0 Then
+		MsgBox sAMVRD.sEndWork &amp; chr(10) &amp; sAMVRD.sTotal &amp; &quot; &quot; &amp; nTotal, 64, sAMVRD.sTitleName
+		&apos; добавляем заданное свойство документа _fb2_AccentMark
+		Dim UserDefProperties As Object : UserDefProperties	= oDoc.DocumentProperties.getUserDefinedProperties()
+		If GetStringProperty( _fb2_AccentMark ) = &quot;&quot; Then
+			&apos; задаем поле, указывающее, что ударения были проставлены. Это необходимо для того, чтобы конвертер сохранял fb2 в utf-8 принудительно.
+			UserDefProperties.addProperty(_fb2_AccentMark, 16, &quot;True&quot;) &apos; невидимое, readonly поле
+		End If
+	Else
+		MsgBox sAMVRD.sNoMarkFound, 64, sAMVRD.sTitleName
+	End If
 	oProgressBar.end
+End Sub
+
+&apos;***************************************************************************
+&apos; заполнение массива поиска и замен
+Private Sub SetAccentMarkRuleArrayRule( ByRef amrArray() As FindReplaceAccentMarkRule, MarkSymbol As String )
+	ReDim Preserve amrArray(19) As FindReplaceRule
+	
+	With amrArray(0)
+		.SearchStr = &quot;А&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;А́&quot;
+	End With
+	
+	With amrArray(1)
+		.SearchStr = &quot;а&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;а́&quot;
+	End With
+	
+	With amrArray(2)
+		.SearchStr = &quot;У&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;У́&quot;
+	End With
+	
+	With amrArray(3)
+		.SearchStr = &quot;у&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;у́&quot;
+	End With
+	
+	With amrArray(4)
+		.SearchStr = &quot;Е&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;Е́&quot;
+	End With
+	
+	With amrArray(5)
+		.SearchStr = &quot;е&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;е́&quot;
+	End With
+	
+	With amrArray(6)
+		.SearchStr = &quot;Ы&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;Ы́&quot;
+	End With
+	
+	With amrArray(7)
+		.SearchStr = &quot;ы&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;ы́&quot;
+	End With
+	
+	With amrArray(8)
+		.SearchStr = &quot;О&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;О́&quot;
+	End With
+	
+	With amrArray(9)
+		.SearchStr = &quot;о&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;о́&quot;
+	End With
+	
+	With amrArray(10)
+		.SearchStr = &quot;Э&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;Э́&quot;
+	End With
+	
+	With amrArray(11)
+		.SearchStr = &quot;э&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;э́&quot;
+	End With
+	
+	With amrArray(12)
+		.SearchStr = &quot;Я&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;Я́&quot;
+	End With
+	
+	With amrArray(13)
+		.SearchStr = &quot;я&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;я́&quot;
+	End With
+	
+	With amrArray(14)
+		.SearchStr = &quot;И&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;И́&quot;
+	End With
+	
+	With amrArray(15)
+		.SearchStr = &quot;и&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;и́&quot;
+	End With
+	
+	With amrArray(16)
+		.SearchStr = &quot;Ю&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;Ю́&quot;
+	End With
+	
+	With amrArray(17)
+		.SearchStr = &quot;ю&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;ю́&quot;
+	End With
+	
+	With amrArray(18)
+		.SearchStr = &quot;Ё&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;Ё́&quot;
+	End With
+	
+	With amrArray(19)
+		.SearchStr = &quot;ё&quot; &amp; MarkSymbol
+		.ReplaceStr = &quot;ё́&quot;
+	End With
+	
 End Sub
 
 </script:module>

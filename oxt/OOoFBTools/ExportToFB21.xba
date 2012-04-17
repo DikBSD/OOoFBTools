@@ -214,6 +214,8 @@ Sub ExportDoc()
 	If bSaveUTF8 And bMarker Then sFB2Encoding = &quot;utf-8&quot;
 	&apos; если в тексте есть хоть один неразрывный дефис, то экспортируем в utf-8
 	If IsNoBreakDefExsist() Then sFB2Encoding = &quot;utf-8&quot;
+	&apos; если в документе были проставлены ударения над русскими гласными (в свойстве _fb2_AccentMark занесено True )
+	If GetStringProperty( _fb2_AccentMark ) &lt;&gt; &quot;&quot; Then sFB2Encoding = &quot;utf-8&quot;
 	oTextOutputStream.setEncoding( sFB2Encoding )
 	
 	&apos; создание fb2 файла

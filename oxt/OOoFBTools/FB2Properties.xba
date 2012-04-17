@@ -1252,16 +1252,9 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		SetUserProperty( _fb2_Encoding, oLB.SelectedItem )
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 
-		&apos; сохраняем документ с заданными свойствами
-		If (ThisComponent.isModified) Then
-			If (ThisComponent.hasLocation And (Not ThisComponent.isReadOnly)) Then
-				ThisComponent.store()
-			Else
-				ThisComponent.setModified(False)
-			End If
-		End If
+		&apos; задаем признак изменения документа
+		ThisComponent.setModified(True)
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-    
     End With
 
 End Sub

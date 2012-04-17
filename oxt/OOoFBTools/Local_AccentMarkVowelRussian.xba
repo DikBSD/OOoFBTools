@@ -9,9 +9,11 @@ Option Explicit
 
 &apos; для хранения сообщений
 Type tAccentMarkVowelRussianData
-	sTitleName		As String &apos; Замена апострофа на знак ударения для гласных букв
+	sTitleName		As String &apos; Замена символа на знак ударения для гласных букв
 	sTextCorrecting	As String &apos; Расстановка ударений
 	sEndWork		As String &apos; Расстановка ударений для гласных букв завершена!
+	sTotal			As String &apos; Проставлено ударений:
+	sNoMarkFound	As String &apos; В тексте не найдено ни одного символа-признака ударения! Ни одно ударение не было проставлено.
 End Type
 
 Public sAMVRD As tAccentMarkVowelRussianData
@@ -20,15 +22,47 @@ Public sAMVRD As tAccentMarkVowelRussianData
 Sub InitAccentMarkVowelRussianMessage()
 	If getOOoLocal() = &quot;ru&quot; Then
 		With sAMVRD
-			.sTitleName			= &quot;Замена апострофа на знак ударения для гласных букв&quot;
+			.sTitleName			= &quot;Замена символа на знак ударения для гласных букв&quot;
 			.sTextCorrecting	= &quot;Расстановка ударений&quot;
 			.sEndWork			= &quot;Расстановка ударений для гласных букв завершена!&quot;
+			.sTotal				= &quot;Проставлено ударений:&quot;
+			.sNoMarkFound		= &quot;В тексте не найдено ни одного символа-признака ударения!&quot; &amp; _
+									chr(10) &amp; &quot;Ни одно ударение не было проставлено.&quot;
 		End With
 	Else
 		With sAMVRD
-			.sTitleName			= &quot;Change the apostrophe on sign of the accent marks for vowel letters&quot;
+			.sTitleName			= &quot;Change the symbol on sign of the accent marks for vowel letters&quot;
 			.sTextCorrecting	= &quot;Placement of the accent marks&quot;
 			.sEndWork			= &quot;The Placement of the accent marks for vowel russian letters completed!&quot;
+			.sTotal				= &quot;Stamped accents:&quot;
+			.sNoMarkFound		= &quot;The text does not match any one character sign-accent!&quot; &amp; _
+									chr(10) &amp; &quot;None of the accent was not stamped.&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога расстановки ударения над русскими гласными буквами
+Sub	InitAccentMarkDlg()
+	&apos; инициализация сообщений работы с расстановкой ударения над русскими гласными буквами
+	InitAccentMarkVowelRussianMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; Then
+		With oAccentMarkDlg.getModel
+			.Title = sAMVRD.sTitleName
+			.lblAccentMark.Label	= &quot;Символ признака ударения в тексте:&quot;
+			.optBtnApostrof.Label	= &quot;Апостроф ( &apos; )&quot;
+			.optBtnGrave.Label		= &quot;Ударение ( ` )&quot;
+			.optBtnOther.Label		= &quot;Другое:&quot;
+			.cmdBtnOk.Label			= &quot;Ok&quot;
+		End With
+	Else
+		With oAccentMarkDlg.getModel
+			.Title = sAMVRD.sTitleName
+			.lblAccentMark.Label	= &quot;Accent Mark Symbol sign in the text:&quot;
+			.optBtnApostrof.Label	= &quot;Apostrof ( &apos; )&quot;
+			.optBtnGrave.Label		= &quot;Grave ( ` )&quot;
+			.optBtnOther.Label		= &quot;Other:&quot;
+			.cmdBtnOk.Label			= &quot;Ok&quot;
 		End With
 	End If
 End Sub
