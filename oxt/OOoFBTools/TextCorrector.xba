@@ -1610,7 +1610,23 @@ Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
 		.ReplaceString	= &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	
+	&apos; обработка даты
+	With oReplace
+		.SearchString	= &quot;([:digit:]{2,4})(\x20*)(г)([\.*$])&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3$4&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;([:digit:]{2,4})(\x20*)(г)([\x20*$])&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3.$4&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;([:digit:]{2,4})(\x20*)(г$)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3.$4&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
 	&apos; для английского языка
 	With oReplace
 		.SearchString	= &quot;(B\.)\x20*(C\.)\x20*(E\.)&quot;
