@@ -1287,6 +1287,11 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchString	= &quot;(\n) *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *([а-яА-ЯёЁ])&quot;
+		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
 		.SearchString	= &quot;^ *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
@@ -1294,8 +1299,18 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 		
 	&apos; Прямая речь: Заменить минус или дефис в начале абзаца на тире 
 	With oReplace
+		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁ])&quot;
+		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
 		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([&quot;&quot;“„«])&quot;
+		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
