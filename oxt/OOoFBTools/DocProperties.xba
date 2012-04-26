@@ -100,7 +100,9 @@ Sub RemoveAllUserPropertyFromTemplate()
     Dim i As Integer
     For i = 0 To uBound(PropertyValues) 
         If InStr( PropertyValues(i).Name, _fb2_Preffix ) = 1 Then
-        	UserDefProperties.removeProperty(PropertyValues(i).Name)
+        	If ( PropertyValues(i).Name &lt;&gt; _fb2_AccentMark ) AND ( PropertyValues(i).Name &lt;&gt; _fb2_FB2StylesIsLoaded )Then
+	        	UserDefProperties.removeProperty(PropertyValues(i).Name)
+	        End If
 		End If
     Next i
 End Sub
@@ -162,12 +164,31 @@ Function IsFB2AnyPropertyIsExsist() As Boolean
     Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
     Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
     
-    &apos; ищем заданное свойство документа UserPropertyName и удаляем
+    &apos; ищем заданное свойство документа
     Dim i As Integer
     For i = 0 To uBound(PropertyValues) 
         If InStr( PropertyValues(i).Name, _fb2_Preffix ) = 1 Then
-        	IsFB2AnyPropertyIsExsist = True
-        	Exit Function
+			IsFB2AnyPropertyIsExsist = True
+	       	Exit Function
+		End If
+    Next i
+End Function
+
+&apos;***************************************************************************
+&apos; Есть ли хоть одно fb2 свойство в документе для чтения и записи (но не ReadOnly _fb2_AccentMark или _fb2_FB2StylesIsLoaded)?
+Function IsFB2NotFlagPropertyIsExsist() As Boolean
+    IsFB2NotFlagPropertyIsExsist = False
+    Dim UserDefProperties	As Object : UserDefProperties	= ThisComponent.DocumentProperties.getUserDefinedProperties()
+    Dim PropertyValues		As Object : PropertyValues		= UserDefProperties.getPropertyValues()
+    
+    &apos; ищем заданное свойство документа
+    Dim i As Integer
+    For i = 0 To uBound(PropertyValues) 
+        If InStr( PropertyValues(i).Name, _fb2_Preffix ) = 1 Then
+        	If PropertyValues(i).Name &lt;&gt; _fb2_AccentMark And PropertyValues(i).Name &lt;&gt; _fb2_FB2StylesIsLoaded Then 
+				IsFB2NotFlagPropertyIsExsist = True
+		       	Exit Function
+		     End If
 		End If
     Next i
 End Function
@@ -177,7 +198,7 @@ End Function
 Sub MakeErrorMessage(ByRef DocProperty As com.sun.star.beans.PropertyValue, ByRef sErrorMess As String, ByRef sErrorProperty As String)
 	If IsNull(DocProperty) Then
     	sErrorMess = sErrorMess &amp; sErrorProperty &amp; chr(10)
-    ElseIf IsNull(DocProperty.Value) Or Trim(DocProperty.Value)=&quot;&quot; Then
+    ElseIf IsNull(DocProperty.Value) Or Trim(DocProperty.Value) = &quot;&quot; Then
 	    sErrorMess = sErrorMess &amp; sErrorProperty &amp; chr(10)
     End If
 End Sub

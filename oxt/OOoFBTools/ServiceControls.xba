@@ -3,6 +3,51 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ServiceControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+&apos; для аннотации
+Public bMergeAnnotationSubTitle As Boolean
+&apos; оформление подзаголовков
+Public bMergeSubTitle As Boolean
+&apos; оформление авторов эпиграфов
+Public bMergeEpigraphAuthors As Boolean
+&apos; оформление заголовков стихов
+Public bMergePoemTitle As Boolean
+&apos; оформление авторов стихов
+Public bMergePoemAuthors As Boolean
+&apos; оформление подзаголовков поэм
+Public bMergePoemSubTitle As Boolean
+&apos; оформление авторов цитат
+Public bMergeCiteAuthors As Boolean
+&apos; оформление подзаголовков цитат
+Public bMergeCiteSubTitle As Boolean
+&apos; удаление пустых строк
+Public bDelEL As Boolean
+&apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
+Public bCorrectPara As Boolean
+&apos; экспорт текстовых полей
+Public bTextField As Boolean
+&apos; генерировать сложный ID Книги
+Public bComplexID As Boolean
+&apos; обработка ссылок внутри документа
+Public bDocLinks As Boolean
+&apos; обработка графики
+Public bSaveImageTitle As Boolean &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
+Public bExportGraphics As Boolean &apos; экспорт Графики
+Public sJpegAs As String &apos; формат преоьбразования для jpeg, jpg
+Public sPngAs As String &apos; формат преоьбразования для png
+Public sGifAs As String &apos; формат преоьбразования для gif
+Public sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
+Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
+Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
+&apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
+Public bSaveUTF8 As Boolean
+&apos; Чистка fb2 кода
+Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
+Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
+&apos; запустить сгенерированный fb2-файл на просмотр
+Public bFB2Execute As Boolean
+&apos; валидация
+Public bValidate As Boolean
+
 Private oServiceDlg		As Object
 Private sHeaderTVA		As String
 Private sLineTVA		As String
@@ -184,76 +229,77 @@ End Function
 &apos; Настройки По умолчанию - в контролы
 Sub SetDefaultSettingsToControls()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
-	&apos; Сноски
-	oServiceDlg.Model.obtnFENoteCommon.State = 0
-	oServiceDlg.Model.obtnFENoteSeparately.State = 1
-	oLB = oServiceDlg.getControl(&quot;cmbboxStyle&quot;)
-	oLB.SelectItemPos(1, True)
-	oServiceDlg.Model.cmbboxTitle.Text = sServD.sNotes
-	oServiceDlg.Model.cboxSpace.State = 0
-	&apos; концевые сноски
-	oLB = oServiceDlg.getControl(&quot;cmbboxENStyle&quot;)
-	oLB.SelectItemPos(3, True)
-	oServiceDlg.Model.cmbboxENTitle.Text = sServD.sCommentaries
-	oServiceDlg.Model.cboxENSpace.State = 0
-	&apos; Стихи
-	oServiceDlg.Model.cboxPoemTitle.State = 0
-	oServiceDlg.Model.cboxPoemAuthor.State = 0
-	oServiceDlg.Model.cboxPoemSubtitle.State = 1
-	&apos; Эпиграфы
-	oServiceDlg.Model.cboxEpigAuthor.State = 0
-	&apos; SubTitle
-	oServiceDlg.Model.cboxSubtitle.State = 1
-	&apos; Аннотации
-	oServiceDlg.Model.cboxAnnotationSubtitle.State = 1
-	&apos; Цитаты
-	oServiceDlg.Model.cboxCiteAuthor.State = 0
-	oServiceDlg.Model.cboxCiteSubtitle.State = 1
-	&apos; Графика
-	oServiceDlg.Model.cboxImageTitle.State = 0
-	oServiceDlg.Model.cboxExportGraphics.State = 1
-	oLB = oServiceDlg.getControl(&quot;lbJPEGAs&quot;)
-	oLB.SelectItemPos(2, True)
-	oLB = oServiceDlg.getControl(&quot;lbPNGAs&quot;)
-	oLB.SelectItemPos(0, True)
-	oLB = oServiceDlg.getControl(&quot;lbGifAs&quot;)
-	oLB.SelectItemPos(0, True)
-	oLB = oServiceDlg.getControl(&quot;lbTifBMPAs&quot;)
-	oLB.SelectItemPos(0, True)
-	oLB = oServiceDlg.getControl(&quot;lbAnyAs&quot;)
-	oLB.SelectItemPos(0, True)
-	oLB = oServiceDlg.getControl(&quot;lbOLEAs&quot;)
-	oLB.SelectItemPos(0, True)
+	With oServiceDlg
+		&apos; Сноски
+		.Model.obtnFENoteCommon.State = 0
+		.Model.obtnFENoteSeparately.State = 1
+		oLB = .getControl(&quot;cmbboxStyle&quot;)
+		oLB.SelectItemPos(1, True)
+		.Model.cmbboxTitle.Text = sServD.sNotes
+		.Model.cboxSpace.State = 0
+		&apos; концевые сноски
+		oLB = oServiceDlg.getControl(&quot;cmbboxENStyle&quot;)
+		oLB.SelectItemPos(3, True)
+		.Model.cmbboxENTitle.Text = sServD.sCommentaries
+		.Model.cboxENSpace.State = 0
+		&apos; Стихи
+		.Model.cboxPoemTitle.State = 0
+		.Model.cboxPoemAuthor.State = 0
+		.Model.cboxPoemSubtitle.State = 1
+		&apos; Эпиграфы
+		.Model.cboxEpigAuthor.State = 0
+		&apos; SubTitle
+		.Model.cboxSubtitle.State = 1
+		&apos; Аннотации
+		.Model.cboxAnnotationSubtitle.State = 1
+		&apos; Цитаты
+		.Model.cboxCiteAuthor.State = 0
+		.Model.cboxCiteSubtitle.State = 1
+		&apos; Графика
+		.Model.cboxImageTitle.State = 0
+		.Model.cboxExportGraphics.State = 1
+		oLB = .getControl(&quot;lbJPEGAs&quot;)
+		oLB.SelectItemPos(2, True)
+		oLB = .getControl(&quot;lbPNGAs&quot;)
+		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;lbGifAs&quot;)
+		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;lbTifBMPAs&quot;)
+		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;lbAnyAs&quot;)
+		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;lbOLEAs&quot;)
+		oLB.SelectItemPos(0, True)
 	
-	&apos; Текстовые врезки
-	oLB = oServiceDlg.getControl(&quot;cmbboxTextFrame&quot;)
-	oLB.SelectItemPos(3, True)
-	&apos; Таблицы
-	oLB = oServiceDlg.getControl(&quot;cmbboxHeaderTHV&quot;)
-	oLB.SelectItemPos(0, True)
-	oLB = oServiceDlg.getControl(&quot;cmbboxLineTDV&quot;)
-	oLB.SelectItemPos(0, True)
-	&apos; Разное
-	oServiceDlg.Model.cboxCorrect.State	= 1
-	oServiceDlg.Model.cboxDelEL.State	= 0
-	oServiceDlg.Model.cboxDocLinks.State = 1
-	oServiceDlg.Model.cboxSaveUTF8.State = 1
+		&apos; Текстовые врезки
+		oLB = .getControl(&quot;cmbboxTextFrame&quot;)
+		oLB.SelectItemPos(3, True)
+		&apos; Таблицы
+		oLB = .getControl(&quot;cmbboxHeaderTHV&quot;)
+		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;cmbboxLineTDV&quot;)
+		oLB.SelectItemPos(0, True)
+		&apos; Разное
+		.Model.cboxCorrect.State	= 1
+		.Model.cboxDelEL.State	= 0
+		.Model.cboxDocLinks.State = 1
+		.Model.cboxSaveUTF8.State = 1
 	
-	&apos; Чистка fb2 кода
-	oServiceDlg.Model.cboxSuperfluous.State = 1
-	oServiceDlg.Model.cboxStyleSpace.State	= 1
+		&apos; Чистка fb2 кода
+		.Model.cboxSuperfluous.State = 1
+		.Model.cboxStyleSpace.State	= 1
 	
-	&apos; запустить полученный fb2-файл на просмотр
-	oServiceDlg.Model.cboxFB2Execute.State = 0
+		&apos; запустить полученный fb2-файл на просмотр
+		.Model.cboxFB2Execute.State = 0
 	
-	&apos; Валидация
-	oServiceDlg.Model.cboxValidate.State = 1
+		&apos; Валидация
+		.Model.cboxValidate.State = 1
 	
-	&apos; экспорт тестовых полей
-	oServiceDlg.Model.cboxTextField.State = 1
-	&apos; генерировать сложный ID Книги
-	oServiceDlg.Model.cboxComplexID.State = 0
-
+		&apos; экспорт тестовых полей
+		.Model.cboxTextField.State = 1
+		&apos; генерировать сложный ID Книги
+		.Model.cboxComplexID.State = 0
+	End With
 End Sub
 
 &apos; задание настроек по-умолчанию для переменных
@@ -485,7 +531,7 @@ Sub SetSettingsToVars( sCurrentLine )
 				Case &quot;3&quot;
 					sTextFrameToFB2 = sServD.sStructure
 				Case Else
-					sTextFrameToFB2 = sServD.sTable
+					sTextFrameToFB2 = sServD.sStructure
 			End Select
 		&apos; Таблицы
 		Case &quot;cmbboxHeaderTHV&quot;

@@ -89,9 +89,8 @@ Sub FB2PropertiesEditorDlgExec()
 	&apos; задаем положение диалога из файла настроек
 	LoadFB2PropEditorFormSettings()
 	&apos; Есть ли хоть одно fb2 свойство в документе?
-	Dim bFB2AnyPropertyIsExsist As Boolean : bFB2AnyPropertyIsExsist = IsFB2AnyPropertyIsExsist()
-	&apos; Задана ли сложная генерация ID?
-	bComplexID = IsComplexID()
+	Dim bFB2NotFlagPropertyIsExsist As Boolean : bFB2NotFlagPropertyIsExsist = IsFB2NotFlagPropertyIsExsist()
+	
 	&apos; заполняем списки Жанрами, взависимости от выбранной Схемы
 	If oFB2PropertiesDlg.Model.obtnFB21.State = True Or oFB2PropertiesDlg.Model.obtnFB21.State = 1 Then
 		InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
@@ -103,7 +102,7 @@ Sub FB2PropertiesEditorDlgExec()
 	
 	&apos; заполнение контролов формы
 	Dim ProgressCount As Integer : ProgressCount = 3
-	If bFB2AnyPropertyIsExsist Then ProgressCount = 43
+	If bFB2NotFlagPropertyIsExsist Then ProgressCount = 43
 	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog+&quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgLoadFB2Properties, ProgressCount )
 	oProgressBar.setValue(0)
 	With oFB2PropertiesDlg
@@ -120,34 +119,34 @@ Sub FB2PropertiesEditorDlgExec()
 		.ProgrammUsedField.Text		= &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot; &quot; &amp; &quot;(ExportToFB21)&quot;
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.NumericFieldMatch.Value	= &quot;0&quot;
-		If bFB2AnyPropertyIsExsist Then
+		If bFB2NotFlagPropertyIsExsist Then
 			&apos; загрузка из свойств документа fb2 свойств в контролы формы
 			GetFB2PropertiesFromDoc( oProgressBar, Iter )
-		Else
-			&apos; Читаем стили и задаем значения переменным
-			LoadStylesToVars()
-			.BookTitleField.Text	= FindTextOfStyle(sStyleBookTitle, true)
-			.VersionField.Text		= &quot;1.0&quot;
-			&apos; язык книги по-умолчанию - локаль Ooo
-			SetBookLangOOoDefaultLocal( oFB2PropertiesDlg, &quot;LangComboBox&quot; )
 		End If
 	End With
 	oProgressBar.setValue(Iter)
 	
-	If Not bFB2AnyPropertyIsExsist Then
+	If Not bFB2NotFlagPropertyIsExsist Then
+		&apos; Читаем стили и задаем значения переменным (для Book Title)
+		SetFB2LocalStylesToVars()
+		With oFB2PropertiesDlg.Model
+			.BookTitleField.Text	= GetTextOfStyle( sStyleBookTitle, True )
+			.VersionField.Text		= &quot;1.0&quot;
+			&apos; язык книги по-умолчанию - локаль Ooo
+			SetBookLangOOoDefaultLocal( oFB2PropertiesDlg, &quot;LangComboBox&quot; )
+			&apos; генерируем ID Книги
+			bComplexID = IsComplexID() &apos; Задана ли сложная генерация ID?
+			.IDField.Text = GetNewBookID( bComplexID )
+		End With
 		&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 		_ReadProfile( getOOoFBToolsSettingsDir() &amp; sConstFB2AuthorProfile, 1 )
 		If IsFB2AuthorInput() Then
-			If IsNewFB2Author() &lt;&gt; &quot;&quot; Then
-				&apos; добавляем Автора fb2-файла в ListBox
-				_FB2AuthorAdd()
-			End If
+			&apos; добавляем Автора fb2-файла в ListBox
+			_FB2AuthorAdd()
 		End If
+		oProgressBar.setValue(Iter) : Iter = Iter + 1
 	End If
 
-	&apos; генерируем ID Книги
-	oFB2PropertiesDlg.Model.IDField.Text = GetNewBookID( bComplexID )
-	oProgressBar.setValue(Iter)
 	oProgressBar.end
 	
 	bWorkEnd = False
@@ -173,7 +172,6 @@ End Sub
 &apos;***************************************************************************
 &apos; Нужно ли генерировать сложный ID fb2 файла: Возвращает True - да; False - нет
 Function IsComplexID() As Boolean
-	&apos; Читаем установки и задаем значения контролам
 	If FileExists( getOOoFBToolsSettingsDir() &amp; sConstSettings ) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
@@ -308,13 +306,13 @@ Sub SavePropertiesToDoc()
 	Dim Iter As Integer : Iter = 1
 	&apos; все данные в списках и/или полях - корректные.
 	&apos; Теперь, если есть данные в полях, отличные от тех, что в Списках - добавляем их в Списки
-	If NOT IsGenreExsistInArray()	AND IsNewGenre()				&lt;&gt; &quot;&quot; Then _BookGenreAdd()
-	If IsBookAuthorInput()			AND IsNewBookAuthor()			&lt;&gt; &quot;&quot; Then _BookAuthorAdd()
-	If IsBookTranslatorInput()		AND IsNewBookTranslator()		&lt;&gt; &quot;&quot; Then _BookTranslatorAdd()
-	If IsBookSequenceInput()		AND IsNewBookSequence()			&lt;&gt; &quot;&quot; Then _BookSequenceAdd()
-	If IsFB2AuthorInput()			AND IsNewFB2Author()			&lt;&gt; &quot;&quot; Then _FB2AuthorAdd()
-	If IsPublisherSequenseInput()	AND IsNewPublisherSequence()	&lt;&gt; &quot;&quot; Then _PublisherSequenceAdd()
-	If IsCustomInfoInput()			AND IsNewCustomInfo()			&lt;&gt; &quot;&quot; Then _CustomInfoAdd()
+	If NOT IsGenreExsistInArray()	Then _BookGenreAdd()
+	If IsBookAuthorInput()			Then _BookAuthorAdd()
+	If IsBookTranslatorInput()		Then _BookTranslatorAdd()
+	If IsBookSequenceInput()		Then _BookSequenceAdd()
+	If IsFB2AuthorInput()			Then _FB2AuthorAdd()
+	If IsPublisherSequenseInput()	Then _PublisherSequenceAdd()
+	If IsCustomInfoInput()			Then _CustomInfoAdd()
 	oProgressBar.setValue(0) : Iter = Iter + 1
 	&apos; сохраняем fb2 данные в свойства документа
 	SaveFB2PropertiesToDoc( oProgressBar, Iter )
@@ -1267,18 +1265,24 @@ End Sub
 Sub GetFB2PropertiesFromDoc( ByRef oProgressBar, ByRef Iter As Integer )
 	With oFB2PropertiesDlg.Model
 		&apos; = Title Info =
-		.BookTitleField.Text	= GetBookTitleFromProperty()
+		Dim fb2Property As String : fb2Property = GetBookTitleFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			.BookTitleField.Text = fb2Property
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.KeywordsField.Text		= GetKeywordsFromProperty()
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.tiDateValueField.Text	= GetBookDateFromProperty()
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.tiDateTextField.Text	= GetBookDateTextFromProperty()
-		oProgressBar.setValue(Iter) : Iter = Iter + 1
+		oProgressBar.setValue(Iter) : Iter = Iter + 1		
 		
 		Dim oLB As Object
-		oLB = oFB2PropertiesDlg.getControl(&quot;LangComboBox&quot;)
-		oLB.selectItem( GetLangFromProperty(), True )
+		fb2Property = GetLangFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			oLB = oFB2PropertiesDlg.getControl(&quot;LangComboBox&quot;)
+			oLB.selectItem( fb2Property, True )
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		oLB = oFB2PropertiesDlg.getControl(&quot;SrcLangComboBox&quot;)
 		oLB.selectItem( GetSrcLangFromProperty(), True )
@@ -1294,15 +1298,30 @@ Sub GetFB2PropertiesFromDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Document Info =
-		.IDField.Text			= GetIDFromProperty()
+		fb2Property = GetIDFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			.IDField.Text = fb2Property
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		.VersionField.Text		= GetVersionFromProperty()
+		fb2Property = GetVersionFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			.VersionField.Text = fb2Property
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		.diURLField.Text		= GetSrcUrlFromProperty()
+		fb2Property = GetSrcUrlFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			.diURLField.Text = fb2Property
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		.diOCRField.Text		= GetOCRFromProperty()
+		fb2Property = GetOCRFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			.diOCRField.Text = fb2Property
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		.HistoryTextField.Text	= GetHistoryFromProperty()
+		fb2Property = GetHistoryFromProperty()
+		If fb2Property &lt;&gt; &quot;&quot; Then
+			.HistoryTextField.Text = fb2Property
+		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		GetFB2AuthorsArray()
@@ -1397,7 +1416,7 @@ Function GetNewBookIDBookAuthors( ByRef ListBox As stardiv.Toolkit.UnoListBoxCon
 					If getOOoLocal() = &quot;ru&quot; Then
 						ID = ID &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(3) ) ) )
 					Else
-						ID = ID &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(3) ) )
+						ID = ID &amp; StrictString( Trim( aAuthorData(3) ) )
 					End if
 				Else
 					If Trim( aAuthorData(2) ) &lt;&gt; &quot;&quot; Or Trim( aAuthorData(0) ) &lt;&gt; &quot;&quot; Then
@@ -1408,9 +1427,9 @@ Function GetNewBookIDBookAuthors( ByRef ListBox As stardiv.Toolkit.UnoListBoxCon
 						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(0) ) ) )
 &apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(1) ) ) )
 					Else
-						If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(2) ) )
-						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(0) ) )
-&apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( saTranslitLetters(), Trim( aAuthorData(1) ) )
+						If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( Trim( aAuthorData(2) ) )
+						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( Trim( aAuthorData(0) ) )
+&apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( Trim( aAuthorData(1) ) )
 					End If
 				End If
 			End If

@@ -47,18 +47,20 @@ End Sub
 &apos;***************************************************************************
 &apos; нажатие кнопки Ok
 Sub StartAccentMarkToU0769()
-	Dim AccentMarkSymbol As String
-	If oAccentMarkDlg.GetControl( &quot;optBtnApostrof&quot; ).State Then	&apos; апостроф
-		AccentMarkSymbol = &quot;&apos;&quot;
-	ElseIf oAccentMarkDlg.GetControl( &quot;optBtnGrave&quot; ).State Then	&apos; ударение
-		AccentMarkSymbol = &quot;`&quot;
-	Else &apos; другое
-		AccentMarkSymbol = oAccentMarkDlg.GetControl( &quot;tfOther&quot; ).Text
-	End If
-	&apos; заполнение массива поиска и замен
-	SetAccentMarkRuleArrayRule( AccentMarkRuleArray(), AccentMarkSymbol )
-	&apos; закрываем диалог
-	oAccentMarkDlg.endExecute()
+	With oAccentMarkDlg
+		Dim AccentMarkSymbol As String
+		If .GetControl( &quot;optBtnApostrof&quot; ).State Then	&apos; апостроф
+			AccentMarkSymbol = &quot;&apos;&quot;
+		ElseIf .GetControl( &quot;optBtnGrave&quot; ).State Then	&apos; ударение
+			AccentMarkSymbol = &quot;`&quot;
+		Else &apos; другое
+			AccentMarkSymbol = .GetControl( &quot;tfOther&quot; ).Text
+		End If
+		&apos; заполнение массива поиска и замен
+		SetAccentMarkRuleArrayRule( AccentMarkRuleArray(), AccentMarkSymbol )
+		&apos; закрываем диалог
+		.endExecute()
+	End With
 	&apos; сохранение настроек
 	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstAccentMarkDlgSettings, oAccentMarkDlg )
 	&apos; замена символа признака ударения справа от русской гласной на U0769 - Ударная гласная
@@ -110,7 +112,7 @@ Sub ApostrofToU0769()
 
 	If nTotal &gt; 0 Then
 		MsgBox sAMVRD.sEndWork &amp; chr(10) &amp; sAMVRD.sTotal &amp; &quot; &quot; &amp; nTotal, 64, sAMVRD.sTitleName
-		&apos; добавляем заданное свойство документа _fb2_AccentMark
+		&apos; добавляем свойство документа _fb2_AccentMark, если его нет
 		Dim UserDefProperties As Object : UserDefProperties	= oDoc.DocumentProperties.getUserDefinedProperties()
 		If GetStringProperty( _fb2_AccentMark ) = &quot;&quot; Then
 			&apos; задаем поле, указывающее, что ударения были проставлены. Это необходимо для того, чтобы конвертер сохранял fb2 в utf-8 принудительно.

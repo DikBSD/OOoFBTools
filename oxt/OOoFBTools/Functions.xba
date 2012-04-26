@@ -1041,7 +1041,7 @@ End Sub
 
 &apos;********************************************************************************
 &apos; есть ли строка Template в строковом массиве sArray()
-Function IsExsistStringInArray( sArray() As String, Template As String ) As Integer
+Function IsExsistStringInArray( ByRef sArray() As String, Template As String ) As Integer
 	IsExsistStringInArray = -1
 	Dim i As Integer
 	For i=0 To UBound( sArray() )
@@ -1065,8 +1065,8 @@ Function IsNoBreakDefExsist() As Boolean
 End Function
 
 &apos;********************************************************************************
-&apos; поиск текста, заданного стиля
-Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
+&apos; поиск текста заданного стиля
+Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	Dim sResult As String
 	Dim oStr As Object, oEnum As Object
 	Dim oDesc As Object, iCount As Integer
@@ -1077,7 +1077,7 @@ Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	End With
 	oEnum = ThisComponent.findAll(oDesc)
 	If oEnum.getCount = 0 Then 
-		FindTextOfStyle = &quot;&quot;
+		GetTextOfStyle = &quot;&quot;
 		Exit Function
 	End If
 	For iCount = 0 To oEnum.getCount() - 1
@@ -1093,7 +1093,7 @@ Function FindTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	Else
 		sResult = Mid(sResult, 2, Len(sResult)-1)
 	End If
-	FindTextOfStyle = sResult
+	GetTextOfStyle = sResult
 End Function
 
 &apos;********************************************************************************
@@ -1114,29 +1114,6 @@ Function IsStyleExists( sStyle As String ) As Boolean
 End Function
 
 &apos; /////////////////////////////////////////////// Работа с контролами  ////////////////////////////////////////////////////////
-
-Function IsFillAllFields() As Boolean
-	Dim ctrl As Object, i As Integer, b As Boolean
-	b = False
-	ctrl = oStylesDlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
-		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
-			If Trim(ctrl(i).Model.Text) &lt;&gt; &quot;&quot; Then
-				b = True
-			Else
-				b = False
-				Exit For
-			End If
-		End If
-	Next i
-	
-	If b = False Then
-		IsFillAllFields = False
-		Exit Function
-	End If
-	IsFillAllFields = True
-End Function
-
 &apos; Установка итема языкового листбокса - язык системы по-умолчанию
 Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
 	Dim i as Integer
@@ -1448,7 +1425,7 @@ End Function
 &apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; переместить видимый курсор на закладку: bSel=True - выделить текст закладки, bSel=False - не выделять текст закладки
 &apos; возвращает: True - если перешли на закладку. False - если нет такой закладки
-Function GoToViewCursorToBookMark( oViewCursor As Object, sBookMarkName As String, bSel As Boolean ) As Boolean
+Function GoToViewCursorToBookMark( ByRef oViewCursor As Object, sBookMarkName As String, bSel As Boolean ) As Boolean
 	Dim oBookMarks : oBookMarks = ThisComponent.getBookmarks()
 	If oBookMarks.hasByName( sBookMarkName ) Then &apos; есть ли такая закладка?
 		Dim oBookMark : oBookMark = oBookMarks.getByName(sBookMarkName).getAnchor()
@@ -1466,7 +1443,7 @@ Function GoToViewCursorToBookMark( oViewCursor As Object, sBookMarkName As Strin
 End Function
 
 &apos; расширить выделение до начала закладки (если курсор правее конца закладки), или начала закладки (если курсор левее начала закладки)
-Function ExtendSelectTextToBookMark( oViewCursor As Object, sBookMarkName As String )
+Function ExtendSelectTextToBookMark( ByRef oViewCursor As Object, sBookMarkName As String )
 	ExtendSelectTextToBookMark = False
 	Dim oBookMarks : oBookMarks = ThisComponent.getBookmarks()
 	If oBookMarks.hasByName( sBookMarkName ) Then &apos; есть ли такая закладка?
@@ -1478,7 +1455,7 @@ End Function
 
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos; возвращает массив с названиями зон поиска - помеченных закладками списка текста сносок (не по порядку их добавления, а по индексу их массива закладок)
-Function GetFindListNoteZones( oBookMarks As Object, sConstBookMarkListNote As String ) As Array
+Function GetFindListNoteZones( ByRef oBookMarks As Object, sConstBookMarkListNote As String ) As Array
 	Dim l As Long
 	Dim aBookMarks() As String
 	For l=0 To oBookMarks.getCount()-1
@@ -1493,7 +1470,7 @@ End Function
 
 &apos; //////////////////////////////////////////////////////////////////////////
 &apos; удаление всех закладок, соответствующих шаблону sBookMarkTemplate
-Function DeleteAllBookMarkWithTemplate( oBookMarks As Object, sBookMarkTemplate As String ) As Integer
+Function DeleteAllBookMarkWithTemplate( ByRef oBookMarks As Object, sBookMarkTemplate As String ) As Integer
 	Dim aBookMarks() As String : aBookMarks = GetFindListNoteZones( oBookMarks, sBookMarkTemplate )
 	Dim l As Long
 	For l=0 To UBound( aBookMarks() )
@@ -1504,7 +1481,7 @@ End Function
 
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos; расширение курсора от закладки 1 до конца закладки 2
-Sub ExtendSelectTextToEndBookMark( oDoc As Object, oViewCursor As Object, sBookMarkStartName As String, oBookMarkEnd As Object )
+Sub ExtendSelectTextToEndBookMark( ByRef oDoc As Object, ByRef oViewCursor As Object, sBookMarkStartName As String, ByRef oBookMarkEnd As Object )
 	&apos; возвращаемся к закладке - началу текста сноски
 	Dim b : b = oDoc.getBookmarks().getByName( sBookMarkStartName ).getAnchor()
 	&apos; курсор - на начала закладки (текста сноски)
@@ -1517,7 +1494,7 @@ Sub ExtendSelectTextToEndBookMark( oDoc As Object, oViewCursor As Object, sBookM
 End Sub
 
 &apos; расширение видимого курсора от начала курсора 1 до конца курсора 2
-Sub ExtendViewCursorFromStartCursor1ToEndCursor2( oDoc As Object, oViewCursor As Object, oLCurs As Objectg, oRCurs As Object )
+Sub ExtendViewCursorFromStartCursor1ToEndCursor2( ByRef oDoc As Object, ByRef oViewCursor As Object, ByRef oLCurs As Object, ByRef oRCurs As Object )
 	&apos; курсор - на начала закладки выделенной зоны
 	oViewCursor.gotoRange(oLCurs, False)
 	&apos; расширяем выделение курсора до конца выделенной зоны
@@ -1528,7 +1505,7 @@ End Sub
 &apos; 			Функции по работе с выделенным текстом
 &apos;//////////////////////////////////////////////////////////////////////////////
 &apos; есть ли выделение курсором. True - есть
-Function IsSelection( oSel As Object ) As Boolean
+Function IsSelection( ByRef oSel As Object ) As Boolean
 	Dim oCursor : oCursor = ThisComponent.Text.CreateTextCursorByRange( oSel )
 	If oCursor.IsCollapsed() Then &apos; ничего не выделено
 		IsSelection = False
@@ -1560,7 +1537,7 @@ End Function
 &apos; ///////////////////////////////////////////////////////////////////
 &apos; возвращает &quot;реальную&quot; левую границу курсора (и для случая, если конец курсора находится раньше начала)
 &apos; основано на коде Andrew Pitonyak
-Function GetLeftMostCursor( oSel As Object ) As Object
+Function GetLeftMostCursor( ByRef oSel As Object ) As Object
 	Dim oRange, oCursor
 	If oSel.getText().compareRegionStarts( oSel.getEnd(), oSel ) &gt;= 0 Then
 		oRange = oSel.getEnd()
@@ -1575,7 +1552,7 @@ End Function
 &apos; ///////////////////////////////////////////////////////////////////
 &apos; возвращает &quot;реальную&quot; правую границу курсора (и для случая, если конец курсора находится раньше начала)
 &apos; основано на коде Andrew Pitonyak
-Function GetRightMostCursor( oSel As Object ) As Object
+Function GetRightMostCursor( ByRef oSel As Object ) As Object
 	Dim oRange, oCursor
 	If oSel.getText().compareRegionStarts( oSel.getEnd(), oSel ) &gt;= 0 Then
 		oRange = oSel.getStart()
@@ -1590,7 +1567,7 @@ End Function
 &apos; ///////////////////////////////////////////////////////////////////
 &apos; Находится ли курсор внутри выделенной области?
 &apos; основано на коде Andrew Pitonyak
-Function IsAnythingSelected( oDoc As Object ) As Boolean
+Function IsAnythingSelected( ByRef oDoc As Object ) As Boolean
 	IsAnythingSelected = False
 	
 	If IsNull( oDoc )		Then Exit Function
@@ -1611,7 +1588,7 @@ End Function
 &apos; ////////////////////////////////////////////////////////////////////////
 &apos; Создать курсоры, охватывающие выбранные текстовые области.
 &apos; основано на коде Andrew Pitonyak
-Function CreateSelectedTextIterator( oDoc As Object, sPrompt As String, sMessTitle As String, oCurs() ) As Boolean
+Function CreateSelectedTextIterator( ByRef oDoc As Object, sPrompt As String, sMessTitle As String, ByRef oCurs() ) As Boolean
 	CreateSelectedTextIterator = True
 	
 	Dim oLCurs &apos;Курсор левой границы текущего выделения
@@ -1645,23 +1622,45 @@ Function CreateSelectedTextIterator( oDoc As Object, sPrompt As String, sMessTit
 	End If
 End Function
 
-&apos; /// Для отладки ///
+&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
+Function ExtendViewCursorToStartEndParaOfSelections( ByRef oViewCursor As Object, ByRef Optional IsTextSelected As Boolean ) As Boolean
+	ExtendViewCursorToStartEndParaOfSelections = False
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
+		If Not IsNull(oSels) Then
+			Dim oSel As Object : oSel = oSels.getByIndex(0)
+			If NOT IsMissing( IsTextSelected ) Then
+				If IsSelection( oSel ) Then
+					IsTextSelected = True
+				Else
+					IsTextSelected = False
+				End If
+			End If
+			
+			&apos; 1-й текстовый курсор - на начало 1-го абзаца в выделении
+			Dim otxtCurs1	As Object : otxtCurs1	= oSel.Text.createTextCursor()
+			otxtCurs1.gotoRange(oSel.getStart(), False)
+			otxtCurs1.gotoStartOfParagraph(False)
+			&apos; 2-й текстовый курсор - на конец последнего абзаца в выделении
+			Dim otxtCurs2	As Object : otxtCurs2	= oSel.Text.createTextCursor()
+			otxtCurs2.gotoRange(oSel.getEnd(), False)
+			otxtCurs2.gotoEndOfParagraph(True)
+			&apos; расширяем видимый курсор
+			oViewCursor.gotoRange(otxtCurs1.getStart(), False)
+			oViewCursor.gotoRange(otxtCurs2.getEnd(), True)
 
-Sub SaveGebugObjectListPMS( oObject, sObjectName As String, sFilePath As String )
-	Dim s As String
-	s = &quot;Object: &quot; &amp; sObjectName &amp; chr(10) &amp; _
-		&quot;ImplementationName: &quot; &amp; oObject.ImplementationName &amp; chr(10) &amp; chr(10) &amp; _
-		&quot;Properties:&quot; &amp; chr(10) &amp; oObject.dbg_properties &amp; chr(10) &amp; chr(10) &amp; _
-		&quot;Methods:&quot; &amp; chr(10)&amp; oObject.dbg_methods &amp; chr(10) &amp; chr(10) &amp; _
-		&quot;SupportedInterfaces:&quot; &amp; chr(10) &amp; oObject.dbg_supportedInterfaces &amp; chr(10) &amp; chr(10)
-	SaveText(sFilePath, s, &quot;utf-8&quot;)
-End Sub
+			ExtendViewCursorToStartEndParaOfSelections = True
+		End If
+	End If
+End Function
 
-&apos;///  Работа со стилями ///
-&apos; пометка абзаца стилем
+&apos; =======================================================================================================
+&apos; 												Работа со стилями 
+&apos; =======================================================================================================
+&apos; форматирование абзаца заданным стилем
 Sub SetParaStyle(Style As String)
-	Dim document   As object : document		= ThisComponent.CurrentController.Frame
-	Dim dispatcher As object : dispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document		= ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(1) As New com.sun.star.beans.PropertyValue
 	args1(0).Name = &quot;Template&quot;
 	args1(0).Value = Style
@@ -1670,23 +1669,19 @@ Sub SetParaStyle(Style As String)
 	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
 End Sub
 
-&apos;  очистка всех стилей в абзаце
-Sub ClearParaStyleToBase()
-	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
-	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
-	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
-	Dim args2(1) As New com.sun.star.beans.PropertyValue
-	args2(0).Name = &quot;Template&quot;
-	If getOOoLocal() = &quot;ru&quot; Then
-		args2(0).Value = &quot;Основной текст&quot;
-	Else
-		args2(0).Value = &quot;Default&quot;
-	End If
-	args2(1).Name = &quot;Family&quot;
-	args2(1).Value = 2
-	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
+&apos; форматирование символа заданным стилем
+Sub SetSymbolStyle(Style As String)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(1) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Template&quot;
+	args1(0).Value = Style
+	args1(1).Name = &quot;Family&quot;
+	args1(1).Value = 1
+	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
 End Sub
 
+&apos;  очистка всех стилей для выделенногосимвола
 Sub ClearSymbolFormat()
 	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
 	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
@@ -1712,6 +1707,120 @@ Sub ClearSymbolFormat()
 	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
 End Sub
 
+&apos;/////////////////////////////////////// Очистка всех стилей в абзаце//////////////////////////////////////
+&apos; очистка всех стилей в абзаце
+&apos; после отработки функции: положение и выделение видимого курсора восстанавливается
+Sub ClearParaStyleToBase()
+	SetParaStyleWithBeforeClearOldParaStyle(&quot;&quot;)
+End Sub
+
+&apos; очистка всех стилей в абзаце
+&apos; после отработки функции: положение и выделение видимого курсора восстанавливается
+&apos; Style - стиль для нового форматирования абзаца. Если Style = &quot;&quot;, то - просто очищаем &quot;старый&quot; формат
+Sub SetParaStyleWithBeforeClearOldParaStyle( Style As String )
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
+		If Not IsNull( oSels ) Then
+			Dim TempBookMarkName As String : TempBookMarkName = &quot;__temp_view_cursor_for_clear_format__&quot;
+			Dim SelCount As Integer : SelCount = oSels.getCount()
+			If SelCount &gt; 1 Then
+				&apos; для нескольких выделений текста
+				ClearParagraphsStyleToBase( TempBookMarkName, Style )
+			Else
+				&apos; для одного выделения текста или без выделения
+				ClearParagraphStyleToBase( TempBookMarkName, Style )
+			End If
+		End If
+	End If
+End Sub
+
+&apos; для одного выделения текста или без выделения
+Sub ClearParagraphStyleToBase( ByRef TempBookMarkName As String, Style As String )
+	&apos; вставка временной закладки на место видимого курсора
+	_UnoInsertBookmark( TempBookMarkName )
+
+	&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim IsTextSelected As Boolean : IsTextSelected = False
+	ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
+	
+	&apos; очистка всех стилей в заданной видимой курсором области текста
+	_ClearStyleToBase_( GetLocaDefaultStyleName() )	
+	
+	&apos; задаем новый стиль, если Style не равна &quot;&quot;
+	If Style &lt;&gt; &quot;&quot; Then SetParaStyle( Style )
+	&apos; восстановление положения видимого курсора
+	GoToViewCursorToBookMark( oViewCursor, TempBookMarkName, IsTextSelected )
+
+	&apos; удаляем временную закладку
+	_UnoDeleteBookMark( TempBookMarkName )
+End Sub
+
+&apos; для нескольких выделений текста
+Sub ClearParagraphsStyleToBase( ByRef TempBookMarkName As String, Style As String )
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
+		If Not IsNull(oSels) Then
+			Dim SelCount	As Integer	: SelCount		= oSels.getCount()
+			Dim oViewCursor	As Object	: oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+			Dim i As Integer
+			For i=1 To SelCount - 1
+				Dim oSel As Object : oSel = oSels.getByIndex(i)
+				&apos; перевод видимого курсора на i-е выделение
+				Dim otxtCurs As Object : otxtCurs = oSel.Text.createTextCursor()
+				otxtCurs.gotoRange( oSel, False )
+				oViewCursor.gotoRange( otxtCurs, False )
+				&apos; ставим закладку на выделение
+				_UnoInsertBookmark( TempBookMarkName &amp; i )
+			Next i
+			
+			Dim oBookMarks	As Object : oBookMarks	= ThisComponent.getBookmarks()
+			For i=1 To SelCount - 1
+				&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
+				If oBookMarks.hasByName( TempBookMarkName ) Then
+					GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, True )
+				End If
+
+				&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
+				Dim IsTextSelected As Boolean : IsTextSelected = False
+				ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
+				
+				&apos; очистка всех стилей в заданной видимой курсором области текста
+				_ClearStyleToBase_( GetLocaDefaultStyleName() )	
+				
+				&apos; задаем новый стиль, если Style не равна &quot;&quot;
+				If Style &lt;&gt; &quot;&quot; Then SetParaStyle( Style )
+	
+				&apos; восстановление положения видимого курсора
+				GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, IsTextSelected )
+
+				&apos; удаляем временную закладку
+				_UnoDeleteBookMark( TempBookMarkName &amp; i )
+			Next i
+		End If
+	End If
+End Sub
+
+&apos; очистка всех стилей в заданной видимой курсором области текста
+Sub _ClearStyleToBase_(BaseStyle As String)
+	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
+	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
+	Dim args2(1) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Template&quot;
+	&apos; название стиля &quot;Базовый&quot; в зависимости от локали
+	args2(0).Value = BaseStyle
+	args2(1).Name = &quot;Family&quot;
+	args2(1).Value = 2
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
+	&apos; форматирование символа заданным стилем
+	SetSymbolStyle( GetLocaDefaultStyleName() )
+End Sub
+&apos;/////////////////////////////////////////////////////////////////////////////////////////////////
+
+&apos; =======================================================================================================
+&apos; 
+&apos; =======================================================================================================
 &apos;//////////////////// Удаление всех объектов /////////////////////
 &apos; удаление всех закладок
 Sub DeleteAllBookMarks()
@@ -1746,5 +1855,15 @@ Sub DeleteAllTables()
 End Sub
 &apos;///////////////////////////////////////////////////////
 
+&apos; /// Для отладки ///
 
+Sub SaveGebugObjectListPMS( oObject, sObjectName As String, sFilePath As String )
+	Dim s As String
+	s = &quot;Object: &quot; &amp; sObjectName &amp; chr(10) &amp; _
+		&quot;ImplementationName: &quot; &amp; oObject.ImplementationName &amp; chr(10) &amp; chr(10) &amp; _
+		&quot;Properties:&quot; &amp; chr(10) &amp; oObject.dbg_properties &amp; chr(10) &amp; chr(10) &amp; _
+		&quot;Methods:&quot; &amp; chr(10)&amp; oObject.dbg_methods &amp; chr(10) &amp; chr(10) &amp; _
+		&quot;SupportedInterfaces:&quot; &amp; chr(10) &amp; oObject.dbg_supportedInterfaces &amp; chr(10) &amp; chr(10)
+	SaveText(sFilePath, s, &quot;utf-8&quot;)
+End Sub
 </script:module>

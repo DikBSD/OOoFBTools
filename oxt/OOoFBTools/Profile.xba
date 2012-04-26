@@ -47,12 +47,12 @@ Sub _LoadProfile( sTitle As String, nN As Integer )
 		.appendFilter(&quot;Profile files (.txt)&quot;, &quot;*.txt;*.TXT&quot;)
 		.appendFilter(&quot;All files (.*)&quot;, &quot;*.*&quot;)
 		.setTitle( sTitle )
+		If .execute() Then
+			&apos; Читаем установки и задаем значения контролам
+			_ReadProfile( .Files(0), nN )
+		End If
+		.Dispose()
 	End With
-	If oFileDlg.execute() Then
-		&apos; Читаем установки и задаем значения контролам
-		_ReadProfile( oFileDlg.Files(0), nN )
-	End If
-	oFileDlg.Dispose()
 End Sub
 
 &apos; Сохранение профиля
@@ -121,15 +121,17 @@ End Sub
 
 &apos; записываем профиль автора fb2-файла
 Sub _SaveFB2AuthorProfile( oTOS As Object )
-	oTOS.writeString(&quot;diFirstField=&quot; &amp; oFB2PropertiesDlg.Model.diFirstField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diMiddleField=&quot; &amp; oFB2PropertiesDlg.Model.diMiddleField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diLastField=&quot; &amp; oFB2PropertiesDlg.Model.diLastField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diNicknameField=&quot; &amp; oFB2PropertiesDlg.Model.diNicknameField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diEmailField=&quot; &amp; oFB2PropertiesDlg.Model.diEmailField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diHomepageField=&quot; &amp; oFB2PropertiesDlg.Model.diHomepageField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diOCRField=&quot; &amp; oFB2PropertiesDlg.Model.diOCRField.Text &amp; chr(10))
-	oTOS.writeString(&quot;diURLField=&quot; &amp; oFB2PropertiesDlg.Model.diURLField.Text &amp; chr(10))
-	oTOS.writeString(&quot;HistoryTextField=&quot; &amp; oFB2PropertiesDlg.Model.HistoryTextField.Text &amp; chr(10))
+	With oFB2PropertiesDlg
+		oTOS.writeString(&quot;diFirstField=&quot; &amp; .Model.diFirstField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diMiddleField=&quot; &amp; .Model.diMiddleField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diLastField=&quot; &amp; .Model.diLastField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diNicknameField=&quot; &amp; .Model.diNicknameField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diEmailField=&quot; &amp; .Model.diEmailField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diHomepageField=&quot; &amp; .Model.diHomepageField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diOCRField=&quot; &amp; .Model.diOCRField.Text &amp; chr(10))
+		oTOS.writeString(&quot;diURLField=&quot; &amp; .Model.diURLField.Text &amp; chr(10))
+		oTOS.writeString(&quot;HistoryTextField=&quot; &amp; .Model.HistoryTextField.Text &amp; chr(10))
+	End With
 End Sub
 
 &apos;//////////////////////////////////////////////////
@@ -156,38 +158,42 @@ Sub SaveDefFB2AuthorProfile()
 	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
 	oOS = oFA.openFileWrite( sFile )
 	oOS.truncate()
-	oTOS.setOutputStream(oOS)
-	oTOS.setEncoding(&quot;utf-8&quot;)
-	_SaveFB2AuthorProfile( oTOS )
-	oTOS.writeString(&quot;end of file&quot; &amp; chr(10))
-	oTOS.closeOutput()
+	With oTOS
+		.setOutputStream(oOS)
+		.setEncoding(&quot;utf-8&quot;)
+		_SaveFB2AuthorProfile( oTOS )
+		.writeString(&quot;end of file&quot; &amp; chr(10))
+		.closeOutput()
+	End With
 End Sub
 
-Sub SetFB2AuthorProfile( sCurrentLine )
+Sub SetFB2AuthorProfile( ByRef sCurrentLine As String )
 	On Error Goto ErrorHandler
 	Dim sProfile() As String
 	
-	sProfile = Split(sCurrentLine, &quot;=&quot;)
-	Select Case sProfile(0)
-		Case &quot;diFirstField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diMiddleField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diLastField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diNicknameField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diEmailField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diHomepageField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diOCRField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;diURLField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-		Case &quot;HistoryTextField&quot;
-			oFB2PropertiesDlg.GetControl(sProfile(0)).Text = sProfile(1)
-	End Select
+	sProfile = Split( sCurrentLine, &quot;=&quot; )
+	With oFB2PropertiesDlg
+		Select Case sProfile(0)
+			Case &quot;diFirstField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diMiddleField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diLastField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diNicknameField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diEmailField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diHomepageField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diOCRField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;diURLField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+			Case &quot;HistoryTextField&quot;
+				.GetControl(sProfile(0)).Text = sProfile(1)
+		End Select
+	End With
 	Exit Sub
 	
 	ErrorHandler: &apos; Идем дальше

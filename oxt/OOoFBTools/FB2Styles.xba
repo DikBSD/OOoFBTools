@@ -1,0 +1,1291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FB2Styles" script:language="StarBasic">REM  *****  BASIC  *****
+
+&apos; ================================================================================================================
+&apos;						модуль работы с fb2 стилями (загрузка и панель стилей)
+&apos; ================================================================================================================
+Option Explicit
+
+&apos; fb2 стили
+&apos; Данные книги
+Public sStyleBookTitle As String
+Public sStyle_BookAnnotation As String
+&apos; Анотация
+Public sStyleAnnotation As String
+Public sStyleAnnotationSubTitle As String
+&apos; Эпиграф
+Public sStyleEpigraph As String
+Public sStyleEpigraphAuthor As String
+&apos; Поэма
+Public sStylePoemTitle As String
+Public sStylePoem As String
+Public sStylePoemAuthor As String
+Public sStylePoemDate As String
+Public sStylePoemSubTitle As String
+&apos; Цитата
+Public sStyleCite As String
+Public sStyleCiteAuthor As String
+Public sStyleCiteSubTitle As String
+&apos; Подзаголовок
+Public sStyleSubTitle As String
+&apos; Уровни
+Public sStyleLevel1 As String
+Public sStyleLevel2 As String
+Public sStyleLevel3 As String
+Public sStyleLevel4 As String
+Public sStyleLevel5 As String
+Public sStyleLevel6 As String
+Public sStyleLevel7 As String
+Public sStyleLevel8 As String
+Public sStyleLevel9 As String
+Public sStyleLevel10 As String
+
+Public Const _fb2_FB2StylesIsLoaded As String = &quot;_fb2_FB2StylesIsLoaded&quot; &apos; если свойство задано, то fb2 стили уже загружены  - не загружаем снова
+Private Const sConstfb2StylesDlgSettings As String = &quot;fb2StylesDlgSettings.txt&quot;
+
+Private oFB2StylesDlg	As Object	&apos; панель fb2 стилей
+Private bWorkStart		As Boolean	&apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd		As Boolean	&apos; флаг конца работы инструмента - закрытия диалога (True)
+
+&apos;***************************************************************************
+Sub FB2StylesDlg_windowActivated(oEv)
+End Sub
+
+Sub FB2StylesDlg_windowDeactivated(oEv)
+End Sub
+
+Sub FB2StylesDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
+End Sub
+
+Sub FB2StylesDlg_windowClosing(oEv)
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
+End Sub
+
+Sub FB2StylesDlg_windowClosed(oEv)
+End Sub
+
+Sub FB2StylesDlg_windowMinimized(oEv)
+End Sub
+
+Sub FB2StylesDlg_windowNormalized(oEv)
+End Sub
+
+Sub FB2StylesDlg_disposing(oEv)
+End Sub
+&apos; ================================================================================================================
+&apos;										работа контролов панели стилей
+&apos; ================================================================================================================
+
+Sub FB2StylesDlgStart()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
+	&apos; Загрузить шаблон fb2 стилей в документ, если они еще не были загружены
+	LoadFB2StylesToDoc()
+
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
+	oFB2StylesDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;FB2StylesDlg&quot; )
+	
+	&apos; инициализация панели fb2 стилей в зависимости от локали
+	InitFB2StylesDlg()
+	
+	&apos; заполнение списка локализованными fb2 стилями
+	setFb2LocalStylesToListBox()
+
+	&apos; файл настроек
+	Dim sFB2StylesDlgSettings As String : sFB2StylesDlgSettings = getOOoFBToolsSettingsDir() &amp; sConstfb2StylesDlgSettings
+	
+	&apos; считаем положение диалога из файла настроек
+	ReadFB2StylesDlgSettings( sFB2StylesDlgSettings )
+
+	bWorkEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;FB2StylesDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	With oFB2StylesDlg
+		.addTopWindowListener( oList )
+		.setVisible( True )
+	End With
+
+	While Not bWorkEnd
+		Wait 200     
+	Wend
+	
+	&apos; записываем настройки диалога
+	SaveSettings( sFB2StylesDlgSettings, oFB2StylesDlg )
+	oFB2StylesDlg.setVisible( False )
+
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; Загрузить шаблон fb2 стилей конвертора
+Function LoadFB2StylesToDoc() As Boolean
+	LoadFB2StylesToDoc = False
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim UserDefProperties As Object : UserDefProperties	= oDoc.DocumentProperties.getUserDefinedProperties()
+
+	&apos; инициализация сообщений Загрузки Шаблона fb2-стилей в зависимости от локали
+	InitLoadFB2StylesToDocMessage()
+		
+	&apos; загружаем стили в документ, если свойство документа _fb2_FB2StylesIsLoaded не задано
+	If GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; Then
+		oProgressBar = oDoc.CurrentController.StatusIndicator
+		oProgressBar.start( sLSTD.sProgressTitle, 4 )
+		oProgressBar.setValue( 0 )
+
+		Dim fb21StylesPath As String : fb21StylesPath = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/styles/&quot; &amp; GetLocalFB2StylesFile()
+	
+		&apos;Загрузка шаблона в переменную
+		Dim oDesktop : oDesktop = createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+		Dim aArgs(1) As New com.sun.star.beans.PropertyValue
+		aArgs(0).Name	= &quot;AsTemplate&quot;
+		aArgs(0).Value	= False
+		aArgs(1).Name	= &quot;Hidden&quot;
+	   	aArgs(1).Value	= True
+		Dim oTemplate : oTemplate = oDesktop.loadComponentFromURL( ConvertToUrl( fb21StylesPath ), &quot;_blank&quot;, 0, aArgs() )
+		oProgressBar.setValue( 2 )
+	
+		&apos; Загрузка и переименовывание стилей для докуменета из шаблона
+	    aArgs(0).Name	= &quot;OverwriteStyles&quot;
+    	aArgs(0).Value	= True
+	    aArgs(1).Name	= &quot;&quot;
+    	aArgs(1).Value	= &quot;&quot;
+	    oDoc.stylefamilies.loadStylesFromURL( fb21StylesPath, aArgs() )
+		oProgressBar.setValue( 3 )
+	
+		&apos; привязываем наш документ к шаблону
+    	oDoc.DocumentInfo.Template			= oTemplate.DocumentInfo.Title
+	    oDoc.DocumentInfo.TemplateFileName	= fb21StylesPath
+       
+    	oTemplate.Close( false )
+	    oProgressBar.setValue( 4 )
+    
+    	&apos; добавляем свойство документа _fb2_FB2StylesIsLoaded, если его нет
+		If GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; Then
+			&apos; задаем поле, указывающее, что стили были загружены
+			UserDefProperties.addProperty(_fb2_FB2StylesIsLoaded, 128, &quot;True&quot;)
+			&apos; задаем признак изменения документа
+			oDoc.setModified(True)
+		End If
+		
+    	oProgressBar.End
+    	LoadFB2StylesToDoc = True
+    End If
+End Function
+
+&apos; ***********************************************************************************************
+&apos; Читаем настройки и задаем значения контролам формы
+Function ReadFB2StylesDlgSettings( sFB2StylesDlgSettings As String ) As Boolean
+	If FileExists( sFB2StylesDlgSettings ) Then
+		Dim nX As Integer, nY As Integer
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFB2StylesDlgSettings ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные в контролы		
+				Dim sSetting() As String : 	sSetting = Split( sLine, &quot;=&quot; )
+				If sSetting(0) = &quot;X&quot; Then
+					nX = sSetting(1)
+				ElseIf sSetting(0) = &quot;Y&quot; Then
+					nY = sSetting(1)
+				Else
+					Dim oCtrl As Object : oCtrl = oFB2StylesDlg.GetControl( sSetting(0) )
+					If Not IsNull( oCtrl ) Then
+						If oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot;	Then
+							oCtrl.State = sSetting(1)
+						End If
+					End If
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		oFB2StylesDlg.setPosSize( nX, nY, 92, 314, com.sun.star.awt.PosSize.POS )
+		ReadFB2StylesDlgSettings = True
+	Else
+		ReadFB2StylesDlgSettings = False
+	End If
+End Function
+
+&apos; ***********************************************************************************************
+&apos; Обработка двойного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем
+Sub ListOfFB2StylesClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			Dim oLB	As Object : oLB = oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
+			If oFB2StylesDlg.getControl( &quot;cbToOneClick&quot; ).State = 1 Then
+				&apos; Обработка одинарного щелчка мышью по списку fb2 стилей
+				If oEvent.ClickCount = 1 Then
+					&apos; разметка абзаца выбранным fb2 стилем
+					setParaSelectedFB2Style()
+				End If
+			Else
+				&apos; Обработка двойного щелчка мышью по списку fb2 стилей
+				If oEvent.ClickCount = 2 Then
+					&apos; разметка абзаца выбранным fb2 стилем
+					setParaSelectedFB2Style()
+				End If
+			End If
+		End If
+	End If
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; разметка абзаца выбранным fb2 стилем
+Sub setParaSelectedFB2Style()
+	Dim oLB	As Object : oLB = oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
+	If oFB2StylesDlg.getControl( &quot;cbCrearBeforeFB2&quot; ).State = 1 Then
+		SetParaStyleWithBeforeClearOldParaStyle( oLB.getSelectedItem() )
+	Else
+		SetParaStyle( oLB.getSelectedItem() )
+	End If
+	oLB.selectItem( oLB.getSelectedItem(), False )
+End Sub
+
+&apos; ================================================================================================================
+&apos; 												локализация
+&apos; ================================================================================================================
+&apos; структурв хранения сообщений для загрузки fb2-стилей в документ
+Type tLoadFB2StylesToDoData
+	sProgressTitle As String &apos; Загрузка стилей:
+End Type
+
+Public sLSTD As tLoadFB2StylesToDoData
+
+&apos; ***********************************************************************************************
+&apos; инициализация панели fb2 стилей в зависимости от локали
+Sub InitFB2StylesDlg()
+	&apos; инициализация сообщений панели fb2 стилей в зависимости от локали
+	InitLoadFB2StylesToDocMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; Then
+		With oFB2StylesDlg.getModel
+			.Title							= &quot;fb2 стили&quot;
+			.cbToOneClick.Label				= &quot;По одному нажатию мышки&quot;
+			.cbCrearBeforeFB2.Label			= &quot;Сброс формата до fb2 стиля&quot;
+			.cbCrearBeforeFB2.HelpText		= &quot;Очистка формата абзаца до применения fb2 стиля&quot;
+			.cmdbtnBold.HelpText			= &quot;Полужирный (Bold, Strong)&quot;
+			.cmdbtnItalic.HelpText			= &quot;Курсив (Italic, Emphasis)&quot;
+			.cmdbtnStrikethrought.HelpText	= &quot;Зачёркнутый (Strikethrought)&quot;
+			.cmdbtnSup.HelpText				= &quot;Верхний индекс (SuperScript)&quot;
+			.cmdbtnSub.HelpText				= &quot;Нижний индекс (SubScript)&quot;
+			.cmdbtnCode.HelpText			= &quot;Код программ, пример, иллюстрация&quot;
+		End With
+	Else
+		With oFB2StylesDlg.getModel
+			.Title							= &quot;fb2 Styles&quot;
+			.cbToOneClick.Label				= &quot;To One Click&quot;
+			.cbCrearBeforeFB2.Label			= &quot;Clear before applying fb2 style&quot;
+			.cbCrearBeforeFB2.HelpText		= &quot;Clear formating before applying fb2 style&quot;
+			.cmdbtnBold.HelpText			= &quot;Bold, Strong&quot;
+			.cmdbtnItalic.HelpText			= &quot;Italic, Emphasis&quot;
+			.cmdbtnStrikethrought.HelpText	= &quot;Strikethrought&quot;
+			.cmdbtnSup.HelpText				= &quot;SuperScript&quot;
+			.cmdbtnSub.HelpText				= &quot;SubScript&quot;
+			.cmdbtnCode.HelpText			= &quot;Program code, example, illustration&quot;
+		End With
+	End If
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; инициализация сообщений панели fb2 стилей в зависимости от локали
+Sub InitLoadFB2StylesToDocMessage()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With sLSTD
+			.sProgressTitle	= &quot;Загрузка стилей:&quot;
+		End With
+	Else
+		With sLSTD
+			.sProgressTitle	= &quot;Loading of Styles:&quot;
+		End With
+	End If
+End Sub
+
+&apos; ================================================================================================================
+&apos; 									загрузка сортированных и локализованных стилей в Список Панели
+&apos; ================================================================================================================
+&apos; структурв хранения названий fb2-стилей
+Type FB2StylesType
+	&apos; Данные книги
+	BookTitle			As String
+	BookAnnotation		As String
+	&apos; Анотация
+	Annotation			As String
+	AnnotationSubTitle	As String
+	&apos; Эпиграф
+	Epigraph			As String
+	EpigraphAuthor		As String
+	&apos; Поэма
+	Poem				As String
+	PoemTitle			As String
+	PoemSubTitle		As String
+	PoemAuthor			As String
+	PoemDate			As String
+	&apos; Цитата
+	Cite				As String
+	CiteSubTitle		As String
+	CiteAuthor			As String
+	&apos; Подзаголовок
+	SubTitle			As String
+	&apos; Заголовки (Уровни)
+	Level1				As String
+	Level2				As String
+	Level3				As String
+	Level4				As String
+	Level5				As String
+	Level6				As String
+	Level7				As String
+	Level8				As String
+	Level9				As String
+	Level10				As String
+End Type
+
+&apos; ***********************************************************************************************
+&apos; &quot;стандартные&quot; для конвертера fb2 стили 
+Function fb2StylesStandart() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Book Title&quot;
+	fb2.BookAnnotation		= &quot;Book Annotation&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Annotation&quot;
+	fb2.AnnotationSubTitle	= &quot;Annotation SubTitle&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Epigraph&quot;
+	fb2.EpigraphAuthor		= &quot;Epigraph Author&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poem&quot;
+	fb2.PoemTitle			= &quot;Poem Title&quot;
+	fb2.PoemSubTitle		= &quot;Poem SubTitle&quot;
+	fb2.PoemAuthor			= &quot;Poem Author&quot;
+	fb2.PoemDate			= &quot;Poem Date&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Cite&quot;
+	fb2.CiteSubTitle		= &quot;Cite SubTitle&quot;
+	fb2.CiteAuthor			= &quot;Cite Author&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Subtitle&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Level 1&quot;
+	fb2.Level2				= &quot;Level 2&quot;
+	fb2.Level3				= &quot;Level 3&quot;
+	fb2.Level4				= &quot;Level 4&quot;
+	fb2.Level5				= &quot;Level 5&quot;
+	fb2.Level6				= &quot;Level 6&quot;
+	fb2.Level7				= &quot;Level 7&quot;
+	fb2.Level8				= &quot;Level 8&quot;
+	fb2.Level9				= &quot;Level 9&quot;
+	fb2.Level10				= &quot;Level 10&quot;
+	
+	fb2StylesStandart = fb2
+End Function
+
+&apos; английские fb2 стили 
+Function fb2StylesEn() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Book Title&quot;
+	fb2.BookAnnotation		= &quot;Book Annotation&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Annotation&quot;
+	fb2.AnnotationSubTitle	= &quot;Annotation Subtitle&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Epigraph&quot;
+	fb2.EpigraphAuthor		= &quot;Epigraph Author&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poem&quot;
+	fb2.PoemTitle			= &quot;Poem Title&quot;
+	fb2.PoemSubTitle		= &quot;Poem Subtitle&quot;
+	fb2.PoemAuthor			= &quot;Poem Author&quot;
+	fb2.PoemDate			= &quot;Poem Date&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Quotations&quot;
+	fb2.CiteSubTitle		= &quot;Quotations Subtitle&quot;
+	fb2.CiteAuthor			= &quot;Quotations Author&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Subtitle&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Heading 1&quot;
+	fb2.Level2				= &quot;Heading 2&quot;
+	fb2.Level3				= &quot;Heading 3&quot;
+	fb2.Level4				= &quot;Heading 4&quot;
+	fb2.Level5				= &quot;Heading 5&quot;
+	fb2.Level6				= &quot;Heading 6&quot;
+	fb2.Level7				= &quot;Heading 7&quot;
+	fb2.Level8				= &quot;Heading 8&quot;
+	fb2.Level9				= &quot;Heading 9&quot;
+	fb2.Level10				= &quot;Heading 10&quot;
+	
+	fb2StylesEn = fb2
+End Function
+
+&apos; русские fb2 стили
+Function fb2RussianStyles() As FB2StylesType
+	Dim fb2 As FB2StylesType
+	
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Аннотация&quot;
+	fb2.AnnotationSubTitle	= &quot;Аннотация - Подзаголовок&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Заголовок 1&quot;
+	fb2.Level2				= &quot;Заголовок 2&quot;
+	fb2.Level3				= &quot;Заголовок 3&quot;
+	fb2.Level4				= &quot;Заголовок 4&quot;
+	fb2.Level5				= &quot;Заголовок 5&quot;
+	fb2.Level6				= &quot;Заголовок 6&quot;
+	fb2.Level7				= &quot;Заголовок 7&quot;
+	fb2.Level8				= &quot;Заголовок 8&quot;
+	fb2.Level9				= &quot;Заголовок 9&quot;
+	fb2.Level10				= &quot;Заголовок 10&quot;
+	&apos; Данные книги
+	fb2.BookAnnotation		= &quot;Книга - Аннотация&quot;
+	fb2.BookTitle			= &quot;Книга - Название&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Подзаголовок&quot;
+	&apos; Стих
+	fb2.Poem				= &quot;Стих&quot;
+	fb2.PoemTitle			= &quot;Стих - Название&quot;
+	fb2.PoemSubTitle		= &quot;Стих - Подзаголовок&quot;
+	fb2.PoemAuthor			= &quot;Стих - Автор&quot;
+	fb2.PoemDate			= &quot;Стих - Дата&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Цитата&quot;
+	fb2.CiteSubTitle		= &quot;Цитата - Подзаголовок&quot;
+	fb2.CiteAuthor			= &quot;Цитата - Автор&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Эпиграф&quot;
+	fb2.EpigraphAuthor		= &quot;Эпиграф - Автор&quot;
+
+	fb2RussianStyles = fb2
+End Function
+
+&apos; украинские fb2 стили
+Function fb2StylesUk() As FB2StylesType
+	Dim fb2 As FB2StylesType
+	
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Анотація&quot;
+	fb2.AnnotationSubTitle	= &quot;Анотація - Підзаголовок&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Заголовок 1&quot;
+	fb2.Level2				= &quot;Заголовок 2&quot;
+	fb2.Level3				= &quot;Заголовок 3&quot;
+	fb2.Level4				= &quot;Заголовок 4&quot;
+	fb2.Level5				= &quot;Заголовок 5&quot;
+	fb2.Level6				= &quot;Заголовок 6&quot;
+	fb2.Level7				= &quot;Заголовок 7&quot;
+	fb2.Level8				= &quot;Заголовок 8&quot;
+	fb2.Level9				= &quot;Заголовок 9&quot;
+	fb2.Level10				= &quot;Заголовок 10&quot;
+	&apos; Данные книги
+	fb2.BookAnnotation		= &quot;Книга - Анотація&quot;
+	fb2.BookTitle			= &quot;Книга - Назва&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Підзаголовок&quot;
+	&apos; Стих
+	fb2.Poem				= &quot;Вірш&quot;
+	fb2.PoemTitle			= &quot;Вірш - Назва&quot;
+	fb2.PoemSubTitle		= &quot;Вірш - Підзаголовок&quot;
+	fb2.PoemAuthor			= &quot;Вірш - Автор&quot;
+	fb2.PoemDate			= &quot;Вірш - Дата&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Цитата&quot;
+	fb2.CiteSubTitle		= &quot;Цитата - Підзаголовок&quot;
+	fb2.CiteAuthor			= &quot;Цитата - Автор&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Епіграф&quot;
+	fb2.EpigraphAuthor		= &quot;Епіграф - Автор&quot;
+
+	fb2StylesUk = fb2
+End Function
+
+&apos; белорусские fb2 стили
+Function fb2StylesBe() As FB2StylesType
+	Dim fb2 As FB2StylesType
+	
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Анатацыя&quot;
+	fb2.AnnotationSubTitle	= &quot;Анатацыя - Падзагаловак&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Загаловак 1&quot;
+	fb2.Level2				= &quot;Загаловак 2&quot;
+	fb2.Level3				= &quot;Загаловак 3&quot;
+	fb2.Level4				= &quot;Загаловак 4&quot;
+	fb2.Level5				= &quot;Загаловак 5&quot;
+	fb2.Level6				= &quot;Загаловак 6&quot;
+	fb2.Level7				= &quot;Загаловак 7&quot;
+	fb2.Level8				= &quot;Загаловак 8&quot;
+	fb2.Level9				= &quot;Загаловак 9&quot;
+	fb2.Level10				= &quot;Загаловак 10&quot;
+	&apos; Данные книги
+	fb2.BookAnnotation		= &quot;Кніга - Анатацыя&quot;
+	fb2.BookTitle			= &quot;Кніга - Назва&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Падзагаловак&quot;
+	&apos; Стих
+	fb2.Poem				= &quot;Верш&quot;
+	fb2.PoemTitle			= &quot;Верш - Назва&quot;
+	fb2.PoemSubTitle		= &quot;Верш - Падзагаловак&quot;
+	fb2.PoemAuthor			= &quot;Верш - Аўтар&quot;
+	fb2.PoemDate			= &quot;Верш - Дата&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Цытаты&quot;
+	fb2.CiteSubTitle		= &quot;Цытаты - Падзагаловак&quot;
+	fb2.CiteAuthor			= &quot;Цытаты - Аўтар&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Эпіграф&quot;
+	fb2.EpigraphAuthor		= &quot;Эпіграф - Аўтар&quot;
+
+	fb2StylesBe = fb2
+End Function
+
+&apos; мспанские fb2 стили 
+Function fb2StylesEs() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Libro - Nombre&quot;
+	fb2.BookAnnotation		= &quot;Libro - Resumen&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Resumen&quot;
+	fb2.AnnotationSubTitle	= &quot;Resumen - Subtítulo&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Epígrafe&quot;
+	fb2.EpigraphAuthor		= &quot;Epígrafe - Autor&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poema&quot;
+	fb2.PoemTitle			= &quot;Poema - Nombre&quot;
+	fb2.PoemSubTitle		= &quot;Poema - Subtítulo&quot;
+	fb2.PoemAuthor			= &quot;Poema - Autor&quot;
+	fb2.PoemDate			= &quot;Poema - Fecha&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Cita&quot;
+	fb2.CiteSubTitle		= &quot;Cita - Subtítulo&quot;
+	fb2.CiteAuthor			= &quot;Cita - Author&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Subtítulo&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Encabezado 1&quot;
+	fb2.Level2				= &quot;Encabezado 2&quot;
+	fb2.Level3				= &quot;Encabezado 3&quot;
+	fb2.Level4				= &quot;Encabezado 4&quot;
+	fb2.Level5				= &quot;Encabezado 5&quot;
+	fb2.Level6				= &quot;Encabezado 6&quot;
+	fb2.Level7				= &quot;Encabezado 7&quot;
+	fb2.Level8				= &quot;Encabezado 8&quot;
+	fb2.Level9				= &quot;Encabezado 9&quot;
+	fb2.Level10				= &quot;Encabezado 10&quot;
+	
+	fb2StylesEs = fb2
+End Function
+
+&apos; немецкие (German) fb2 стили 
+Function fb2StylesDe() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Buche - Titel&quot;
+	fb2.BookAnnotation		= &quot;Buche - Annotation&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Annotation&quot;
+	fb2.AnnotationSubTitle	= &quot;Annotation - Untertitel&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Epigraph&quot;
+	fb2.EpigraphAuthor		= &quot;Epigraph - Autor&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poem&quot;
+	fb2.PoemTitle			= &quot;Poem - Titel&quot;
+	fb2.PoemSubTitle		= &quot;Poem - Untertitel&quot;
+	fb2.PoemAuthor			= &quot;Poem - Autor&quot;
+	fb2.PoemDate			= &quot;Poem - Datum&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Zitat&quot;
+	fb2.CiteSubTitle		= &quot;Zitat - Untertitel&quot;
+	fb2.CiteAuthor			= &quot;Zitat - Autor&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Untertitel&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Überschrift 1&quot;
+	fb2.Level2				= &quot;Überschrift 2&quot;
+	fb2.Level3				= &quot;Überschrift 3&quot;
+	fb2.Level4				= &quot;Überschrift 4&quot;
+	fb2.Level5				= &quot;Überschrift 5&quot;
+	fb2.Level6				= &quot;Überschrift 6&quot;
+	fb2.Level7				= &quot;Überschrift 7&quot;
+	fb2.Level8				= &quot;Überschrift 8&quot;
+	fb2.Level9				= &quot;Überschrift 9&quot;
+	fb2.Level10				= &quot;Überschrift 10&quot;
+	
+	fb2StylesDe = fb2
+End Function
+
+&apos; французские fb2 стили 
+Function fb2StylesFr() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Livre - Titre&quot;
+	fb2.BookAnnotation		= &quot;Livre - Résumé&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Abstrait&quot;
+	fb2.AnnotationSubTitle	= &quot;Abstrait - Sous-titre&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Épigraphe&quot;
+	fb2.EpigraphAuthor		= &quot;Épigraphe - Auteur&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poésie&quot;
+	fb2.PoemTitle			= &quot;Poésie - Titre&quot;
+	fb2.PoemSubTitle		= &quot;Poésie - Sous-titre&quot;
+	fb2.PoemAuthor			= &quot;Poésie - Auteur&quot;
+	fb2.PoemDate			= &quot;Poésie - Date&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Citation&quot;
+	fb2.CiteSubTitle		= &quot;Citation - Sous-titre&quot;
+	fb2.CiteAuthor			= &quot;Citation - Auteur&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Sous-titre&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Titre 1&quot;
+	fb2.Level2				= &quot;Titre 2&quot;
+	fb2.Level3				= &quot;Titre 3&quot;
+	fb2.Level4				= &quot;Titre 4&quot;
+	fb2.Level5				= &quot;Titre 5&quot;
+	fb2.Level6				= &quot;Titre 6&quot;
+	fb2.Level7				= &quot;Titre 7&quot;
+	fb2.Level8				= &quot;Titre 8&quot;
+	fb2.Level9				= &quot;Titre 9&quot;
+	fb2.Level10				= &quot;Titre 10&quot;
+	
+	fb2StylesFr = fb2
+End Function
+
+&apos; итальянские fb2 стили 
+Function fb2StylesIt() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Libro - Titolo&quot;
+	fb2.BookAnnotation		= &quot;Libro - Sintesi&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Sintesi&quot;
+	fb2.AnnotationSubTitle	= &quot;Sintesi - Sottotitolo&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Epigrafe&quot;
+	fb2.EpigraphAuthor		= &quot;Epigrafe - Authore&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poem&quot;
+	fb2.PoemTitle			= &quot;Poem - Titolo&quot;
+	fb2.PoemSubTitle		= &quot;Poem - Sottotitolo&quot;
+	fb2.PoemAuthor			= &quot;Poem - Authore&quot;
+	fb2.PoemDate			= &quot;Poem - Data&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Citazione&quot;
+	fb2.CiteSubTitle		= &quot;Citazione - Sottotitolo&quot;
+	fb2.CiteAuthor			= &quot;Citazione - Authore&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Sottotitolo&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Intestazione 1&quot;
+	fb2.Level2				= &quot;Intestazione 2&quot;
+	fb2.Level3				= &quot;Intestazione 3&quot;
+	fb2.Level4				= &quot;Intestazione 4&quot;
+	fb2.Level5				= &quot;Intestazione 5&quot;
+	fb2.Level6				= &quot;Intestazione 6&quot;
+	fb2.Level7				= &quot;Intestazione 7&quot;
+	fb2.Level8				= &quot;Intestazione 8&quot;
+	fb2.Level9				= &quot;Intestazione 9&quot;
+	fb2.Level10				= &quot;Intestazione 10&quot;
+	
+	fb2StylesIt = fb2
+End Function
+
+&apos; польские fb2 стили 
+Function fb2StylesPl() As FB2StylesType
+	Dim fb2 As FB2StylesType
+
+	&apos; Данные книги
+	fb2.BookTitle			= &quot;Książka - Nazwa&quot;
+	fb2.BookAnnotation		= &quot;Książka - Streszczenie&quot;
+	&apos; Аннотация
+	fb2.Annotation			= &quot;Streszczenie&quot;
+	fb2.AnnotationSubTitle	= &quot;Streszczenie - Podtytuł&quot;
+	&apos; Эпиграф
+	fb2.Epigraph			= &quot;Epigraf&quot;
+	fb2.EpigraphAuthor		= &quot;Epigraf - Author&quot;
+	&apos; Поэма
+	fb2.Poem				= &quot;Poemat&quot;
+	fb2.PoemTitle			= &quot;Poemat - Nazwa&quot;
+	fb2.PoemSubTitle		= &quot;Poemat - Podtytuł&quot;
+	fb2.PoemAuthor			= &quot;Poemat - Author&quot;
+	fb2.PoemDate			= &quot;Poemat - Data&quot;
+	&apos; Цитата
+	fb2.Cite				= &quot;Cytat&quot;
+	fb2.CiteSubTitle		= &quot;Cytat - Podtytuł&quot;
+	fb2.CiteAuthor			= &quot;Cytat - Author&quot;
+	&apos; Подзаголовок
+	fb2.SubTitle			= &quot;Podtytuł&quot;
+	&apos; Заголовки (Уровни)
+	fb2.Level1				= &quot;Nagłówek 1&quot;
+	fb2.Level2				= &quot;Nagłówek 2&quot;
+	fb2.Level3				= &quot;Nagłówek 3&quot;
+	fb2.Level4				= &quot;Nagłówek 4&quot;
+	fb2.Level5				= &quot;Nagłówek 5&quot;
+	fb2.Level6				= &quot;Nagłówek 6&quot;
+	fb2.Level7				= &quot;Nagłówek 7&quot;
+	fb2.Level8				= &quot;Nagłówek 8&quot;
+	fb2.Level9				= &quot;Nagłówek 9&quot;
+	fb2.Level10				= &quot;Nagłówek 10&quot;
+	
+	fb2StylesPl = fb2
+End Function
+
+&apos; ***********************************************************************************************
+&apos; файл fb2 стилей в зависимости от локали
+Function GetLocalFB2StylesFile()
+	Dim sOOoLocal	As String : sOOoLocal = getOOoLocal()
+	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
+		GetLocalFB2StylesFile = &quot;fb21_styles_ru.ott&quot;
+	ElseIf sOOoLocal = &quot;uk&quot; Then	&apos; Украинский
+		GetLocalFB2StylesFile = &quot;fb21_styles_uk.ott&quot;
+	ElseIf sOOoLocal = &quot;be&quot; Then	&apos; Белорусский
+		GetLocalFB2StylesFile = &quot;fb21_styles_be.ott&quot;
+	ElseIf sOOoLocal = &quot;es&quot; Then	&apos; Испанский
+		GetLocalFB2StylesFile = &quot;fb21_styles_es.ott&quot;
+	ElseIf sOOoLocal = &quot;de&quot; Then	&apos; Немецкий (German)
+		GetLocalFB2StylesFile = &quot;fb21_styles_de.ott&quot;
+	ElseIf sOOoLocal = &quot;fr&quot; Then	&apos; Французский
+		GetLocalFB2StylesFile = &quot;fb21_styles_fr.ott&quot;
+	ElseIf sOOoLocal = &quot;it&quot; Then	&apos; Итальянский
+		GetLocalFB2StylesFile = &quot;fb21_styles_it.ott&quot;
+	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
+		GetLocalFB2StylesFile = &quot;fb21_styles_pl.ott&quot;
+	Else							&apos; все остальные
+		GetLocalFB2StylesFile = &quot;fb21_styles_en.ott&quot;
+	End If
+End Function
+
+&apos; название стиля Heading в зависимости от локали
+Function GetLocalHeadingStyleName()
+	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
+	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
+		GetLocalHeadingStyleName = &quot;Заголовок&quot;
+	ElseIf sOOoLocal = &quot;uk&quot; Then	&apos; Украинский
+		GetLocalHeadingStyleName = &quot;Заголовок&quot;
+	ElseIf sOOoLocal = &quot;be&quot; Then	&apos; Белорусский
+		GetLocalHeadingStyleName = &quot;Загаловак&quot;
+	ElseIf sOOoLocal = &quot;es&quot; Then	&apos; Испанский
+		GetLocalHeadingStyleName = &quot;Encabezado&quot;
+	ElseIf sOOoLocal = &quot;de&quot; Then	&apos; Немецкий (German)
+		GetLocalHeadingStyleName = &quot;Überschrift&quot;
+	ElseIf sOOoLocal = &quot;fr&quot; Then	&apos; Французский
+		GetLocalHeadingStyleName = &quot;Titre&quot;
+	ElseIf sOOoLocal = &quot;it&quot; Then	&apos; Итальянский
+		GetLocalHeadingStyleName = &quot;Intestazione&quot;
+	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
+		GetLocalHeadingStyleName = &quot;Nagłówek&quot;
+	Else							&apos; все остальные
+		GetLocalHeadingStyleName = &quot;Heading&quot;
+	End If
+End Function
+
+&apos; название стиля Subtitle в зависимости от локали
+Function GetLocaSubtitleStyleName()
+	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
+	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
+		GetLocaSubtitleStyleName = &quot;Подзаголовок&quot;
+	ElseIf sOOoLocal = &quot;uk&quot; Then	&apos; Украинский
+		GetLocaSubtitleStyleName = &quot;Підзаголовок&quot;
+	ElseIf sOOoLocal = &quot;be&quot; Then	&apos; Белорусский
+		GetLocaSubtitleStyleName = &quot;Падзагаловак&quot;
+	ElseIf sOOoLocal = &quot;es&quot; Then	&apos; Испанский
+		GetLocaSubtitleStyleName = &quot;Subtítulo&quot;
+	ElseIf sOOoLocal = &quot;de&quot; Then	&apos; Немецкий (German)
+		GetLocaSubtitleStyleName = &quot;Untertitel&quot;
+	ElseIf sOOoLocal = &quot;fr&quot; Then	&apos; Французский
+		GetLocaSubtitleStyleName = &quot;Sous-titre&quot;
+	ElseIf sOOoLocal = &quot;it&quot; Then	&apos; Итальянский
+		GetLocaSubtitleStyleName = &quot;Sottotitolo&quot;
+	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
+		GetLocaSubtitleStyleName = &quot;Podtytuł&quot;
+	Else							&apos; все остальные
+		GetLocaSubtitleStyleName = &quot;Subtitle&quot;
+	End If
+End Function
+
+&apos; название стиля Cite в зависимости от локали
+Function GetLocaCiteStyleName()
+	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
+	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
+		GetLocaCiteStyleName = &quot;Цитата&quot;
+	ElseIf sOOoLocal = &quot;uk&quot; Then	&apos; Украинский
+		GetLocaCiteStyleName = &quot;Цитата&quot;
+	ElseIf sOOoLocal = &quot;be&quot; Then	&apos; Белорусский
+		GetLocaCiteStyleName = &quot;Цытаты&quot;
+	ElseIf sOOoLocal = &quot;es&quot; Then	&apos; Испанский
+		GetLocaCiteStyleName = &quot;Cita&quot;
+	ElseIf sOOoLocal = &quot;de&quot; Then	&apos; Немецкий (German)
+		GetLocaCiteStyleName = &quot;Zitat&quot;
+	ElseIf sOOoLocal = &quot;fr&quot; Then	&apos; Французский
+		GetLocaCiteStyleName = &quot;Citation&quot;
+	ElseIf sOOoLocal = &quot;it&quot; Then	&apos; Итальянский
+		GetLocaCiteStyleName = &quot;Citazione&quot;
+	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
+		GetLocaCiteStyleName = &quot;Cytat&quot;
+	Else							&apos; все остальные
+		GetLocaCiteStyleName = &quot;Quotations&quot;
+	End If
+End Function
+
+&apos; название стиля &quot;Базовый&quot; в зависимости от локали
+Function GetLocaDefaultStyleName()
+	Dim sOOoLocal	As String : sOOoLocal = getOOoLocal()
+	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
+		GetLocaDefaultStyleName = &quot;Базовый&quot;
+	ElseIf sOOoLocal = &quot;uk&quot; Then	&apos; Украинский
+		GetLocaDefaultStyleName = &quot;Базовий&quot;
+	ElseIf sOOoLocal = &quot;be&quot; Then	&apos; Белорусский
+		GetLocaDefaultStyleName = &quot;Прадвызначана&quot;
+	ElseIf sOOoLocal = &quot;es&quot; Then	&apos; Испанский
+		GetLocaDefaultStyleName = &quot;Predeterminado&quot;
+	ElseIf sOOoLocal = &quot;de&quot; Then	&apos; Немецкий (German)
+		GetLocaDefaultStyleName = &quot;Standard&quot;
+	ElseIf sOOoLocal = &quot;fr&quot; Then	&apos; Французский
+		GetLocaDefaultStyleName = &quot;Standard&quot;
+	ElseIf sOOoLocal = &quot;it&quot; Then	&apos; Итальянский
+		GetLocaDefaultStyleName = &quot;Predefinito&quot;
+	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
+		GetLocaDefaultStyleName = &quot;Domyślnie&quot;
+	Else							&apos; все остальные
+		GetLocaDefaultStyleName = &quot;Default&quot;
+	End If
+End Function	
+
+&apos; получение структуры со стилями в зависимости от локали
+Function GetLocaFB2Styles() As FB2StylesType
+	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
+	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
+		GetLocaFB2Styles = fb2RussianStyles()
+	ElseIf sOOoLocal = &quot;uk&quot; Then	&apos; Украинский
+		GetLocaFB2Styles = fb2StylesUk()
+	ElseIf sOOoLocal = &quot;be&quot; Then	&apos; Белорусский
+		GetLocaFB2Styles = fb2StylesBe()
+	ElseIf sOOoLocal = &quot;es&quot; Then	&apos; Испанский
+		GetLocaFB2Styles = fb2StylesEs()
+	ElseIf sOOoLocal = &quot;de&quot; Then	&apos; Немецкий (German)
+		GetLocaFB2Styles = fb2StylesDe()
+	ElseIf sOOoLocal = &quot;fr&quot; Then	&apos; Французский
+		GetLocaFB2Styles = fb2StylesFr()
+	ElseIf sOOoLocal = &quot;it&quot; Then	&apos; Итальянский
+		GetLocaFB2Styles = fb2StylesIt()
+	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
+		GetLocaFB2Styles = fb2StylesPl()
+	Else							&apos; все остальные
+		GetLocaFB2Styles = fb2StylesEn()
+	End If
+End Function
+
+&apos; ***********************************************************************************************
+&apos; заполнение списка fb2 стилей &quot;стандартными&quot; для конвертера fb2 стилями
+Sub setFb2StylesStandart()
+	Dim fb2 As FB2StylesType : fb2 = fb2StylesStandart()
+	Dim oLB As Object : oLB = oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
+		&apos; Данные книги
+		.addItem( fb2.BookTitle, .getItemCount() )
+		.addItem( fb2.BookAnnotation, .getItemCount() )
+		&apos; Аннотация
+		.addItem( fb2.Annotation, .getItemCount() )
+		.addItem( fb2.AnnotationSubTitle, .getItemCount() )
+		&apos; Эпиграф
+		.addItem( fb2.Epigraph, .getItemCount() )
+		.addItem( fb2.EpigraphAuthor, .getItemCount() )
+		&apos; Поэма
+		.addItem( fb2.Poem, .getItemCount() )
+		.addItem( fb2.PoemTitle, .getItemCount() )
+		.addItem( fb2.PoemSubTitle, .getItemCount() )
+		.addItem( fb2.PoemAuthor, .getItemCount() )
+		.addItem( fb2.PoemDate, .getItemCount() )
+		&apos; Цитата
+		.addItem( fb2.Cite, .getItemCount() )
+		.addItem( fb2.CiteSubTitle, .getItemCount() )
+		.addItem( fb2.CiteAuthor, .getItemCount() )
+		&apos; Подзаголовок
+		.addItem( fb2.SubTitle, .getItemCount() )
+		&apos; Заголовки (Уровни)
+		.addItem( fb2.Level1, .getItemCount() )
+		.addItem( fb2.Level2, .getItemCount() )
+		.addItem( fb2.Level3, .getItemCount() )
+		.addItem( fb2.Level4, .getItemCount() )
+		.addItem( fb2.Level5, .getItemCount() )
+		.addItem( fb2.Level6, .getItemCount() )
+		.addItem( fb2.Level7, .getItemCount() )
+		.addItem( fb2.Level8, .getItemCount() )
+		.addItem( fb2.Level9, .getItemCount() )
+		.addItem( fb2.Level10, .getItemCount() )
+	End With
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; заполнение списка локализованными fb2 стилями
+Sub setFb2LocalStylesToListBox()
+	Dim sOOoLocal	As String : sOOoLocal	= getOOoLocal()
+	Dim oLB			As Object : oLB			= oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
+		Dim fb2 As FB2StylesType : fb2 = GetLocaFB2Styles()
+		&apos; Аннотация
+		.addItem( fb2.Annotation, .getItemCount() )
+		.addItem( fb2.AnnotationSubTitle, .getItemCount() )
+		&apos; Заголовки (Уровни)
+		.addItem( fb2.Level1, .getItemCount() )
+		.addItem( fb2.Level2, .getItemCount() )
+		.addItem( fb2.Level3, .getItemCount() )
+		.addItem( fb2.Level4, .getItemCount() )
+		.addItem( fb2.Level5, .getItemCount() )
+		.addItem( fb2.Level6, .getItemCount() )
+		.addItem( fb2.Level7, .getItemCount() )
+		.addItem( fb2.Level8, .getItemCount() )
+		.addItem( fb2.Level9, .getItemCount() )
+		.addItem( fb2.Level10, .getItemCount() )
+		&apos; Данные книги
+		.addItem( fb2.BookTitle, .getItemCount() )
+		.addItem( fb2.BookAnnotation, .getItemCount() )
+		&apos; Глава: Подзаголовок
+		.addItem( fb2.SubTitle, .getItemCount() )
+		&apos; Стих
+		.addItem( fb2.Poem, .getItemCount() )
+		.addItem( fb2.PoemTitle, .getItemCount() )
+		.addItem( fb2.PoemSubTitle, .getItemCount() )
+		.addItem( fb2.PoemAuthor, .getItemCount() )
+		.addItem( fb2.PoemDate, .getItemCount() )
+		&apos; Цитата
+		.addItem( fb2.Cite, .getItemCount() )
+		.addItem( fb2.CiteSubTitle, .getItemCount() )
+		.addItem( fb2.CiteAuthor, .getItemCount() )
+		&apos; Эпиграф
+		.addItem( fb2.Epigraph, .getItemCount() )
+		.addItem( fb2.EpigraphAuthor, .getItemCount() )
+	End With
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; загрузка стилей в переменные
+Sub SetFB2LocalStylesToVars()
+	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
+	Dim fb2 As FB2StylesType : fb2 = GetLocaFB2Styles()
+	&apos; Аннотация
+	sStyleAnnotation			= fb2.Annotation
+	sStyleAnnotationSubTitle	= fb2.AnnotationSubTitle
+	&apos; Заголовки (Уровни)
+	sStyleLevel1	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level1 )
+	sStyleLevel2	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level2 )
+	sStyleLevel3	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level3 )
+	sStyleLevel4	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level4 )
+	sStyleLevel5	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level5 )
+	sStyleLevel6	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level6 )
+	sStyleLevel7	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level7 )
+	sStyleLevel8	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level8 )
+	sStyleLevel9	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level9 )
+	sStyleLevel10	= RenameRedefiedLevelsStylesToOOoHeadingIsNeed( fb2.Level10 )
+	&apos; Данные книги
+	sStyleBookTitle			= fb2.BookTitle
+	sStyle_BookAnnotation	= fb2.BookAnnotation
+	&apos; Глава: Подзаголовок
+	sStyleSubTitle			= RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed( fb2.SubTitle )
+	&apos; Стих
+	sStylePoem				= fb2.Poem
+	sStylePoemTitle			= fb2.PoemTitle
+	sStylePoemSubTitle		= fb2.PoemSubTitle
+	sStylePoemAuthor		= fb2.PoemAuthor
+	sStylePoemDate			= fb2.PoemDate
+	&apos; Цитата
+	sStyleCite				= RenameRedefiedCiteStylesToOOoQuotationsIsNeed( fb2.Cite )
+	sStyleCiteSubTitle		= fb2.CiteSubTitle
+	sStyleCiteAuthor		= fb2.CiteAuthor
+	&apos; Эпиграф
+	sStyleEpigraph			= fb2.Epigraph
+	sStyleEpigraphAuthor	= fb2.EpigraphAuthor
+End Sub
+
+
+&apos; ***********************************************************************************************
+&apos; переименование стилей Заголовков в &quot;стандартный&quot; для OOo Heading
+&apos; если стиль Level переопределен в локализованный Заголовок (OOo &quot;видит&quot; его, как Heading), то в переменную - Heading
+&apos; если стиль Level переопределен в Heading (OOo &quot;видит&quot; его, как Heading X (user)), то в переменную - Heading X (user)
+&apos; если стиль Level не переопределен, то ничего не делаем с переменной стиля
+Function RenameRedefiedLevelsStylesToOOoHeadingIsNeed( FB2LocalStyle As String )
+	Dim i As Integer
+	Dim sLocalHeadingStyleName As String : sLocalHeadingStyleName = GetLocalHeadingStyleName()
+	If getOOoLocal() &lt;&gt; &quot;en&quot; Then
+		For i=1 To 10
+			If FB2LocalStyle = ( sLocalHeadingStyleName &amp; &quot; &quot; &amp; i ) Then
+				&apos; смотрим, FB2LocalStyle - локализованный Заголовок X? Если да, то в переменную заносим - Heading X
+				RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i
+				Exit Function
+			ElseIf FB2LocalStyle = ( &quot;Heading &quot; &amp; i ) Then
+				&apos; смотрим, FB2LocalStyle - это переопределенный стиль Level именно к Heading?
+				RenameRedefiedLevelsStylesToOOoHeadingIsNeed = &quot;Heading &quot; &amp; i &amp; &quot; (user)&quot;
+				Exit Function
+			End If
+		Next i
+	End if
+	RenameRedefiedLevelsStylesToOOoHeadingIsNeed = FB2LocalStyle
+End Function
+
+&apos; ***********************************************************************************************
+&apos; переименование стиля Подзаголовка в &quot;стандартный&quot; для OOo Subtitle
+&apos; если стиль SubTitle переопределен в локализованный Подзаголовок (OOo &quot;видит&quot; его, как Subtitle), то в переменную - SubTitle
+&apos; если стиль SubTitle не переопределен, то ничего не делаем с переменной стиля
+Function RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed( FB2LocalStyle As String )
+	Dim i As Integer
+	If getOOoLocal() &lt;&gt; &quot;en&quot; Then
+		If FB2LocalStyle = ( GetLocaSubtitleStyleName() ) Then
+			&apos; смотрим, FB2LocalStyle - локализованный Подзаголовок? Если да, то в переменную заносим - Subtitle
+			RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed = &quot;Subtitle&quot;
+			Exit Function
+		End If
+	End if
+	RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed = FB2LocalStyle
+End Function
+
+&apos; ***********************************************************************************************
+&apos; переименование стиля Цитаты в &quot;стандартный&quot; для OOo Quotations
+&apos; если стиль Cite переопределен в локализованный Цитата (OOo &quot;видит&quot; его, как Quotations), то в переменную - Quotations
+&apos; если стиль Cite не переопределен, то ничего не делаем с переменной стиля
+Function RenameRedefiedCiteStylesToOOoQuotationsIsNeed( FB2LocalStyle As String )
+	Dim i As Integer
+	If getOOoLocal() &lt;&gt; &quot;en&quot; Then
+		If FB2LocalStyle = ( GetLocaCiteStyleName() ) Then
+			&apos; смотрим, FB2LocalStyle - локализованный Цитата? Если да, то в переменную заносим - Quotations
+			RenameRedefiedCiteStylesToOOoQuotationsIsNeed = &quot;Quotations&quot;
+			Exit Function
+		End If
+	End if
+	RenameRedefiedCiteStylesToOOoQuotationsIsNeed = FB2LocalStyle
+End Function
+
+
+
+&apos; ================================================================================================================
+&apos; 										быстрые клавиши для fb2 стилей
+&apos; ================================================================================================================
+&apos; Нужно ли очищать форматирование абзаца перед применением fb2 стиля: Возвращает True - да; False - нет
+Function IsClearParaStyleToBase() As Boolean
+	Dim sFB2StylesDlgSettings As String : sFB2StylesDlgSettings = getOOoFBToolsSettingsDir() &amp; sConstfb2StylesDlgSettings
+	If FileExists( sFB2StylesDlgSettings ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFB2StylesDlgSettings ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream ( oFS )
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
+				Select Case sSetting(0)
+				Case &quot;cbCrearBeforeFB2&quot; &apos; очищать форматирование абзаца перед применением fb2 стиля
+					IsClearParaStyleToBase = sSetting(1)
+					oTIS.closeInput()
+					Exit Function
+				End Select
+			End If
+		Loop
+		oTIS.closeInput()
+	End If
+End Function
+
+&apos; ***********************************************************************************************
+Sub setFB2Style( fb2Style As String )
+	If IsClearParaStyleToBase() Then
+		&apos; очищать форматирование абзаца перед применением fb2 стиля
+		SetParaStyleWithBeforeClearOldParaStyle( fb2Style )
+	Else
+		SetParaStyle( fb2Style )
+	End If
+End Sub
+
+Sub ShortcutsForHeading1()
+	setFB2Style( GetLocaFB2Styles().Level1 )
+End Sub
+
+Sub ShortcutsForHeading2()
+	setFB2Style( GetLocaFB2Styles().Level2 )
+End Sub
+
+Sub ShortcutsForHeading3()
+	setFB2Style( GetLocaFB2Styles().Level3 )
+End Sub
+
+Sub ShortcutsForHeading4()
+	setFB2Style( GetLocaFB2Styles().Level4 )
+End Sub
+
+Sub ShortcutsForHeading5()
+	setFB2Style( GetLocaFB2Styles().Level5 )
+End Sub
+
+Sub ShortcutsForHeading6()
+	setFB2Style( GetLocaFB2Styles().Level6 )
+End Sub
+
+Sub ShortcutsForHeading7()
+	setFB2Style( GetLocaFB2Styles().Level7 )
+End Sub
+
+Sub ShortcutsForHeading8()
+	setFB2Style( GetLocaFB2Styles().Level8 )
+End Sub
+
+Sub ShortcutsForHeading9()
+	setFB2Style( GetLocaFB2Styles().Level9 )
+End Sub
+
+Sub ShortcutsForHeading10()
+	setFB2Style( GetLocaFB2Styles().Level10 )
+End Sub
+
+Sub ShortcutsForSubTitle()
+	setFB2Style( GetLocaFB2Styles().SubTitle )
+End Sub
+
+Sub ShortcutsForBookTitle()
+	setFB2Style( GetLocaFB2Styles().BookTitle )
+End Sub
+
+Sub ShortcutsForBookAnnotation()
+	setFB2Style( GetLocaFB2Styles().BookAnnotation )
+End Sub
+
+Sub ShortcutsForAnnotation()
+	setFB2Style( GetLocaFB2Styles().Annotation )
+End Sub
+
+Sub ShortcutsForAnnotationSubTitle()
+	setFB2Style( GetLocaFB2Styles().AnnotationSubTitle )
+End Sub
+
+Sub ShortcutsForPoem()
+	setFB2Style( GetLocaFB2Styles().Poem )
+End Sub
+
+Sub ShortcutsForPoemTitle()
+	setFB2Style( GetLocaFB2Styles().PoemTitle )
+End Sub
+
+Sub ShortcutsForPoemSubTitle()
+	setFB2Style( GetLocaFB2Styles().PoemSubTitle )
+End Sub
+
+Sub ShortcutsForPoemAuthor()
+	setFB2Style( GetLocaFB2Styles().PoemAuthor )
+End Sub
+
+Sub ShortcutsForPoemDate()
+	setFB2Style( GetLocaFB2Styles().PoemDate )
+End Sub
+
+Sub ShortcutsForEpigraph()
+	setFB2Style( GetLocaFB2Styles().Epigraph )
+End Sub
+
+Sub ShortcutsForEpigraphAuthor()
+	setFB2Style( GetLocaFB2Styles().EpigraphAuthor )
+End Sub
+
+Sub ShortcutsForCite()
+	setFB2Style( GetLocaFB2Styles().Cite )
+End Sub
+
+Sub ShortcutsForCiteSubTitle()
+	setFB2Style( GetLocaFB2Styles().CiteSubTitle )
+End Sub
+
+Sub ShortcutsForCiteAuthor()
+	setFB2Style( GetLocaFB2Styles().CiteAuthor )
+End Sub
+
+&apos; ================================================================================================================
+&apos; 									обработка нажатий кнопок с символьными стилями
+&apos; ================================================================================================================
+Sub Strong()
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Bold&quot;
+	
+	If oViewCursor.CharWeight = com.sun.star.awt.FontWeight.BOLD Then
+		args1(0).Value = False
+	Else
+		args1(0).Value = True
+	End If
+	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+Sub Emphasis()
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Italic&quot;
+	If oViewCursor.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then
+		args1(0).Value = False
+	Else
+		args1(0).Value = True
+	End If
+	dispatcher.executeDispatch(document, &quot;.uno:Italic&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+Sub SuperScript()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+Sub SubScript()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:SubScript&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+Sub Strikethrought()
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Strikeout.Kind&quot;
+	If oViewCursor.CharStrikeout &gt; 0 Then
+		args1(0).Value = 0
+	Else
+		args1(0).Value = 1
+	End If
+	dispatcher.executeDispatch(document, &quot;.uno:Strikeout&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+Sub Code()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(1) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Template&quot;
+	args1(0).Value = &quot;code&quot;
+	args1(1).Name = &quot;Family&quot;
+	args1(1).Value = 1
+	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+&apos; ***********************************************************************************************
+
+
+</script:module>

@@ -15,51 +15,6 @@ Public sBookAnnotation()	As String &apos; массив хранит &quot;обр
 Public sBodyParagraphs()	As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
 Public sLinksTo()			As String &apos; массив ссылок КУДА и их ID
 
-&apos; для аннотации
-Public bMergeAnnotationSubTitle As Boolean
-&apos; оформление подзаголовков
-Public bMergeSubTitle As Boolean
-&apos; оформление авторов эпиграфов
-Public bMergeEpigraphAuthors As Boolean
-&apos; оформление заголовков стихов
-Public bMergePoemTitle As Boolean
-&apos; оформление авторов стихов
-Public bMergePoemAuthors As Boolean
-&apos; оформление подзаголовков поэм
-Public bMergePoemSubTitle As Boolean
-&apos; оформление авторов цитат
-Public bMergeCiteAuthors As Boolean
-&apos; оформление подзаголовков цитат
-Public bMergeCiteSubTitle As Boolean
-&apos; удаление пустых строк
-Public bDelEL As Boolean
-&apos; обработка &quot;проблемных&quot; знаков (&lt; &gt;)
-Public bCorrectPara As Boolean
-&apos; экспорт текстовых полей
-Public bTextField As Boolean
-&apos; генерировать сложный ID Книги
-Public bComplexID As Boolean
-&apos; обработка ссылок внутри документа
-Public bDocLinks As Boolean
-&apos; обработка графики
-Public bSaveImageTitle As Boolean &apos; сохранение названия картинки, как аттрибута &quot;title&apos;
-Public bExportGraphics As Boolean &apos; экспорт Графики
-Public sJpegAs As String &apos; формат преоьбразования для jpeg, jpg
-Public sPngAs As String &apos; формат преоьбразования для png
-Public sGifAs As String &apos; формат преоьбразования для gif
-Public sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
-Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
-Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
-&apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
-Public bSaveUTF8 As Boolean
-&apos; Чистка fb2 кода
-Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
-Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
-&apos; запустить сгенерированный fb2-файл на просмотр
-Public bFB2Execute As Boolean
-&apos; валидация
-Public bValidate As Boolean
-
 Public lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 
 Public sIDFNPrev As String &apos; хранит имя закладки-ID
@@ -118,11 +73,9 @@ Sub ExportToFB21DlgExec()
 	LoadExportToFB21DlgSettings()
 	oExportToFB21Dlg.Model.fb2PathTextField.Text = ConvertFromUrl( sCurDocFile )
 	oProgressBar.setValue(2)
-	
-	&apos; загрузка стилей по-умолчанию в переменные
-	SetDefaultStylesToVars()
-	&apos; Только теперь загружаем стили из файла в переменные
-	LoadStylesToVars()
+
+	&apos; загружаем стили в переменные
+	SetFB2LocalStylesToVars()
 	&apos; Задаем настройки в переменные по умолчанию
 	SetDefaultSettingsToVars()
 	oProgressBar.setValue(3)
@@ -145,7 +98,7 @@ End Sub
 Sub ExportDoc()
 	&apos; Есть ли хоть одно fb2 свойство в документе?
 	Dim nVar As Integer
-	If Not IsFB2AnyPropertyIsExsist() Then
+	If Not IsFB2NotFlagPropertyIsExsist() Then
 		nVar = MsgBox( sETFB2DD.sFB2ExportFB2NotFB2Property &amp; chr(10) &amp; sETFB2DD.sFB2ExportFB2StartFB2PropEditor, _
     					16+1+128, sConvertorName )
     	If nVar = 1 Then
