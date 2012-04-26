@@ -1556,11 +1556,21 @@ Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	oDoc.replaceAll(oReplace)
 	&apos; 3. С начала абзаца И.О.Фамилия
 	With oReplace
+		.SearchString = &quot;(\n)\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
+		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	With oReplace
 		.SearchString = &quot;^\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
 		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.replaceAll(oReplace)
 	&apos; 4. С начала абзаца И.О.Фамилия
+	With oReplace
+		.SearchString = &quot;(\n)\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
+		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
 	With oReplace
 		.SearchString = &quot;^\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
 		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
@@ -1582,11 +1592,21 @@ Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	oDoc.replaceAll(oReplace)
 	&apos; 3. С начала абзаца N.P.Family
 	With oReplace
+		.SearchString = &quot;(\n)\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
+		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	With oReplace
 		.SearchString = &quot;^\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
 		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.replaceAll(oReplace)
 	&apos; 4. С начала абзаца N.P.Family
+	With oReplace
+		.SearchString = &quot;(\n)\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
+		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+	End With
+	oDoc.replaceAll(oReplace)
 	With oReplace
 		.SearchString = &quot;^\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
 		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
