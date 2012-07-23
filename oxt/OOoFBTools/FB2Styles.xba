@@ -213,7 +213,7 @@ Function ReadFB2StylesDlgSettings( sFB2StylesDlgSettings As String ) As Boolean
 End Function
 
 &apos; ***********************************************************************************************
-&apos; Обработка двойного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем
 Sub ListOfFB2StylesClicked( Optional oEvent As Variant )
 	If NOT IsMissing(oEvent) Then
 		If oEvent.Buttons = 1 Then
@@ -245,6 +245,8 @@ Sub setParaSelectedFB2Style()
 		SetParaStyle( oLB.getSelectedItem() )
 	End If
 	oLB.selectItem( oLB.getSelectedItem(), False )
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 &apos; ================================================================================================================
@@ -1232,6 +1234,8 @@ Sub Strong()
 		args1(0).Value = True
 	End If
 	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args1())
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 Sub Emphasis()
@@ -1246,18 +1250,24 @@ Sub Emphasis()
 		args1(0).Value = True
 	End If
 	dispatcher.executeDispatch(document, &quot;.uno:Italic&quot;, &quot;&quot;, 0, args1())
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 Sub SuperScript()
 	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
 	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 Sub SubScript()
 	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
 	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:SubScript&quot;, &quot;&quot;, 0, Array())
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 Sub Strikethrought()
@@ -1272,6 +1282,8 @@ Sub Strikethrought()
 		args1(0).Value = 1
 	End If
 	dispatcher.executeDispatch(document, &quot;.uno:Strikeout&quot;, &quot;&quot;, 0, args1())
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 Sub Code()
@@ -1283,6 +1295,8 @@ Sub Code()
 	args1(1).Name = &quot;Family&quot;
 	args1(1).Value = 1
 	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 &apos; ***********************************************************************************************

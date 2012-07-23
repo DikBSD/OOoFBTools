@@ -3,8 +3,19 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Functions" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 &apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
+&apos; ====================================================================
+&apos;						 Работа с Документом
+&apos; ====================================================================
+&apos; делаем активным текущий документ
+Sub ActiveDocument()
+	Dim oDoc As Object : oDoc = ThisComponent
+	oDoc.CurrentController.Frame.ContainerWindow.toFront()
+	oDoc.CurrentController.Frame.Activate()
+End Sub
 
-&apos; //////////////////////// Определение типа или языка символа ///////////////////////////
+&apos; ====================================================================
+&apos; 				Определение типа или языка символа
+&apos; ====================================================================
 &apos; Проверка является ли sVal кирилической буквой
 Function IsCirillicLetter( sVal As String ) As Boolean
 	&apos;А-Я, а-я, Ё,ё : 1040-1071, 1072-1103, 1025,1105 &apos; (s&gt;=1040 And s&lt;=1103) Or s=1025 Or s=1105
