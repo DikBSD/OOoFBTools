@@ -205,7 +205,7 @@ Function ReadFB2StylesDlgSettings( sFB2StylesDlgSettings As String ) As Boolean
 			End If
 		Loop
 		oTIS.closeInput()
-		oFB2StylesDlg.setPosSize( nX, nY, 92, 314, com.sun.star.awt.PosSize.POS )
+		oFB2StylesDlg.setPosSize( nX, nY, 92, 342, com.sun.star.awt.PosSize.POS )
 		ReadFB2StylesDlgSettings = True
 	Else
 		ReadFB2StylesDlgSettings = False
@@ -241,12 +241,116 @@ Sub setParaSelectedFB2Style()
 	Dim oLB	As Object : oLB = oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
 	If oFB2StylesDlg.getControl( &quot;cbCrearBeforeFB2&quot; ).State = 1 Then
 		SetParaStyleWithBeforeClearOldParaStyle( oLB.getSelectedItem() )
+		If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( True )
+		If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( False )
 	Else
 		SetParaStyle( oLB.getSelectedItem() )
+		If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( True )
+		If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( False )
 	End If
 	oLB.selectItem( oLB.getSelectedItem(), False )
 	&apos; делаем активным текущий документ
 	ActiveDocument()
+End Sub
+
+&apos; удаление полужирного и/или курсива у Заголовков при включенных опциях
+Sub CrearBoldItalicFromHeadings( Bold As Boolean )
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
+		If Not IsNull( oSels ) Then
+			Dim TempBookMarkName As String : TempBookMarkName = &quot;__temp_view_cursor_for_clear_bold_italic__&quot;
+			Dim SelCount As Integer : SelCount = oSels.getCount()
+			If SelCount &gt; 1 Then
+				&apos; для нескольких выделений текста
+				ClearBoldItalicFromHeadingsParagraphsStyleToBase( TempBookMarkName )
+			Else
+				&apos; для одного выделения текста или без выделения
+				ClearBoldItalicFromHeadingsParagraphStyleToBase( TempBookMarkName )
+			End If
+		End If
+	End If
+End Sub
+
+&apos; для одного выделения текста или без выделения
+Sub ClearBoldItalicFromHeadingsParagraphStyleToBase( ByRef TempBookMarkName As String )
+	&apos; вставка временной закладки на место видимого курсора
+	_UnoInsertBookmark( TempBookMarkName )
+
+	&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim IsTextSelected As Boolean : IsTextSelected = False
+	ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
+	
+	If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then ClearBold()
+	If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then ClearItalic()
+
+	&apos; восстановление положения видимого курсора
+	GoToViewCursorToBookMark( oViewCursor, TempBookMarkName, IsTextSelected )
+
+	&apos; удаляем временную закладку
+	_UnoDeleteBookMark( TempBookMarkName )
+End Sub
+
+&apos; для нескольких выделений текста
+Sub ClearBoldItalicFromHeadingsParagraphsStyleToBase( ByRef TempBookMarkName As String )
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
+	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
+		If Not IsNull(oSels) Then
+			Dim SelCount	As Integer	: SelCount		= oSels.getCount()
+			Dim oViewCursor	As Object	: oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+			Dim i As Integer
+			For i=1 To SelCount - 1
+				Dim oSel As Object : oSel = oSels.getByIndex(i)
+				&apos; перевод видимого курсора на i-е выделение
+				Dim otxtCurs As Object : otxtCurs = oSel.Text.createTextCursor()
+				otxtCurs.gotoRange( oSel, False )
+				oViewCursor.gotoRange( otxtCurs, False )
+				&apos; ставим закладку на выделение
+				_UnoInsertBookmark( TempBookMarkName &amp; i )
+			Next i
+			
+			Dim oBookMarks	As Object : oBookMarks	= ThisComponent.getBookmarks()
+			For i=1 To SelCount - 1
+				&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
+				If oBookMarks.hasByName( TempBookMarkName ) Then
+					GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, True )
+				End If
+
+				&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
+				Dim IsTextSelected As Boolean : IsTextSelected = False
+				ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
+				
+				If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then ClearBold()
+				If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then ClearItalic()
+	
+				&apos; восстановление положения видимого курсора
+				GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, IsTextSelected )
+
+				&apos; удаляем временную закладку
+				_UnoDeleteBookMark( TempBookMarkName &amp; i )
+			Next i
+		End If
+	End If
+End Sub
+
+Sub ClearBold()
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Bold&quot;
+	args1(0).Value = False
+	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+Sub ClearItalic()
+	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Italic&quot;
+	args1(0).Value = False
+	dispatcher.executeDispatch(document, &quot;.uno:Italic&quot;, &quot;&quot;, 0, args1())
 End Sub
 
 &apos; ================================================================================================================
@@ -270,6 +374,8 @@ Sub InitFB2StylesDlg()
 			.Title							= &quot;fb2 стили&quot;
 			.cbToOneClick.Label				= &quot;По одному нажатию мышки&quot;
 			.cbCrearBeforeFB2.Label			= &quot;Сброс формата до fb2 стиля&quot;
+			.cbCrearBoldFromHeadings.Label	= &quot;Заголовки без полужирного&quot;
+			.cbCrearItalicFromHeadings.Label	= &quot;Заголовки без курсива&quot;
 			.cbCrearBeforeFB2.HelpText		= &quot;Очистка формата абзаца до применения fb2 стиля&quot;
 			.cmdbtnBold.HelpText			= &quot;Полужирный (Bold, Strong)&quot;
 			.cmdbtnItalic.HelpText			= &quot;Курсив (Italic, Emphasis)&quot;
@@ -284,6 +390,8 @@ Sub InitFB2StylesDlg()
 			.cbToOneClick.Label				= &quot;To One Click&quot;
 			.cbCrearBeforeFB2.Label			= &quot;Clear before applying fb2 style&quot;
 			.cbCrearBeforeFB2.HelpText		= &quot;Clear formating before applying fb2 style&quot;
+			.cbCrearBoldFromHeadings.Label	= &quot;Crear Bold From Headings&quot;
+			.cbCrearItalicFromHeadings.Label	= &quot;Crear Italic  From Headings&quot;
 			.cmdbtnBold.HelpText			= &quot;Bold, Strong&quot;
 			.cmdbtnItalic.HelpText			= &quot;Italic, Emphasis&quot;
 			.cmdbtnStrikethrought.HelpText	= &quot;Strikethrought&quot;
