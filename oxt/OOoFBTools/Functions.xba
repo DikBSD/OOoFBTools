@@ -1719,99 +1719,6 @@ Sub ClearSymbolFormat()
 End Sub
 
 &apos;/////////////////////////////////////// Очистка всех стилей в абзаце//////////////////////////////////////
-&apos; очистка всех стилей в абзаце
-&apos; после отработки функции: положение и выделение видимого курсора восстанавливается
-Sub ClearParaStyleToBase()
-	SetParaStyleWithBeforeClearOldParaStyle(&quot;&quot;)
-End Sub
-
-&apos; очистка всех стилей в абзаце
-&apos; после отработки функции: положение и выделение видимого курсора восстанавливается
-&apos; Style - стиль для нового форматирования абзаца. Если Style = &quot;&quot;, то - просто очищаем &quot;старый&quot; формат
-Sub SetParaStyleWithBeforeClearOldParaStyle( Style As String )
-	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
-	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
-		If Not IsNull( oSels ) Then
-			Dim TempBookMarkName As String : TempBookMarkName = &quot;__temp_view_cursor_for_clear_format__&quot;
-			Dim SelCount As Integer : SelCount = oSels.getCount()
-			If SelCount &gt; 1 Then
-				&apos; для нескольких выделений текста
-				ClearParagraphsStyleToBase( TempBookMarkName, Style )
-			Else
-				&apos; для одного выделения текста или без выделения
-				ClearParagraphStyleToBase( TempBookMarkName, Style )
-			End If
-		End If
-	End If
-End Sub
-
-&apos; для одного выделения текста или без выделения
-Sub ClearParagraphStyleToBase( ByRef TempBookMarkName As String, Style As String )
-	&apos; вставка временной закладки на место видимого курсора
-	_UnoInsertBookmark( TempBookMarkName )
-
-	&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
-	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
-	Dim IsTextSelected As Boolean : IsTextSelected = False
-	ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
-	
-	&apos; очистка всех стилей в заданной видимой курсором области текста
-	_ClearStyleToBase_( GetLocaDefaultStyleName() )	
-	
-	&apos; задаем новый стиль, если Style не равна &quot;&quot;
-	If Style &lt;&gt; &quot;&quot; Then SetParaStyle( Style )
-	&apos; восстановление положения видимого курсора
-	GoToViewCursorToBookMark( oViewCursor, TempBookMarkName, IsTextSelected )
-
-	&apos; удаляем временную закладку
-	_UnoDeleteBookMark( TempBookMarkName )
-End Sub
-
-&apos; для нескольких выделений текста
-Sub ClearParagraphsStyleToBase( ByRef TempBookMarkName As String, Style As String )
-	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
-	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
-		If Not IsNull(oSels) Then
-			Dim SelCount	As Integer	: SelCount		= oSels.getCount()
-			Dim oViewCursor	As Object	: oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
-			Dim i As Integer
-			For i=1 To SelCount - 1
-				Dim oSel As Object : oSel = oSels.getByIndex(i)
-				&apos; перевод видимого курсора на i-е выделение
-				Dim otxtCurs As Object : otxtCurs = oSel.Text.createTextCursor()
-				otxtCurs.gotoRange( oSel, False )
-				oViewCursor.gotoRange( otxtCurs, False )
-				&apos; ставим закладку на выделение
-				_UnoInsertBookmark( TempBookMarkName &amp; i )
-			Next i
-			
-			Dim oBookMarks	As Object : oBookMarks	= ThisComponent.getBookmarks()
-			For i=1 To SelCount - 1
-				&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
-				If oBookMarks.hasByName( TempBookMarkName ) Then
-					GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, True )
-				End If
-
-				&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
-				Dim IsTextSelected As Boolean : IsTextSelected = False
-				ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
-				
-				&apos; очистка всех стилей в заданной видимой курсором области текста
-				_ClearStyleToBase_( GetLocaDefaultStyleName() )	
-				
-				&apos; задаем новый стиль, если Style не равна &quot;&quot;
-				If Style &lt;&gt; &quot;&quot; Then SetParaStyle( Style )
-	
-				&apos; восстановление положения видимого курсора
-				GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, IsTextSelected )
-
-				&apos; удаляем временную закладку
-				_UnoDeleteBookMark( TempBookMarkName &amp; i )
-			Next i
-		End If
-	End If
-End Sub
-
 &apos; очистка всех стилей в заданной видимой курсором области текста
 Sub _ClearStyleToBase_(BaseStyle As String)
 	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
@@ -1827,6 +1734,7 @@ Sub _ClearStyleToBase_(BaseStyle As String)
 	&apos; форматирование символа заданным стилем
 	SetSymbolStyle( GetLocaDefaultStyleName() )
 End Sub
+
 &apos;/////////////////////////////////////////////////////////////////////////////////////////////////
 
 &apos; =======================================================================================================

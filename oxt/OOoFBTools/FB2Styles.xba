@@ -238,23 +238,21 @@ End Sub
 &apos; ***********************************************************************************************
 &apos; разметка абзаца выбранным fb2 стилем
 Sub setParaSelectedFB2Style()
-	Dim oLB	As Object : oLB = oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
-	If oFB2StylesDlg.getControl( &quot;cbCrearBeforeFB2&quot; ).State = 1 Then
-		SetParaStyleWithBeforeClearOldParaStyle( oLB.getSelectedItem() )
-		If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( True )
-		If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( False )
-	Else
-		SetParaStyle( oLB.getSelectedItem() )
-		If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( True )
-		If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then CrearBoldItalicFromHeadings( False )
-	End If
+	Dim oLB						As Object	: oLB						= oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
+	Dim Style					As String	: Style						= oLB.getSelectedItem()
+	Dim ClearBeforeFB2			As Integer	: ClearBeforeFB2			= oFB2StylesDlg.getControl( &quot;cbClearBeforeFB2&quot; ).State
+	Dim ClearBoldFromHeadings	As Integer	: ClearBoldFromHeadings		= oFB2StylesDlg.getControl( &quot;cbClearBoldFromHeadings&quot; ).State
+	Dim ClearItalicFromHeadings	As Integer	: ClearItalicFromHeadings	= oFB2StylesDlg.getControl( &quot;cbClearItalicFromHeadings&quot; ).State
+	
+	&apos; разметка текста выбранным fb2 стилем
+	setFB2StyleToSelectedText( Style, ClearBeforeFB2, ClearBoldFromHeadings, ClearItalicFromHeadings )
+	
 	oLB.selectItem( oLB.getSelectedItem(), False )
-	&apos; делаем активным текущий документ
-	ActiveDocument()
 End Sub
 
-&apos; удаление полужирного и/или курсива у Заголовков при включенных опциях
-Sub CrearBoldItalicFromHeadings( Bold As Boolean )
+&apos; разметка текста выбранным fb2 стилем
+Sub setFB2StyleToSelectedText( Style As String, ClearBeforeFB2 As Integer, ClearBoldFromHeadings As Integer, ClearItalicFromHeadings As Integer )
+	Dim oViewCursor	As Object : oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
 	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
 	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
 		If Not IsNull( oSels ) Then
@@ -262,42 +260,52 @@ Sub CrearBoldItalicFromHeadings( Bold As Boolean )
 			Dim SelCount As Integer : SelCount = oSels.getCount()
 			If SelCount &gt; 1 Then
 				&apos; для нескольких выделений текста
-				ClearBoldItalicFromHeadingsParagraphsStyleToBase( TempBookMarkName )
+				SetStyleIfMoreSelect( oViewCursor, TempBookMarkName, Style, ClearBeforeFB2, ClearBoldFromHeadings, ClearItalicFromHeadings )
 			Else
 				&apos; для одного выделения текста или без выделения
-				ClearBoldItalicFromHeadingsParagraphStyleToBase( TempBookMarkName )
+				&apos; вставка временной закладки на место видимого курсора
+				_UnoInsertBookmark( TempBookMarkName )
+				&apos; для одного выделения текста или без выделения
+				SetStyleIfOneOrNoneSelect( oViewCursor, TempBookMarkName, Style, ClearBeforeFB2, ClearBoldFromHeadings, ClearItalicFromHeadings )
+				&apos; удаляем временную закладку
+				_UnoDeleteBookMark( TempBookMarkName )
 			End If
 		End If
 	End If
+	&apos; делаем активным текущий документ
+	ActiveDocument()
 End Sub
 
 &apos; для одного выделения текста или без выделения
-Sub ClearBoldItalicFromHeadingsParagraphStyleToBase( ByRef TempBookMarkName As String )
-	&apos; вставка временной закладки на место видимого курсора
-	_UnoInsertBookmark( TempBookMarkName )
-
+Sub SetStyleIfOneOrNoneSelect( ByRef oViewCursor As Object, ByRef TempBookMarkName As String, Style As String, ClearBeforeFB2 As Integer, ClearBoldFromHeadings As Integer, ClearItalicFromHeadings As Integer )
 	&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
-	Dim oViewCursor	As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
 	Dim IsTextSelected As Boolean : IsTextSelected = False
 	ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
 	
-	If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then ClearBold()
-	If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then ClearItalic()
+	If ClearBeforeFB2 = 1 Then
+		&apos; очистка всех стилей в заданной видимой курсором области текста
+		_ClearStyleToBase_( GetLocaDefaultStyleName() )	
+	End If
+	
+	&apos; задаем новый стиль, если Style не равна &quot;&quot;
+	If Style &lt;&gt; &quot;&quot; Then SetParaStyle( Style )
+	
+	If InStr( Style, GetLocalHeadingStyleName() ) Then
+		&apos; только для Заголовков: убрать bold и/или italic для Заголовков, если включены соответствующие опции
+		If ClearBoldFromHeadings = 1 Then ClearBold()
+		If ClearItalicFromHeadings = 1 Then ClearItalic()
+	End If
 
 	&apos; восстановление положения видимого курсора
 	GoToViewCursorToBookMark( oViewCursor, TempBookMarkName, IsTextSelected )
-
-	&apos; удаляем временную закладку
-	_UnoDeleteBookMark( TempBookMarkName )
 End Sub
 
 &apos; для нескольких выделений текста
-Sub ClearBoldItalicFromHeadingsParagraphsStyleToBase( ByRef TempBookMarkName As String )
+Sub SetStyleIfMoreSelect( ByRef oViewCursor As Object, ByRef TempBookMarkName As String, Style As String, ClearBeforeFB2 As Integer, ClearBoldFromHeadings As Integer, ClearItalicFromHeadings As Integer )
 	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection()
 	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
 		If Not IsNull(oSels) Then
-			Dim SelCount	As Integer	: SelCount		= oSels.getCount()
-			Dim oViewCursor	As Object	: oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+			Dim SelCount As Integer	: SelCount = oSels.getCount()
 			Dim i As Integer
 			For i=1 To SelCount - 1
 				Dim oSel As Object : oSel = oSels.getByIndex(i)
@@ -311,20 +319,13 @@ Sub ClearBoldItalicFromHeadingsParagraphsStyleToBase( ByRef TempBookMarkName As 
 			
 			Dim oBookMarks	As Object : oBookMarks	= ThisComponent.getBookmarks()
 			For i=1 To SelCount - 1
-				&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
-				If oBookMarks.hasByName( TempBookMarkName ) Then
+				&apos; переход на обрабатываемый абзац, если есть закладка TempBookMarkName
+				If oBookMarks.hasByName( TempBookMarkName &amp; i ) Then
 					GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, True )
 				End If
-
-				&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
-				Dim IsTextSelected As Boolean : IsTextSelected = False
-				ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
 				
-				If oFB2StylesDlg.getControl( &quot;cbCrearBoldFromHeadings&quot; ).State = 1 Then ClearBold()
-				If oFB2StylesDlg.getControl( &quot;cbCrearItalicFromHeadings&quot; ).State = 1 Then ClearItalic()
-	
-				&apos; восстановление положения видимого курсора
-				GoToViewCursorToBookMark( oViewCursor, TempBookMarkName &amp; i, IsTextSelected )
+				&apos; для одного выделения текста или без выделения
+				SetStyleIfOneOrNoneSelect( oViewCursor, TempBookMarkName &amp; i, Style, ClearBeforeFB2, ClearBoldFromHeadings, ClearItalicFromHeadings )
 
 				&apos; удаляем временную закладку
 				_UnoDeleteBookMark( TempBookMarkName &amp; i )
@@ -373,10 +374,10 @@ Sub InitFB2StylesDlg()
 		With oFB2StylesDlg.getModel
 			.Title							= &quot;fb2 стили&quot;
 			.cbToOneClick.Label				= &quot;По одному нажатию мышки&quot;
-			.cbCrearBeforeFB2.Label			= &quot;Сброс формата до fb2 стиля&quot;
-			.cbCrearBoldFromHeadings.Label	= &quot;Заголовки без полужирного&quot;
-			.cbCrearItalicFromHeadings.Label	= &quot;Заголовки без курсива&quot;
-			.cbCrearBeforeFB2.HelpText		= &quot;Очистка формата абзаца до применения fb2 стиля&quot;
+			.cbClearBeforeFB2.Label			= &quot;Сброс формата до fb2 стиля&quot;
+			.cbClearBoldFromHeadings.Label	= &quot;Заголовки без полужирного&quot;
+			.cbClearItalicFromHeadings.Label	= &quot;Заголовки без курсива&quot;
+			.cbClearBeforeFB2.HelpText		= &quot;Очистка формата абзаца до применения fb2 стиля&quot;
 			.cmdbtnBold.HelpText			= &quot;Полужирный (Bold, Strong)&quot;
 			.cmdbtnItalic.HelpText			= &quot;Курсив (Italic, Emphasis)&quot;
 			.cmdbtnStrikethrought.HelpText	= &quot;Зачёркнутый (Strikethrought)&quot;
@@ -388,10 +389,10 @@ Sub InitFB2StylesDlg()
 		With oFB2StylesDlg.getModel
 			.Title							= &quot;fb2 Styles&quot;
 			.cbToOneClick.Label				= &quot;To One Click&quot;
-			.cbCrearBeforeFB2.Label			= &quot;Clear before applying fb2 style&quot;
-			.cbCrearBeforeFB2.HelpText		= &quot;Clear formating before applying fb2 style&quot;
-			.cbCrearBoldFromHeadings.Label	= &quot;Crear Bold From Headings&quot;
-			.cbCrearItalicFromHeadings.Label	= &quot;Crear Italic  From Headings&quot;
+			.cbClearBeforeFB2.Label			= &quot;Clear before applying fb2 style&quot;
+			.cbClearBeforeFB2.HelpText		= &quot;Clear formating before applying fb2 style&quot;
+			.cbClearBoldFromHeadings.Label	= &quot;Crear Bold From Headings&quot;
+			.cbClearItalicFromHeadings.Label	= &quot;Crear Italic  From Headings&quot;
 			.cmdbtnBold.HelpText			= &quot;Bold, Strong&quot;
 			.cmdbtnItalic.HelpText			= &quot;Italic, Emphasis&quot;
 			.cmdbtnStrikethrought.HelpText	= &quot;Strikethrought&quot;
@@ -858,7 +859,7 @@ End Function
 
 &apos; ***********************************************************************************************
 &apos; файл fb2 стилей в зависимости от локали
-Function GetLocalFB2StylesFile()
+Function GetLocalFB2StylesFile() As String
 	Dim sOOoLocal	As String : sOOoLocal = getOOoLocal()
 	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
 		GetLocalFB2StylesFile = &quot;fb21_styles_ru.ott&quot;
@@ -882,7 +883,7 @@ Function GetLocalFB2StylesFile()
 End Function
 
 &apos; название стиля Heading в зависимости от локали
-Function GetLocalHeadingStyleName()
+Function GetLocalHeadingStyleName() As String
 	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
 	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
 		GetLocalHeadingStyleName = &quot;Заголовок&quot;
@@ -906,7 +907,7 @@ Function GetLocalHeadingStyleName()
 End Function
 
 &apos; название стиля Subtitle в зависимости от локали
-Function GetLocaSubtitleStyleName()
+Function GetLocaSubtitleStyleName() As String
 	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
 	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
 		GetLocaSubtitleStyleName = &quot;Подзаголовок&quot;
@@ -930,7 +931,7 @@ Function GetLocaSubtitleStyleName()
 End Function
 
 &apos; название стиля Cite в зависимости от локали
-Function GetLocaCiteStyleName()
+Function GetLocaCiteStyleName() As String
 	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
 	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
 		GetLocaCiteStyleName = &quot;Цитата&quot;
@@ -954,7 +955,7 @@ Function GetLocaCiteStyleName()
 End Function
 
 &apos; название стиля &quot;Базовый&quot; в зависимости от локали
-Function GetLocaDefaultStyleName()
+Function GetLocaDefaultStyleName() As String
 	Dim sOOoLocal	As String : sOOoLocal = getOOoLocal()
 	If sOOoLocal = &quot;ru&quot; Then		&apos; Русский
 		GetLocaDefaultStyleName = &quot;Базовый&quot;
@@ -1047,7 +1048,7 @@ End Sub
 &apos; ***********************************************************************************************
 &apos; заполнение списка локализованными fb2 стилями
 Sub setFb2LocalStylesToListBox()
-	Dim sOOoLocal	As String : sOOoLocal	= getOOoLocal()
+&apos;	Dim sOOoLocal	As String : sOOoLocal	= getOOoLocal()
 	Dim oLB			As Object : oLB			= oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
 	With oLB
 		&apos; удаление всех стилей в ListBox
@@ -1091,7 +1092,7 @@ End Sub
 &apos; ***********************************************************************************************
 &apos; загрузка стилей в переменные
 Sub SetFB2LocalStylesToVars()
-	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
+&apos;	Dim sOOoLocal As String : sOOoLocal = getOOoLocal()
 	Dim fb2 As FB2StylesType : fb2 = GetLocaFB2Styles()
 	&apos; Аннотация
 	sStyleAnnotation			= fb2.Annotation
@@ -1133,7 +1134,7 @@ End Sub
 &apos; если стиль Level переопределен в локализованный Заголовок (OOo &quot;видит&quot; его, как Heading), то в переменную - Heading
 &apos; если стиль Level переопределен в Heading (OOo &quot;видит&quot; его, как Heading X (user)), то в переменную - Heading X (user)
 &apos; если стиль Level не переопределен, то ничего не делаем с переменной стиля
-Function RenameRedefiedLevelsStylesToOOoHeadingIsNeed( FB2LocalStyle As String )
+Function RenameRedefiedLevelsStylesToOOoHeadingIsNeed( FB2LocalStyle As String ) As String
 	Dim i As Integer
 	Dim sLocalHeadingStyleName As String : sLocalHeadingStyleName = GetLocalHeadingStyleName()
 	If getOOoLocal() &lt;&gt; &quot;en&quot; Then
@@ -1156,7 +1157,7 @@ End Function
 &apos; переименование стиля Подзаголовка в &quot;стандартный&quot; для OOo Subtitle
 &apos; если стиль SubTitle переопределен в локализованный Подзаголовок (OOo &quot;видит&quot; его, как Subtitle), то в переменную - SubTitle
 &apos; если стиль SubTitle не переопределен, то ничего не делаем с переменной стиля
-Function RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed( FB2LocalStyle As String )
+Function RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed( FB2LocalStyle As String ) As String
 	Dim i As Integer
 	If getOOoLocal() &lt;&gt; &quot;en&quot; Then
 		If FB2LocalStyle = ( GetLocaSubtitleStyleName() ) Then
@@ -1172,7 +1173,7 @@ End Function
 &apos; переименование стиля Цитаты в &quot;стандартный&quot; для OOo Quotations
 &apos; если стиль Cite переопределен в локализованный Цитата (OOo &quot;видит&quot; его, как Quotations), то в переменную - Quotations
 &apos; если стиль Cite не переопределен, то ничего не делаем с переменной стиля
-Function RenameRedefiedCiteStylesToOOoQuotationsIsNeed( FB2LocalStyle As String )
+Function RenameRedefiedCiteStylesToOOoQuotationsIsNeed( FB2LocalStyle As String ) As String
 	Dim i As Integer
 	If getOOoLocal() &lt;&gt; &quot;en&quot; Then
 		If FB2LocalStyle = ( GetLocaCiteStyleName() ) Then
@@ -1189,8 +1190,8 @@ End Function
 &apos; ================================================================================================================
 &apos; 										быстрые клавиши для fb2 стилей
 &apos; ================================================================================================================
-&apos; Нужно ли очищать форматирование абзаца перед применением fb2 стиля: Возвращает True - да; False - нет
-Function IsClearParaStyleToBase() As Boolean
+&apos; Нужно ли очищать форматирование абзаца перед применением fb2 стиля: Возвращает 1 - да; 0 - нет
+Function IsClearParaStyleToBase() As Integer
 	Dim sFB2StylesDlgSettings As String : sFB2StylesDlgSettings = getOOoFBToolsSettingsDir() &amp; sConstfb2StylesDlgSettings
 	If FileExists( sFB2StylesDlgSettings ) Then
 		Dim sLine As String
@@ -1205,8 +1206,62 @@ Function IsClearParaStyleToBase() As Boolean
 			If sLine &lt;&gt; &quot;&quot; Then
 				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
 				Select Case sSetting(0)
-				Case &quot;cbCrearBeforeFB2&quot; &apos; очищать форматирование абзаца перед применением fb2 стиля
+				Case &quot;cbClearBeforeFB2&quot; &apos; очищать форматирование абзаца перед применением fb2 стиля
 					IsClearParaStyleToBase = sSetting(1)
+					oTIS.closeInput()
+					Exit Function
+				End Select
+			End If
+		Loop
+		oTIS.closeInput()
+	End If
+End Function
+
+&apos; Нужно ли убирать bold в Заголовках: Возвращает 1 - да; 0 - нет
+Function IsClearBoldFromHeading() As Integer
+	Dim sFB2StylesDlgSettings As String : sFB2StylesDlgSettings = getOOoFBToolsSettingsDir() &amp; sConstfb2StylesDlgSettings
+	If FileExists( sFB2StylesDlgSettings ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFB2StylesDlgSettings ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream ( oFS )
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
+				Select Case sSetting(0)
+				Case &quot;cbClearBoldFromHeadings&quot; &apos; Заголовки без полужирного
+					IsClearBoldFromHeading = sSetting(1)
+					oTIS.closeInput()
+					Exit Function
+				End Select
+			End If
+		Loop
+		oTIS.closeInput()
+	End If
+End Function
+
+&apos; Нужно ли убирать italic в Заголовках: Возвращает 1 - да; 0 - нет
+Function IsClearItalicFromHeading() As Integer
+	Dim sFB2StylesDlgSettings As String : sFB2StylesDlgSettings = getOOoFBToolsSettingsDir() &amp; sConstfb2StylesDlgSettings
+	If FileExists( sFB2StylesDlgSettings ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFB2StylesDlgSettings ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream ( oFS )
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
+				Select Case sSetting(0)
+				Case &quot;cbClearItalicFromHeadings&quot; &apos; Заголовки без курсива
+					IsClearItalicFromHeading = sSetting(1)
 					oTIS.closeInput()
 					Exit Function
 				End Select
@@ -1218,12 +1273,7 @@ End Function
 
 &apos; ***********************************************************************************************
 Sub setFB2Style( fb2Style As String )
-	If IsClearParaStyleToBase() Then
-		&apos; очищать форматирование абзаца перед применением fb2 стиля
-		SetParaStyleWithBeforeClearOldParaStyle( fb2Style )
-	Else
-		SetParaStyle( fb2Style )
-	End If
+	setFB2StyleToSelectedText( fb2Style, IsClearParaStyleToBase(), IsClearBoldFromHeading(), IsClearItalicFromHeading() )
 End Sub
 
 Sub ShortcutsForHeading1()
