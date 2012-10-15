@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="OCRErrorFormating" script:language="StarBasic">&apos;======================================================================================================================
+&apos; 				модуль обработки ошибок OCR форматирования: снятие курсива со знаков препинания, кавычек и скобок
+&apos;======================================================================================================================
+
+Option Explicit
+
+Public oOCREF As Object
+Private Const sOCREFSettings As String = &quot;ocr_error_formating.txt&quot; &apos; файл настроек
+Private Iter As Integer
+
+&apos;******************************************************************
+&apos; инициализация и запуск диалога исправления OCR ошибок форматирования
+Sub OCRErrorFormatStart()
+&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oOCREF = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.OCRErrorFormatingDlg )
+	
+	&apos; инициализация диалога
+	InitOCRErrorFormatingDlg()
+
+	With oOCREF.Model
+		.Height	= 56
+		.Width	= 219
+	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sOCREFSettings, oOCREF, nX, nY )
+	oOCREF.setPosSize( nX, nY, 56, 219, com.sun.star.awt.PosSize.POS )
+
+	oOCREF.execute()
+End Sub
+
+&apos; начало обработки
+&apos;******************************************************************
+Sub OCRErrorFormatWorking()
+	&apos; записываем настройки диалога
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sOCREFSettings, oOCREF )
+	
+	Iter = 1
+	Dim ProgressMaxIter As Integer : ProgressMaxIter = 0
+	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State		= 1 Then ProgressMaxIter = ProgressMaxIter + 4
+	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 4
+	If oOCREF.getControl( &quot;ChbSignPunct&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 4
+	
+	If ProgressMaxIter = 0 Then
+		MsgBox sOCREF.sEndMessage, 64, sOCREF.sTitle
+		Exit Sub
+	End If
+	oOCREF.endExecute()
+	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sOCREF.sTitle &amp; &quot;:&quot;, ProgressMaxIter )
+
+	Dim aLeftList()		As String
+	Dim aRightList()	As String
+	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State = 1 Then
+		&apos; обработка текста, таблиц, сносок и текстовых врезок на снятие курсива со скобок
+		aLeftList()		= Array( &quot;(&quot;, &quot;{&quot;, &quot;[&quot; )
+		aRightList()	= Array( &quot;)&quot;, &quot;}&quot;, &quot;]&quot; )
+		TextNoteTableTextFrameWorker( aLeftList(), aRightList(), oProgressBar )
+	End If
+	
+	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State = 1 Then
+		&apos; обработка текста, таблиц, сносок и текстовых врезок на снятие курсива с кавычек
+		aLeftList()		= Array( &quot;«&quot;, &quot;“&quot;, &quot;„&quot; )
+		aRightList()	= Array( &quot;»&quot;, &quot;”&quot;, &quot;”&quot; )
+		TextNoteTableTextFrameWorker( aLeftList(), aRightList(), oProgressBar )
+	End If
+	
+	If oOCREF.getControl( &quot;ChbSignPunct&quot; ).State = 1 Then
+		&apos; обработка текста, таблиц, сносок и текстовых врезок на снятие курсива со знаков препинания (ошибки OCR форматирования)
+		TextNoteTableTextFrameSignPunctWorker( oProgressBar )
+	End If
+
+	MsgBox sOCREF.sEndMessage, 64, sOCREF.sTitle
+	oProgressBar.end
+End Sub
+&apos;******************************************************************
+&apos; обработка текста, таблиц, сносок и текстовых врезок на снятие курсива с заданных символов (ошибки OCR форматирования)
+Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef oProgressBar As Object )
+	Dim i As Integer
+	For i=0 To UBound( aLeftList() )
+		SymbolTextWorker( aLeftList( i ), aRightList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		SymbolFootEndNoteWorker( aLeftList( i ), aRightList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		SymbolTableWorker( aLeftList( i ), aRightList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		SymbolTextFrameWorker( aLeftList( i ), aRightList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+	Next i
+End Sub
+&apos;******************************************************************
+&apos; обработка текста, таблиц, сносок и текстовых врезок на снятие курсива со знаков препинания (ошибки OCR форматирования)
+Sub TextNoteTableTextFrameSignPunctWorker( ByRef oProgressBar As Object )
+	Dim aSignPunctList() As String : aSignPunctList() = Array( &quot;,&quot;, &quot;.&quot;, &quot;:&quot;, &quot;;&quot;, &quot;!&quot;, &quot;?&quot; )
+	Dim i As Integer
+	For i=0 To UBound( aSignPunctList() )
+		SignPunctuationTextWorker( aSignPunctList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		SignPunctuationFootEndNoteWorker( aSignPunctList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		SignPunctuationTableWorker( aSignPunctList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		SignPunctuationTextFrameWorker( aSignPunctList( i ) )
+		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+	Next i
+End Sub
+&apos;******************************************************************
+&apos; ищем последний символ слова левее левого поискового символа, кроме пробелоа и/или табуляции
+Function FindEndWordLetterBeforeLeftSymbol( ByRef oLSymCurs As Object ) As Boolean
+	FindEndWordLetterBeforeLeftSymbol = False
+	Dim s As String
+	Do While oLSymCurs.goLeft(1, True)
+		s = Left( oLSymCurs.getString(), 1 )
+		If s &lt;&gt; &quot;&quot; And s &lt;&gt; Chr(32) And s &lt;&gt; Chr(9) Then
+			If IsLetter( s ) Then &apos; нашли последний символ слова левее левой скобкиEnd
+				FindEndWordLetterBeforeLeftSymbol = True
+				Exit Function
+			End If
+		End If
+	Loop
+End Function
+&apos;******************************************************************
+&apos; ищем 1-й символ после поискового символа, кроме пробелоа и/или табуляции
+Function FindFirstWordLetterAfterRightSymbol( ByRef oRSymCurs As Object ) As Boolean
+	FindFirstWordLetterAfterRightSymbol = False
+	Dim s As String
+	Do While oRSymCurs.goRight(1, True)
+		s = Right( oRSymCurs.getString(), 1 )
+		If s &lt;&gt; &quot;&quot; And s &lt;&gt; Chr(32) And s &lt;&gt; Chr(9) Then
+			If IsLetter( s ) Then &apos; нашли 1-й символ после правой скобки
+				FindFirstWordLetterAfterRightSymbol = True
+				Exit Function
+			End If
+		End If
+	Loop
+End Function
+&apos;******************************************************************
+&apos; снятие курсива с поисковых символов
+Function UnItalic( ByRef oObj As Object, ByRef oLSymCurs As Object, ByRef oRSymCurs As Object ) As Boolean
+	UnItalic = False
+	Dim IsLItalic As Boolean : IsLItalic = False
+	Dim IsRItalic As Boolean : IsRItalic = False
+	Dim oCurs As Object : oCurs = oObj.getText().createTextCursor()
+	oCurs.gotoRange( oLSymCurs, False )
+	oCurs.collapseToStart() : oCurs.goRight(1, True)
+	If oCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsLItalic = True
+		
+	oCurs.gotoRange( oRSymCurs, False )
+	oCurs.collapseToEnd() : oCurs.goLeft(1, True)
+	If oCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsRItalic = True
+	If Not IsLItalic And Not IsRItalic Then
+		&apos; убираем курсив
+		oLSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		oRSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		UnItalic = True
+	End If
+End Function
+&apos;******************************************************************
+&apos; поиск и снятие курсива со скобок
+Sub UnItalicBracketWorker( ByRef oObj As Object, ByRef oLSymCurs As Object, ByRef oRSymCurs As Object, ByRef oEndCurs As Object, _
+							ByRef vLSymFound As Variant, sFindLeftSymbol As String, sFindRightSymbol As String )
+	&apos; нашли левый поисковый символ
+	oLSymCurs.gotoRange( vLSymFound, False )
+	oLSymCurs.collapseToEnd()
+		
+	&apos; ищем правый поисковый символ
+	oRSymCurs.gotoRange( oLSymCurs, False )
+FindLSym:
+	Do While oRSymCurs.goRight(1, True) And ( Not oObj.Text.compareRegionEnds( oRSymCurs, oEndCurs ) &lt;= 0 )
+		If Right( oRSymCurs.getString(), 1 ) = sFindLeftSymbol Then
+			&apos; нашли еще один левый поисковый символ` ДО правого поискового символf
+			oLSymCurs.gotoRange( oRSymCurs, False )
+			oLSymCurs.collapseToEnd()
+			GoTo FindLSym
+		ElseIf Right( oRSymCurs.getString(), 1 ) = sFindRightSymbol Then
+			&apos; нашли парный правый поисковый символ
+			oRSymCurs.goLeft(1, True)
+			oRSymCurs.collapseToEnd()
+			&apos; ищем 1-й символ после правого символа, кроме пробелоа и/или табуляции
+			Dim FirstWordLetterAfterRightSymbol As Boolean : FirstWordLetterAfterRightSymbol = FindFirstWordLetterAfterRightSymbol( oRSymCurs )
+			Exit Do
+		End If
+	Loop
+
+	&apos; ищем последний символ слова левее левого поискового символа, кроме пробелоа и/или табуляции
+	Dim EndWordLetterBeforeLeftBracket As Boolean : EndWordLetterBeforeLeftBracket = FindEndWordLetterBeforeLeftSymbol( oLSymCurs )
+
+	&apos; Обработка заданных поисковых символов
+	If EndWordLetterBeforeLeftBracket = True And FirstWordLetterAfterRightSymbol = True Then
+		UnItalic( oObj, oLSymCurs, oRSymCurs )
+	End If
+End Sub
+
+&apos; =========================================================================================================================
+&apos; 						Обработка скобок в тексте, таблицах, сносках и текстовых врезках
+&apos; =========================================================================================================================
+
+&apos; удаление курсива в заданных символах (скобки, кавычки) текста
+Sub SymbolTextWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
+	Dim oDoc		As Object	: oDoc			= ThisComponent
+	Dim oDocControl	As Object	: oDocControl	= oDoc.getCurrentController()
+	Dim vLSymSearch	As Variant	: vLSymSearch	= oDoc.createSearchDescriptor()
+	Dim vLSymFound	As Variant
+
+	&apos; задаем курсоры
+	Dim oViewCursor	As Object : oViewCursor	= oDocControl.getViewCursor()		&apos; видимый курсор
+	Dim oEndCurs	As Object : oEndCurs	= oDoc.getText().createTextCursor()	&apos; окончание документа
+	oEndCurs.gotoEnd( False )
+	Dim oLSymCurs	As Object : oLSymCurs = oDoc.getText().createTextCursor() &apos; для левого символа
+	oLSymCurs.gotoStart( False )
+	Dim oRSymCurs	As Object : oRSymCurs = oDoc.getText().createTextCursor() &apos; для правого символа
+	
+	&apos; леввый поисковый символ
+&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+&apos;	SrchAttributes(0).Name = &quot;CharPosture&quot;
+	With vLSymSearch
+		.SearchRegularExpression = False
+&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SearchString = sFindLeftSymbol
+		.ValueSearch = False
+	End With
+
+	&apos; ищем левый поисковый символ
+	Do While Not oDoc.Text.compareRegionEnds( oLSymCurs, oEndCurs ) &lt;= 0
+		vLSymFound = oDoc.findNext( oLSymCurs.getEnd(), vLSymSearch )
+		If IsNull( vLSymFound ) Then Exit Do		
+		
+		If Not IsEmpty( vLSymFound.TextTable ) Then
+			&apos; перепрыгиваем таблицу - не обрабатываем ее
+			oViewCursor.gotoRange( vLSymFound, False )
+			CursorAfterCurrentTextTable( oViewCursor )
+			vLSymFound = oDoc.findNext( oViewCursor.getStart(), vLSymSearch )
+		ElseIf Not IsEmpty( vLSymFound.TextFrame ) Then
+			&apos; перепрыгиваем врезку - не обрабатываем ее
+			With oViewCursor
+				.gotoRange( vLSymFound, False )
+				.gotoRange( vLSymFound.TextFrame.getEnd(), False )
+			End With
+			vLSymFound = oDoc.findNext( oViewCursor.getStart(), vLSymSearch )
+		ElseIf vLSymFound.ParaConditionalStyleName = &quot;Footnote&quot; Or vLSymFound.ParaConditionalStyleName = &quot;Endnote&quot;	Then
+			&apos; не обрабатываем сноски
+			Exit Do
+		End If
+
+		If IsNull( vLSymFound ) Then Exit Do
+		
+		On Error GoTo ErrorHandler
+		
+		&apos; поиск и снятие курсива со скобок
+		UnItalicBracketWorker( oDoc, oLSymCurs, oRSymCurs, oEndCurs, vLSymFound, sFindLeftSymbol, sFindRightSymbol )
+	Loop
+ErrorHandler:
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива в заданных символах (скобки, кавычки) сносок
+Sub SymbolFootEndNoteWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim vLSymSearch	As Variant		: vLSymSearch		= oDoc.createSearchDescriptor()
+	Dim nFootnoteCount As Integer	: nFootnoteCount	= oDoc.getFootNotes().getCount() 
+	Dim vLSymFound	As Variant
+	Dim i As Integer
+
+	&apos; леввый поисковый символ
+&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+&apos;	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+	With vLSymSearch
+		.SearchRegularExpression = False
+&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SearchString	= sFindLeftSymbol
+		.ValueSearch	= False
+	End With
+			
+	For i=0 To nFootnoteCount-1
+		&apos; Получить i-ю сноску
+		Dim oFootNote As Object : oFootNote = oDoc.getFootNotes().getByIndex(i)
+		&apos; Начать поиск с начала текстового объекта
+		&apos; ищем левый поисковый символ
+		Dim oEndCurs	As Object : oEndCurs	= oFootNote.getText().createTextCursor() &apos; окончание сноски
+		oEndCurs.gotoEnd( False )
+		Dim oLSymCurs	As Object : oLSymCurs	= oFootNote.getText().createTextCursor() &apos; для левого символа
+		oLSymCurs.gotoStart( False )
+		Dim oRSymCurs	As Object : oRSymCurs	= oFootNote.getText().createTextCursor() &apos; для правого символа
+		
+		Do While Not oFootNote.Text.compareRegionEnds( oLSymCurs, oEndCurs ) &lt;= 0
+			vLSymFound = oDoc.findNext( oLSymCurs.getEnd(), vLSymSearch )
+		
+			If IsNull( vLSymFound )					Then Exit For
+			If IsNull( vLSymFound.FootNote )		Then Exit Do
+			If Not IsEmpty( vLSymFound.TextFrame )	Then Exit For
+			If Not IsEmpty( vLSymFound.TextTable )	Then Exit For
+
+			On Error GoTo ErrorHandler
+			
+			&apos; поиск и снятие курсива со скобок
+			UnItalicBracketWorker( oFootNote, oLSymCurs, oRSymCurs, oEndCurs, vLSymFound, sFindLeftSymbol, sFindRightSymbol )
+		Loop
+ErrorHandler:
+	Next i
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива в заданных символах (скобки, кавычки) таблиц
+Sub SymbolTableWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
+	
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim vLSymSearch	As Variant	: vLSymSearch	= oDoc.createSearchDescriptor()
+	Dim nTablesCount As Integer : nTablesCount	= oDoc.getTextTables().getCount() 
+	Dim vLSymFound	As Variant
+	Dim i As Integer, j As Integer
+	
+	&apos; леввый поисковый символ
+&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+&apos;	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+	With vLSymSearch
+		.SearchRegularExpression = False
+&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SearchString	= sFindLeftSymbol
+		.ValueSearch	= False
+	End With
+			
+	For i=0 To nTablesCount-1
+		&apos; Получить i-ю таблицу
+		Dim oTable	As Object : oTable = oDoc.getTextTables().getByIndex(i)
+		Dim CellNames : CellNames = oTable.getCellNames()
+		
+		For j=0 To UBound( CellNames() )
+			Dim oCell	As Object : oCell = oTable.getCellByName( CellNames(j) )
+			&apos; Начать поиск с начала текстового объекта
+			&apos; ищем левый поисковый символ
+			Dim oEndCurs	As Object : oEndCurs	= oCell.getText().createTextCursor() &apos; окончание ячейки таблицы
+			oEndCurs.gotoEnd( False )
+			Dim oLSymCurs	As Object : oLSymCurs	= oCell.getText().createTextCursor() &apos; для левого символа
+			oLSymCurs.gotoStart( False )
+			Dim oRSymCurs	As Object : oRSymCurs	= oCell.getText().createTextCursor() &apos; для правого символа
+		
+			Do While Not oCell.Text.compareRegionEnds( oLSymCurs, oEndCurs ) &lt;= 0
+				vLSymFound = oDoc.findNext( oLSymCurs.getEnd(), vLSymSearch )
+		
+				If IsNull( vLSymFound )					Then Exit For
+				If IsEmpty( vLSymFound.TextTable )		Then Exit Do
+				If Not IsEmpty( vLSymFound.TextFrame )	Then Exit For
+				If Not IsEmpty( vLSymFound.FootNote )	Then Exit For
+			
+				On Error GoTo ErrorHandler
+				
+				&apos; поиск и снятие курсива со скобок
+				UnItalicBracketWorker( oCell, oLSymCurs, oRSymCurs, oEndCurs, vLSymFound, sFindLeftSymbol, sFindRightSymbol )
+			Loop
+ErrorHandler:
+		Next j
+	Next i
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива в заданных символах (скобки, кавычки) текстовых врезок
+Sub SymbolTextFrameWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
+	
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim vLSymSearch			As Variant	: vLSymSearch		= oDoc.createSearchDescriptor()
+	Dim nTextFramesCount	As Integer	: nTextFramesCount	= oDoc.getTextFrames().getCount() 
+	Dim vLSymFound	As Variant
+	Dim i As Integer
+	
+	&apos; леввый поисковый символ
+&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+&apos;	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+	With vLSymSearch
+		.SearchRegularExpression = False
+&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SearchString	= sFindLeftSymbol
+		.ValueSearch	= False
+	End With
+		
+	For i=0 To nTextFramesCount-1
+		&apos; Получить i-ю таблицу
+		Dim oTextFrame As Object : oTextFrame = oDoc.getTextFrames().getByIndex(i)
+		&apos; Начать поиск с начала текстового объекта
+		&apos; ищем левый поисковый символ
+		Dim oEndCurs	As Object : oEndCurs	= oTextFrame.getText().createTextCursor() &apos; окончание врезки
+		oEndCurs.gotoEnd( False )
+		Dim oLSymCurs	As Object : oLSymCurs	= oTextFrame.getText().createTextCursor() &apos; для левого символа
+		oLSymCurs.gotoStart( False )
+		Dim oRSymCurs	As Object : oRSymCurs	= oTextFrame.getText().createTextCursor() &apos; для правого символа
+		
+		Do While Not oTextFrame.Text.compareRegionEnds( oLSymCurs, oEndCurs ) &lt;= 0
+			vLSymFound = oDoc.findNext( oLSymCurs.getEnd(), vLSymSearch )
+		
+			If IsNull( vLSymFound )					Then Exit For
+			If IsEmpty( vLSymFound.TextFrame )		Then Exit Do
+			If Not IsEmpty( vLSymFound.TextTable )	Then Exit For
+			If Not IsEmpty( vLSymFound.FootNote )	Then Exit For
+			
+			On Error GoTo ErrorHandler
+			
+			&apos; поиск и снятие курсива со скобок
+			UnItalicBracketWorker( oTextFrame, oLSymCurs, oRSymCurs, oEndCurs, vLSymFound, sFindLeftSymbol, sFindRightSymbol )
+		Loop
+ErrorHandler:
+	Next i
+End Sub
+
+&apos; =========================================================================================================================
+&apos; 						Обработка кавычек в тексте, таблицах, сносках и текстовых врезках
+&apos; =========================================================================================================================
+
+&apos; поиск и снятие курсива с знаков препинания
+Sub UnItalicSignPunctuationWorker( ByRef oObj As Object, ByRef oSignPunctCurs As Object, ByRef vLSymFound As Variant )
+	oSignPunctCurs.gotoRange( vLSymFound, False )
+	Dim oStartSentenceLetterCurs As Object : oStartSentenceLetterCurs = oObj.getText().createTextCursor() &apos; для правого символа
+	oStartSentenceLetterCurs.gotoRange( oSignPunctCurs, False )
+	
+	&apos; ищем первый символ после найденного знака препинания
+	Dim FirstWordLetterAfterSignPunctuation As Boolean : FirstWordLetterAfterSignPunctuation = FindFirstWordLetterAfterRightSymbol( oSignPunctCurs )
+	&apos; ищем 1-й символ Начала предложения
+	Dim StartOfSentenceLetter As Boolean : StartOfSentenceLetter = oStartSentenceLetterCurs.gotoStartOfSentence( False )
+	oStartSentenceLetterCurs.goRight(1, True)
+
+	&apos; Обработка заданных поисковых символов
+	Dim IsSoSLetterItalic		As Boolean : IsSoSLetterItalic		= False : 
+	Dim IsFirstLetterASPItalic	As Boolean : IsFirstLetterASPItalic	= False
+	Dim oCurs As Object : oCurs = oObj.getText().createTextCursor()
+	oCurs.gotoRange( oSignPunctCurs, False )
+	oCurs.collapseToEnd() : oCurs.goLeft(1, True)
+	If oCurs.CharPosture					= com.sun.star.awt.FontSlant.ITALIC Then IsFirstLetterASPItalic = True
+	If oStartSentenceLetterCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsSoSLetterItalic		= True
+	If Not IsSoSLetterItalic And Not IsFirstLetterASPItalic Then
+		&apos; убираем курсив
+		oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+	ElseIf IsSoSLetterItalic And Not IsFirstLetterASPItalic Then
+		&apos; первый символ начала предложения - с курсивом, а первый символ после знака препинания - без курсива
+		Dim s As String : s = Right( oCurs.getString(), 1 )
+		If s = &quot;,&quot; Or s = &quot;.&quot; Or s = &quot;;&quot; Or s = &quot;:&quot; Then
+			oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		ElseIf s = &quot;!&quot; Or s = &quot;?&quot; Then
+			oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		End If
+	End If
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива для знаков препинания в тексте
+Sub SignPunctuationTextWorker( sFindSignPunctuation As String )
+	Dim oDoc				As Object	: oDoc				= ThisComponent
+	Dim oDocControl			As Object	: oDocControl		= oDoc.getCurrentController()
+	Dim vSignPunctSearch	As Variant	: vSignPunctSearch	= oDoc.createSearchDescriptor()
+	Dim vSignPunctFound		As Variant
+
+	&apos; задаем курсоры
+	Dim oViewCursor	As Object : oViewCursor	= oDocControl.getViewCursor()		&apos; видимый курсор
+	Dim oEndCurs	As Object : oEndCurs	= oDoc.getText().createTextCursor()	&apos; окончание документа
+	oEndCurs.gotoEnd( False )
+	Dim oSignPunctCurs	As Object : oSignPunctCurs	= oDoc.getText().createTextCursor() &apos; для знака препинания
+	oSignPunctCurs.gotoStart( False )
+
+	
+	&apos; знак пунктуации с курсивом
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name = &quot;CharPosture&quot;
+	With vSignPunctSearch
+		.SearchRegularExpression = False
+		.SetSearchAttributes( SrchAttributes() )
+		.SearchString	= sFindSignPunctuation
+		.ValueSearch	= False
+	End With
+
+	&apos; ищем левый поисковый символ
+	Do While Not oDoc.Text.compareRegionEnds( oSignPunctCurs, oEndCurs ) &lt;= 0
+		vSignPunctFound = oDoc.findNext( oSignPunctCurs.getEnd(), vSignPunctSearch )
+		If IsNull( vSignPunctFound ) Then Exit Do		
+		
+		If Not IsEmpty( vSignPunctFound.TextTable ) Then
+			&apos; перепрыгиваем таблицу - не обрабатываем ее
+			oViewCursor.gotoRange( vSignPunctFound, False )
+			CursorAfterCurrentTextTable( oViewCursor )
+			vSignPunctFound = oDoc.findNext( oViewCursor.getStart(), vSignPunctSearch )
+		ElseIf Not IsEmpty( vSignPunctFound.TextFrame ) Then
+			&apos; перепрыгиваем врезку - не обрабатываем ее
+			With oViewCursor
+				.gotoRange( vSignPunctFound, False )
+				.gotoRange( vSignPunctFound.TextFrame.getEnd(), False )
+			End With
+			vSignPunctFound = oDoc.findNext( oViewCursor.getStart(), vSignPunctSearch )
+		ElseIf vSignPunctFound.ParaConditionalStyleName = &quot;Footnote&quot; Or vSignPunctFound.ParaConditionalStyleName = &quot;Endnote&quot;	Then
+			&apos; не обрабатываем сноски
+			Exit Do
+		End If
+
+		If IsNull( vSignPunctFound ) Then Exit Do
+		
+		On Error GoTo ErrorHandler
+		
+		&apos; поиск и снятие курсива с знаков препинания
+		UnItalicSignPunctuationWorker( oDoc, oSignPunctCurs, vSignPunctFound )
+	Loop
+ErrorHandler:
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива для знаков препинания сносок
+Sub SignPunctuationFootEndNoteWorker( sFindSignPunctuation As String )
+	Dim oDoc				As Object	: oDoc					= ThisComponent
+	Dim vSignPunctSearch	As Variant	: vSignPunctSearch		= oDoc.createSearchDescriptor()
+	Dim vSignPunctFound		As Variant
+	Dim nFootnoteCount		As Integer	: nFootnoteCount		= oDoc.getFootNotes().getCount() 
+	Dim i As Integer
+	
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+		
+	For i=0 To nFootnoteCount-1
+		&apos; Получить i-ю сноску
+		Dim oFootNote As Object : oFootNote = oDoc.getFootNotes().getByIndex(i)
+		&apos; знак пунктуации с курсивом
+		With vSignPunctSearch
+			.SearchRegularExpression = False
+			.SetSearchAttributes( SrchAttributes() )
+			.SearchString	= sFindSignPunctuation
+			.ValueSearch	= False
+		End With
+	
+		&apos; Начать поиск с начала текстового объекта
+		&apos; ищем левый поисковый символ
+		Dim oEndCurs		As Object : oEndCurs		= oFootNote.getText().createTextCursor() &apos; окончание сноски
+		oEndCurs.gotoEnd( False )
+		Dim oSignPunctCurs	As Object : oSignPunctCurs	= oFootNote.getText().createTextCursor() &apos; для знака препинания
+		oSignPunctCurs.gotoStart( False )
+		
+		Do While Not oFootNote.Text.compareRegionEnds( oSignPunctCurs, oEndCurs ) &lt;= 0
+			vSignPunctFound = oDoc.findNext( oSignPunctCurs.getEnd(), vSignPunctSearch )
+		
+			If IsNull( vSignPunctFound )				Then Exit For
+			If IsNull( vSignPunctFound.FootNote )		Then Exit Do
+			If Not IsEmpty( vSignPunctFound.TextFrame )	Then Exit For
+			If Not IsEmpty( vSignPunctFound.TextTable )	Then Exit For
+
+			On Error GoTo ErrorHandler
+			
+			&apos; поиск и снятие курсива с знаков препинания
+			UnItalicSignPunctuationWorker( oFootNote, oSignPunctCurs, vSignPunctFound )
+		Loop
+ErrorHandler:
+	Next i
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива для знаков препинания таблиц
+Sub SignPunctuationTableWorker( sFindSignPunctuation As String )
+	Dim oDoc				As Object	: oDoc				= ThisComponent
+	Dim vSignPunctSearch	As Variant	: vSignPunctSearch	= oDoc.createSearchDescriptor()
+	Dim nTablesCount 		As Integer	: nTablesCount		= oDoc.getTextTables().getCount() 
+	Dim vSignPunctFound		As Variant
+	Dim i As Integer, j As Integer
+	
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+			
+	For i=0 To nTablesCount-1
+		&apos; Получить i-ю таблицу
+		Dim oTable	As Object : oTable = oDoc.getTextTables().getByIndex(i)
+		Dim CellNames : CellNames = oTable.getCellNames()
+		
+		For j=0 To UBound( CellNames() )
+			Dim oCell	As Object : oCell = oTable.getCellByName( CellNames(j) )
+			&apos; знак пунктуации с курсивом
+			With vSignPunctSearch
+				.SearchRegularExpression = False
+				.SetSearchAttributes( SrchAttributes() )
+				.SearchString	= sFindSignPunctuation
+				.ValueSearch	= False
+			End With
+	
+			&apos; Начать поиск с начала текстового объекта
+			&apos; ищем левый поисковый символ
+			Dim oEndCurs		As Object : oEndCurs		= oCell.getText().createTextCursor() &apos; окончание ячейки таблицы
+			oEndCurs.gotoEnd( False )
+			Dim oSignPunctCurs	As Object : oSignPunctCurs	= oCell.getText().createTextCursor() &apos; для левого символа
+			oSignPunctCurs.gotoStart( False )
+		
+			Do While Not oCell.Text.compareRegionEnds( oSignPunctCurs, oEndCurs ) &lt;= 0
+				vSignPunctFound = oDoc.findNext( oSignPunctCurs.getEnd(), vSignPunctSearch )
+		
+				If IsNull( vSignPunctFound )				Then Exit For
+				If IsEmpty( vSignPunctFound.TextTable )		Then Exit Do
+				If Not IsEmpty( vSignPunctFound.TextFrame )	Then Exit For
+				If Not IsEmpty( vSignPunctFound.FootNote )	Then Exit For
+			
+				On Error GoTo ErrorHandler
+				
+				&apos; поиск и снятие курсива с знаков препинания
+				UnItalicSignPunctuationWorker( oCell, oSignPunctCurs, vSignPunctFound )
+			Loop
+ErrorHandler:
+		Next j
+	Next i
+End Sub
+&apos;******************************************************************
+&apos; удаление курсива для знаков препинания текстовых врезок
+Sub SignPunctuationTextFrameWorker( sFindSignPunctuation As String )
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim vSignPunctSearch	As Variant	: vSignPunctSearch	= oDoc.createSearchDescriptor()
+	Dim nTextFramesCount	As Integer	: nTextFramesCount	= oDoc.getTextFrames().getCount() 
+	Dim vSignPunctFound		As Variant
+	Dim i As Integer
+	
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+		
+	For i=0 To nTextFramesCount-1
+		&apos; Получить i-ю таблицу
+		Dim oTextFrame As Object : oTextFrame = oDoc.getTextFrames().getByIndex(i)
+		&apos; знак пунктуации с курсивом
+		With vSignPunctSearch
+			.SearchRegularExpression = False
+			.SetSearchAttributes( SrchAttributes() )
+			.SearchString	= sFindSignPunctuation
+			.ValueSearch	= False
+		End With
+	
+		&apos; Начать поиск с начала текстового объекта
+		&apos; ищем левый поисковый символ
+		Dim oEndCurs		As Object : oEndCurs		= oTextFrame.getText().createTextCursor() &apos; окончание врезки
+		oEndCurs.gotoEnd( False )
+		Dim oSignPunctCurs	As Object : oSignPunctCurs	= oTextFrame.getText().createTextCursor() &apos; для левого символа
+		oSignPunctCurs.gotoStart( False )
+		
+		Do While Not oTextFrame.Text.compareRegionEnds( oSignPunctCurs, oEndCurs ) &lt;= 0
+			vSignPunctFound = oDoc.findNext( oSignPunctCurs.getEnd(), vSignPunctSearch )
+		
+			If IsNull( vSignPunctFound )				Then Exit For
+			If IsEmpty( vSignPunctFound.TextFrame )		Then Exit Do
+			If Not IsEmpty( vSignPunctFound.TextTable )	Then Exit For
+			If Not IsEmpty( vSignPunctFound.FootNote )	Then Exit For
+			
+			On Error GoTo ErrorHandler
+			
+			&apos; поиск и снятие курсива с знаков препинания
+			UnItalicSignPunctuationWorker( oTextFrame, oSignPunctCurs, vSignPunctFound )
+		Loop
+ErrorHandler:
+	Next i
+End Sub
+
+</script:module>
