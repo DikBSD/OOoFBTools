@@ -43,9 +43,9 @@ Sub OCRErrorFormatWorking()
 	
 	Iter = 1
 	Dim ProgressMaxIter As Integer : ProgressMaxIter = 0
-	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State		= 1 Then ProgressMaxIter = ProgressMaxIter + 4
-	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 4
-	If oOCREF.getControl( &quot;ChbSignPunct&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 4
+	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State		= 1 Then ProgressMaxIter = ProgressMaxIter + 1&apos;4
+	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1&apos;4
+	If oOCREF.getControl( &quot;ChbSignPunct&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1&apos;4
 	
 	If ProgressMaxIter = 0 Then
 		MsgBox sOCREF.sEndMessage, 64, sOCREF.sTitle
@@ -86,12 +86,13 @@ Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef o
 	For i=0 To UBound( aLeftList() )
 		SymbolTextWorker( aLeftList( i ), aRightList( i ) )
 		oProgressBar.setValue( Iter ) : Iter = Iter + 1
-		SymbolFootEndNoteWorker( aLeftList( i ), aRightList( i ) )
-		oProgressBar.setValue( Iter ) : Iter = Iter + 1
-		SymbolTableWorker( aLeftList( i ), aRightList( i ) )
-		oProgressBar.setValue( Iter ) : Iter = Iter + 1
-		SymbolTextFrameWorker( aLeftList( i ), aRightList( i ) )
-		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		&apos; TODO доделать проверку для таблиц, сносок и врезок на сравнение 2-х таблиц, 2-х врезок, 2-х сносок - вылетает ошибка.
+&apos;		SymbolFootEndNoteWorker( aLeftList( i ), aRightList( i ) )
+&apos;		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+&apos;		SymbolTableWorker( aLeftList( i ), aRightList( i ) )
+&apos;		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+&apos;		SymbolTextFrameWorker( aLeftList( i ), aRightList( i ) )
+&apos;		oProgressBar.setValue( Iter ) : Iter = Iter + 1
 	Next i
 End Sub
 &apos;******************************************************************
@@ -102,12 +103,13 @@ Sub TextNoteTableTextFrameSignPunctWorker( ByRef oProgressBar As Object )
 	For i=0 To UBound( aSignPunctList() )
 		SignPunctuationTextWorker( aSignPunctList( i ) )
 		oProgressBar.setValue( Iter ) : Iter = Iter + 1
-		SignPunctuationFootEndNoteWorker( aSignPunctList( i ) )
-		oProgressBar.setValue( Iter ) : Iter = Iter + 1
-		SignPunctuationTableWorker( aSignPunctList( i ) )
-		oProgressBar.setValue( Iter ) : Iter = Iter + 1
-		SignPunctuationTextFrameWorker( aSignPunctList( i ) )
-		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+		&apos; TODO доделать проверку для таблиц, сносок и врезок на сравнение 2-х таблиц, 2-х врезок, 2-х сносок - вылетает ошибка.
+&apos;		SignPunctuationFootEndNoteWorker( aSignPunctList( i ) )
+&apos;		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+&apos;		SignPunctuationTableWorker( aSignPunctList( i ) )
+&apos;		oProgressBar.setValue( Iter ) : Iter = Iter + 1
+&apos;		SignPunctuationTextFrameWorker( aSignPunctList( i ) )
+&apos;		oProgressBar.setValue( Iter ) : Iter = Iter + 1
 	Next i
 End Sub
 &apos;******************************************************************
@@ -174,7 +176,7 @@ Sub UnItalicBracketWorker( ByRef oObj As Object, ByRef oLSymCurs As Object, ByRe
 FindLSym:
 	Do While oRSymCurs.goRight(1, True) And ( Not oObj.Text.compareRegionEnds( oRSymCurs, oEndCurs ) &lt;= 0 )
 		If Right( oRSymCurs.getString(), 1 ) = sFindLeftSymbol Then
-			&apos; нашли еще один левый поисковый символ` ДО правого поискового символf
+			&apos; нашли еще один левый поисковый символ ДО правого поискового символ
 			oLSymCurs.gotoRange( oRSymCurs, False )
 			oLSymCurs.collapseToEnd()
 			GoTo FindLSym
@@ -217,11 +219,11 @@ Sub SymbolTextWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
 	Dim oRSymCurs	As Object : oRSymCurs = oDoc.getText().createTextCursor() &apos; для правого символа
 	
 	&apos; леввый поисковый символ
-&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-&apos;	SrchAttributes(0).Name = &quot;CharPosture&quot;
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name = &quot;CharPosture&quot;
 	With vLSymSearch
 		.SearchRegularExpression = False
-&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SetSearchAttributes( SrchAttributes() )
 		.SearchString = sFindLeftSymbol
 		.ValueSearch = False
 	End With
@@ -267,11 +269,11 @@ Sub SymbolFootEndNoteWorker( sFindLeftSymbol As String, sFindRightSymbol As Stri
 	Dim i As Integer
 
 	&apos; леввый поисковый символ
-&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-&apos;	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharPosture&quot;
 	With vLSymSearch
 		.SearchRegularExpression = False
-&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SetSearchAttributes( SrchAttributes() )
 		.SearchString	= sFindLeftSymbol
 		.ValueSearch	= False
 	End With
@@ -314,11 +316,11 @@ Sub SymbolTableWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
 	Dim i As Integer, j As Integer
 	
 	&apos; леввый поисковый символ
-&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-&apos;	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharPosture&quot;
 	With vLSymSearch
 		.SearchRegularExpression = False
-&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SetSearchAttributes( SrchAttributes() )
 		.SearchString	= sFindLeftSymbol
 		.ValueSearch	= False
 	End With
@@ -366,11 +368,11 @@ Sub SymbolTextFrameWorker( sFindLeftSymbol As String, sFindRightSymbol As String
 	Dim i As Integer
 	
 	&apos; леввый поисковый символ
-&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-&apos;	SrchAttributes(0).Name	= &quot;CharPosture&quot;
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharPosture&quot;
 	With vLSymSearch
 		.SearchRegularExpression = False
-&apos;		.SetSearchAttributes( SrchAttributes() )
+		.SetSearchAttributes( SrchAttributes() )
 		.SearchString	= sFindLeftSymbol
 		.ValueSearch	= False
 	End With
