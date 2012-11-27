@@ -1640,6 +1640,12 @@ Function ExtendViewCursorToStartEndParaOfSelections( ByRef oViewCursor As Object
 	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
 		If Not IsNull(oSels) Then
 			Dim oSel As Object : oSel = oSels.getByIndex(0)
+			If LCase(oSel.ParaConditionalStyleName) = LCase(&quot;Footnote&quot;) Or LCase(oSel.ParaConditionalStyleName) = LCase(&quot;Frame contents&quot;) Or LCase(oSel.ParaConditionalStyleName) = LCase(&quot;Table Contents&quot;) Then
+				IsTextSelected = False
+				ExtendViewCursorToStartEndParaOfSelections = False
+				Exit Function
+			End If
+			
 			If NOT IsMissing( IsTextSelected ) Then
 				If IsSelection( oSel ) Then
 					IsTextSelected = True

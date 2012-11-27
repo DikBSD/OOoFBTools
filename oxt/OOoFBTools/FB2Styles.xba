@@ -257,6 +257,8 @@ Sub setFB2StyleToSelectedText( Style As String, ClearBeforeFB2 As Integer, Clear
 	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
 		If Not IsNull( oSels ) Then
 			Dim TempBookMarkName As String : TempBookMarkName = &quot;__temp_view_cursor_for_clear_bold_italic__&quot;
+			&apos; удаляем временную закладку
+			_UnoDeleteBookMark( TempBookMarkName )
 			Dim SelCount As Integer : SelCount = oSels.getCount()
 			If SelCount &gt; 1 Then
 				&apos; для нескольких выделений текста
@@ -290,7 +292,7 @@ Sub SetStyleIfOneOrNoneSelect( ByRef oViewCursor As Object, ByRef TempBookMarkNa
 	&apos; задаем новый стиль, если Style не равна &quot;&quot;
 	If Style &lt;&gt; &quot;&quot; Then SetParaStyle( Style )
 	
-	If InStr( Style, GetLocalHeadingStyleName() ) Then
+	If InStr( Style, GetLocalHeadingStyleName() ) Or InStr( Style, GetLocaSubtitleStyleName() ) Then
 		&apos; только для Заголовков: убрать bold и/или italic для Заголовков, если включены соответствующие опции
 		If ClearBoldFromHeadings = 1 Then ClearBold()
 		If ClearItalicFromHeadings = 1 Then ClearItalic()
@@ -1445,6 +1447,8 @@ Sub Strikethrought()
 End Sub
 
 Sub Code()
+	ClearBold()
+	ClearItalic()
 	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
 	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(1) As New com.sun.star.beans.PropertyValue

@@ -1628,6 +1628,18 @@ Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	End With
 	oDoc.replaceAll(oReplace)
 
+	&apos; Обработка Римских цифр и слов перед/после них/ними.
+	With oReplace
+		.SearchString = &quot;([XIVL])\x20+([A-Za-zА-Яа-я]+)&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;([A-Za-zА-Яа-я]+)\x20+([XIVL])&quot;
+		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	
 	&apos; Теперь восстанавливаем значение учета регистра при поиске и замене
 	oReplace.SearchCaseSensitive=bReplCase
 End Sub
