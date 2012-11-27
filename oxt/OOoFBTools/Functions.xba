@@ -1640,7 +1640,7 @@ Function ExtendViewCursorToStartEndParaOfSelections( ByRef oViewCursor As Object
 	If oSels.ImplementationName = &quot;SwXTextRanges&quot; Then
 		If Not IsNull(oSels) Then
 			Dim oSel As Object : oSel = oSels.getByIndex(0)
-			If IsEmpty( oSel.Footnote ) Or IsEmpty( oSel.Endnote ) Or Not IsEmpty( oSel.TextFrame ) Or Not IsEmpty( oSel.TextTable ) Then
+			If LCase( oSel.ParaStylename ) = &quot;footnote&quot; Or LCase( oSel.ParaStylename ) = &quot;endnote&quot; Or Not IsEmpty( oSel.TextFrame ) Or Not IsEmpty( oSel.TextTable ) Then
 				IsTextSelected = False
 				ExtendViewCursorToStartEndParaOfSelections = False
 				Exit Function
