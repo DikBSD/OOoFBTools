@@ -5,8 +5,8 @@ Option Explicit
 
 Const sConstCorrector As String = &quot;corrector.txt&quot; &apos; файл настроек Корректора Текста
 
-Private oDoc As Object
-Private oReplace As Object
+Private oDoc		As Object
+Private oReplace	As Object
 
 Public oTextCorrectorDlg As Object
 
@@ -23,17 +23,16 @@ Private bDefisWordDelOnlyPara		As Boolean
 Private bDefisWordDeAll				As Boolean
 
 Private bWorkEmptyPar				As Boolean
-Private bDelEmptyPar				As Boolean
 
-Private bDelMP As Boolean &apos; удаление мягкие переносы
-Private bWordDefisPara As Boolean
+Private bDelMP			As Boolean &apos; удаление мягкие переносы
+Private bWordDefisPara	As Boolean
 
 Private bDelPB As Boolean &apos; Удаление разрывов страниц
 
-Private bBreakLine As Boolean
-Private bDel As Boolean
-Private bPar As Boolean
-Private bSpace As Boolean
+Private bBreakLine	As Boolean
+Private bDel 		As Boolean
+Private bPar		As Boolean
+Private bSpace		As Boolean
 
 Private b2HyphenToDash				As Boolean
 Private bHyphenToDashBetweenWords	As Boolean
@@ -72,7 +71,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 425
+		.Height = 396
 		.Width  = 392
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -126,7 +125,6 @@ Sub SaveCorrectorSettings()
 		bRemoveSpaceBeforePunct		= .GetControl(&quot;cboxRemoveSpaceBeforePunct&quot;).State
 		
 		bWorkEmptyPar	= .GetControl(&quot;cboxWorkEmptyPar&quot;).State
-		bDelEmptyPar	= .GetControl(&quot;obDelEmptyPar&quot;).State
 	
 		bBreakLine		= .GetControl(&quot;cboxBreakLine&quot;).State
 		bDel			= .GetControl(&quot;obtnDel&quot;).State
@@ -185,7 +183,6 @@ Sub ControlsEnabled()
 	cboxImagesEnabled()
 	cboxBreakLineEnabled()
 	cboxDelSpaceEnabled()
-	cboxWorkEmptyParEnabled()
 End Sub
 
 Sub cboxWordDefisParaEnabled()
@@ -254,18 +251,6 @@ Sub cboxDefisPartEnabled()
 	End With
 End Sub
 
-Sub cboxWorkEmptyParEnabled()
-	With oTextCorrectorDlg
-		If .GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1 Then
-			.GetControl(&quot;obDelEmptyPar&quot;).Enable						= True
-			.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).Enable	= True
-		Else
-			.GetControl(&quot;obDelEmptyPar&quot;).Enable						= False
-			.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).Enable	= False
-		End If
-	End With
-End Sub
-
 &apos; ////////////////////////////////////// Задание профиля книг (вид литературы) ////////////////
 &apos; Установка настроек по умолчанию в контролы
 Sub SetCorrectorSettingDefault()
@@ -299,8 +284,6 @@ Sub SetCorrectorSettingDefault()
 
 		&apos; Работа с абзацами и разрывами	
 		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -362,9 +345,7 @@ Sub SetDocumentType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -427,8 +408,6 @@ Sub SetFictionType()
 
 		&apos; Работа с абзацами и разрывами	
 		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 1		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 0	&apos; Заменить множественные абзацы одним ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -491,8 +470,6 @@ Sub SetPublicismType()
 
 		&apos; Работа с абзацами и разрывами	
 		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -554,9 +531,7 @@ Sub SetScientificType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -618,9 +593,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -682,9 +655,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -746,9 +717,7 @@ Sub SetReligionType()
 		.GetControl(&quot;obtnDefisWordDeAll&quot;).State = 0			&apos; Удаление и разрыва переноса(-) и абзаца(¶) и строки(BR)
 
 		&apos; Работа с абзацами и разрывами	
-		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 1	&apos; Обработать пустые абзацы ¶
-		.GetControl(&quot;obDelEmptyPar&quot;).State = 0		&apos; Удалить все пустые абзацы ¶
-		.GetControl(&quot;obReplacePluarEmptyParToOnePar&quot;).State = 1	&apos; Заменить множественные абзацы одним ¶
+		.GetControl(&quot;cboxWorkEmptyPar&quot;).State = 0	&apos; Обработать пустые абзацы ¶
 		.GetControl(&quot;cboxBreakLine&quot;).State = 1		&apos; Разрыв строки:
 		.GetControl(&quot;obtnDel&quot;).State = 0			&apos; Удалить
 		.GetControl(&quot;obtnPar&quot;).State = 1			&apos; Заменить на абзац (¶)
@@ -871,7 +840,7 @@ Sub TextCorrectorDlgOk()
 	End If
 
 	Dim nCur As Integer : nCur = 0
-	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 15 )
+	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 28 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
@@ -998,11 +967,10 @@ Sub TextCorrectorDlgOk()
 			DeleteMPer( oDoc, oReplace )
 		End If
 		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
-		oProgressBar.start( sTCD.sTextCorrecting, 100 )
-		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, nCur )
 	End If
 
-	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 13 )
+&apos;	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 13 )
 	&apos; Разрывы строк
 	If bBreakLine = True Then
 		BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
@@ -1018,23 +986,12 @@ Sub TextCorrectorDlgOk()
 			.ReplaceString = &quot;&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
-		If bDelEmptyPar = True Then
-			&apos; Удаляем все пустые абзацы
-			If oDoc.getTextTables().getCount() = 0 Then
-				&apos; TODO
-				&apos; Если в таблице есть пустой абзац, то при его удалении OpenOffice и LibreOffice &quot;зависают&quot; намертво - баг офиса.
-				&apos; Если в тексте есть хоть одна Таблица, то не обрабатываем абзацы.
-				DelEmptyPar( oDoc, oReplace )
-			End If
-		Else
-			&apos; Заменяем множественные пустые абзацы одним ¶
-			If oDoc.getTextTables().getCount() = 0 And oDoc.getTextFrames().getCount() = 0 Then
-				&apos; TODO
-				&apos; Из-за несовершенства алгоритма, если в тексте есть Таблица или Текстовая Врезка, то в некоторых случаях они могу удалиться.
-				&apos; Поэтому поставлена защита - если в тексте есть Таблица или Текстовая Врезка, то обработка не происходит.
-				&apos; Со временем надеюь переписать алгоритм заново без этих ограничений.
-				ReplacePluarEmptyParToOnePar( oDoc, oReplace )
-			End If
+		&apos; Удаляем все пустые абзацы
+		If oDoc.getTextTables().getCount() = 0 Then
+			&apos; TODO
+			&apos; Если в таблице есть пустой абзац, то при его удалении OpenOffice и LibreOffice &quot;зависают&quot; намертво - баг офиса.
+			&apos; Если в тексте есть хоть одна Таблица, то не обрабатываем абзацы.
+			DelEmptyPar( oDoc, oReplace )
 		End If
 	End If
 	oProgressBar.setValue(nCur)
@@ -1159,123 +1116,6 @@ Sub DelEmptyPar( oDoc, oReplace )
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-End Sub
-
-&apos; Заменить множественные абзацы одним ¶
-Sub ReplacePluarEmptyParToOnePar( oDoc, oReplace )
-	Dim vSearch		As Variant	: vSearch = oDoc.createSearchDescriptor()
-	Dim oStartCurs	As Object &apos; для указания на 1-й пустой абзац в группе пустых абзацев
-	Dim oEndCurs	As Object &apos; окончание документа
-	Dim oCurCurs	As Object &apos; для перебора абзацев
-	Dim sCurCurs	As String &apos; для просмотра строки
-	
-	&apos; задаем курсоры
-	oStartCurs = oDoc.getText().createTextCursor()
-	oStartCurs.gotoStart( False )
-	oEndCurs = oDoc.getText().createTextCursor()
-	oEndCurs.gotoEnd( False )
-	oCurCurs = oDoc.getText().createTextCursor()
-	oCurCurs.gotoStart( False )
-
-	With vSearch
-		.SearchRegularExpression = True
-		.SearchString = &quot;^$&quot;
-	End With
-	
-	&apos; ищем 1-й пустой абзац
-	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
-	If IsNull( vFound ) Then Exit Sub
-	&apos; Таблицы, Врезки и сноски не обрабатываем
-	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
-		If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
-					Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable ) Then
-			vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-			If IsNull( vFound ) Then Exit Sub
-		Else
-			Exit Do
-		End If
-	Loop
-	oStartCurs.gotoRange( vFound, False )
-	oCurCurs.gotoRange( vFound, False )
-	
-	Dim b As Boolean : b = False
-	Dim nCount As Integer : nCount = 0
-	&apos;продолжаем поиск
-	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
-		Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
-			&apos; идем на абзац вниз - это пустой абзац?
-			If Not oCurCurs.gotoNextParagraph( True ) Then Exit Do &apos; конец документа
-			sCurCurs = oCurCurs.getString()
-			If Asc(Right(sCurCurs,3)) = 10 Then &apos; нашли пустой абзац
-				nCount = nCount + 1
-				b = False
-			Else
-				b = True : Exit Do
-			End If
-		Loop
-		
-		If b = True And nCount &gt; 1 Then
-			oStartCurs.gotoRange( oCurCurs.getEnd(), True )
-			oStartCurs.gotoPreviousParagraph( True )
-			oStartCurs.gotoPreviousParagraph( True )
-			oStartCurs.gotoStartOfParagraph( True )
-			&apos; удаляем пустые абзацы
-			oStartCurs.setString(&quot;&quot;)
-			&apos; заново определяем конец документа
-			oEndCurs = oDoc.getText().createTextCursor()
-			oEndCurs.gotoEnd( False )
-		End If
-
-		&apos; ищем далее
-		nCount = 0
-		If IsNull( vFound ) Then Exit Do
-		vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-		If IsNull( vFound ) Then Exit Do
-		&apos; Таблицы, Врезки и сноски не обрабатываем
-		Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
-			If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
-						Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable ) Then
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-				If IsNull( vFound ) Then Exit Do
-			Else
-				Exit Do
-			End If
-		Loop
-		If Not IsNull( vFound ) Then
-			oCurCurs.gotoRange( vFound, False )
-			oStartCurs.gotoRange( vFound, False )
-		End If
-	Loop
-	
-	&apos; убираем множесмтвенные абзацы в самом конце документа
-	oCurCurs.gotoRange( oEndCurs, False )
-	oStartCurs.gotoRange( oEndCurs, False )
-	nCount = 0
-	Dim sEOF As String
-	Do While True
-		&apos; идем вверх по абзацам до ближайшего текста
-		If Not oCurCurs.gotoPreviousParagraph( True ) Then Exit Do &apos; достигли начало документа
-		sCurCurs = oCurCurs.getString()
-		&apos; что за система: 0 - Windows, 1 - Mac OS X, 2 - Linux, FreeBSD и т.д.
-		If GetOS() = 0 Then &apos; для Windows-системы
-			sEOF = 13
-		Else &apos; для Mac OS X - системы и Unix-систем
-			sEOF = 10
-		End If
-		If Asc(sCurCurs) = sEOF Then &apos; нашли пустой абзац
-			nCount = nCount + 1
-			b = False
-		Else
-			b = True : Exit Do
-		End If
-	Loop
-	
-	If b = True And nCount &gt; 1 Then
-		oStartCurs.gotoRange( oCurCurs, False )
-		oStartCurs.gotoNextParagraph( True )
-		&apos; удаляем пустые абзацы
-		oStartCurs.setString(&quot;&quot;)
-	End If
 End Sub
 
 &apos;  /////////////////////////////////// Минус, Тире и Дефис ///////////////////////////////
@@ -1892,14 +1732,20 @@ End Sub
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов
 &apos; в тексте, таблицах, сносках и врезках)
-Sub JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+Sub JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, ByRef nCur )
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте
 	JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в таблице
 	JoinWordDefisParaInTables( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов)
 	&apos; в сноская (Footnote и Endnote) и в текстовых врезках
 	JoinWordDefisParaInFENotesAndTextFrames( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar )
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
 End Sub
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////
