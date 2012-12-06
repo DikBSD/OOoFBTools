@@ -56,6 +56,20 @@ Function GetRegStringForLeft( oLB As Object ) As String
 			GetRegStringForLeft = &quot;/&quot;
 		Case 5 &apos; ... текст \x\
 			GetRegStringForLeft = &quot;\\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetRegStringForLeft = &quot;\(\(&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetRegStringForLeft = &quot;\(\(\(&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetRegStringForLeft = &quot;\{\{&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetRegStringForLeft = &quot;\{\{\{&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetRegStringForLeft = &quot;\[\[&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetRegStringForLeft = &quot;\[\[\[&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetRegStringForLeft = &quot;\{\(&quot;
 		Case Else
 			GetRegStringForLeft = &quot;\(&quot;
 	End Select
@@ -76,6 +90,20 @@ Function GetRegStringForRight( oLB As Object ) As String
 			GetRegStringForRight = &quot;/&quot;
 		Case 5 &apos; ... текст \x\
 			GetRegStringForRight = &quot;\\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetRegStringForRight = &quot;\)\)&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetRegStringForRight = &quot;\)\)\)&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetRegStringForRight = &quot;\}\}&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetRegStringForRight = &quot;\}\}\}&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetRegStringForRight = &quot;\]\]&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetRegStringForRight = &quot;\]\]\]&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetRegStringForRight = &quot;\)\}&quot;
 		Case Else
 			GetRegStringForRight = &quot;\)&quot;
 	End Select
@@ -162,7 +190,19 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 						oViewCursor.gotoRange( vFound, False )
 						&apos; ставим закладку - по ней потом найдем этот текст сноски
 						_UnoInsertBookmark( sConstBookMarkSimple )
-						MakeFN( oDoc, vFound, oViewCursor, oBookMarks )
+						
+						Dim symNumber As Integer
+						If Len(sLeft) = 2 Then
+							symNumber = 1
+						ElseIf Len(sLeft) = 4 Then
+							symNumber = 2
+						ElseIf Len(sLeft) = 6 Then
+							symNumber = 3
+						Else
+							symNumber = 1
+						End If
+						
+						MakeFN( oDoc, vFound, oViewCursor, oBookMarks, symNumber )
 						BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1
 					Else Exit Function
 					End if
@@ -176,7 +216,7 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 End Function
 
 &apos; генерация сноски
-Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks As Object )
+Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks As Object, symNumber As Integer )
 	&apos; расширяем выделение курсора до конца найденного
 	oViewCursor.gotoRange(vFound.getEnd(), True)
 	&apos; удаляем и вставляем закладку на место найденного текста сноски
@@ -188,9 +228,9 @@ Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks
 	&apos; курсор - на начала закладки (текста сноски)
 	With oViewCursor
 		.gotoRange(b.getStart(), False)
-		.goRight( 1, False )
+		.goRight( symNumber, False )
 		.gotoRange( vFound.getEnd(), True )
-		.goLeft( 1, True )
+		.goLeft( symNumber, True )
 	End With
 	&apos; вырезать выделенный текст сноски в буфер
 	_UnoCut()
@@ -722,18 +762,32 @@ Function GetRegStringNFNInText() As String
 	Dim oLB As Object : oLB = oBuildFootEndNoteDlg.getControl( &quot;lblNFNInTextTemplate&quot; )
 	Select Case oLB.SelectedItemPos
 		Case 0 &apos; ... текст (x)
-			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot;&apos;&quot;\([:digit:]+\)&quot;
+			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot; &apos;&quot;\([:digit:]+\)&quot;
 		Case 1 &apos; ... текст [x]
-			GetRegStringNFNInText = &quot;\[[:digit:]+\]|\[ +[:digit:]+\]|\[[:digit:]+ +\]|\[ +[:digit:]+ +\]&quot;&apos;&quot;\[[:digit:]+\]&quot;
+			GetRegStringNFNInText = &quot;\[[:digit:]+\]|\[ +[:digit:]+\]|\[[:digit:]+ +\]|\[ +[:digit:]+ +\]&quot; &apos;&quot;\[[:digit:]+\]&quot;
 		Case 2 &apos; ... текст {x}
-			GetRegStringNFNInText = &quot;\{[:digit:]+\}|\{ +[:digit:]+\}|\{[:digit:]+ +\}|\{ +[:digit:]+ +\}&quot;&apos;&quot;\{[:digit:]+\}&quot;
+			GetRegStringNFNInText = &quot;\{[:digit:]+\}|\{ +[:digit:]+\}|\{[:digit:]+ +\}|\{ +[:digit:]+ +\}&quot; &apos;&quot;\{[:digit:]+\}&quot;
 		Case 3 &apos; ... текст &lt;x&gt;
-			GetRegStringNFNInText = &quot;&lt;[:digit:]+&gt;|&lt; +[:digit:]+&gt;|&lt;[:digit:]+ +&gt;|&lt; +[:digit:]+ +&gt;&quot;&apos;&quot;&lt;[:digit:]+&gt;&quot;
+			GetRegStringNFNInText = &quot;&lt;[:digit:]+&gt;|&lt; +[:digit:]+&gt;|&lt;[:digit:]+ +&gt;|&lt; +[:digit:]+ +&gt;&quot; &apos;&quot;&lt;[:digit:]+&gt;&quot;
 		Case 4 &apos; ... текст /x/
-			GetRegStringNFNInText = &quot;/[:digit:]+/|/ +[:digit:]+/|/[:digit:]+ +/|/ +[:digit:]+ +/&quot;&apos;&quot;/[:digit:]+/&quot;
+			GetRegStringNFNInText = &quot;/[:digit:]+/|/ +[:digit:]+/|/[:digit:]+ +/|/ +[:digit:]+ +/&quot; &apos;&quot;/[:digit:]+/&quot;
 		Case 5 &apos; ... текст \x\
-			GetRegStringNFNInText = &quot;\\[:digit:]+\\|\\ +[:digit:]+\\|\\[:digit:]+ +\\|\\ +[:digit:]+ +\\&quot;&apos;&quot;\\[:digit:]+\\&quot;
-		Case 6 &apos; &quot;... цифры в верхнем индексе ...&quot;
+			GetRegStringNFNInText = &quot;\\[:digit:]+\\|\\ +[:digit:]+\\|\\[:digit:]+ +\\|\\ +[:digit:]+ +\\&quot; &apos;&quot;\\[:digit:]+\\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetRegStringNFNInText = &quot;\(\([:digit:]+\)\)|\(\( +[:digit:]+\)\)|\(\([:digit:]+ +\)\)|\(\( +[:digit:]+ +\)\)&quot; &apos;&quot;\(\([:digit:]+\)\)&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetRegStringNFNInText = &quot;\(\(\([:digit:]+\)\)\)|\(\(\( +[:digit:]+\)\)\)|\(\(\([:digit:]+ +\)\)\)|\(\(\( +[:digit:]+ +\)\)\)&quot; &apos;&quot;\(\(\([:digit:]+\)\)\)&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetRegStringNFNInText = &quot;\{\{[:digit:]+\}\}|\{\{ +[:digit:]+\}\}|\{\{[:digit:]+ +\}\}|\{\{ +[:digit:]+ +\}\}&quot; &apos;&quot;\{\{[:digit:]+\}\}&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetRegStringNFNInText = &quot;\{\{\{[:digit:]+\}\}\}|\{\{\{ +[:digit:]+\}\}\}|\{\{\{[:digit:]+ +\}\}\}|\{\{\{ +[:digit:]+ +\}\}\}&quot; &apos;&quot;\{\{\{[:digit:]+\}\}\}&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetRegStringNFNInText = &quot;\[\[[:digit:]+\]\]|\[\[ +[:digit:]+\]\]|\[\[[:digit:]+ +\]\]|\[\[ +[:digit:]+ +\]\]&quot; &apos;&quot;\[\[[:digit:]+\]\]&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetRegStringNFNInText = &quot;\[\[\[[:digit:]+\]\]\]|\[\[\[ +[:digit:]+\]\]\]|\[\[\[[:digit:]+ +\]\]\]|\[\[\[ +[:digit:]+ +\]\]\]&quot; &apos;&quot;\[\[\[[:digit:]+\]\]\]&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetRegStringNFNInText = &quot;\{\([:digit:]+\)\}|\{\( +[:digit:]+\)\}|\{\([:digit:]+ +\)\}|\{\( +[:digit:]+ +\)\}&quot; &apos;&quot;\{\([:digit:]+\)\}&quot;
+		Case 13 &apos; &quot;... цифры в верхнем индексе ...&quot;
 			GetRegStringNFNInText = &quot;NumbersUpIndex&quot;
 		Case Else
 			GetRegStringNFNInText = &quot;\([:digit:]+\)|\( +[:digit:]+\)|\([:digit:]+ +\)|\( +[:digit:]+ +\)&quot;&apos;&quot;\([:digit:]+\)&quot;
@@ -870,6 +924,7 @@ Sub StartBuildFootEndNoteDlg()
 	&apos; инициализация диалога генерации сносок в зависимости от локали
 	InitBuildFootEndNoteDlg()
 		
+	&apos; для простой генерации сносок
 	Dim aNFNInTextList() As String
 	aNFNInTextList() = Array(	&quot;... &quot; &amp; sBTEND.sText &amp; &quot; (x) ...&quot;, _
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [x] ...&quot;, _
@@ -877,7 +932,23 @@ Sub StartBuildFootEndNoteDlg()
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; &lt;x&gt; ...&quot;, _
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; /x/ ...&quot;, _
 								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;,	_
-								&quot;... &quot; &amp; sBTEND.sNumberInUpIndex &amp; &quot; ...&quot;	)
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; ((x)) ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; (((x))) ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {{x}} ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {{{x}}} ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [[x]] ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [[[x]]] ...&quot;,	_
+								&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {(x)} ...&quot;	)
+	
+	&apos; для сложной генерации сносок
+	Dim aNFNInTextListComplex( UBound( aNFNInTextList() )+1 ) As String
+	Dim i As Integer : i = 0
+	For i=0 To UBound( aNFNInTextList() )
+		aNFNInTextListComplex(i) = aNFNInTextList(i)
+	Next
+	aNFNInTextListComplex( UBound( aNFNInTextList() )+1 ) = &quot;... &quot; &amp; sBTEND.sNumberInUpIndex &amp; &quot; ...&quot;
+	
+	&apos; для сложной генерации сносок
 	Dim aNFNInListList() As String
 	aNFNInListList() = Array(	&quot;x &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
 								&quot;x. &quot; &amp; sBTEND.sSText &amp; &quot; ...&quot;, _
@@ -899,7 +970,7 @@ Sub StartBuildFootEndNoteDlg()
 	
 	With oBuildFootEndNoteDlg.Model
 		.lblNSimpleFNInTextTemplate.StringItemList	= aNFNInTextList()
-		.lblNFNInTextTemplate.StringItemList 		= aNFNInTextList()
+		.lblNFNInTextTemplate.StringItemList 		= aNFNInTextListComplex()
 		.lblNFNInListTemplate.StringItemList		= aNFNInListList()
 		.Height	= 235
 		.Width	= 300
@@ -1087,7 +1158,14 @@ Sub StartFootNoteLinkTransDlg()
 					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {x} ...&quot;, _
 					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; &lt;x&gt; ...&quot;, _
 					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; /x/ ...&quot;, _
-					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;)
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; \x\ ...&quot;, _
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; ((x)) ...&quot;,	_
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; (((x))) ...&quot;,	_
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {{x}} ...&quot;,	_
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {{{x}}} ...&quot;,	_
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [[x]] ...&quot;,	_
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; [[[x]]] ...&quot;,	_
+					&quot;... &quot; &amp; sBTEND.sText &amp; &quot; {(x)} ...&quot; )
 
 	With oFootNoteLinkTransDlg.Model
 		.lboxFNLTrans.StringItemList = aList()
@@ -1242,6 +1320,20 @@ Function GetStringLeft( oLB As Object ) As String
 			GetStringLeft = &quot;/&quot;
 		Case 5 &apos; ... текст \x\
 			GetStringLeft = &quot;\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetStringLeft = &quot;((&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetStringLeft = &quot;(((&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetStringLeft = &quot;{{&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetStringLeft = &quot;{{{&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetStringLeft = &quot;[[&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetStringLeft = &quot;[[[&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetStringLeft = &quot;{(&quot;
 		Case Else
 			GetStringLeft = &quot;(&quot;
 	End Select
@@ -1262,6 +1354,20 @@ Function GetStringRight( oLB As Object ) As String
 			GetStringRight = &quot;/&quot;
 		Case 5 &apos; ... текст \x\
 			GetStringRight = &quot;\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetStringRight = &quot;))&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetStringRight = &quot;)))&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetStringRight = &quot;}}&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetStringRight = &quot;}}}&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetStringRight = &quot;]]&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetStringRight = &quot;]]]&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetStringRight = &quot;)}&quot;
 		Case Else
 			GetStringRight = &quot;)&quot;
 	End Select
