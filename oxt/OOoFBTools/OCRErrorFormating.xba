@@ -120,7 +120,7 @@ Function FindEndWordLetterBeforeLeftSymbol( ByRef oLSymCurs As Object ) As Boole
 	Do While oLSymCurs.goLeft(1, True)
 		s = Left( oLSymCurs.getString(), 1 )
 		If s &lt;&gt; &quot;&quot; And s &lt;&gt; Chr(32) And s &lt;&gt; Chr(9) Then
-			If IsLetter( s ) Then &apos; нашли последний символ слова левее левой скобкиEnd
+			If IsLetter( s ) OR IsNumber( s ) Then &apos; нашли последний символ слова левее левой скобкиEnd
 				FindEndWordLetterBeforeLeftSymbol = True
 				Exit Function
 			End If
@@ -135,7 +135,7 @@ Function FindFirstWordLetterAfterRightSymbol( ByRef oRSymCurs As Object ) As Boo
 	Do While oRSymCurs.goRight(1, True)
 		s = Right( oRSymCurs.getString(), 1 )
 		If s &lt;&gt; &quot;&quot; And s &lt;&gt; Chr(32) And s &lt;&gt; Chr(9) Then
-			If IsLetter( s ) Then &apos; нашли 1-й символ после правой скобки
+			If IsLetter( s ) OR IsNumber( s ) Then &apos; нашли 1-й символ после правой скобки
 				FindFirstWordLetterAfterRightSymbol = True
 				Exit Function
 			End If
@@ -157,8 +157,22 @@ Function UnItalic( ByRef oObj As Object, ByRef oLSymCurs As Object, ByRef oRSymC
 	oCurs.collapseToEnd() : oCurs.goLeft(1, True)
 	If oCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsRItalic = True
 	If Not IsLItalic And Not IsRItalic Then
-		&apos; убираем курсив
+		&apos; Если левый символ и правый символ от скобок – оба без курсива, то с обоих скобок (кавычек) снимаем курсив.
 		oLSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		oRSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		UnItalic = True
+	ElseIf IsLItalic And IsRItalic Then
+		&apos; Если левый символ и правый символ от скобок – оба с  курсивом, то на обои скобки (кавычки) ставим курсив.
+		oLSymCurs.collapseToEnd() : oLSymCurs.goLeft(1, True)
+		oLSymCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+		oRSymCurs.collapseToStart() : oRSymCurs.goRight(1, True)
+		oRSymCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+		UnItalic = True
+	Else
+		&apos; Если или левый символ, или правый символ от скобок – курсивом, а второй - без, то с обоих скобок (кавычек) снимаем курсив.
+		oLSymCurs.collapseToEnd() : oLSymCurs.goLeft(1, True)
+		oLSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		oRSymCurs.collapseToStart() : oRSymCurs.goRight(1, True)
 		oRSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
 		UnItalic = True
 	End If
@@ -223,7 +237,7 @@ Sub SymbolTextWorker( sFindLeftSymbol As String, sFindRightSymbol As String )
 	SrchAttributes(0).Name = &quot;CharPosture&quot;
 	With vLSymSearch
 		.SearchRegularExpression = False
-		.SetSearchAttributes( SrchAttributes() )
+&apos;		.SetSearchAttributes( SrchAttributes() )
 		.SearchString = sFindLeftSymbol
 		.ValueSearch = False
 	End With
