@@ -42,7 +42,7 @@ Sub OCRErrorFormatWorking()
 	SaveSettings( getOOoFBToolsSettingsDir() &amp; sOCREFSettings, oOCREF )
 	
 	Iter = 1
-	Dim ProgressMaxIter As Integer : ProgressMaxIter = 0
+	Dim ProgressMaxIter As Integer : ProgressMaxIter = 1
 	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State		= 1 Then ProgressMaxIter = ProgressMaxIter + 1&apos;4
 	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1&apos;4
 	If oOCREF.getControl( &quot;ChbSignPunct&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1&apos;4
@@ -83,6 +83,7 @@ End Sub
 &apos; обработка текста, таблиц, сносок и текстовых врезок на снятие курсива с заданных символов (ошибки OCR форматирования)
 Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef oProgressBar As Object )
 	Dim i As Integer
+	oProgressBar.setValue( Iter ) : Iter = Iter + 1
 	For i=0 To UBound( aLeftList() )
 		SymbolTextWorker( aLeftList( i ), aRightList( i ) )
 		oProgressBar.setValue( Iter ) : Iter = Iter + 1
@@ -100,6 +101,7 @@ End Sub
 Sub TextNoteTableTextFrameSignPunctWorker( ByRef oProgressBar As Object )
 	Dim aSignPunctList() As String : aSignPunctList() = Array( &quot;,&quot;, &quot;.&quot;, &quot;:&quot;, &quot;;&quot;, &quot;!&quot;, &quot;?&quot; )
 	Dim i As Integer
+	oProgressBar.setValue( Iter ) : Iter = Iter + 1
 	For i=0 To UBound( aSignPunctList() )
 		SignPunctuationTextWorker( aSignPunctList( i ) )
 		oProgressBar.setValue( Iter ) : Iter = Iter + 1
@@ -172,7 +174,7 @@ Function UnItalic( ByRef oObj As Object, ByRef oLSymCurs As Object, ByRef oRSymC
 		&apos; Если или левый символ, или правый символ от скобок – курсивом, а второй - без, то с обоих скобок (кавычек) снимаем курсив.
 		oLSymCurs.collapseToEnd() : oLSymCurs.goLeft(1, True)
 		oLSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
-		oRSymCurs.collapseToStart() : oRSymCurs.goRight(1, True)
+		oRSymCurs.goLeft(1, True)
 		oRSymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
 		UnItalic = True
 	End If
