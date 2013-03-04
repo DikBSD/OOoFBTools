@@ -74,7 +74,6 @@ Sub Numbering()
 End Sub
 
 Sub SelectedTextParser()
-	On Local Error GoTo PrintErrMessage
 	Dim l As Long : l = GetSelectionCount()
 	If l =-1 Then &apos; только для выделений Текста!
 		MsgBox sND.sNotSelectedText, 64, sND.sTitle
@@ -90,20 +89,17 @@ Sub SelectedTextParser()
 	Next i
 	
 	MsgBox sND.sEndMessage, 64, sND.sTitle
-	Exit Sub
-PrintErrMessage:
-	MsgBox sND.sNotTableFrameFN + chr(10) + sND.sSelectText, 64, sND.sTitle
 End Sub
 
-Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
+Sub NumberingSelectedPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef oRCurs As Object )
 
 	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
-	&apos; Таблицы, Врезки и сноски не обрабатываем
-	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
-				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable )Then
-		Exit Sub
-	End If
-	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursor()
+	oCursorL.gotoRange( oLCurs, False )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursor()
+	oCursorR.gotoRange( oRCurs, False )
+	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
 
 	If oRN.GetControl( &quot;chBoxThroughNumbering&quot; ).State = 0 Then
 		&apos; сквозная нумерация всех выделенных абзацев
@@ -113,11 +109,11 @@ Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
 	Dim oPar		As Object &apos;Перебираемый параграф
 	Dim oViewCursor	As Object
 	
-	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
-		oPar = oLCurs.createEnumeration().nextElement()
-		If oLCurs.NumberingIsNumber = True Then
+	Do While oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0
+		oPar = oCursorL.createEnumeration().nextElement()
+		If oCursorL.NumberingIsNumber = True Then
 			&apos; убираем нумерацию списка для этого абзаца
-			oLCurs.NumberingIsNumber = False
+			oCursorL.NumberingIsNumber = False
 		End If	
 		&apos; задаем &quot;сквозную&quot; нумерацию
 		oPar.NumberingStyleName = &quot;&quot;
@@ -125,8 +121,8 @@ Sub NumberingSelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
 		oViewCursor.gotoRange(oPar, False)
 		oViewCursor.collapseToStart()
 		_UnoInsertText( sLeft &amp; LTrim( Str( nIndex ) ) &amp; sRight )
-		oLCurs.gotoEndOfParagraph(False)
-		oLCurs.gotoNextParagraph(False)
+		oCursorL.gotoEndOfParagraph(False)
+		oCursorL.gotoNextParagraph(False)
 		nIndex = nIndex+1
 	Loop
 End Sub

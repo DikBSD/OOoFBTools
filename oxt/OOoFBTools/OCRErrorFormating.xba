@@ -116,16 +116,14 @@ Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef o
 		vLSymSearch.SearchString = aLeftList( i )
 		&apos; ищем левый поисковый символ
 		vLSymFound = oDoc.FindFirst( vLSymSearch )
-		If IsNull(vLSymFound) Then 
-			Exit For
-		Else
+		If Not IsNull(vLSymFound) Then 
 			Do
 				&apos; поиск и снятие курсива со скобок
 				UnItalicBracketWorker( vLSymFound, aLeftList( i ), aRightList( i ) )
 				&apos; Искать следущий элемент
 				vLSymFound = oDoc.FindNext( vLSymFound.End, vLSymSearch )
 			Loop Until IsNull( vLSymFound ) &apos; выполняем хотя бы раз пока vLSymFound имеет какое-нибудь значение (не пусто)
-		EndIf
+		End If
 		
 		oProgressBar.setValue( Iter ) : Iter = Iter + 1
 	Next i
@@ -135,13 +133,11 @@ End Sub
 &apos; поиск и снятие курсива со скобок/кавычек
 Sub UnItalicBracketWorker( ByRef vLSymFound As Variant, sFindLeftSymbol As String, sFindRightSymbol As String )
 	&apos; нашли левый поисковый символ
-	Dim oLSymCurs	As Object : oLSymCurs	= vLSymFound.getText().createTextCursor()
-	oLSymCurs.gotoRange( vLSymFound, False )
+	Dim oLSymCurs	As Object : oLSymCurs = vLSymFound.getText().CreateTextCursorByRange( vLSymFound )
 	oLSymCurs.collapseToEnd()
 		
 	&apos; ищем правый поисковый символ
-	Dim oRSymCurs	As Object : oRSymCurs	= vLSymFound.getText().createTextCursor()
-	oRSymCurs.gotoRange( vLSymFound, False )
+	Dim oRSymCurs	As Object : oRSymCurs = vLSymFound.getText().CreateTextCursorByRange( vLSymFound )
 	
 	Dim FirstWordLetterAfterRightSymbol As Boolean
 	
@@ -210,8 +206,7 @@ Function UnItalic( ByRef oLSymCurs As Object, ByRef oRSymCurs As Object ) As Boo
 	UnItalic = False
 	Dim IsLItalic As Boolean : IsLItalic = False
 	Dim IsRItalic As Boolean : IsRItalic = False
-	Dim oCurs As Object : oCurs = oLSymCurs.getText().createTextCursor()
-	oCurs.gotoRange( oLSymCurs, False )
+	Dim oCurs As Object : oCurs = oLSymCurs.getText().CreateTextCursorByRange( oLSymCurs )
 	oCurs.collapseToStart() : oCurs.goRight(1, True)
 	If oCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsLItalic = True
 		
@@ -268,9 +263,7 @@ Sub SignPunctWorker( ByRef oProgressBar As Object )
 
 		&apos; ищем левый поисковый символ
 		vSignPunctFound = oDoc.FindFirst( vSignPunctSearch )
-		If IsNull(vSignPunctFound) Then 
-			Exit For
-		Else
+		If Not IsNull(vSignPunctFound) Then 
 			Do
 				&apos; поиск и снятие курсива с знаков препинания
 				UnItalicSignPunctuationWorker( vSignPunctFound )
@@ -286,10 +279,8 @@ End Sub
 
 &apos; поиск и снятие курсива с знаков препинания
 Sub UnItalicSignPunctuationWorker( ByRef vLSymFound As Variant )
-	Dim oSignPunctCurs	As Object : oSignPunctCurs	= vLSymFound.getText().createTextCursor() &apos; для знака препинания
-	oSignPunctCurs.gotoRange( vLSymFound, False )
-	Dim oStartSentenceLetterCurs As Object : oStartSentenceLetterCurs = oSignPunctCurs.getText().createTextCursor() &apos; для правого символа
-	oStartSentenceLetterCurs.gotoRange( oSignPunctCurs, False )
+	Dim oSignPunctCurs	As Object :  oSignPunctCurs = vLSymFound.getText().CreateTextCursorByRange( vLSymFound )
+	Dim oStartSentenceLetterCurs As Object : oStartSentenceLetterCurs = oSignPunctCurs.getText().CreateTextCursorByRange( oSignPunctCurs )
 	
 	&apos; ищем первый символ после найденного знака препинания
 	Dim FirstWordLetterAfterSignPunctuation As Boolean : FirstWordLetterAfterSignPunctuation = FindFirstWordLetterAfterRightSymbol( oSignPunctCurs )
@@ -300,8 +291,7 @@ Sub UnItalicSignPunctuationWorker( ByRef vLSymFound As Variant )
 	&apos; Обработка заданных поисковых символов
 	Dim IsSoSLetterItalic		As Boolean : IsSoSLetterItalic		= False : 
 	Dim IsFirstLetterASPItalic	As Boolean : IsFirstLetterASPItalic	= False
-	Dim oCurs As Object : oCurs = oSignPunctCurs.getText().createTextCursor()
-	oCurs.gotoRange( oSignPunctCurs, False )
+	Dim oCurs As Object : oCurs = oSignPunctCurs.getText().CreateTextCursorByRange( oSignPunctCurs )
 	oCurs.collapseToEnd() : oCurs.goLeft(1, True)
 	If oCurs.CharPosture					= com.sun.star.awt.FontSlant.ITALIC Then IsFirstLetterASPItalic = True
 	If oStartSentenceLetterCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsSoSLetterItalic		= True

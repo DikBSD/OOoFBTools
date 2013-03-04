@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ChangeLang" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ===========================================================================================================================
+&apos;													 модуль инструментов:
+&apos; 									Изменение русского символа на английский и наоборот
+&apos; 							в выделенных фрагментах текста Документа, таблиц, Врезок и Сносок
+&apos; ===========================================================================================================================
 
 Option Explicit
 
@@ -9,10 +14,8 @@ Sub ChangeLang()
 	&apos; инициализация сообщений модуля локализации изменения языка символов с русского на английский и обратно
 	InitChangeLangMessage()
 	
-	Dim oViewCursor As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
-	On Local Error GoTo PrintErrMessage
-	
-	Dim lSel As Long : lSel = GetSelectionCount() &apos; число выделенных фрагментов текста
+	Dim oDoc	As Object	: oDoc	= ThisComponent
+	Dim lSel	As Long		: lSel	= GetSelectionCount() &apos; число выделенных фрагментов текста
 	If lSel =-1 Then &apos; только для выделений Текста!
 		MsgBox sCLD.sNotSelectedText, 64, sCLD.sMessTitle
 		Exit Sub
@@ -20,97 +23,88 @@ Sub ChangeLang()
 		MsgBox sCLD.sSelectText, 64, sCLD.sMessTitle
 		Exit Sub
 	End If
-	If lSel &gt; 1 Then
-		MsgBox sCLD.sSelectSeveral + chr(10) + sCLD.sSelectOnlyOne, 64, sCLD.sMessTitle
-		Exit Sub
-	End If
 	
-	If Not IsEmpty( oViewCursor.TextTable ) Or Not IsEmpty( oViewCursor.TextFrame ) Or _
-		oViewCursor.ParaStyleName = &quot;Footnote&quot; Or oViewCursor.ParaStyleName = &quot;Endnote&quot; Then
-		MsgBox sCLD.sNotTableFrameFN + chr(10) + sCLD.sSelectText, 64, sCLD.sMessTitle
-		Exit Sub
-	End If
-	
-	Dim oCurs() As Object
-	If Not CreateSelectedTextIterator( ThisComponent, &quot;&quot;, &quot;&quot;, oCurs() ) Then Exit Sub
-
-	&apos; запоминаем выделение текста
-	Dim oBookMarks	As Object : oBookMarks = ThisComponent.getBookmarks()
-	Dim bmTempStart As String : bmTempStart	= &quot;__dikbsd_temp_EnToRuToEn_bookmark_start__&quot;
-	Dim bmTempEnd	As String : bmTempEnd	= &quot;__dikbsd_temp_EnToRuToEn_bookmark_end__&quot;
-	
-	&apos; ставим временную закладку для выделенного текста
-	_UnoInsertBookmark( bmTempEnd )
+	&apos; все выделенные области документа
+	Dim oSelCurs()	As Object &apos; курсор выделенной области
+	Dim oSels		As Object	: oSels		= oDoc.getCurrentSelection() &apos; все выделения текста
+	Dim lSelCount	As Long		: lSelCount = oSels.getCount() &apos;число выделенной области текста
+	oSelCurs = DimArray( lSelCount - 1 )
+	Dim l As Long
+	For l = 0 To lSelCount - 1
+		oSelCurs( l ) = oSels.getByIndex( l ) &apos; текущее выделение
+	Next l
 
 	&apos; перекодировка с одного языка на другой
-	RuEnRu( ThisComponent, oViewCursor, oCurs(0, 0), oCurs(0, 1), oBookMarks, bmTempStart )
-	
-	&apos; восстановим выделение текста
-	GoToViewCursorToBookMark( oViewCursor, bmTempStart, False )
-	ExtendSelectTextToBookMark( oViewCursor, bmTempEnd )
-	&apos; удаляем временные закладки для выделенного текста
-	If oBookMarks.hasByName( bmTempStart )	Then _UnoDeleteBookMark( bmTempStart )
-	If oBookMarks.hasByName( bmTempEnd )	Then _UnoDeleteBookMark( bmTempEnd )
-
-	Exit Sub
-	
-PrintErrMessage:
-	MsgBox sCLD.sNotTableFrameFN + chr(10) + sCLD.sSelectText, 64, sCLD.sMessTitle
+	Dim i As Integer
+	For i = LBound( oSelCurs() ) To UBound( oSelCurs() )
+		RuEnRu( oSelCurs(i).Start, oSelCurs(i).End )
+	Next i
 End Sub
 
 &apos; Изменение языка символов: QWERTY -&gt; ЙЦУКЕН или ЙЦУКЕН -&gt;QWERTY
-Sub RuEnRu( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, oBookMarks As Object, bmTempStart As String )
-	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
-	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+Sub RuEnRu( ByRef oLCurs As Object, ByRef oRCurs As Object )
+	If IsNull(oLCurs) Or IsNull( oRCurs ) Then Exit Sub
+	
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().CreateTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().CreateTextCursorByRange( oRCurs )
+	
+	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
 	
 	Dim asLineChars(1) As String
 	asLineChars(0) = &quot;qwertyuiop[]asdfghjkl;&apos;zxcvbnm,.`&quot;+&quot;QWERTYUIOP{}ASDFGHJKL:&quot;&quot;&quot;+&quot;ZXCVBNM&lt;&gt;~&quot; + &quot;@#$%^&amp;&quot;
 	asLineChars(1) = &quot;йцукенгшщзхъфывапролджэячсмитьбюё&quot;+&quot;ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ&quot; +&quot;ЯЧСМИТЬБЮЁ&quot; + &quot;&quot;&quot;№;%:?&quot;
 	
-	With oLCurs
-		.goRight(0, False)
-		.goRight(1, True)
-	End With
-	TransCode( oLCurs(), asLineChars(), oViewCursor.getString() )
-	
-	&apos; закладку на выделение
-	Dim bmTemp As String : bmTemp = &quot;__dikbsd_temp_EnToRuToEn_temp_bookmark__&quot;
-	_UnoInsertBookmark( bmTemp )
-	With oViewCursor
-		.collapseToStart()
-		.goLeft( 1, True )
-	End With
-	_UnoInsertBookmark( bmTempStart )
-	GoToViewCursorToBookMark( oViewCursor, bmTemp, True )
-	If oBookMarks.hasByName( bmTemp ) Then _UnoDeleteBookMark( bmTemp )
-	
-	oLCurs.goRight(1, False)
-	
-	Do While oLCurs.goRight(1, True) And oViewCursor.Text.compareRegionEnds(oLCurs, oRCurs) &gt;= 0
-		TransCode( oLCurs(), asLineChars(), oViewCursor.getString() )
-		oLCurs.goRight(1, False)
+	Do While oCursorL.goRight(1, True) And oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt;= 0
+		If TransCode( oCursorL(), asLineChars() ) Then
+			oCursorL.goRight(1, False)
+		Else
+			oCursorL.goRight(0, False)
+		End If
 	Loop
 End Sub
 
-Sub TransCode( oLCurs() As Object, asLineChars() As String, sSelectedText As String )
-	&apos; перекодировка
-	Dim n As Integer, nIndex As Integer
-	Dim bToRus As Boolean : bToRus = True
-	Dim sSymbol As String : sSymbol = Mid( sSelectedText, 1, 1 )
-	
-	If bToRus Then n = 0 Else n = 1
-    nIndex = InStr( 1, asLineChars(n), sSymbol, 0 )
-   	If nIndex = 0 Then
+&apos; перекодировка
+Function TransCode( ByRef oLCurs() As Object, ByRef asLineChars() As String ) As Boolean
+	Dim bRusEngLang	As Boolean	: bRusEngLang	= True
+	Dim n			As Integer	: n				= 0 &apos; английский символ (не цифры) по-умолчанию
+	Dim sSymbol		As String	: sSymbol		= Mid( oLCurs.getString(), 1, 1 )
+    Dim nIndex		As Integer	: nIndex		= InStr( 1, asLineChars(n), sSymbol, 0 )
+   	Dim oCursorL	As Object	: oCursorL		= oLCurs.getText().CreateTextCursorByRange( oLCurs )
+   	
+   	&apos; определение локали транслируемого символа
+   	Dim aOldLocale As Object : aOldLocale = oLCurs.CharLocale
+   	&apos; задание транслируемому символу новой локали
+	Dim aNewLocale As New com.sun.star.lang.Locale
+    If aOldLocale.Language = &quot;en&quot; Then
+		aNewLocale.Language = &quot;ru&quot;
+		aNewLocale.Country = &quot;RU&quot;
+	Else
+		aNewLocale.Language = &quot;en&quot;
+		aNewLocale.Country = &quot;US&quot;
+	End If
+		
+   	If nIndex = 0 Then 
+   		&apos; это не английский символ - ищем, русский ли это символ
        	n = Abs( n - 1 )
         nIndex = InStr( 1, asLineChars(n), sSymbol, 0 )
+        If nIndex = 0 Then 
+        	&apos; это - не символ русского или английского языка (другой язык, цифры, номера сносок и т.д.) Пропускаем
+        	bRusEngLang = False
+		End If
    	End If
-
-	If nIndex &lt;&gt; 0 Then
-		If n = 1 Then bToRus = False Else bToRus = False
-   	    sSymbol = Mid( asLineChars( Abs( n - 1 ) ), nIndex, 1 )
-    End If
-    oLCurs.setString( sSymbol )
-End Sub
+   	
+   	If bRusEngLang Then
+		&apos; только для символа русского или английского языка
+		If nIndex &lt;&gt; 0 Then sSymbol = Mid( asLineChars( Abs( n - 1 ) ), nIndex, 1 )
+		oLCurs.setString( sSymbol )
+		oLCurs.CharLocale = aNewLocale
+		
+    	TransCode = True
+	Else &apos; Пропускаем
+		TransCode = False
+	End If
+    &apos;oLCurs.gotoRange( oCursorL, False )
+End Function
 
 &apos;/////////////////////////////////////////////////////////////////////
 

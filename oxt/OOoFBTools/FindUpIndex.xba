@@ -57,12 +57,12 @@ Sub FindUpIndexFinderStart()
 	oFUI = LoadDialog( &quot;OOoFBTools&quot;, &quot;FindUpIndexDlg&quot; )
 	
 	&apos; создание и инициализация курсоров
-	oDocControl = ThisComponent.getCurrentController()
+	oDocControl	= ThisComponent.getCurrentController()
 	&apos; инициализация позиции видимого курсора
-	ovCurs = oDocControl.getViewCursor()
+	ovCurs		= oDocControl.getViewCursor()
 	&apos; создаем текстовый курсор - хранение текущей позиции найденного символа по заданному условию
-	oPosTxtCurs = ovCurs.Text.createTextCursor()
-	otxtCurs = ovCurs.Text.createTextCursor() 
+	oPosTxtCurs	= ovCurs.Text.createTextCursor()
+	otxtCurs	= ovCurs.Text.createTextCursor()
 	
 	&apos; инициализация диалога Поиска символов верхнего индекса в зависимости от локали
 	InitFindUpIndexDlg()
@@ -140,13 +140,11 @@ Sub FUIFind()
 		Exit Sub
 	End If
 
-&apos;	On Error GoTo ErrorHandler	
 	&apos; переместить курсор на позицию видимого курсора
-	otxtCurs.gotoRange( ovCurs.getStart(), False )
+	otxtCurs = ovCurs.getText().CreateTextCursorByRange(ovCurs)
 
 	&apos; ищем заданное регулярное выражение
 	FindRegInText( ovCurs, sFind, sTitle )
-&apos;ErrorHandler:
 End Sub
 
 &apos;***************************************************************************
@@ -169,7 +167,7 @@ Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
 				oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
 				FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
 			Else
-				oPosTxtCurs.GotoRange( otxtCurs, False )
+				oPosTxtCurs = otxtCurs.getText().CreateTextCursorByRange(otxtCurs)
 			End If
 		ElseIf oFUI.getControl( &quot;obtnOnlyDonwIndex&quot; ).State = True Then
 			&apos; только для символов нижнего индекса
@@ -218,8 +216,7 @@ Function FindNextInText( sFind ) As Boolean
 	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
 	
 	if IsNull( Found ) Then &apos; конец документа - ничего не нашли
-		otxtCurs = ThisComponent.Text.createTextCursor() 
-		otxtCurs.gotorange( ThisComponent.Text.getStart(), False )
+		otxtCurs = ThisComponent.getText().CreateTextCursorByRange(ThisComponent.Text.getStart())
 		FindNextInText = False &apos; конец документа - ничего не нашли
 		Exit Function
 	End If
