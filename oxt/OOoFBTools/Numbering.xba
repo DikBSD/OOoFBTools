@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Numbering" script:language="StarBasic">REM  *****  BASIC  *****
-&apos; ///////////////////////////////////////////////////////////////////
-&apos; модуль инструментов:
-&apos; Переименовывание веделенных абзацев, начиная с заданного значения
-&apos; ///////////////////////////////////////////////////////////////////
+&apos; =======================================================================================================
+&apos; 								модуль инструментов:
+&apos; 				Переименовывание веделенных абзацев, начиная с заданного значения
+&apos; =======================================================================================================
+
 Option Explicit
 
 Public oRN As Object
@@ -95,10 +96,8 @@ Sub NumberingSelectedPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef o
 
 	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
 
-	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursor()
-	oCursorL.gotoRange( oLCurs, False )
-	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursor()
-	oCursorR.gotoRange( oRCurs, False )
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
 	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
 
 	If oRN.GetControl( &quot;chBoxThroughNumbering&quot; ).State = 0 Then
@@ -117,7 +116,7 @@ Sub NumberingSelectedPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef o
 		End If	
 		&apos; задаем &quot;сквозную&quot; нумерацию
 		oPar.NumberingStyleName = &quot;&quot;
-		oViewCursor = oDoc.getCurrentController().getViewCursor()
+		oViewCursor = oDoc.getCurrentController().getViewCursorByRange()
 		oViewCursor.gotoRange(oPar, False)
 		oViewCursor.collapseToStart()
 		_UnoInsertText( sLeft &amp; LTrim( Str( nIndex ) ) &amp; sRight )

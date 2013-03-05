@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="SetSymbolAsMarker" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; =======================================================================================================
+&apos; 										модуль инструментов:
+&apos; 						Вставка символа • как маркера в начало заданных абзацев
+&apos; =======================================================================================================
+
 Option Explicit
 
 Const sConstMarker As String = &quot;set_symbol_as_marker.txt&quot; &apos; файл настроек
@@ -37,11 +42,13 @@ Sub SetSymbolAsMarkerDlgOkClick()
 	&apos; Принятие параметров обработки абзацев
 	oSSAMDlg.endExecute()
 
-	&apos; сохранение настроек
-	SaveSetSymbolAsMarkerDlgSettings()
+	&apos; сохранение настроек инструмента:
+	&apos; сохранение положения формы
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstMarker, oSSAMDlg )
+	&apos; заполняем переменные
+	bOnlyMarkers = oSSAMDlg.GetControl(&quot;optbtnOnlyMarkers&quot;).State
 
 	&apos; обработка текста в зависимости от выбранного режима
-	On Local Error GoTo PrintErrMessage
 	Dim l As Long : l = GetSelectionCount()
 	If l =-1 Then &apos; только для выделений Текста!
 		MsgBox sSSAMD.sSelectParaForWork, 64, sSSAMD.sMessageTitle
@@ -53,121 +60,77 @@ Sub SetSymbolAsMarkerDlgOkClick()
 										sSSAMD.sMessageTitle, oCurs() ) Then Exit Sub
 	Dim i As Integer
 	For i = LBound( oCurs() ) To UBound( oCurs() )
-		If bOnlyMarkers = True Then
-			SymbolAsMarkerToAllSelectedMarkersPara( oDoc, oCurs(i, 0), oCurs(i, 1) )
-		Else
-			SymbolAsMarkerToAnySelectedPara( oDoc, oCurs(i, 0), oCurs(i, 1) )
-		End If
+		&apos; вставка символа • как маркера в начало абзацев
+		SymbolAsMarkerToPara( oDoc, oCurs(i, 0), oCurs(i, 1), bOnlyMarkers )
 	Next i
-	
 	MsgBox sSSAMD.sEndWork, 64, sSSAMD.sMessageTitle
-	Exit Sub
-PrintErrMessage:
-	MsgBox sSSAMD.sNoTableFNTextFrame, 64, sSSAMD.sMessageTitle
 End Sub
 
-&apos; вставка символа маркера • как маркера для любых абзацев (и с маркерами, и без них)
-Sub SymbolAsMarkerToAnySelectedPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
+&apos; вставка символа • как маркера в начало абзацев
+Sub SymbolAsMarkerToPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef oRCurs As Object, bOnlyMarkers As Boolean )
+	&apos; bOnlyMarkers = True:	вставка символа • как маркера только для абзацев с маркерами
+	&apos; bOnlyMarkers = False:	вставка символа • как маркера для любых абзацев (и с маркерами, и без них)
 	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
-	&apos; Таблицы, Врезки и сноски не обрабатываем
-	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
-				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable )Then
-		Exit Sub
-	End If
-	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
+	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
 	
 	Dim oPar		As Object &apos;Перебираемый параграф
 	Dim oViewCursor	As Object
-	Dim sPara		As String
-	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
-		oPar = oLCurs.createEnumeration().nextElement()
-		sPara = oPar.getString()
-		If oPar.NumberingIsNumber = True Then
-			&apos; убираем нумерацию списка для этого абзаца. если она есть
-			oPar.NumberingIsNumber = False
-		End If	
-		oPar.NumberingStyleName = &quot;&quot;
-		oViewCursor = oDoc.getCurrentController().getViewCursor()
-		oViewCursor.gotoRange(oPar, False)
-		oViewCursor.collapseToStart()
-		&apos; если длина строки &gt; 2 символов
-		If Len( sPara ) &gt;= 2 Then
-			If Mid( sPara, 1, 2 ) = &quot;  &quot; Then
-				&apos; убираем 2 начальных пробела
-				_UnoDelete() : _UnoDelete()
-			ElseIf Mid( sPara, 1, 1 ) = &quot; &quot; Then
-				&apos; убираем 1 начальный пробел
-				_UnoDelete()
-			ElseIf Mid( sPara, 1, 1 ) &lt;&gt; &quot; &quot; And Mid( sPara, 2, 1 ) = &quot; &quot; Then
-				_UnoDelete() : _UnoDelete()
+	Do While oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0
+		oPar = oCursorL.createEnumeration().nextElement()
+		If bOnlyMarkers Then
+			&apos; вставка символа • как маркера только для абзацев с маркерами
+			If oPar.NumberingIsNumber = True Then
+				&apos; убираем нумерацию списка для этого абзаца. если она есть
+				oPar.NumberingIsNumber = False
+				&apos; вставка символа маркера
+				SetSymbolAsMarkerWorker( oDoc, oViewCursor, oPar )
 			End If
-		ElseIf Len( sPara ) = 1 Then 
-			If sPara = &quot; &quot; Then
-				&apos; убираем 1 начальный пробел
-				_UnoDelete()
+		Else
+			&apos; вставка символа • как маркера для любых абзацев (и с маркерами, и без них)
+			If oPar.NumberingIsNumber = True Then
+				&apos; убираем нумерацию списка для этого абзаца. если она есть
+				oPar.NumberingIsNumber = False
 			End If
+			&apos; вставка символа маркера
+			SetSymbolAsMarkerWorker( oDoc, oViewCursor, oPar )
 		End If
-		&apos; задаем маркеры
-		_UnoInsertText( &quot;• &quot; )
-		oLCurs.gotoEndOfParagraph(False)
-		oLCurs.gotoNextParagraph(False)
+		&apos; переход на следующий абзац в выделении
+		oCursorL.gotoEndOfParagraph(False)
+		oCursorL.gotoNextParagraph(False)
 	Loop
 End Sub
 
-&apos; вставка символа маркера • как маркера только для абзацев с маркерами
-Sub SymbolAsMarkerToAllSelectedMarkersPara( oDoc As Object, oLCurs As Object, oRCurs As Object )
-	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
-	&apos; Таблицы, Врезки и сноски не обрабатываем
-	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
-				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable )Then
-		Exit Sub
-	End If
-	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+&apos; вставка символа маркера
+Sub SetSymbolAsMarkerWorker( ByRef oDoc As Object, ByRef oViewCursor As Object, ByRef oPar As Object )
+	sPara = oPar.getString()
+	oPar.NumberingStyleName = &quot;&quot;
 	
-	Dim oPar		As Object &apos;Перебираемый параграф
-	Dim oViewCursor	As Object
-	Dim sPara		As String
-	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
-		oPar = oLCurs.createEnumeration().nextElement()
-		sPara = oPar.getString()
-		If oPar.NumberingIsNumber = True Then
-			&apos; убираем нумерацию списка для этого абзаца. если она есть
-			oPar.NumberingIsNumber = False
-			oPar.NumberingStyleName = &quot;&quot;
-			
-			oViewCursor = oDoc.getCurrentController().getViewCursor()
-			oViewCursor.gotoRange(oPar, False)
-			oViewCursor.collapseToStart()
-			&apos; если длина строки &gt; 2 символов
-			If Len( sPara ) &gt;= 2 Then
-				If Mid( sPara, 1, 2 ) = &quot;  &quot; Then
-					&apos; убираем 2 начальных пробела
-					_UnoDelete() : _UnoDelete()
-				ElseIf Mid( sPara, 1, 1 ) = &quot; &quot; Then
-					&apos; убираем 1 начальный пробел
-					_UnoDelete()
-				ElseIf Mid( sPara, 1, 1 ) &lt;&gt; &quot; &quot; And Mid( sPara, 2, 1 ) = &quot; &quot; Then
-					_UnoDelete() : _UnoDelete()
-				End If
-			ElseIf Len( sPara ) = 1 Then 
-				If sPara = &quot; &quot; Then
-					&apos; убираем 1 начальный пробел
-					_UnoDelete()
-				End If
-			End If
-			&apos; задаем маркеры
-			_UnoInsertText( &quot;• &quot; )
-		End If	
-		oLCurs.gotoEndOfParagraph(False)
-		oLCurs.gotoNextParagraph(False)
-	Loop
-End Sub
-
-Sub SaveSetSymbolAsMarkerDlgSettings()
-	&apos; сохранение положение формы
-	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstMarker, oSSAMDlg )
-	&apos; заполняем переменные
-	bOnlyMarkers = oSSAMDlg.GetControl(&quot;optbtnOnlyMarkers&quot;).State
+	oViewCursor = oDoc.getCurrentController().getViewCursor()
+	oViewCursor.gotoRange(oPar, False)
+	oViewCursor.collapseToStart()
+	
+	&apos; если длина строки &gt; 2 символов
+	If Len( sPara ) &gt;= 2 Then
+		If Mid( sPara, 1, 2 ) = &quot;  &quot; Then
+			&apos; убираем 2 начальных пробела
+			_UnoDelete() : _UnoDelete()
+		ElseIf Mid( sPara, 1, 1 ) = &quot; &quot; Then
+			&apos; убираем 1 начальный пробел
+			_UnoDelete()
+		ElseIf Mid( sPara, 1, 1 ) &lt;&gt; &quot; &quot; And Mid( sPara, 2, 1 ) = &quot; &quot; Then
+			_UnoDelete() : _UnoDelete()
+		End If
+	ElseIf Len( sPara ) = 1 Then 
+		If sPara = &quot; &quot; Then
+			&apos; убираем 1 начальный пробел
+			_UnoDelete()
+		End If
+	End If
+	
+	&apos; вставляем символ маркера
+	_UnoInsertText( &quot;• &quot; )
 End Sub
 
 </script:module>
