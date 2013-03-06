@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="BlanksNoBreakBlanksTabs" script:language="StarBasic">REM  *****  BASIC  *****
-&apos; ///////////////////////////////////////////////////////////////////////////////////////
-&apos; модуль инструмента поиска и замены множества пробелов, неразрывных пробелов и табуляций
-&apos; в заданом месте текста
-&apos; ///////////////////////////////////////////////////////////////////////////////////////
+&apos; =============================================================================================================
+&apos; 										модуль инструмента:
+&apos; 			поиск и замена множества пробелов, неразрывных пробелов и табуляций в заданом месте текста
+&apos; =============================================================================================================
 
 Option Explicit
 
@@ -115,7 +115,6 @@ Sub SearchAndReplaceStart()
 	If oBNBBTDlg.GetControl( &quot;obReplaceInSelect&quot; ).State Then
 		&apos; В выделенных фрагментах текста
 		ReplaceBlanksTabsToBlankOrTabsInSelections( GetObject( &quot;lbSearch&quot; ), GetObject( &quot;lbReplace&quot; ) )
-		&apos;ReplaceChr32ToChr160(GetObject( &quot;lbSearch&quot; ), GetObject( &quot;lbReplace&quot; ))
 	ElseIf oBNBBTDlg.GetControl( &quot;obReplaceInAllText&quot; ).State Then
 		&apos; Во всем тексте
 		If oBNBBTDlg.GetControl( &quot;obReplaceInAllTextStartPara&quot; ).State Then
@@ -128,8 +127,9 @@ Sub SearchAndReplaceStart()
 		MsgBox sBNBBTD.sEndWork, 64, sBNBBTD.sTitleAllText
 	End If
 End Sub
-
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ================================================================================================================================
+&apos; 					Обработка пробелов в во всем тексте Документа, Таблицы, Врезки, Сноски
+&apos; ================================================================================================================================
 &apos; замена N множественных простых пробелов или неразрывных пробелов или табуляций
 &apos; на N простых пробелов или неразрывных пробелов или табуляций в заданном месте документа
 Sub ReplaceBlanksTabsToBlankOrTabsInAllText( bInStart As Boolean, sSearch As String, sReplaceTo As String )
@@ -137,57 +137,30 @@ Sub ReplaceBlanksTabsToBlankOrTabsInAllText( bInStart As Boolean, sSearch As Str
 	&apos; sSearch и sReplaceTo:  &quot;b&quot; - простые пробелы; &quot;nbb&quot; - неразрывные проблеы; &quot;tabs&quot; - табуляции
 	Dim oDoc		As Object	: oDoc = ThisComponent
 	Dim vSearch		As Variant	: vSearch = oDoc.createSearchDescriptor()
-	Dim oEndCurs	As Object &apos; окончание документа
-	Dim oCurCurs	As Object &apos; для перебора абзацев
 	Dim sCurCurs	As String &apos; для просмотра строки
-	
-	&apos; задаем курсоры
-	oCurCurs = oDoc.getText().createTextCursor()
-	oCurCurs.gotoStart( False )
-	oEndCurs = oDoc.getText().createTextCursor()
-	oEndCurs.gotoEnd( False )
 	
 	&apos; ищем заданное
 	With vSearch
 		.SearchRegularExpression = True
 		If bInStart = True Then
-			.SearchString = MakeStartSearchStr( sSearch )	&apos; только в начале абзаца
+			.SearchString = MakeStartSearchStr( sSearch ) &apos; только в начале абзаца
 		Else
-			.SearchString = MakeSearchStr( sSearch )&apos; в любом месте текста
+			.SearchString = MakeSearchStr( sSearch ) &apos; в любом месте текста
 		End If
 	End With
 	
-	&apos; ищем 1-й блок множественных простых пробелов
-	Dim vFound As Variant : vFound = oDoc.findFirst( vSearch )
-	If IsNull( vFound ) Then Exit Sub
-	&apos; Таблицы, Врезки и сноски не обрабатываем
-	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
-		If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
-					Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable ) Then
-			vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-			If IsNull( vFound ) Then Exit Sub
-		Else
-			Exit Do
-		End If
-	Loop
-	oCurCurs.gotoRange( vFound, False )
-	sCurCurs = oCurCurs.getString()
-	&apos; строка для замены найденных простых множественных пробелов
-	oCurCurs.setString( MakeReplaceStr( sCurCurs, sReplaceTo ) )
-	
-	&apos;продолжаем поиск
-	Do While Not oDoc.Text.compareRegionEnds( oCurCurs, oEndCurs ) &lt;= 0
-		vFound = oDoc.findNext( vFound.getEnd(), vSearch )
-		If IsNull( vFound ) Then Exit Do
-		If LCase( vFound.ParaStyleName ) = &quot;footnote&quot; Or LCase( vFound.ParaStyleName ) = &quot;endnote&quot; Or _
-				Not IsEmpty( vFound.TextFrame ) Or Not IsEmpty( vFound.TextTable )Then
-			Exit Do
-		End If
-		oCurCurs.gotoRange( vFound, False )
-		sCurCurs = oCurCurs.getString()
-		&apos; строка для замены найденных простых множественных пробелов
-		oCurCurs.setString( MakeReplaceStr( sCurCurs, sReplaceTo ) )
-	Loop
+	Dim vFound As Variant : vFound = oDoc.FindFirst( vSearch )
+	If Not IsNull( vFound ) Then 
+		Do
+			&apos; переход на найденное
+			&apos;oCurCurs.gotoRange( vFound, False )
+			sCurCurs = vFound.getString()
+			&apos; строка для замены найденных простых множественных пробелов
+			vFound.setString( MakeReplaceStr( sCurCurs, sReplaceTo ) )
+			&apos; Поиск следущего пробела
+			vFound = oDoc.FindNext( vFound.End, vSearch )
+		Loop Until IsNull( vFound ) &apos; выполняем хотя бы раз пока vFound имеет какое-нибудь значение (не пусто)
+	End If
 End Sub
 
 &apos; возвращает тип объекта для поиска или замены
@@ -243,13 +216,13 @@ Function MakeReplaceStr( sCurCurs As String, sReplaceTo As String ) As String
 	End If
 End Function
 
-&apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ================================================================================================================================
+&apos; 					Обработка пробелов в выделенных фрагментах текста Документа, Таблицы, Врезки, Сноски
+&apos; ================================================================================================================================
 &apos; замена N множественных простых пробелов или неразрывных пробелов или табуляций
 &apos; на N простых пробелов или неразрывных пробелов или табуляций в выделенных фрагментах текста
 Sub ReplaceBlanksTabsToBlankOrTabsInSelections( sSearch As String, sReplaceTo As String )
 	&apos; sSearch и sReplaceTo:  &quot;b&quot; - простые пробелы; &quot;nbb&quot; - неразрывные проблеы; &quot;tabs&quot; - табуляции
-	On Local Error GoTo PrintErrMessage
-	
 	Dim l As Long : l = GetSelectionCount()
 	If l =-1 Then &apos; только для выделений Текста!
 		MsgBox sBNBBTD.sSelectParaForWork, 64, sBNBBTD.sMessageTitle
@@ -258,25 +231,20 @@ Sub ReplaceBlanksTabsToBlankOrTabsInSelections( sSearch As String, sReplaceTo As
 	Dim oDoc As Object : oDoc = ThisComponent
 	Dim oCurs() As Object
 	If Not CreateSelectedTextIterator( oDoc, sBNBBTD.sProcessAllDoc, sBNBBTD.sTitleSelText, oCurs() ) Then Exit Sub
+
 	Dim i As Integer
 	For i = LBound( oCurs() ) To UBound( oCurs() )
 		ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc, oCurs(i, 0), oCurs(i, 1), sSearch, sReplaceTo )
 	Next i
 	
 	MsgBox sBNBBTD.sEndWork, 64, sBNBBTD.sTitleSelText
-	Exit Sub
-PrintErrMessage:
-	MsgBox sBNBBTD.sNoTableFNTextFrame + chr(10) + sBNBBTD.sSelectParaForWork, 64, sBNBBTD.sTitleSelText
 End Sub
 
 Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As Object, oRCurs As Object, sSearch As String, sReplaceTo As String )
 	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
-	&apos; Таблицы, Врезки и сноски не обрабатываем
-	If LCase( oLCurs.ParaStyleName ) = &quot;footnote&quot; Or LCase( oLCurs.ParaStyleName ) = &quot;endnote&quot; Or _
-				Not IsEmpty( oLCurs.TextFrame ) Or Not IsEmpty( oLCurs.TextTable ) Then
-		Exit Sub
-	End If
-	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Sub
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
+	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
 
 	&apos; ищем заданное
 	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
@@ -284,12 +252,15 @@ Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As 
 		.SearchString				= MakeSearchStr( sSearch )
 		.SearchRegularExpression	= True
 	End With
-	Dim vFound As Variant
-	Do While oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &gt; 0
+	Dim vFound As Variant : vFound = oLCurs.getText().createTextCursorByRange( oLCurs )
+	
+	Do While oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0
 		&apos; поиск пробела
-		vFound = oDoc.findNext( oLCurs, vSearch )
+		vFound = oDoc.findNext( oCursorL, vSearch )
 		If IsNull( vFound ) Then Exit Sub
-		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &lt; 0 Then Exit Sub
+	
+		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе. Странно...
+		If vFound.Text.compareRegionEnds( vFound, oCursorR ) &lt; 0 Then Exit Sub
 		vFound.setString( MakeReplaceStr( vFound.getString(), sReplaceTo ) )
 	Loop
 End Sub
