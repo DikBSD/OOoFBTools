@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="JoinBreakLines" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ===========================================================================================================================
+&apos;													 модуль инструментов:
+&apos; 												склейка разрывов строк и абзацев
+&apos; ===========================================================================================================================
 Option Explicit
 
 Const sConstJoinBreakLines As String = &quot;joinbreaklines.txt&quot; &apos; файл настроек
@@ -42,8 +46,8 @@ Sub JoinBreakLines()
 
 End Sub
 
+&apos; сохранение положение формы
 Sub SaveJoinBreakLinesDlgSettings()
-	&apos; сохранение положение формы
 	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg )
 	&apos; заполняем переменные
 	With oJoinBreakLinesDlg
@@ -113,7 +117,7 @@ Sub JoinBreakLinesDlgOkClick()
 		JoinBreakLinesInEmptyPara( oDoc, oProgressBar )
 	End If
 	
-	&apos; /////////// постобработка ///////////////
+	&apos; ============ постобработка =================
 	nCur = 1
 	With oProgressBar
 		.start( sJBLD.sPostProcessing &amp; &quot;:&quot;, 5 )
@@ -154,16 +158,18 @@ Sub JoinBreakLinesDlgOkClick()
 	nCur = nCur+1
 	MsgBox sJBLD.sEndWork, 64, sMessageTitle
 	
-	oProgressBar.end
+	oProgressBar.End
 End Sub
 
-&apos;////////////////////////////////////////
+&apos; =================================================================================================
+&apos; 								Алгоритмы склейки абзацев
+&apos; =================================================================================================
 &apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
 &apos; Идентификатор каждого &quot;нового абзаца&quot; - 1 или несколько пробелов в начале строки.
-&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких сножество в сети)
 Sub JoinBreakLinesInParaStartSpace( oDoc As Object, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant
-	Dim l As Long
+	Dim l As Long : l = 0
 	
 	&apos; поиск абзаца-идентификатора
 	vSearch = oDoc.createSearchDescriptor()
@@ -171,135 +177,133 @@ Sub JoinBreakLinesInParaStartSpace( oDoc As Object, oProgressBar As Object )
 		.SearchRegularExpression = True
 		.SearchString = &quot;^[:space:]+&quot; &apos;&quot;^ {1,}&quot;
 	End With
+	
 	&apos; Находим первый идентификатор
-	vStartFound = oDoc.findFirst( vSearch )
-	l = 0
-	Do While Not IsNull(vStartFound)
-		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
-		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
-		If IsNull(vEndFound) Then
-			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			Exit Do
-		Else
-			vEndFound.gotoPreviousParagraph(False)
-			&apos;vEndFound.gotoEndOfParagraph(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
-		End If
-	Loop
+	vStartFound = oDoc.FindFirst( vSearch )
+	If Not IsNull( vStartFound ) Then 
+		Do
+			&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
+			vEndFound = oDoc.findNext( vStartFound.End, vSearch )
+			If Not IsNull( vEndFound ) Then
+				&apos; нашли следующий стартовый идентификатор
+				vEndFound.gotoPreviousParagraph( False )
+				&apos;vEndFound.gotoEndOfParagraph( False )
+				JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+				vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+			Else
+				&apos; Найден стартовый идентификатор без завершающего: склеиваем абзацы от vStartFound и до конца документа
+				vEndFound = oDoc.Text.createTextCursor()
+				vEndFound.GoToEnd( False )
+				JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+				Exit Do
+			End If
+		Loop Until IsNull( vStartFound ) &apos; выполняем хотя бы раз пока vStartFound не пусто
+	End If
 End Sub
 
 &apos; сборка разорваных строк абзаца знаком абзаца в один абзац.
 &apos; Идентификатор строки &quot;одного абзаца&quot; - символы окончания предложения (.!?…»”\&quot;&quot;:;) в конце строки.
-&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких множество в сети)
 Sub JoinBreakLinesInParaEndSymbols( oDoc As Object, oProgressBar As Object )
-	Dim vStartSearch, vEndSearch &apos;Open и Close descriptors
-	Dim vStartFound, vEndFound &apos;Open и Close find objects
-	Dim l As Long
-	
-	&apos; Создать дескрипторы для документа, в котором возможен поиск.
-	vStartSearch = oDoc.createSearchDescriptor()
-	vEndSearch = oDoc.createSearchDescriptor()
+	&apos; Создаем поисковые дескрипторы для документа
+	Dim vStartSearch	As Variant : vStartSearch	= oDoc.createSearchDescriptor()
+	Dim vEndSearch		As Variant : vEndSearch		= oDoc.createSearchDescriptor()
 
 	With vStartSearch
 		.SearchRegularExpression = True
-		&apos; Задаем текст, который нужно искать, и др.
-		.SearchString = &quot;$&quot;
+		.SearchString = &quot;$&quot; &apos; поисковый аргумент начала абзаца для склейки
 	End With
 	With vEndSearch
 		.SearchRegularExpression = True
-		&apos; Задаем текст, который нужно искать, и др.
-		.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot;
+		.SearchString = &quot;[.!?…»”\&quot;&quot;:;]$&quot; &apos; поисковый аргумент конца абзаца для склейки
 	End With
 
 	&apos; Найти первый открывающий разделитель
-	vStartFound = oDoc.findFirst(vStartSearch)
-	l = 0
-	Do While Not IsNull(vStartFound)
+	Dim vStartFound	As Variant : vStartFound = oDoc.findFirst( vStartSearch )
+	Dim vEndFound	As Variant
+	Dim l As Long : l = 0
+	Do While Not IsNull( vStartFound )
 		&apos;Поиск закрывающего разделителья, начиная с найденного открывающего
 		vEndFound = oDoc.findNext( vStartFound.End, vEndSearch)
-		If IsNull(vEndFound) Then
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			Exit Do
-		Else
+		If Not IsNull(vEndFound) Then
 			&apos; Выделить текст внутри разделителей
 			vStartFound.gotoStartOfParagraph(False)
 			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch )
+		Else
+			&apos; Найден стартовый идентификатор без завершающего: склеиваем абзацы от vStartFound и до конца документа
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			Exit Do
 		End If
 	Loop
 End Sub
 
 &apos; склейка разорваных строк абзаца знаком абзаца в один абзац.
 &apos; Идентификатор каждого &quot;нового абзаца&quot; - пустой абзац.
-&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких море в сети)
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких множество в сети)
 Sub JoinBreakLinesInEmptyPara( oDoc As Object, oProgressBar As Object )
-	Dim vStartFound As Variant, vEndFound As Variant
-	Dim l As Long : l = 0
-
 	&apos; Находим верхнюю границу области
-	Dim vSearch As Variant
-	vSearch = oDoc.createSearchDescriptor()
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
 	With vSearch
 		.SearchRegularExpression = True
 		.SearchString = &quot;^$&quot;
 	End With
 	
-&apos;	vStartFound = oDoc.findFirst( vSearch )
 	&apos; верхняя граница - на самый верх документа
-	vStartFound = oDoc.getText().createTextCursor()
+	Dim vStartFound As Variant : vStartFound = oDoc.getText().createTextCursor()
+&apos;	vStartFound = oDoc.findFirst( vSearch )
 	vStartFound.gotoStart( False )	
-	
+	Dim vEndFound As Variant
 	&apos; поиск и обработка следующих областей, удовлетворяющих условию поиска
-	Do While Not IsNull(vStartFound)
+	Dim l As Long : l = 0
+	Do While Not IsNull( vStartFound )
 		&apos;Поиск закрывающего разделителя, начиная с найденного открывающего
 		vEndFound = oDoc.findNext( vStartFound.End, vSearch )
-		If IsNull(vEndFound) Then
-			&apos; Найден стартовый идентификатор без завершающего - ищем от vStartFound и до конца документа
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
-			Exit Do
-		Else
+		If Not IsNull( vEndFound ) Then
 			With vEndFound
 				.gotoPreviousParagraph(False)
 				.gotoPreviousParagraph(False)
 			End With
 			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
 			vStartFound = oDoc.findNext( vStartFound.End, vSearch )
+		Else
+			&apos; Найден стартовый идентификатор без завершающего: склеиваем абзацы от vStartFound и до конца документа
+			vEndFound = oDoc.Text.createTextCursor()
+			vEndFound.GoToEnd(False)
+			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			Exit Do
 		End If
 	Loop
 End Sub
 
-&apos; /////////////////////////////////////////////////////////////////////////
-Sub JoinLines(oLCurs, oRCurs, oDoc, oProgressBar, l)
-	On Error GoTo ErrorHandler
-	
-	If IsNull(oLCurs) Or IsNull(oRCurs) Or IsNull(oDoc) Then Exit Sub
-	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Sub
-	oLCurs.goRight(0, False)
-	Dim vDescriptor, vFound
-	vDescriptor = oDoc.createSearchDescriptor()
-	With vDescriptor
+&apos; ==========================================================================================
+&apos; 								склейка строк и/или абзацев
+&apos; ==========================================================================================
+Sub JoinLines( oLCurs, oRCurs, oDoc, oProgressBar, l )
+	If IsNull( oLCurs ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
+&apos;	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
+
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+	With vSearch
 		.SearchString = &quot;$&quot;
 		.SearchCaseSensitive = False
 		.SearchRegularExpression = True
 	End With
-	vFound = oDoc.findNext( oLCurs, vDescriptor )
-	Do While Not IsNull(vFound)
+	
+	Dim vFound  As Object : vFound = oDoc.findNext( oCursorL, vSearch )
+	Do While Not IsNull( vFound )
 		If l&gt;=100 Then l = 0
 		l = l + 1
 		oProgressBar.setValue(l)
-		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Do
+		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
+		If vFound.Text.compareRegionEnds( vFound, oCursorR ) = -1 Then Exit Do
 		vFound.setString(&quot; &quot;)
-		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
+		vFound = oDoc.findNext( vFound.End, vSearch )
 	Loop
-ErrorHandler:
 End Sub
 
 </script:module>

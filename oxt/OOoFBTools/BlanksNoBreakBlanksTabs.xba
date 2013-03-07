@@ -159,7 +159,7 @@ Sub ReplaceBlanksTabsToBlankOrTabsInAllText( bInStart As Boolean, sSearch As Str
 			vFound.setString( MakeReplaceStr( sCurCurs, sReplaceTo ) )
 			&apos; Поиск следущего пробела
 			vFound = oDoc.FindNext( vFound.End, vSearch )
-		Loop Until IsNull( vFound ) &apos; выполняем хотя бы раз пока vFound имеет какое-нибудь значение (не пусто)
+		Loop Until IsNull( vFound ) &apos; выполняем хотя бы раз пока vFound не пусто
 	End If
 End Sub
 
@@ -241,7 +241,7 @@ Sub ReplaceBlanksTabsToBlankOrTabsInSelections( sSearch As String, sReplaceTo As
 End Sub
 
 Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As Object, oRCurs As Object, sSearch As String, sReplaceTo As String )
-	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
+	If IsNull( oLCurs ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
 	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
 	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
 &apos;	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
@@ -253,7 +253,7 @@ Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As 
 		.SearchRegularExpression	= True
 	End With
 
-	Dim vFound : vFound = oDoc.findNext( oCursorL, vSearch )
+	Dim vFound As Object : vFound = oDoc.findNext( oCursorL, vSearch )
 	Do While ( ( Not IsNull( vFound ) ) AND oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0 )
 		&apos; поиск пробела
 		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
