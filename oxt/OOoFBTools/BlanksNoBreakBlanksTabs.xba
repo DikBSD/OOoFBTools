@@ -244,24 +244,22 @@ Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As 
 	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
 	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
 	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
-	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
-
+&apos;	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
+	
 	&apos; ищем заданное
 	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
 	With vSearch
 		.SearchString				= MakeSearchStr( sSearch )
 		.SearchRegularExpression	= True
 	End With
-	Dim vFound As Variant : vFound = oLCurs.getText().createTextCursorByRange( oLCurs )
-	
-	Do While oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0
+
+	Dim vFound : vFound = oDoc.findNext( oCursorL, vSearch )
+	Do While ( ( Not IsNull( vFound ) ) AND oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0 )
 		&apos; поиск пробела
-		vFound = oDoc.findNext( oCursorL, vSearch )
-		If IsNull( vFound ) Then Exit Sub
-	
-		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе. Странно...
+		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
 		If vFound.Text.compareRegionEnds( vFound, oCursorR ) &lt; 0 Then Exit Sub
 		vFound.setString( MakeReplaceStr( vFound.getString(), sReplaceTo ) )
+		vFound = oDoc.findNext( vFound.End, vSearch )
 	Loop
 End Sub
 

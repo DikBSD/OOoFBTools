@@ -51,8 +51,8 @@ Sub RuEnRu( ByRef oLCurs As Object, ByRef oRCurs As Object )
 	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
 	
 	Dim asLineChars(1) As String
-	asLineChars(0) = &quot;qwertyuiop[]asdfghjkl;&apos;zxcvbnm,.`&quot;+&quot;QWERTYUIOP{}ASDFGHJKL:&quot;&quot;&quot;+&quot;ZXCVBNM&lt;&gt;~&quot; + &quot;@#$%^&amp;&quot;
-	asLineChars(1) = &quot;йцукенгшщзхъфывапролджэячсмитьбюё&quot;+&quot;ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ&quot; +&quot;ЯЧСМИТЬБЮЁ&quot; + &quot;&quot;&quot;№;%:?&quot;
+	asLineChars(0) = &quot;qwertyuiop[]asdfghjkl;&apos;zxcvbnm,.`&quot;+&quot;QWERTYUIOP{}ASDFGHJKL:&quot;&quot;&quot;+&quot;ZXCVBNM&lt;&gt;~&quot; + &quot;?/&quot; + &quot;@#$%^&amp;&quot;
+	asLineChars(1) = &quot;йцукенгшщзхъфывапролджэячсмитьбюё&quot;+&quot;ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭ&quot; +&quot;ЯЧСМИТЬБЮЁ&quot; + &quot;,.&quot; + &quot;&quot;&quot;№;%:?&quot;
 	
 	Do While oCursorL.goRight(1, True) And oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt;= 0
 		If TransCode( oCursorL(), asLineChars() ) Then
@@ -65,22 +65,33 @@ End Sub
 
 &apos; перекодировка
 Function TransCode( ByRef oLCurs() As Object, ByRef asLineChars() As String ) As Boolean
+	If IsEmpty( oLCurs.CharLocale ) Then Exit Function
+
 	Dim bRusEngLang	As Boolean	: bRusEngLang	= True
 	Dim n			As Integer	: n				= 0 &apos; английский символ (не цифры) по-умолчанию
 	Dim sSymbol		As String	: sSymbol		= Mid( oLCurs.getString(), 1, 1 )
     Dim nIndex		As Integer	: nIndex		= InStr( 1, asLineChars(n), sSymbol, 0 )
    	Dim oCursorL	As Object	: oCursorL		= oLCurs.getText().CreateTextCursorByRange( oLCurs )
-   	
+
    	&apos; определение локали транслируемого символа
-   	Dim aOldLocale As Object : aOldLocale = oLCurs.CharLocale
+   	Dim aOldLocale As Object : aOldLocale = oCursorL.CharLocale
    	&apos; задание транслируемому символу новой локали
 	Dim aNewLocale As New com.sun.star.lang.Locale
     If aOldLocale.Language = &quot;en&quot; Then
 		aNewLocale.Language = &quot;ru&quot;
 		aNewLocale.Country = &quot;RU&quot;
 	Else
-		aNewLocale.Language = &quot;en&quot;
-		aNewLocale.Country = &quot;US&quot;
+		If sSymbol = &quot;,&quot; OR sSymbol = &quot;.&quot; OR sSymbol = &quot;?&quot; OR sSymbol = &quot;!&quot; OR sSymbol = &quot;;&quot; OR sSymbol = &quot;:&quot; Then
+			&apos; пропускаем знаки препинания для английских слов, написанных русскими буквами (ставим только английскую локаль для этого знака препинания)
+			aNewLocale.Language = &quot;en&quot;
+			aNewLocale.Country = &quot;US&quot;
+			oLCurs.CharLocale = aNewLocale
+			TransCode = False
+			Exit Function
+		Else
+			aNewLocale.Language = &quot;en&quot;
+			aNewLocale.Country = &quot;US&quot;
+		End If
 	End If
 		
    	If nIndex = 0 Then 

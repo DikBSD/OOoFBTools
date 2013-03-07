@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="HandWorkingParagraphs" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; =============================================================================================================
+&apos; 										модуль инструмента:
+&apos; 								ручная обработка абзацев (склейка)
+&apos; =============================================================================================================
 Option Explicit
 
 Private oHWPDlg As Object
@@ -9,7 +13,7 @@ Private bWorkEnd			As Boolean &apos; флаг конца работы инстр
 
 Private sHWPSettingsFilename As String &apos; файл настроек
 
-&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; =============================================================================================================
 Sub HandWorkingParagraphsDlg_windowActivated(oEv)
 End Sub
 
@@ -39,7 +43,7 @@ End Sub
 Sub HandWorkingParagraphsDlg_disposing(oEv)
 End Sub
 
-&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; =============================================================================================================
 &apos; инициализация и запуск диалога поиска
 Sub HandWorkingParagraphsStart()
 	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
@@ -79,8 +83,8 @@ Sub HandWorkingParagraphsStart()
 	oHWPDlg.setVisible( False )
 End Sub
 
+&apos; Изменение Вида обработки при изменении Режима обработки абзацев
 Sub lbHWPModeChange()
-	&apos; Изменение Вида обработки при изменении Режима обработки абзацев
 	With sHWPD
 		Dim aModeTypeList() As String
 		Select Case oHWPDlg.GetControl( &quot;lbHWPMode&quot; ).SelectedItemPos
@@ -100,8 +104,8 @@ Sub lbHWPModeChange()
 	End With
 End Sub
 
+&apos; Обработка выделенных абзацев по указанному виду обработки
 Sub cmdBtnWorkClick()
-	&apos; Обработка выделенных абзацев по указанному виду обработки
 	Dim lSel	As Integer : lSel = GetSelectionCount() &apos; число выделеннох фрагментов текста
 	Dim nCount	As Integer : nCount = 0
 	&apos; проверка, что выделено
@@ -163,33 +167,31 @@ Sub cmdBtnWorkClick()
 
 End Sub
 
-&apos; ////////////////////////////////////////////////////////////////////////////////////
-&apos; Функции обработки абзацев для выбранного Режима и Типа обработки
-&apos; ////////////////////////////////////////////////////////////////////////////////////
+&apos; =============================================================================================================
+&apos; 					Функции обработки абзацев для выбранного Режима и Типа обработки
+&apos; =============================================================================================================
 Function ParagraphsWorker( oDoc As Object, oLCurs As Object, oRCurs As Object, sFindReg As String, sReplaceReg As String ) As Integer
 	ParagraphsWorker = 0
 	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Function
-	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Function
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
+&apos;	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Function
 	
-	oLCurs.goRight( 0, False )
-
-	On Error GoTo ErrorHandler
-
-	Dim vDescriptor : vDescriptor = oDoc.createSearchDescriptor()
-	With vDescriptor
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+	With vSearch
 		.SearchString				= sFindReg
 		.SearchCaseSensitive		= False
 		.SearchRegularExpression	= True
 	End With
-	Dim vFound : vFound = oDoc.findNext( oLCurs, vDescriptor )
-	Do While Not IsNull(vFound)
-		If oDoc.Text.compareRegionEnds( vFound, oRCurs ) = -1 Then Exit Function
+
+	Dim vFound As Object: vFound = oDoc.findNext( oCursorL, vSearch )
+	Do While ( ( Not IsNull(vFound ) AND oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0 ) )
+		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
+		If vFound.Text.compareRegionEnds( vFound, oCursorR ) &lt; 0 Then Exit Function
 		vFound.setString( sReplaceReg )
 		ParagraphsWorker = ParagraphsWorker + 1
-		vFound = ThisComponent.findNext( vFound.End, vDescriptor )
+		vFound = oDoc.findNext( vFound.End, vSearch )
 	Loop
-ErrorHandler:
-
 End Function
 
 </script:module>
