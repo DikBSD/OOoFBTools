@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="AutoCode" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ================================================================================================================
+&apos; 										модуль инструмента:
+&apos;		поиск текста стиля &quot;Текст в заданном формате&quot; (Preformatted Text) и замена этого стиля стилем &quot;code&quot;
+&apos; ================================================================================================================
+
+Option Explicit
+
+Sub AutoCode()
+	InitAutoCodeMessage() &apos; инициализация сообщений
+	If MsgBox( sACD.sInfoOfTool &amp; chr(10) &amp; sACD.sQuest &amp; chr(10), 1 + 32 + 256, sACD.sToolTitle ) = 1 Then
+		Dim oDoc	As Object : oDoc	= ThisComponent
+		Dim vSearch	As Object : vSearch	= oDoc.createSearchDescriptor()
+		With vSearch
+			.SearchRegularExpression = False
+			.SearchStyles = True
+			.ValueSearch = False
+			If getOOoLocal() = &quot;ru&quot; Then
+				.setSearchString(&quot;Текст в заданном формате&quot;)
+			Else
+				.setSearchString(&quot;Preformatted Text&quot;)
+			End If
+		End With
+		Dim vFound	As Object	: vFound = oDoc.findAll( vSearch )
+		Dim iCount	As Long		: iCount = vFound.Count
+		Dim sMess	As String	: sMess = sACD.sNotFound
+		If iCount &gt; 0 Then
+			LoadFB2StylesToDoc() &apos; Загрузка шаблона fb2 стилей конвертора
+			sMess = sACD.sFound &amp; iCount &amp; sACD.sMessageOK
+			Dim oArea As Object
+			Dim i As Integer
+			For i = 0 To iCount-1
+				oArea = vFound.getByIndex(i)
+				oArea.ParaStyleName = &quot;code&quot;
+			Next i
+		End If
+		MsgBox sMess, 64, sACD.sToolTitle
+	End If
+End Sub
+
+
+&apos; ================================================================================================================
+&apos; 												локализация
+&apos; ================================================================================================================
+&apos; структурв хранения сообщений для загрузки fb2-стилей в документ
+Type tAutoCodeData
+	sToolTitle		As String &apos; Автоматическая разметка листингов программ
+	sInfoOfTool		As String &apos; Данный инструмент ищет в документе текст стиля &apos;Текст в заданном формате&apos; (Preformatted Text) и заменяет этот стиль на стиль &apos;code&apos;. Инструмент применяется для разметки листингов программ...
+	sMessageTitle	As String &apos; 
+	sFound			As String &apos; Найдено 
+	sNotFound		As String &apos; В документе нет ни одной области текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text). 
+	sMessageOK		As String &apos;  областей текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text).&quot; &amp; chr(10) &amp; &quot;Стиль &apos;Текст в заданном формате&apos; (Preformatted Text) заменен на стиль &apos;code&apos;.
+	sQuest			As String &apos; Вы действительно хотите обработать документ?
+End Type
+
+Public sACD As tAutoCodeData
+
+&apos; инициализация сообщений в зависимости от локали
+Sub InitAutoCodeMessage()
+	If getOOoLocal() = &quot;ru&quot; Then
+		With sACD
+			.sToolTitle	= &quot;Автоматическая разметка листингов программ&quot;
+			.sInfoOfTool= &quot;Данный инструмент ищет в документе текст стиля &apos;Текст в заданном формате&apos; (Preformatted Text) и заменяет этот стиль на стиль &apos;code&apos;. Инструмент применяется для разметки листингов программ...&quot;
+			.sFound		= &quot;Найдено &quot;
+			.sNotFound	= &quot;В документе нет ни одной области текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text).&quot;
+			.sMessageOK	= &quot; областей текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text).&quot; &amp; chr(10) &amp; &quot;Стиль &apos;Текст в заданном формате&apos; (Preformatted Text) заменен на стиль &apos;code&apos;.&quot;
+			.sQuest		= &quot;Вы действительно хотите обработать документ?&quot;
+		End With
+	Else
+		With sACD
+			.sToolTitle	= &quot;Set Style code to listings (auto)&quot;
+			.sInfoOfTool= &quot;This tool searches the document, the text style &apos;Preformatted Text&apos; (Текст в заданном формате) and replaces the style to style &apos;code&apos;. The tool is used for marking program listings ...&quot;
+			.sProgressTitle	= &quot;Found &quot;
+			.sNotFound	= &quot;Not found text with &apos;Текст в заданном формате&apos; (Preformatted Text) style.&quot;
+			.sMessageOK	= &quot; area with &apos;Текст в заданном формате&apos; (Preformatted Text) style.&quot; &amp; chr(10) &amp; &quot;Style &apos;Текст в заданном формате&apos; (Preformatted Text) to replaced to &apos;code&apos; style.&quot;
+			.sQuest		= &quot;You really wish to Process this Document?&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
