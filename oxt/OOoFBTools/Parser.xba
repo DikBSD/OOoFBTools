@@ -256,8 +256,10 @@ Function InLineAllParser(oSect As Object) As String
 	If oSect.CharEscapement &lt; 0 Then
 		sLexem = &quot;&lt;sub&gt;&quot; &amp; sLexem &amp; &quot;&lt;/sub&gt;&quot;
 	End If
-	If oSect.CharStyleName = &quot;Source Text&quot; OR oSect.CharStyleName = &quot;code&quot; OR oSect.CharShadowed = True OR oSect.CharContoured = True Then
-		&apos; тень или контур или символьный стиль code или стиль абзаца code (Source Text)
+	If oSect.CharStyleName = &quot;code&quot; OR oSect.CharStyleName = &quot;Source Text&quot; OR _
+		oSect.ParaConditionalStyleName = &quot;code&quot; OR oSect.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+		oSect.ParaStyleName = &quot;code&quot; OR oSect.ParaStyleName = &quot;Source Text&quot; OR _
+		oSect.CharFontName = &quot;Courier New&quot; OR oSect.CharShadowed = True OR oSect.CharContoured = True Then
 		sLexem = &quot;&lt;code&gt;&quot; &amp; sLexem &amp; &quot;&lt;/code&gt;&quot;
 	End If
 	If oSect.CharStrikeout &gt; 0 Then

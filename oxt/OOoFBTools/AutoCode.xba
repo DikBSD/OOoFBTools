@@ -29,17 +29,44 @@ Sub AutoCode()
 		If iCount &gt; 0 Then
 			LoadFB2StylesToDoc() &apos; Загрузка шаблона fb2 стилей конвертора
 			sMess = sACD.sFound &amp; iCount &amp; sACD.sMessageOK
+			Dim oProgressBar As Object : oProgressBar = oDoc.CurrentController.StatusIndicator
+			oProgressBar.start( sACD.sProgress, iCount )
 			Dim oArea As Object
 			Dim i As Integer
 			For i = 0 To iCount-1
 				oArea = vFound.getByIndex(i)
 				oArea.ParaStyleName = &quot;code&quot;
+				ReplaceBlanksTabsToBlankOrTabsInCodeWorker( oDoc, oArea.Start, oArea.End )
+				oProgressBar.setValue(i)
 			Next i
+			oProgressBar.end
 		End If
 		MsgBox sMess, 64, sACD.sToolTitle
 	End If
 End Sub
 
+Sub ReplaceBlanksTabsToBlankOrTabsInCodeWorker( oDoc As Object, oLCurs As Object, oRCurs As Object )
+	If IsNull( oLCurs ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
+	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )
+	Dim oCursorR As Object : oCursorR = oRCurs.getText().createTextCursorByRange( oRCurs )
+&apos;	If oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &lt;= 0 Then Exit Sub
+	
+	&apos; ищем заданное
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+	With vSearch
+		.SearchString				= &quot;\x20{2,}&quot; &apos; простые пробелы
+		.SearchRegularExpression	= True
+	End With
+
+	Dim vFound As Object : vFound = oDoc.findNext( oCursorL, vSearch )
+	Do While ( ( Not IsNull( vFound ) ) AND oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0 )
+		&apos; поиск пробела
+		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
+		If vFound.Text.compareRegionEnds( vFound, oCursorR ) &lt; 0 Then Exit Sub
+		vFound.setString( String( Len( vFound.getString() ), chr(160) ) &apos; неразрывные пробелы
+		vFound = oDoc.findNext( vFound.End, vSearch )
+	Loop
+End Sub
 
 &apos; ================================================================================================================
 &apos; 												локализация
@@ -52,6 +79,7 @@ Type tAutoCodeData
 	sNotFound		As String &apos; В документе нет ни одной области текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text). 
 	sMessageOK		As String &apos;  областей текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text).&quot; &amp; chr(10) &amp; &quot;Стиль &apos;Текст в заданном формате&apos; (Preformatted Text) заменен на стиль &apos;code&apos;.
 	sQuest			As String &apos; Вы действительно хотите обработать документ?
+	sProgress		As String &apos; Обработка листингов
 End Type
 
 Public sACD As tAutoCodeData
@@ -66,6 +94,7 @@ Sub InitAutoCodeMessage()
 			.sNotFound	= &quot;В документе нет ни одной области текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text).&quot;
 			.sMessageOK	= &quot; областей текста стиля &apos;Текст в заданном формате&apos; (Preformatted Text).&quot; &amp; chr(10) &amp; &quot;Стиль &apos;Текст в заданном формате&apos; (Preformatted Text) заменен на стиль &apos;code&apos;.&quot;
 			.sQuest		= &quot;Вы действительно хотите обработать документ?&quot;
+			.sProgress	= &quot;Обработка листингов:&quot;
 		End With
 	Else
 		With sACD
@@ -75,6 +104,7 @@ Sub InitAutoCodeMessage()
 			.sNotFound	= &quot;Not found text with &apos;Текст в заданном формате&apos; (Preformatted Text) style.&quot;
 			.sMessageOK	= &quot; area with &apos;Текст в заданном формате&apos; (Preformatted Text) style.&quot; &amp; chr(10) &amp; &quot;Style &apos;Текст в заданном формате&apos; (Preformatted Text) to replaced to &apos;code&apos; style.&quot;
 			.sQuest		= &quot;You really wish to Process this Document?&quot;
+			.sProgress	= &quot;Progress:&quot;
 		End With
 	End If
 End Sub

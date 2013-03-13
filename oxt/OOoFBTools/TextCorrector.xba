@@ -16,6 +16,7 @@ Private bTCStartTabDelete			As Boolean
 Private bTCDelSpace					As Boolean
 Private nTCSpaceCount				As Integer
 Private bTCToSpace					As Boolean
+Private bTCNBDelSpace				As Boolean
 Private bRemoveSpaceBeforePunct		As Boolean
 
 Private bOnlyDefisPara				As Boolean
@@ -71,7 +72,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 396
+		.Height = 408
 		.Width  = 392
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -117,6 +118,7 @@ Sub SaveCorrectorSettings()
 		bTCStartNoBreakSpaceDelete	= .GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State
 		bTCStartTabDelete			= .GetControl(&quot;cbStartTabDelete&quot;).State
 		bTCDelSpace					= .GetControl(&quot;cboxDelSpace&quot;).State
+		bTCNBDelSpace				= .GetControl(&quot;cboxNonBreakSpace&quot;).State
 		oLB 						= .getControl(&quot;lbTCSpaceCount&quot;)
 		nTCSpaceCount 				= oLB.SelectedItem
 		bTCToSpace					= .GetControl(&quot;obTCToSpace&quot;).State
@@ -231,10 +233,12 @@ Sub cboxDelSpaceEnabled()
 			.GetControl(&quot;obTCToSpace&quot;).Enable	= True
 			.GetControl(&quot;obTCToTab&quot;).Enable		= True
 			.GetControl(&quot;lbTCSpaceCount&quot;).Enable= True
+			.GetControl(&quot;cboxNonBreakSpace&quot;).Enable= True
 		Else
 			.GetControl(&quot;obTCToSpace&quot;).Enable	= False
 			.GetControl(&quot;obTCToTab&quot;).Enable		= False
 			.GetControl(&quot;lbTCSpaceCount&quot;).Enable= False
+			.GetControl(&quot;cboxNonBreakSpace&quot;).Enable= False
 		End If
 	End With
 End Sub
@@ -261,6 +265,7 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 1			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; 1 по умолчанию
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -323,6 +328,7 @@ Sub SetDocumentType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 1			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -385,6 +391,7 @@ Sub SetFictionType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 1			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -438,7 +445,7 @@ Sub SetFictionType()
 	ControlsEnabled()
 End Sub
 
-&apos; Документалистика Публицистика
+&apos; Документалистика / Публицистика
 Sub SetPublicismType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -447,6 +454,7 @@ Sub SetPublicismType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 1			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -509,6 +517,7 @@ Sub SetScientificType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 0			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -571,6 +580,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 0			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -633,6 +643,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 0	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 0			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 0			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -695,6 +706,7 @@ Sub SetReligionType()
 		.GetControl(&quot;cbStartNoBreakSpaceDelete&quot;).State = 1	&apos; удаление стартовых неразрывных пробелов
 		.GetControl(&quot;cbStartTabDelete&quot;).State = 1			&apos; удаление стартовых табудяций
 		.GetControl(&quot;cboxDelSpace&quot;).State = 1				&apos; замена множественных пробелов на
+		.GetControl(&quot;cboxNonBreakSpace&quot;).State = 1			&apos; учитывать и неразрывные пробелы
 		oLB = .getControl(&quot;lbTCSpaceCount&quot;)					&apos; число замен
 		oLB.SelectItemPos(0, True) &apos; &quot;1&quot;					&apos; по умолчанию 1
 		.GetControl(&quot;obTCToSpace&quot;).State = 1				&apos; пробелов
@@ -1574,7 +1586,13 @@ Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 &apos;		.SetSearchAttributes(SrchAttributes())
 &apos;&apos;		.SearchString = &quot;([:alnum:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
 &apos;		.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alpha:]|[\({\[«&apos;“\&quot;&quot;])&quot;
-		.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-\+&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alpha:]|[({\[«&apos;“\&quot;&quot;\&lt;])&quot;
+		If bTCNBDelSpace Then
+			&apos; все пробелы - и простые и неразрывные
+			.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-\+&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[:space:]{2,}([:alpha:]|[({\[«&apos;“\&quot;&quot;\&lt;])&quot;
+		Else
+			&apos; только простые пробелы
+			.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-\+&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])\x20{2,}([:alpha:]|[({\[«&apos;“\&quot;&quot;\&lt;])&quot;
+		End if
 		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
 	End With
 	oDoc.ReplaceAll(oDesc)
