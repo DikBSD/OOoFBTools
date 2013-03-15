@@ -33,8 +33,14 @@ End Sub
 
 &apos; парсер графики и сносок для Врезок - Общий для разных видов экспорта Врезок
 Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
-	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
+	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
+	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
+	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
+	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
+	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
 	
 	Dim oCEnum As Object, oSectEnum As Object, oSect As Object, oContent As Object 
 	Dim sExt As String
@@ -46,6 +52,13 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 		oContent = oCEnum.nextElement()
 		If oContent.supportsService( textGraphService ) Or oContent.supportsService( graphicService ) Then
 			&apos; парсер графики, привязанной к параграфу
+			sExt = GetValidateForFB2FileExt( oContent )
+			sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+			MakeGraphic( oPar, oContent, False, sPara, False )
+		ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
+			oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
+			oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+			&apos; парсер векторной графики, привязанной к параграфаму
 			sExt = GetValidateForFB2FileExt( oContent )
 			sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 			MakeGraphic( oPar, oContent, False, sPara, False )
@@ -72,6 +85,13 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 				oContent = oCEnum.nextElement()
 				If oContent.supportsService( textGraphService ) Or oContent.supportsService( graphicService ) Then
 					&apos; парсер графики, привязанной к символу
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oPar, oContent, False, sPara, False )
+				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
+					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
+					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+					&apos; парсер векторной графики, привязанной к символу
 					sExt = GetValidateForFB2FileExt( oContent )
 					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 					MakeGraphic( oPar, oContent, False, sPara, False )

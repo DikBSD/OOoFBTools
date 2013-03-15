@@ -41,9 +41,14 @@ Sub DocumentParser()
 	Dim oCEnum		As Object &apos;Перебирает содержимое, такое как графические объекты
 	Dim oContent	As Object &apos;Перебираемое содержимое
 	
-	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-&apos;	Dim customShapeService	As String : customShapeService	= &quot;com.sun.star.drawing.CustomShape&quot;
+	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
+	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
+	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
+	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
+	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
+	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
 
 	lBATIndex = -1 &apos; пока нет ни Автора Книги, ни Названия Книги
 			
@@ -59,8 +64,13 @@ Sub DocumentParser()
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-					&apos; парсер графики, привязанной к параграфу
+				If oContent.supportsService( textGraphService ) OR oContent.supportsService( graphicService ) Then
+					&apos; парсер растровой графики, привязанной к параграфаму
+					MakeGraphic( oPar, oContent, True, sPara, False )
+				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
+					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
+					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+					&apos; парсер векторной графики, привязанной к параграфаму
 					MakeGraphic( oPar, oContent, True, sPara, False )
 				Else
 					&apos; Привязка к параграфу
@@ -98,8 +108,13 @@ Sub DocumentParser()
 					oCEnum = oSect.createContentEnumeration(textGraphService)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-							&apos; парсер графики, привязанной к символу
+						If oContent.supportsService( textGraphService ) OR oContent.supportsService( graphicService ) Then
+							&apos; парсер растровой графики, привязанной к символу
+							MakeGraphic( oPar, oContent, True, sPara, False )
+						ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
+							oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
+							oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+							&apos; парсер векторной графики, привязанной к символу
 							MakeGraphic( oPar, oContent, True, sPara, False )
 						Else
 							&apos; Привязка к символу
@@ -281,270 +296,6 @@ Function InLineAllParser(oSect As Object) As String
 		sLexem = &quot;&quot;
 	End If
 	InLineAllParser = sLSpace + sLexem + sRSpace
-End Function
-
-&apos; /////////////// парсер сносок /////////////////////////////
-Function FootEndNoteParser( oSect As Object ) As String
-	Dim bIsFootNote As Boolean : bIsFootNote = False &apos; флаг - сноска (True) или концевая сноска (False)
-	
-	Dim oFootnoteCursor As Object
-	Dim sNote 			As String : sNote = &quot;&quot;
-	
-	&apos; форматирование текста сноски по стилям
-	oFootnoteCursor = oSect.Footnote.createTextCursor()
-	oFootnoteCursor.gotoStart(False)
-	oFootnoteCursor.gotoEndOfParagraph(True)
-	
-	Static fn As Integer : fn = iFootnoteCount + 1
-	
-	If bFENoteSeparately = True Then
-		&apos; раздельный вывод сносок и концевых сносок в разные блоки
-		If FNType( oFootnoteCursor.ParaStyleName ) = &quot;FootNote&quot; Then
-			If bFootnoteSpace = True Then sNote = sNote &amp; &quot; &quot;
-			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; fn &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; fn &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
-			bIsFootNote = True
-		Else
-			Static en As Integer : en = iEndnoteCount + 1
-			If bENSpace = True Then sNote = sNote &amp; &quot; &quot;
-			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#c&quot; &amp; en &amp; &quot;&quot;&quot; type=&quot;&quot;comment&quot;&quot;&gt;&quot; &amp; sENLeft &amp; en &amp; sENRight &amp; &quot;&lt;/a&gt;&quot;
-			bIsFootNote = False
-		End If
-	Else
-		&apos; совместный вывод сносок и концевых сносок в один блок
-		If bFootnoteSpace = True Then sNote = sNote &amp; &quot; &quot;
-		sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; fn &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; fn &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
-		bIsFootNote = True
-	End If
-	
-	
-	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
-	Dim sFNTH As String
-	Dim sParagFN As String : sParagFN = &quot;&quot;
-
-	Dim sBookMark : sBookMark = &quot;&quot;
-	Dim asFNPart()		As String	&apos; временный массив для хранения всех данных одного абзаца текста сноски
-	Dim vTextArray()	As Variant	&apos; временный массив для хранения всех строк одного абзаца текста сноски
-	Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
-	
-	Dim oCEnum				As Object &apos;Перебирает содержимое, такое как графические объекты
-	Dim oContent			As Object &apos;Перебираемое содержимое
-	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	
-	Do
-		oFootnoteCursor.gotoEndOfParagraph(True)
-		oEnumF = oFootnoteCursor.createEnumeration()
-		While oEnumF.hasMoreElements()
-			sParagFN	= &quot;&quot;
-			oTextF		= oEnumF.nextElement()
-			sString		= oTextF.getString()	
-			oSecEnumF	= oTextF.createEnumeration()
-			&apos;////////////////////////////////////////////////////////////
-			oCEnum = oTextF.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
-			Do While oCEnum.hasMoreElements()
-				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-					&apos; парсер графики, привязанной к параграфу
-					MakeGraphic( oSect, oContent, True, sParagFN, True )
-				Else
-					&apos; Привязка к параграфу
-					If oContent.ShapeType = &quot;FrameShape&quot; Then
-						If oContent.FrameStyleName = &quot;Frame&quot; Then
-							&apos; Парсер Текстовой Врезки
-&apos;							TextFrameParser(oContent)
-						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-							&apos; парсер формул и диаграм, привязка &quot;параграф&quot;
-							MakeGraphic( oSect, oContent, True, sParagFN, True )
-						End If
-					End If
-				End If
-			Loop			
-			&apos;////////////////////////////////////////////////////////////
-			
-			While oSecEnumF.hasMoreElements()
-				oTextPortionF = oSecEnumF.nextElement()
-				&apos;////////////////////////////////////////////////////////////
-				If oTextPortionF.TextPortionType = &quot;Frame&quot; Then
-					oCEnum = oTextPortionF.createContentEnumeration(textGraphService)
-					Do While oCEnum.hasMoreElements()
-						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-							&apos; парсер графики, привязанной к символу
-							MakeGraphic( oSect, oContent, True, sParagFN, True )
-						Else
-							&apos; Привязка к символу
-							If oContent.ShapeType = &quot;FrameShape&quot; Then
-								If oContent.FrameStyleName = &quot;Frame&quot; Then
-									&apos; Парсер Текстовой Врезки
-&apos;									TextFrameParser(oContent)
-								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; парсер формул и диаграм, привязка &quot;символ&quot;
-									MakeGraphic( oSect, oContent, True, sParagFN, True )
-								End If
-							End If
-						End If
-					Loop
-				ElseIf oTextPortionF.TextPortionType = &quot;Bookmark&quot; Then
-					&apos; закладки
-					If bDocLinks = True Then
-						sBookMark = &quot;_&quot; &amp; oTextPortionF.Bookmark.Name
-					End If
-				End If
-				&apos;///////////////////////////////////////////////////////////
-				&apos;TODO: если рядом с текстом в одной строке стоит картинка с Привязкой К Символу, то к тесту добавляется предыдущая часть.
-				&apos;Надо ввести проверку!!!
-				sParagFN = sParagFN &amp; InLineAllParser( oTextPortionF )
-			Wend
-		
-			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
-			sParagFN = DelBreakLineInString( sParagFN )
-
-			&apos; маркеры и нумерация в сносках
-			If oTextF.NumberingIsNumber = True Then &apos; нумерованные списки
-				sParagFN = MakeNumberingNumberPara( oTextF, sString, sParagFN )
-				bMarker = True
-			End If
-			
-			If InStr(sParagFN,  &quot;__fn__OOo_graphics__&quot; ) = 0 Then
-				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
-			Else
-				Dim i As Integer, sStr As String : sStr = &quot;&quot;
-				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot;)
-				For i=0 To UBound( aStr() )
-					If aStr(i) &lt;&gt; &quot;&quot; Then
-						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
-					End If
-				Next i
-			End If
-
-		Wend
-	Loop While oFootnoteCursor.gotoNextParagraph( False )
-	
-	Dim n As Integer : n = Ubound(vTextArray()) + 1
-	If n &gt; 0 Then
-		ReDim Preserve vTextArray(n)
-	Else ReDim vTextArray(n)
-	End If
-	vTextArray(n) = asFNPart()
-
-	If bIsFootNote = True Then
-		ReDim Preserve vFootnoteText(iFootnoteCount) As Variant
-		vFootnoteText( iFootnoteCount ) = vTextArray()
-		iFootnoteCount = iFootnoteCount + 1
-	Else
-		ReDim Preserve vEndnoteText(iEndnoteCount) As Variant
-		vEndnoteText( iEndnoteCount ) = vTextArray()
-		iEndnoteCount = iEndnoteCount + 1
-	End If
-	FootEndNoteParser = sNote
-End Function
-
-&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////+
-Function FNType( sNoteType As String )
-	FNType = &quot;FootNote&quot;
-	If LCase(sNoteType) = &quot;endnote&quot; Then FNType = &quot;EndNote&quot;
-End Function
-
-Function MakeTextArray( sStr As String, sParaStyleName As String, sBookMark As String, asFNPart() As String )
-	Dim sTemp() As String
-	&apos; парсер стилей сносок
-	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), sParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
-	Dim sNoteText	As String : sNoteText = sTemp( UBound( sTemp() )
-	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType(sParaStyleName) )
-
-	MakeTextArray = asFNPart()
-End Function
-
-Function AddBodyArray( sPara As String, sTextType As String, bLevel As Boolean )
-	&apos; для уровней - проверка на несколько строк
-	If bLevel = False Then 
-		AddNewItemToArray2( sBodyParagraphs(), sPara, sTextType )
-	Else
-		If sTextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
-			AddNewItemToArray2( sBodyParagraphs(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sTextType )
-		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
-			Dim sText As String
-			sText = sBodyParagraphs(UBound(sBodyParagraphs),0)
-			sBodyParagraphs(UBound(sBodyParagraphs),0) = sText &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-		End If
-	End If
-	oProgressBar.setValue( Ubound(sBodyParagraphs(), 1) + 1 ) &apos; Статусбар
-End Function
-
-Function AddBookAnnotation(sPara As String)
-	&apos; Собираем всю &quot;отформатированную&quot; Аннотацию на Книгу
-	Dim l As Long : l = Ubound(sBookAnnotation()) + 1
-	ReDim Preserve sBookAnnotation(l)
-	sBookAnnotation(l) = sPara
-	oProgressBar.setValue(UBound(sBodyParagraphs()),0 &amp; UBound(sBookAnnotation())
-End Function
-
-Function AddNotesArray(sTextArray() As String, sTextType As String, sPara As String, bLevel As Boolean)
-	&apos; для уровней - проверка на несколько строк
-	If bLevel = False Then 
-		AddNewItemToArray1( sTextArray(), sPara )
-	Else
-		If sTextType &lt;&gt; sNotesPrevStyle Then &apos; Разные уровни
-			AddNewItemToArray1( sTextArray(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; )
-		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
-			&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
-			DelEndType(sTextArray)
-			sTextArray(UBound(sTextArray)) = sTextArray(UBound(sTextArray)) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-		End If
-	End If
-End Function
-
-Function DelEndType(sTextArray As String)
-	&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
-	Dim sTempArray() As String, i As Integer, sResult As String
-	sTempArray = Split(sTextArray(UBound(sTextArray)), chr(10))
-	sResult = &quot;&quot;
-	For i=LBound(sTempArray) To UBound(sTempArray)-1
-		sResult = sResult &amp; sTempArray(i)
-	Next i
-	sTextArray(UBound(sTextArray)) = sResult
-End Function
-
-Function FootnoteStyleParser(sTextArray() As String, sParaStyleName As String, sPara As String) As String
-	&apos; перебор по стилям
-	Dim sParaType As String : sParaType = sParaStyleName
-	If sPara = &quot;&quot; Then
-		If sParaStyleName = sStylePoem Then
-			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
-		ElseIf sParaStyleName = sStyleCite Then
-			&apos; для пустых строк в цитатах
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
-		ElseIf sParaStyleName = sStyleAnnotation Then
-			&apos; для пустых строк в аннотациях
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
-		ElseIf sParaStyleName = sStyleEpigraph Then
-			&apos; для пустых строк в эпиграфах
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
-		Else
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
-			sParaType = &quot;&quot;
-		End If
-	Else
-		If sParaStyleName = sStylePoemTitle Or sParaStyleName = sStylePoemSubTitle Or sParaStyleName = sStylePoem Or _
-			sParaStyleName = sStylePoemAuthor Or sParaStyleName = sStylePoemDate Or _
-			sParaStyleName = sStyleEpigraph Or sParaStyleName = sStyleEpigraphAuthor Or _
-			sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
-			sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
-			sParaStyleName = sStyleSubTitle Then
-			AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-		ElseIf sParaStyleName = sStyleLevel1 Or sParaStyleName = sStyleLevel2 Or sParaStyleName = sStyleLevel3 Or _
-				sParaStyleName = sStyleLevel4 Or sParaStyleName = sStyleLevel5 Or sParaStyleName = sStyleLevel6 Or _
-				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
-				sParaStyleName = sStyleLevel10 Then
-			AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-		Else	&apos; что-то другое или просто параграф
-			AddNotesArray(sTextArray, &quot;Para&quot;, sPara, False)
-			sParaType = &quot;Para&quot;
-		End If
-	End If
-	sNotesPrevStyle = sParaStyleName
-	FootnoteStyleParser = sParaType
 End Function
 
 </script:module>

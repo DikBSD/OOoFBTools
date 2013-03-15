@@ -38,6 +38,7 @@ Public sGifAs As String &apos; формат преоьбразования дл�
 Public sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
 Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
 Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
+Public bExportAsOriginal As Boolean &apos; режим экспорта размеров графики (True: оригинал, как в тексте; False: Logical Size)
 &apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
 Public bSaveUTF8 As Boolean
 &apos; Чистка fb2 кода
@@ -131,6 +132,8 @@ Sub cboxExportGraphicsEnabled()
 			.GetControl( &quot;lbAnyAs&quot; ).Enable		= True
 			.GetControl( &quot;lblOLE&quot; ).Enable		= True
 			.GetControl( &quot;lbOLEAs&quot; ).Enable		= True
+			.GetControl( &quot;obOriginal&quot; ).Enable	= True
+			.GetControl( &quot;obLogicalSize&quot; ).Enable	= True
 		Else
 			.GetControl( &quot;lblJPEG&quot; ).Enable		= False
 			.GetControl( &quot;lbJPEGAs&quot; ).Enable	= False
@@ -144,6 +147,8 @@ Sub cboxExportGraphicsEnabled()
 			.GetControl( &quot;lbAnyAs&quot; ).Enable		= False
 			.GetControl( &quot;lblOLE&quot; ).Enable		= False
 			.GetControl( &quot;lbOLEAs&quot; ).Enable		= False
+			.GetControl( &quot;obOriginal&quot; ).Enable	= False
+			.GetControl( &quot;obLogicalSize&quot; ).Enable	= False
 		End If
 	End With
 End Sub
@@ -270,6 +275,10 @@ Sub SetDefaultSettingsToControls()
 		oLB.SelectItemPos(0, True)
 		oLB = .getControl(&quot;lbOLEAs&quot;)
 		oLB.SelectItemPos(0, True)
+		&apos; режим экспорта картинок
+		.Model.obOriginal.State = 0
+		.Model.obLogicalSize.State = 1
+		cboxExportGraphicsEnabled()
 	
 		&apos; Текстовые врезки
 		oLB = .getControl(&quot;cmbboxTextFrame&quot;)
@@ -352,6 +361,8 @@ Sub SetDefaultSettingsToVars()
 	sTifBMPAs	= &quot;png&quot;
 	sAnyAs		= &quot;png&quot;
 	sOLEAs		= &quot;png&quot;
+	&apos; режим экспорта размеров графики (True: оригинал, как в тексте; False: Logical Size)
+	bExportAsOriginal = False
 	
 	&apos; значение по-умолчанию для обработки ссылок внутри документа
 	bDocLinks	= True
@@ -519,6 +530,8 @@ Sub SetSettingsToVars( sCurrentLine )
 			sAnyAs 	= GetFormat(sSetting(1))
 		Case &quot;lbOLEAs&quot;
 			sOLEAs 	= GetFormat(sSetting(1))
+		Case &quot;obOriginal&quot;
+			bExportAsOriginal = sSetting(1)
 		&apos; Текстовые врезки
 		Case &quot;cmbboxTextFrame&quot;
 			Select Case sSetting(1)
