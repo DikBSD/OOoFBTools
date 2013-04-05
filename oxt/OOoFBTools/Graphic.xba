@@ -384,9 +384,13 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 		aFilterData(4).Value = 0
 	Else &apos; jpeg
 		aFilterData(3).Name  =&quot;ColorMode&quot;
-		aFilterData(3).Value = 0	&apos;0 - Color; 1 - Grayscale
+		If bJPEGColor Then
+			aFilterData(3).Value = 0	&apos;0 - Color; 1 - Grayscale
+		Else
+			aFilterData(3).Value = 1	&apos;0 - Color; 1 - Grayscale
+		End If
 		aFilterData(4).Name  =&quot;Quality&quot;
-		aFilterData(4).Value = 100	&apos;Quality: 1-100, 100: лучшее качество / меньшее сжатие
+		aFilterData(4).Value = JPEGQuality	&apos;Quality: 1-100, 100: лучшее качество / меньшее сжатие
 	End If
 	
 	If bExportAsOriginal Then	&apos;0: Original

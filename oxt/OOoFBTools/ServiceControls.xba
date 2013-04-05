@@ -39,6 +39,8 @@ Public sTifBMPAs As String &apos; формат преоьбразования д
 Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
 Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
 Public bExportAsOriginal As Boolean &apos; режим экспорта размеров графики (True: оригинал, как в тексте; False: Logical Size)
+Public JPEGQuality As Integer &apos; Качество вывода jpeg картинок (100 - максимальное качество/минимальное сжатие, 5 - минимальное качество/максимальное сжатие)
+Public bJPEGColor  As Boolean &apos; Цветовой режим экспорта jpeg: True - Color, False - Grayscale
 &apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
 Public bSaveUTF8 As Boolean
 &apos; Чистка fb2 кода
@@ -134,6 +136,13 @@ Sub cboxExportGraphicsEnabled()
 			.GetControl( &quot;lbOLEAs&quot; ).Enable		= True
 			.GetControl( &quot;obOriginal&quot; ).Enable	= True
 			.GetControl( &quot;obLogicalSize&quot; ).Enable	= True
+			.GetControl( &quot;fcJPEG&quot; ).Enable			= True
+			.GetControl( &quot;lbColorMode&quot; ).Enable		= True
+			.GetControl( &quot;obtnJPEGColor&quot; ).Enable	= True
+			.GetControl( &quot;obtnJPEGGrayscale&quot; ).Enable	= True
+			.GetControl( &quot;lbQuality&quot; ).Enable			= True
+			.GetControl( &quot;lboxJPEGQuality&quot; ).Enable		= True
+			.GetControl( &quot;lbJPEGPercent&quot; ).Enable		= True
 		Else
 			.GetControl( &quot;lblJPEG&quot; ).Enable		= False
 			.GetControl( &quot;lbJPEGAs&quot; ).Enable	= False
@@ -149,6 +158,13 @@ Sub cboxExportGraphicsEnabled()
 			.GetControl( &quot;lbOLEAs&quot; ).Enable		= False
 			.GetControl( &quot;obOriginal&quot; ).Enable	= False
 			.GetControl( &quot;obLogicalSize&quot; ).Enable	= False
+			.GetControl( &quot;fcJPEG&quot; ).Enable			= False
+			.GetControl( &quot;lbColorMode&quot; ).Enable		= False
+			.GetControl( &quot;obtnJPEGColor&quot; ).Enable	= False
+			.GetControl( &quot;obtnJPEGGrayscale&quot; ).Enable	= False
+			.GetControl( &quot;lbQuality&quot; ).Enable			= False
+			.GetControl( &quot;lboxJPEGQuality&quot; ).Enable		= False
+			.GetControl( &quot;lbJPEGPercent&quot; ).Enable		= False
 		End If
 	End With
 End Sub
@@ -275,6 +291,11 @@ Sub SetDefaultSettingsToControls()
 		oLB.SelectItemPos(0, True)
 		oLB = .getControl(&quot;lbOLEAs&quot;)
 		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;lboxJPEGQuality&quot;)
+		oLB.SelectItemPos(0, True)
+		&apos; качество jpeg
+		.Model.obtnJPEGColor.State = 1
+		.Model.obtnJPEGGrayscale.State = 0
 		&apos; режим экспорта картинок
 		.Model.obOriginal.State = 0
 		.Model.obLogicalSize.State = 1
@@ -361,6 +382,9 @@ Sub SetDefaultSettingsToVars()
 	sTifBMPAs	= &quot;png&quot;
 	sAnyAs		= &quot;png&quot;
 	sOLEAs		= &quot;png&quot;
+	&apos; экспорт качества jpeg
+	JPEGQuality = 100
+	bJPEGColor = True
 	&apos; режим экспорта размеров графики (True: оригинал, как в тексте; False: Logical Size)
 	bExportAsOriginal = False
 	
@@ -513,6 +537,7 @@ Sub SetSettingsToVars( sCurrentLine )
 			bMergeCiteAuthors = sSetting(1)
 		Case &quot;cboxCiteSubtitle&quot;
 			bMergeCiteSubTitle = sSetting(1)
+			
 		&apos; Графика
 		Case &quot;cboxImageTitle&quot;
 			bSaveImageTitle = sSetting(1)
@@ -532,6 +557,10 @@ Sub SetSettingsToVars( sCurrentLine )
 			sOLEAs 	= GetFormat(sSetting(1))
 		Case &quot;obOriginal&quot;
 			bExportAsOriginal = sSetting(1)
+		Case &quot;lboxJPEGQuality&quot;
+			JPEGQuality = 100 - Val( sSetting(1) ) * 5
+		Case &quot;obtnJPEGColor&quot;
+			bJPEGColor = sSetting(1)
 		&apos; Текстовые врезки
 		Case &quot;cmbboxTextFrame&quot;
 			Select Case sSetting(1)
