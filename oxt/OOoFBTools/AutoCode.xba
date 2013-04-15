@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="AutoCode" script:language="StarBasic">REM  *****  BASIC  *****
-&apos; ================================================================================================================
+&apos; =====================================================================================================================
 &apos; 										модуль инструмента:
 &apos;		поиск текста стиля &quot;Текст в заданном формате&quot; (Preformatted Text) и замена этого стиля стилем &quot;code&quot;
-&apos; ================================================================================================================
+&apos;		Алгоритм:
+&apos;	1. Поиск в документе абзацев стиля &quot;Текст в заданном формате&quot; (&quot;Preformatted Text&quot;) и присвоение их стиля &quot;code&quot;.
+&apos; 	2. Замена множественных простых пробелов на такое же число неразрывные во всех местах обрабатываемого текста.
+&apos; =====================================================================================================================
 
 Option Explicit
 
@@ -36,6 +39,7 @@ Sub AutoCode()
 			For i = 0 To iCount-1
 				oArea = vFound.getByIndex(i)
 				oArea.ParaStyleName = &quot;code&quot;
+				&apos; замена множественных простых пробелов на такое же число неразрывные во всех местах обрабатываемого текста
 				ReplaceBlanksTabsToBlankOrTabsInCodeWorker( oDoc, oArea.Start, oArea.End )
 				oProgressBar.setValue(i)
 			Next i
@@ -45,6 +49,7 @@ Sub AutoCode()
 	End If
 End Sub
 
+&apos; замена множественных простых пробелов на такое же число неразрывные во всех местах обрабатываемого текста
 Sub ReplaceBlanksTabsToBlankOrTabsInCodeWorker( oDoc As Object, oLCurs As Object, oRCurs As Object )
 	If IsNull( oLCurs ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Sub
 	Dim oCursorL As Object : oCursorL = oLCurs.getText().createTextCursorByRange( oLCurs )

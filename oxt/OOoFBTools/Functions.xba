@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Functions" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ===========================================================================
+&apos;	Разные функции, необходимые для работы разных содулей пакета OOoFBTools
+&apos; ===========================================================================
+
 Option Explicit
-&apos; Разные функции, необходимые для работы разных содулей пакета OOoFBTools
+
 &apos; ====================================================================
 &apos;						 Работа с Документом
 &apos; ====================================================================
@@ -12,6 +16,14 @@ Sub ActiveDocument()
 	oDoc.CurrentController.Frame.ContainerWindow.toFront()
 	oDoc.CurrentController.Frame.Activate()
 End Sub
+
+&apos; ====================================================================
+&apos;						 Работа с датой и временем
+&apos; ====================================================================
+&apos; таймер - разница между окончанием и началом работы
+Function TimerOfWorkAsDate( ByRef stertDateTime As Date, ByRef endDateTime As Date ) As Date
+	TimerOfWorkAsDate = TimeValue( endDateTime ) - TimeValue( stertDateTime )
+End Function
 
 &apos; ====================================================================
 &apos; 				Определение типа или языка символа
@@ -615,7 +627,7 @@ End Function
 
 &apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
 &apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
-Function ReplaceFromString( sSource As String, sDel As String, sReplace As String ) As Integer
+Function ReplaceFromString( ByRef sSource As String, sDel As String, sReplace As String ) As Integer
 	If sSource = &quot;&quot; Then
 		ReplaceFromString = 0
 		Exit Function
@@ -628,8 +640,10 @@ Function ReplaceFromString( sSource As String, sDel As String, sReplace As Strin
 		ReplaceFromString = 0
 		Exit Function
 	End If
+
 	Do While i &gt; 0
-		Mid(sSource, i, Len(sDel), sReplace)
+		&apos; В LO4 Mid в режиме замены работает неверно, поэтому используем ее в режиме функции возвпрата значений.
+		sSource = Mid( sSource, 1, i-1 ) &amp; sReplace &amp; Mid( sSource, i+Len(sDel) )
 		i = InStr(i, sSource, sDel)
 		c = c+1
 	Loop
@@ -659,12 +673,12 @@ Function ReplaceInStringWithRepCount( sSource As String, sSearch As String, sRep
 				lCurrentPos = InStr( lStartPos, sSource, sSearch )
 			End If
 			If lCurrentPos &lt;&gt; 0 Then
-				sResult = sResult + Mid(sSource, lStartPos, lCurrentPos - lStartPos)
-				sResult = sResult + sReplace
+				sResult = sResult &amp; Mid(sSource, lStartPos, lCurrentPos - lStartPos)
+				sResult = sResult &amp; sReplace
 				lStartPos = lCurrentPos + Len(sSearch)
 				c = c+1
 			Else
-				sResult = sResult + Mid(sSource, lStartPos, Len(sSource))
+				sResult = sResult &amp; Mid(sSource, lStartPos, Len(sSource))
 			End If
 		Loop
 	End If
@@ -691,8 +705,8 @@ Function ReplaceInString( sSource As String, sSearch As String, sReplace As Stri
 				lCurrentPos = InStr( lStartPos, sSource, sSearch )
 			End If
 			If lCurrentPos &lt;&gt; 0 Then
-				sResult = sResult + Mid(sSource, lStartPos, lCurrentPos - lStartPos)
-				sResult = sResult + sReplace
+				sResult = sResult &amp; Mid(sSource, lStartPos, lCurrentPos - lStartPos)
+				sResult = sResult &amp; sReplace
 				lStartPos = lCurrentPos + Len(sSearch)
 			Else
 				sResult = sResult &amp; Mid(sSource, lStartPos, Len(sSource))

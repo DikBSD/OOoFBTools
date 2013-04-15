@@ -300,6 +300,76 @@ Sub UpIndexTransformToFootNoteListTemplate()
 End Sub
 
 &apos;***************************************************************************
+&apos; для режима преобразования - левая часть
+Function GetStringLeft( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; ... текст (x)
+			GetStringLeft = &quot;(&quot;
+		Case 1 &apos; ... текст [x]
+			GetStringLeft = &quot;[&quot;
+		Case 2 &apos; ... текст {x}
+			GetStringLeft = &quot;{&quot;
+		Case 3 &apos; ... текст &lt;x&gt;
+			GetStringLeft = &quot;&lt;&quot;
+		Case 4 &apos; ... текст /x/
+			GetStringLeft = &quot;/&quot;
+		Case 5 &apos; ... текст \x\
+			GetStringLeft = &quot;\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetStringLeft = &quot;((&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetStringLeft = &quot;(((&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetStringLeft = &quot;{{&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetStringLeft = &quot;{{{&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetStringLeft = &quot;[[&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetStringLeft = &quot;[[[&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetStringLeft = &quot;{(&quot;
+		Case Else
+			GetStringLeft = &quot;(&quot;
+	End Select
+End Function
+
+&apos;***************************************************************************
+&apos; для режима преобразования - правая часть
+Function GetStringRight( oLB As Object ) As String
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; ... текст (x)
+			GetStringRight = &quot;)&quot;
+		Case 1 &apos; ... текст [x]
+			GetStringRight = &quot;]&quot;
+		Case 2 &apos; ... текст {x}
+			GetStringRight = &quot;}&quot;
+		Case 3 &apos; ... текст &lt;x&gt;
+			GetStringRight = &quot;&gt;&quot;
+		Case 4 &apos; ... текст /x/
+			GetStringRight = &quot;/&quot;
+		Case 5 &apos; ... текст \x\
+			GetStringRight = &quot;\&quot;
+		Case 6 &apos; ... текст ((x))
+			GetStringRight = &quot;))&quot;
+		Case 7 &apos; ... текст (((x)))
+			GetStringRight = &quot;)))&quot;
+		Case 8 &apos; ... текст {{x}}
+			GetStringRight = &quot;}}&quot;
+		Case 9 &apos; ... текст {{{x}}}
+			GetStringRight = &quot;}}}&quot;
+		Case 10 &apos; ... текст [[x]]
+			GetStringRight = &quot;]]&quot;
+		Case 11 &apos; ... текст [[[x]]]
+			GetStringRight = &quot;]]]&quot;
+		Case 12 &apos; ... текст {(x)}
+			GetStringRight = &quot;)}&quot;
+		Case Else
+			GetStringRight = &quot;)&quot;
+	End Select
+End Function
+
+&apos;***************************************************************************
 &apos; символы слева от номера сноски в списке примечаний
 Function GetStringNFNInListForLeft( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos

@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="OCRError" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ////////////////////////////////////////////////////////////////
+&apos; модуль инструментов:
+&apos; 1. поиск в документе Слов с дефисом, тире или минусом
+&apos; 2. поиск в документе Слов с разорванным абзацем переносом (дефис, тире или минус)
+&apos; 3. поиск в документе Обрыва предложения на словах, знаках препинания, кавычках и скобках
+&apos; 4. поиск в документе Места с недостающим пробелом между словами
+&apos; ////////////////////////////////////////////////////////////////
+Option Explicit
+
+Type tFindData
+	sRegString As String
+	sMessage As String
+End Type
+
+Private oTDF As Object
+Private bWorkStart			As Boolean &apos; флаг начала работы инструмента (True). Защита от повторного запуска диалога
+Private bWorkEnd			As Boolean &apos; флаг конца работы инструмента - закрытия диалога (True)
+
+Private oDocControl, otxtCurs &apos; текстовый курсор
+Private sOCRTCSettingsFilename As String &apos; файл настроек Корректора Текста
+Private asWords() As String &apos; массив с &quot;нормальными&quot; дефисными словами
+
+Public Const sWordsDefisListFile As String = &quot;words_defis_list.txt&quot; &apos; файл с запомненными дефисными словами
+
+&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub OCRErrorDlg_windowActivated(oEv)
+	oDocControl = ThisComponent.getCurrentController()
+End Sub
+
+Sub OCRErrorDlg_windowDeactivated(oEv)
+End Sub
+
+Sub OCRErrorDlg_windowOpened(oEv)
+	bWorkStart = True &apos; Защита от повторного запуска диалога
+End Sub
+
+Sub OCRErrorDlg_windowClosing(oEv)
+	bWorkEnd	= True	&apos; флаг закрытия дмалога
+	bWorkStart	= False	&apos; готовность к новому запуску диалога
+	&apos; записываем настройки диалога
+	SaveSettings( sOCRTCSettingsFilename, oTDF )
+End Sub
+
+Sub OCRErrorDlg_windowClosed(oEv)
+End Sub
+
+Sub OCRErrorDlg_windowMinimized(oEv)
+End Sub
+
+Sub OCRErrorDlg_windowNormalized(oEv)
+End Sub
+
+Sub OCRErrorDlg_disposing(oEv)
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; инициализация и запуск диалога поиска
+Sub OCRErrorStart()
+	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
+	
+	&apos; файл настроек Корректора Текста
+	sOCRTCSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;ocr_errors_corrector.txt&quot;
+	ReDim asWords() As String
+	&apos; считываем из файла дефисные слова, чтобы их потом &quot;пропускать&quot;
+	ReadFileInArray( asWords(), getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile )
+
+	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )   
+	oTDF = LoadDialog( &quot;OOoFBTools&quot;, &quot;OCRErrorDlg&quot; )
+	
+	&apos; инициализация диалога Поиска OCR ошибок в тексте в зависимости от локали
+	InitOCRErrorDlg()
+	
+	Dim aModeList() As String : aModeList() = Array( sTDFD.sWordHyphenDashMinus, sTDFD.sWordBrokenParagraphCarry, _
+													sTDFD.sBreakageOffer, sTDFD.sPlaceMissingBlank )
+											
+	Dim aPunctList() As String : aPunctList() = Array( &quot;.&quot;, &quot;,&quot;, &quot;!&quot;, &quot;?&quot;, &quot;:&quot;, &quot; &apos;&quot;, &quot;…&quot; )
+	With oTDF
+		.Model.lbTDFMode.StringItemList = aModeList()
+		.Model.lbTDFPunctMarks.StringItemList = aPunctList()
+		.getControl( &quot;lbTDFMode&quot; ).SelectItemPos( 0, True )
+		.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
+		.getControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
+	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( sOCRTCSettingsFilename, oTDF, nX, nY )
+	oTDF.setPosSize( nX, nY, 30, 338, com.sun.star.awt.PosSize.POS )
+
+	bWorkEnd = False
+	
+	Dim oList : oList = createUnoListener( &quot;OCRErrorDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
+	oTDF.addTopWindowListener( oList )
+
+	oTDF.setVisible( True )  
+	While Not bWorkEnd
+		Wait 200     
+	Wend
+	
+	oTDF.setVisible( False )
+End Sub
+
+Sub lbTDFModeChange()
+	Select Case oTDF.GetControl( &quot;lbTDFMode&quot; ).SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sDelete
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= sTDFD.sInsertSpace
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= True
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintDeleteMinus
+				.cmdbtnTDFInsertSpace.HelpText			= sTDFD.sInsertSpaceAroundHint
+				.cmdbtnTDFSave.Label					= sTDFD.sWordSave
+				.cmdbtnTDFSave.HelpText					= sTDFD.sWordSaveHint
+				.cmdbtnTDFEdit.Label					= sTDFD.sListWordsEdit
+				.cmdbtnTDFEdit.HelpText					= sTDFD.sListWordsEditHint
+			End With
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sDelete
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintDeleteBreak
+				.cmdbtnTDFInsertSpace.HelpText			= &quot;&quot;
+				.cmdbtnTDFSave.Label					= &quot;-&quot;
+				.cmdbtnTDFSave.HelpText					= &quot;&quot;
+				.cmdbtnTDFEdit.Label					= &quot;-&quot;
+				.cmdbtnTDFEdit.HelpText					= &quot;&quot;
+			End With
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= sTDFD.sInsert
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sProcess
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= sTDFD.sMergeWord
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= True
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= True
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= sTDFD.sWorkerHintInsertPunctMark
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintDeleteBreakAddBlank
+				.cmdbtnTDFInsertSpace.HelpText			= sTDFD.sMergeWordHint
+				.cmdbtnTDFSave.Label					= &quot;-&quot;
+				.cmdbtnTDFSave.HelpText					= &quot;&quot;
+				.cmdbtnTDFEdit.Label					= &quot;-&quot;
+				.cmdbtnTDFEdit.HelpText					= &quot;&quot;
+			
+			End With
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
+			With oTDF
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Label	= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFWorker&quot; ).Label			= sTDFD.sInsert
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Label		= &quot;-&quot;
+				.GetControl( &quot;cmdbtnTDFInsertSymbol&quot; ).Enable	= False
+				.GetControl( &quot;cmdbtnTDFInsertSpace&quot; ).Enable	= False
+				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
+				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+			End With
+			With oTDF.Model
+				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
+				.cmdbtnTDFWorker.HelpText				= sTDFD.sWorkerHintInsertBlank
+				.cmdbtnTDFInsertSpace.HelpText			= &quot;&quot;
+				.cmdbtnTDFSave.Label					= &quot;-&quot;
+				.cmdbtnTDFSave.HelpText					= &quot;&quot;
+				.cmdbtnTDFEdit.Label					= &quot;-&quot;
+				.cmdbtnTDFEdit.HelpText					= &quot;&quot;
+			End With
+	End Select
+End Sub
+
+&apos; Поиск по заданному режиму
+Sub TDFFind()
+	Dim sTDF As tFindData
+	sTDF = GetRegString( oTDF.getControl(&quot;lbTDFMode&quot;) )
+	FindRegWord( sTDF.sRegString, sTDF.sMessage )
+End Sub
+
+&apos; возвращает строку с регулярным выражением для поиска, в зависимости от режима поиска
+Function GetRegString( oLB As Object ) As tFindData
+	Dim sTDF As tFindData
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			If oTDF.GetControl( &quot;chBoxFindBN&quot; ).State = 1 Then &apos; искать и между цифр
+				sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alnum:]+&quot;
+			Else
+				sTDF.sRegString = &quot;\&lt;[:alpha:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:alpha:]+&quot;
+			End If
+			sTDF.sMessage = sTDFD.sSearchWordsHyphenDashMinus
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot; &amp; &quot;|&quot; &amp; _
+								&quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:space:]$&quot;
+			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
+		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
+			sTDF.sMessage = sTDFD.sSearchBreakageOffer
+		Case 3 &apos; Место с недостающим пробелом между словами
+			If oTDF.GetControl( &quot;chBoxFindBN&quot; ).State = 1 Then &apos; искать и между цифр
+				sTDF.sRegString = &quot;\&lt;[:alnum:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alnum:]+&quot;
+			Else
+				sTDF.sRegString = &quot;\&lt;[:alpha:]+[)}\]({\[,.!?…»”\&quot;&quot;:;«“][:alpha:]+&quot;
+			End If
+			sTDF.sRegString = sTDF.sRegString &amp; &quot;|\&lt;[:alpha:]+[:digit:]+|\&lt;[:digit:]+[:alpha:]+&quot;
+			sTDF.sMessage = sTDFD.sSearchPlaceMissingBlank
+		Case Else
+			sTDF.sRegString = &quot;[:alnum:]+&quot;
+			sTDF.sMessage = sTDFD.sSearchPWords
+	End Select
+	GetRegString = sTDF
+End Function
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; поиск в заданной строке дефиса, тире или минуса
+Function IsDashExsist( sString As String ) As Integer
+	IsDashExsist = 0
+	&apos; идем влево до минуса (тире или дефиса)
+	Dim i, nPos, j As Integer 
+	Dim si As String
+	For i = Len( sString ) To 1 Step -1
+		j = j + 1 &apos; счетчик-положение минуса, тире или дефиса (влево)
+		si = Mid(sString, i, 1)
+		nPos = InStr( si, &quot;-&quot; )
+		nPos = nPos + InStr( si, chr(8209) )
+		nPos = nPos + InStr( si, chr(8211) )
+		nPos = nPos + InStr( si, chr(8212) )
+		If nPos &gt; 0 Then
+			&apos; число символов, на которые надо перейти назад по строке sString до тире, минуса или дефиса
+			IsDashExsist = j
+			Exit Function
+		End If
+	Next i
+End Function
+
+&apos; Поиск регулярного выражения в тексте
+Sub FindRegWord( sFind As String, sTitle As String )
+	oDocControl = ThisComponent.getCurrentController()
+	&apos; проверка, является ли объект, где производится поиск - текстом
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sTDFD.sImpossibleToFind, 64, sTitle
+		Exit Sub
+	End If
+
+	&apos; инициализация позиции курсора
+	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
+
+	otxtCurs = ovCurs.Text.createTextCursor() 
+	otxtCurs.gotoRange( ovCurs.getStart(), False )
+
+	&apos; ищем заданное регулярное выражение
+	FindRegInText( ovCurs, sFind, sTitle )
+End Sub
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; поиск следующего заданного регекса в документе
+Function FindNextInText( sFind ) As Boolean
+	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
+	oDesc.SearchRegularExpression	= True
+	oDesc.SearchString				= sFind
+	
+	otxtCurs.collapseToEnd()
+
+	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
+	If oLB.SelectedItemPos = 0 Then &apos; только для режима поиска дефисных слов
+		&apos; идем влево до минуса (тире или дефиса)
+		Dim nPos As Integer : nPos = IsDashExsist( ovCurs.getString() )
+		If nPos &gt; 0 Then
+			&apos; назад для захвата и второго дефиса (например: Кое-ко-го)
+			ovCurs.goLeft( nPos, False )
+			otxtCurs.goLeft( nPos, False )
+		End If
+	End If
+	Dim Found : Found = ThisComponent.findNext( otxtCurs.getStart(), oDesc )
+	
+	if IsNull( Found ) Then &apos; конец документа - ничего не нашли
+		otxtCurs = ThisComponent.Text.createTextCursor() 
+		otxtCurs.gotorange( ThisComponent.Text.getStart(), False )
+		FindNextInText = False &apos; конец документа - ничего не нашли
+		Exit Function
+	End If
+
+	otxtCurs = Found.Text.createTextCursor()
+	With otxtCurs
+		.gotorange( Found.getStart(), False )
+		.gotorange( Found.getEnd(), True )
+	End With
+
+	FindNextInText = True &apos; нашли искомое регулярное выражение
+End Function
+
+&apos; ////////////////////////////////////////////////////////////////
+&apos; ищем заданный регекс
+Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
+NextWord:
+	If Not IsSelTextRange( oDocControl ) Then
+		MsgBox sTDFD.sImpossibleToFind, 64, sTitle
+		Exit Sub
+	End If
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
+	&apos; поиск и обработка искомого слова
+	If FindNextInText( sFind ) Then &apos; еще не дошли до конца документа
+		oDocControl.Select( otxtCurs ) &apos; выделяем найденное
+		&apos; проверяем, не соответствует ли найденное одному из запомненных дефисных слов
+		Dim i As Integer
+		For i=0 To UBound( asWords() )
+			If StrComp( LCase( otxtCurs.String ), LCase( asWords(i) ) )=0 Then
+				GoTo NextWord
+			End If
+		Next i
+	Else &apos; конец документа
+		&apos; снимаем выделение с последнего слова - оно было уже обработано, просто поиск закончился на нем
+		Dim oViewCursor	As Object : oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+		oViewCursor.collapseToEnd()
+		If MsgBox( sTDFD.sToContinueSearch, 32 + 4 + 128, sTitle ) &lt;&gt; 6 Then Exit Sub
+		oDocControl.Select( otxtCurs ) &apos; снимаем предыдущее выделяем и ищем заново с начала документа
+		FindRegInText( ovCurs, sFind, sTitle ) &apos; рекурсия
+	End If
+End Sub
+
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; 													функции обработки найденного
+&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+&apos; для обработки найденного - регулярное выражение
+Function GetRegWorkerString() As String
+	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]&quot;
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot; &amp; &quot;|&quot; &amp; _
+								&quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:space:]$&quot;
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+								chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
+			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“)}\],.!?…»”\&quot;&quot;:;]&quot;
+	End Select
+End Function
+
+&apos; обработка найденного
+Sub WorkerOfSearch()
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+
+	Searcher( ThisComponent, GetLeftMostCursor( oSel ), GetRegWorkerString() )
+End Sub
+
+Sub Searcher( oDoc As Object, oCurs As Object, sReg As String )
+	If IsNull(oCurs) Or IsNull( oDoc ) Then Exit Sub
+	
+	oCurs.goRight( 0, False )
+	
+	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	
+	If oLB.SelectedItemPos = 3 Then &apos; Место с недостающим пробелом между словами (вероятно)
+		Dim i			As Integer	: i			= 0 &apos; счетчик для цикла
+		Dim sFindStr	As String	: sFindStr	= oDoc.getCurrentController().getViewCursor().GetString()
+		Dim iRight		As Integer	: iRight	= 1 &apos; пробел нужен справа (по-умолчанию)
+
+		&apos; смотрим, какая ситуация: слипшиеся слово и цифра, или же знаки препинания, скобки	и слова(цифры)
+		Dim sRegStr()	As String	: sRegStr()	= Array( &quot;)&quot;,&quot;}&quot;,&quot;]&quot;,&quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;,&quot;,&quot;.&quot;,&quot;!&quot;,&quot;?&quot;,&quot;…&quot;,&quot;»&quot;,&quot;”&quot;,&quot;&quot;&quot;&quot;,&quot;:&quot;,&quot; &apos;&quot;,&quot;«&quot;,&quot;“&quot; )
+		Dim bFnd		As Boolean	: bFnd		= False
+		For i = 0 To UBound( sRegStr() )
+			If InStr( sFindStr, sRegStr(i) ) &lt;&gt; 0 Then
+				Dim sChar As String : sChar = sRegStr(i) : bFnd = True
+				Exit For
+			End If
+		Next i
+		
+		If bFnd = False Then &apos; для случаев типа &quot;в2 раза&quot; или &quot;2раза&quot;
+			&apos; смотрим, что стоит слева - цифра или буква
+			Dim oSels	As Object	: oSels	= ThisComponent.getCurrentSelection()
+			Dim sStr	As String	: sStr	= oSels.getByIndex( 0 ).String
+			If Val( Left( sStr, 1 ) ) = 0 Then &apos; это не число
+				&apos; для случаев типа &quot;в2 раза&quot; - нужен пробел между &quot;в&quot; и &quot;2&quot;
+				iRight = 0 &apos; пробел нужен между буквой и цифрой (&quot;в2 раза&quot;) - слева от цифры
+			Else
+				&apos; для случаев типа &quot;2раза&quot; - нужен пробел между &quot;2&quot; и &quot;раза&quot;
+				iRight = 1 &apos; пробел нужен между цифрой и буквой (&quot;2раза&quot;) - справа от цифры
+			End If
+			sReg = &quot;[:digit:]+&quot; &apos; поиск только цифры
+		Else
+			&apos; слева нужен пробел или справа
+			Dim sRegLeftStr()	As String	: sRegLeftStr()	= Array( &quot;(&quot;,&quot;{&quot;,&quot;[&quot;,&quot;&quot;&quot;&quot;,&quot;«&quot;,&quot;“&quot; )
+			For i = 0 To UBound( sRegLeftStr() )
+				If InStr( sFindStr, sRegLeftStr(i) ) &lt;&gt; 0 Then
+					iRight = 0 &apos; пробел нужен слева
+					Exit For
+				End If
+			Next i
+		End If
+		Finder( oDoc, oCurs, sReg, iRight, &quot;other&quot;, &quot;cmdbtnTDFWorker&quot; )
+	Else
+		Finder( oDoc, oCurs, sReg, -1, &quot;other&quot;, &quot;cmdbtnTDFWorker&quot; )
+	End If
+End Sub
+
+Function Finder( oDoc As Object, oCurs As Object, sReg As String, iRight As Integer, sWorker As String, sButtonClickName As String ) As Boolean
+	Finder = False
+	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+	Dim vSearch		As Variant	: vSearch		= oDoc.createSearchDescriptor()
+	With vSearch
+		.SearchString				= sReg
+		.SearchCaseSensitive		= False
+		.SearchRegularExpression	= True
+	End With
+
+	Dim vFound As Variant : vFound = oDoc.findNext( oCurs, vSearch )
+	If IsNull( vFound ) Then Exit Function
+	If Not IsEmpty( vFound.TextTable ) Then &apos; таблица
+		&apos; обрабатываем ячейки  таблицы
+		&apos;Dim oTable			As Object	: oTable		= vFound.TextTable
+		&apos;Dim aCellNames()	As String	: aCellNames	= oTable.getCellNames()
+		&apos;Dim oCell 			As Object	: oCell			= oTable.getCellByName( aCellNames( 0 ) )
+		If Not IsNull( vFound ) Then &apos; нашли
+			&apos; выделяем найденное и обрабатываем
+			oViewCursor.gotoRange( vFound, False )
+			If sWorker = &quot;other&quot; Then &apos; для разных инструментов
+				ProcessingTableWorker( oViewCursor, iRight, sButtonClickName )
+			ElseIf sWorker = &quot;dash&quot; Then &apos; для Слово с дефисом, тире или минусом (вставка пробелов слева и справа от дефиса...)
+				oViewCursor.goLeft( 1, False )	: _UnoInsertText( &quot; &quot; )
+				oViewCursor.goRight( 1, False )	: _UnoInsertText( &quot; &quot; )
+			ElseIf sWorker = &quot;break&quot; Then &apos; для Обрыв предложения на знаках препинания, кавычках и скобках
+				&apos;InsertionSymbol( oViewCursor )
+				&apos; снимаем выделение
+				oViewCursor.collapseToEnd()
+				&apos; вставляем знак препинания из выпадающего списка
+				_UnoInsertText( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem ) : oViewCursor.collapseToEnd()
+			End If
+			Finder = True
+			If oTDF.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then TDFFind()
+		End If
+	Else &apos; просто текст, &apos; текстовая врезка или текст сноски
+		&apos; выделяем найденное и обрабатываем
+		oViewCursor.gotoRange( vFound, False )
+		If sWorker = &quot;other&quot; Then &apos; для разных инструментов
+			ProcessingWorker( oViewCursor, iRight, sButtonClickName )
+		ElseIf sWorker = &quot;dash&quot; Then &apos; для Слово с дефисом, тире или минусом (вставка пробелов слева и справа от дефиса...)
+			InsertionSpaceAroundDash( oViewCursor )
+		ElseIf sWorker = &quot;break&quot; Then &apos; для Обрыв предложения на знаках препинания, кавычках и скобках
+			InsertionSymbol( oViewCursor )
+		End If
+		Finder = True
+		If oTDF.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then TDFFind()
+	End if
+End Function
+
+&apos; Обработчик найденного
+Sub ProcessingWorker( oViewCursor As Object, iRight As Integer, sButtonClickName As String )
+	Dim oLB As Object : oLB = oTDF.getControl( &quot;lbTDFMode&quot; )
+	Dim otxtCurs As Object
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			&apos; удаляем найденный символ
+			_UnoDelete()
+			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
+			otxtCurs = oViewCursor.Text.createTextCursor()
+			With otxtCurs
+				.gotoRange( oViewCursor.getEnd(), False )
+				.gotoStartOfWord( False )
+			End With
+			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			&apos; удаляем перенос и символ абзаца
+			_UnoDelete() : _UnoDelete()
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			&apos; снимаем выделение - переход в конец оборванной строки
+			oViewCursor.gotoEndOfLine( False )
+			&apos; удаляем символ абзаца
+			_UnoDelete()
+			If sButtonClickName = &quot;cmdbtnTDFWorker&quot; Then &apos; Только для &quot;Слово с дефисом, тире или минусом&quot;
+				&apos; вставляем пробел
+				oViewCursor.setString( &quot; &quot; )
+			End If
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
+			If iRight = 0 Then &apos; вставка пробела СЛЕВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToStart()
+			ElseIf iRight = 1 Then &apos; вставка пробела СПРАВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToEnd()
+			End If
+			&apos; вставляем пробел
+			oViewCursor.setString( &quot; &quot; )
+			&apos; на начало слова, т.к. в одном слове могут встречаться несколько слипшихся после OCR слов подряд
+			otxtCurs = oViewCursor.Text.createTextCursor()
+			With otxtCurs
+				.gotoRange( oViewCursor.getEnd(), False )
+				.gotoStartOfWord( False )
+			End With
+			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
+	End Select
+End Sub
+
+&apos; Обработчик найденного для Таблиц
+Sub ProcessingTableWorker( oViewCursor As Object, iRight As Integer, sButtonClickName As String )
+	Dim oLB As Object : oLB = oTDF.getControl( &quot;lbTDFMode&quot; )
+	Select Case oLB.SelectedItemPos
+		Case 0 &apos; Слово с дефисом, тире или минусом
+			&apos; удаляем найденный символ
+			_UnoDelete()
+			&apos; на начало слова, т.к. в одном слове могут встречаться несколько дефисов - переносов после OCR
+			Dim otxtCurs As Object : otxtCurs = oViewCursor.Text.createTextCursor()
+			With otxtCurs
+				.gotoRange( oViewCursor.getEnd(), False )
+				.gotoStartOfWord( False )
+			End With
+			oViewCursor.gotoRange( otxtCurs, False ) &apos; для захвата дефиса..., если он есть
+		Case 1 &apos; Слово с разорванным абзацем переносом (дефис, тире или минус)
+			&apos; удаляем перенос и символ абзаца
+			_UnoDelete() : _UnoDelete()
+		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
+			&apos; снимаем выделение - переход в конец оборванной строки
+			oViewCursor.gotoEndOfLine( False )
+			&apos; удаляем символ абзаца
+			_UnoDelete()
+			If sButtonClickName = &quot;cmdbtnTDFWorker&quot; Then &apos; Только для &quot;Слово с дефисом, тире или минусом&quot;
+				&apos; вставляем пробел
+				oViewCursor.setString( &quot; &quot; )
+			End if
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
+			If iRight = 0 Then &apos; вставка пробела СЛЕВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToStart()
+			ElseIf iRight = 1 Then &apos; вставка пробела СПРАВА от найденного
+				&apos; снимаем выделение - вправо
+				oViewCursor.collapseToEnd()
+			End If
+			&apos; вставляем пробел
+			_UnoInsertText( &quot; &quot; )
+			&apos; снимаем выделение - вправо
+			oViewCursor.collapseToEnd()
+	End Select
+End Sub
+
+&apos; Запоминаем дефисное слово
+Sub cmdbtnTDFSaveClick()
+	oDocControl = ThisComponent.getCurrentController()
+	Dim ovCurs : ovCurs = oDocControl.getViewCursor() &apos; видимый курсор
+	otxtCurs = ovCurs.Text.createTextCursorByRange( ovCurs )
+	Dim s As String : s = LCase( Trim( otxtCurs.String ) )
+	If s = &quot;&quot; Then
+		MsgBox sTDFD.sNotSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title
+		Exit Sub
+	End If
+	
+	&apos; проверка, не выделено ли пользователем несколько абзацев
+	Dim asPara() As String
+	asPara() = Split( s, chr(10) )
+	If UBound( asPara() ) &gt; 0 Then
+		MsgBox sTDFD.sSelectedMorePara &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title
+		Exit Sub
+	End If
+	
+	&apos; проверка на принадлежность к словам с дефисами, тире, минусами
+	If InStr( s, &quot;-&quot; ) &lt;&gt; 0 Or InStr( s, chr(8209) ) &lt;&gt; 0 Or InStr( s, chr(8211) ) &lt;&gt; 0 Or InStr( s, chr(8212) ) &lt;&gt; 0 Then
+		&apos; проверка, нет ли такого же слова в массиве (зачем нам одинаковые слова?)
+		Dim l As Long
+		For l=0 To UBound( asWords() )
+			If StrComp( s, LCase( asWords(l) ) ) = 0 Then
+				MsgBox sTDFD.sExsistSelectedWordInList &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
+				Exit Sub
+			End If
+		Next l
+		
+		&apos; добавляем слово в Словарь
+		Dim sStr As String : sStr = &quot;&quot;
+		Dim asLexems() As String
+		If InStr( s, &quot;-&quot; ) &lt;&gt; 0 Then
+			asLexems = Split( s, &quot;-&quot; )
+		ElseIf InStr( s, chr(8209) ) &lt;&gt; 0 Then
+			asLexems = Split( s, chr(8209) )
+		ElseIf InStr( s, chr(8211) ) &lt;&gt; 0 Then
+			asLexems = Split( s, chr(8211) )
+		ElseIf InStr( s, chr(8212) ) &lt;&gt; 0 Then
+			asLexems = Split( s, chr(8212) )
+		End If
+		
+		sStr =  asLexems(0) &amp; &quot;-&quot; &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+		sStr = asLexems(0) &amp; chr(8209) &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+		sStr = asLexems(0) &amp; chr(8211) &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+		sStr = asLexems(0) &amp; chr(8212) &amp; asLexems(1)
+		AddNewItemToArray1( asWords(), sStr )
+
+		&apos; упорядочиваем элементы - признак конца должен быть в конце
+		Dim asTemp() As String
+		Dim sOEF As String : sOEF = &quot;end of file&quot;
+		For l=0 To UBound( asWords() )
+			If Trim( asWords(l) ) &lt;&gt; &quot;&quot; Then
+				If Trim( asWords(l) ) &lt;&gt; chr(10) Then
+					If Trim( asWords(l) ) &lt;&gt; chr(13) Then
+						If InStr( asWords(l), sOEF ) = 0 Then
+							AddNewItemToArray1( asTemp(), asWords(l) )
+						End If
+					End If
+				End If
+			End If
+		Next l
+		AddNewItemToArray1( asTemp(), sOEF )
+		ReDim asWords() As String
+		asWords() = asTemp()
+		
+		&apos; сохраняем список запомненных дефисных слов в файл
+		If UBound( asWords() ) &gt; -1 Then
+			If FileExists( getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile ) Then
+				Kill getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile
+			End If
+			SaveArray( asWords(), getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile )
+		End If
+	Else
+		MsgBox sTDFD.sNotDefisInSelectedWord &amp; chr(10) &amp; sTDFD.sWordNotSave, 64, oTDF.Title	
+		Exit Sub
+	End If
+	If oTDF.GetControl( &quot;chBoxFindNext&quot; ).State = 1 Then TDFFind()
+End Sub
+
+&apos; правка списка дефисных слов
+Sub cmdbtnTDFEditClick()
+	If FileExists( getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile ) Then
+		FileExecute( getOOoFBToolsSettingsDir() &amp; sWordsDefisListFile )
+	Else
+		MsgBox sTDFD.sWordDefisFileNotExists, 64, oTDF.Title	
+	End If	
+End Sub
+
+&apos; вставка пробелов слева и справа от дефиса...
+Sub cmdbtnTDFInsertSpaceClick()
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+
+	Dim oCurs As Object : oCurs = GetLeftMostCursor( oSel ) : oCurs.goRight( 0, False )
+	Dim oLB	As Object : oLB	= oTDF.getControl( &quot;lbTDFMode&quot; )
+	If oLB.SelectedItemPos = 0 Then
+		&apos; Слово с дефисом, тире или минусом
+		Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, &quot;dash&quot;, &quot;cmdbtnTDFInsertSpace&quot; )
+	ElseIf oLB.SelectedItemPos = 2 Then
+		&apos; Обрыв предложения на знаках препинания, кавычках и скобках
+		Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, &quot;other&quot;, &quot;cmdbtnTDFInsertSpace&quot; )
+	End If
+End Sub
+
+&apos; обработчик - вставка пробелов слева и справа от дефиса...
+Sub InsertionSpaceAroundDash( oViewCursor As Object )
+	Dim s As String : s = oViewCursor.getString()
+	With oViewCursor
+		.setString( &quot; &quot; &amp; s &amp; &quot; &quot; )
+		.collapseToEnd()
+	End With
+End Sub
+
+&apos; вставка недостающего знака препинания в конце предложения
+Sub cmdbtnTDFInsertSymbolClick()
+	Dim oSels As Object : oSels = ThisComponent.getCurrentSelection() &apos; все выделения текста
+	If oSels.getCount() &gt; 1 Then Exit Sub
+	
+	Dim oSel As Object : oSel = oSels.getByIndex( 0 )
+	If oSel.getString() = &quot;&quot; Then Exit Sub
+
+	Dim oCurs As Object : oCurs = GetLeftMostCursor( oSel ) : oCurs.goRight( 0, False )
+	Finder( ThisComponent, oCurs, GetRegWorkerString(), -1, &quot;break&quot;, &quot;cmdbtnTDFInsertSymbol&quot; )
+End Sub
+
+&apos; обработка найденного для вставки недостающего знака препинания в конце предложения
+Sub InsertionSymbol( oViewCursor As Objec )
+	&apos; снимаем выделение
+	With oViewCursor
+		.collapseToEnd()
+		&apos; вставляем знак препинания из выпадающего списка
+		.setString( oTDF.getControl( &quot;lbTDFPunctMarks&quot; ).SelectedItem )
+		.collapseToEnd()
+	End With
+End Sub
+
+
+</script:module>

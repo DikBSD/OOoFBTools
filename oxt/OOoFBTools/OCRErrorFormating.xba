@@ -31,8 +31,17 @@ Sub OCRErrorFormatStart()
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sOCREFSettings, oOCREF, nX, nY )
 	oOCREF.setPosSize( nX, nY, 56, 219, com.sun.star.awt.PosSize.POS )
-
+	VerifyCheckOptions()
 	oOCREF.execute()
+End Sub
+
+&apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции корректировки
+Sub VerifyCheckOptions()
+	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State	= 0 And oOCREF.getControl( &quot;ChbQuotation&quot; ).State = 0 And oOCREF.getControl( &quot;ChbSignPunct&quot; ).State = 0 Then
+		oOCREF.getControl( &quot;cmdbtnWork&quot; ).Enable = False
+	Else
+		oOCREF.getControl( &quot;cmdbtnWork&quot; ).Enable = True
+	End If
 End Sub
 
 &apos; начало обработки

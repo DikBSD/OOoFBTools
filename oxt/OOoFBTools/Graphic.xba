@@ -358,9 +358,11 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			End If
-		Else &apos; oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; : OLE (Диаграммы) или Formula:
+		ElseIf  oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; Then &apos;OLE (Диаграммы) или Formula:
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			oGraphic = oContent.ReplacementGraphic
+		Else
+			
 		End If
 	End If
 	
@@ -370,10 +372,12 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 	End If
 
 	Dim aFilterData(7) As New com.sun.star.beans.PropertyValue
-	aFilterData(0).Name  = &quot;PixelWidth&quot;        &apos;
-	aFilterData(0).Value = oGraphic.Size.Width
-	aFilterData(1).Name  = &quot;PixelHeight&quot;
-	aFilterData(1).Value = oGraphic.Size.Height
+	If Not IsNull( oGraphic ) Then
+		aFilterData(0).Name  = &quot;PixelWidth&quot;        &apos;
+		aFilterData(0).Value = oGraphic.Size.Width
+		aFilterData(1).Name  = &quot;PixelHeight&quot;
+		aFilterData(1).Value = oGraphic.Size.Height
+	End If
 	aFilterData(2).Name  = &quot;Color&quot;
 	aFilterData(2).Value = 0	&apos;0: Original; 1: 1-Bit threshold value; 2: 1-Bit dithering; 3: 4-Bit Greyscale; 4: 4-Bit Color Palette; 5: 8-Bit Greyscale; 6: 8-Bit Color Palette; 7: True Color
 

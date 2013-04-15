@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="YoFication" script:language="StarBasic">&apos;======================================================================================================================
+&apos; 									Модуль автоматической Ёфикации русского текста
+&apos; 	Список базы слов для замены составлен на основе базы Евгения Миньковского ( &quot;http://python.anabar.ru/yo.htm&quot;  )
+&apos;======================================================================================================================
+Option Explicit
+
+Const sConstYoFicationDlg As String = &quot;YoFicationDlg.txt&quot; &apos; файл настроек
+Public oYoFicationDlg As Object
+
+Private yoFileName As String &apos; файл с базой ё-слов
+Private lDBWordsCount As Long &apos; число слов в базе
+Private oSFA As Object
+Private oFS As Object
+Private oTIS As Object
+
+Sub YoFicationStart()
+&apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oYoFicationDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.YoFicationDlg )
+
+	yoFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/yo_db/yo.txt&quot;
+	
+	oSFA	= createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+	oFS		= oSFA.openFileRead ( ConvertToURL ( yoFileName ) )
+	oTIS	= createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+	oTIS.setInputStream (oFS)
+	&apos; считывание числа замен - число слов базы
+	Dim eWord	As String : eWord = oTIS.readLine()
+	Dim aWord() As String : aWord = Split(eWord, &quot;|&quot;)
+	lDBWordsCount = Val( GetNumberFromString( aWord(0) ) )
+	
+	oYoFicationDlg.Model.Title = &quot;Ёфикация текста (База данных: &quot; &amp; lDBWordsCount &amp; &quot; слов)&quot;
+		
+	&apos; только теперь считывание настройки из файла
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstYoFicationDlg, oYoFicationDlg, nX, nY )
+	oYoFicationDlg.setPosSize( nX, nY, 231, 132, com.sun.star.awt.PosSize.POS )
+	VerifyCheckYoOptions()
+	oYoFicationDlg.execute()
+End Sub
+
+Sub YoFicationCancel()
+	oTIS.closeInput()
+	oYoFicationDlg.endExecute()
+End Sub
+
+&apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции корректировки
+Sub VerifyCheckYoOptions()
+	If oYoFicationDlg.getControl( &quot;cbSmall&quot; ).State	= 0 And oYoFicationDlg.getControl( &quot;cbCaption&quot; ).State = 0 And oYoFicationDlg.getControl( &quot;cbStartCaption&quot; ).State = 0 Then
+		oYoFicationDlg.getControl( &quot;cmbtnProcess&quot; ).Enable = False
+	Else
+		oYoFicationDlg.getControl( &quot;cmbtnProcess&quot; ).Enable = True
+	End If
+End Sub
+
+Sub YoFicationtWorking()
+	&apos; записываем настройки диалога
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstYoFicationDlg, oYoFicationDlg )
+	oYoFicationDlg.endExecute()
+
+	&apos; считывание числа замен для индикатора прогресса
+	Dim eWord	As String, aWord() As String
+	Dim dStart			As Date		: dStart			= Now &apos; время начала обработки
+	Dim oDoc			As Object	: oDoc				= ThisComponent
+	Dim oReplace		As Object	: oReplace			= oDoc.createReplaceDescriptor
+	Dim oProgressBar	As Object	: oProgressBar		= oDoc.CurrentController.StatusIndicator
+	Dim lProgressValue	As Long		: lProgressValue	= 0
+	Dim lReplaceCount	As Long		: lReplaceCount		= 0
+	oProgressBar.start( &quot;Ёфикация документа:&quot;, lDBWordsCount )
+	
+	With oReplace
+		.SearchRegularExpression	= True
+		.SearchCaseSensitive		= True
+		.SearchWords				= True
+&apos;		.SearchAll					= True
+	End With
+	Do While ( NOT oTIS.isEOF() )
+		eWord = oTIS.readLine()
+		aWord = Split(eWord, &quot;|&quot;)
+		If aWord(0) &lt;&gt; &quot;&quot; Then
+			If InStr( aWord(0), &quot;*&quot; ) = 0 Then
+				If oYoFicationDlg.getControl( &quot;cbSmall&quot; ).State = 1 Then
+					&apos; выполняем замену слов в нижнем регистре
+					With oReplace
+						.SearchString	= &quot;\&lt;&quot; &amp; aWord(0) &amp; &quot;\&gt;&quot;
+						.ReplaceString	= aWord(1)
+					End With
+					lReplaceCount = lReplaceCount + oDoc.ReplaceAll( oReplace )
+				End If
+				
+				If oYoFicationDlg.getControl( &quot;cbCaption&quot; ).State = 1 Then
+					&apos; выполняем замену слов в ВЕРХНЕМ регистре
+					With oReplace
+						.SearchString	= &quot;\&lt;&quot; &amp; UCase( aWord(0) ) &amp; &quot;\&gt;&quot;
+						.ReplaceString	= UCase( aWord(1) )
+					End With
+					lReplaceCount = lReplaceCount + oDoc.ReplaceAll( oReplace )
+				End If
+				
+				If oYoFicationDlg.getControl( &quot;cbStartCaption&quot; ).State = 1 Then
+					&apos; выполняем замену Слов, Начинающихся С Заглавной Буквы
+					With oReplace
+						.SearchString	= &quot;\&lt;&quot; &amp; UCase( Left( aWord(0), 1 ) ) &amp; Right( aWord(0), Len(aWord(0))-1 ) &amp; &quot;\&gt;&quot;
+						.ReplaceString	= UCase( Left( aWord(1), 1 ) ) &amp; Right( aWord(1), Len(aWord(1))-1 )
+					End With
+					lReplaceCount = lReplaceCount + oDoc.ReplaceAll( oReplace )
+				End If
+				
+				oProgressBar.setValue( lProgressValue )
+				lProgressValue = lProgressValue + 1
+			Else
+				&apos; неоднозначные слова, которые могут быть и с &quot;е&quot; и с &quot;ё&quot;: все - всё; белено&apos;й - белёной
+			End If
+		End If
+	Loop
+
+	oTIS.closeInput()
+
+	&apos; время окончания обработки
+	Dim dEnd As Date : dEnd = Now
+	MsgBox &quot;Ёфикация документа закончена.&quot; &amp; chr(10) &amp; _
+			&quot;Выполнено замен: &quot; &amp; lReplaceCount  &amp; chr(10) &amp; _
+			&quot;Время обработки: &quot; &amp; TimerOfWorkAsDate( dStart, dEnd ), 64, &quot;Ёфикация (База данных: &quot; &amp; lDBWordsCount &amp; &quot; слов)&quot;
+	oProgressBar.End
+	
+End Sub
+
+</script:module>
