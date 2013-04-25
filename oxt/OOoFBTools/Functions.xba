@@ -627,7 +627,7 @@ End Function
 
 &apos; Строка sSource изменяется - в ней все части sDel заменяются на sReplace
 &apos; Если sReplace - &quot;&quot;, то все sDel удаляются, иначе - замена на sReplace
-Function ReplaceFromString( ByRef sSource As String, sDel As String, sReplace As String ) As Integer
+Function ReplaceFromString( sSource As String, sDel As String, sReplace As String ) As Integer
 	If sSource = &quot;&quot; Then
 		ReplaceFromString = 0
 		Exit Function
@@ -640,7 +640,8 @@ Function ReplaceFromString( ByRef sSource As String, sDel As String, sReplace As
 		ReplaceFromString = 0
 		Exit Function
 	End If
-
+	
+	On Error goto ErrH &apos; на случай переполнения строки - таблица и т.д. Тогда просто возвращаем исходную строку, ничего не делая с ней.
 	Do While i &gt; 0
 		&apos; В LO4 Mid в режиме замены работает неверно, поэтому используем ее в режиме функции возвпрата значений.
 		sSource = Mid( sSource, 1, i-1 ) &amp; sReplace &amp; Mid( sSource, i+Len(sDel) )
@@ -648,6 +649,9 @@ Function ReplaceFromString( ByRef sSource As String, sDel As String, sReplace As
 		c = c+1
 	Loop
 	ReplaceFromString = c
+	Exit Function
+ErrH:
+	ReplaceFromString = sSource
 End Function
 
 &apos; Строка sSource изменяется - в ней все части sSearch заменяются на sReplace

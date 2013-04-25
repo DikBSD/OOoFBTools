@@ -82,7 +82,7 @@ Sub FootNoteInteractiveMakerStart()
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg,  nX, nY )
-	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 35, 360, com.sun.star.awt.PosSize.POS )
+	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 35, 386, com.sun.star.awt.PosSize.POS )
 
 	bWorkEnd	= False &apos; еще не достигнут конец документа
 	IsFirstStep	= False	&apos; еще не нажимали кнопку поиска
@@ -115,9 +115,10 @@ Sub CutSelectedTextInBufferAndGoToFootNoteUpIndex()
 		otxtCursor.gotoRange( ovCurs.getStart(), False )
 		Dim i As Integer
 		For i=0 To 19
-			otxtCursor.gotoPreviousParagraph(False)
+			otxtCursor.gotoPreviousParagraph( False )
 		Next i
 		ovCurs.gotoRange( otxtCursor, False )
+&apos;		ovCurs.goUp( 60, False ) &apos; строк (вместо алгоритма выше)
 	End If
 	IsFirstCut = False &apos; с этого момента поиск делаем только от временной закладки
 	&apos; переход на номер сноски в верхнем индексе
@@ -151,6 +152,32 @@ Sub InsertNoteText()
 	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
 	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
 		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
+		&apos; переходим к первому символу/цифре после номера сноски (пропускаеи цифры в верхнем индексе и пробелы сначала абзаца)
+		ovCurs.gotoStartOfLine( False )
+		Dim otxtTempCurs As Object : otxtTempCurs = ovCurs.getText().CreateTextCursorByRange( ovCurs )
+		Dim s As String
+		otxtTempCurs.collapseToEnd()
+		Do While otxtTempCurs.goRight( 1, True )
+			s = Right( otxtTempCurs.getString(), 1 )
+			If s = &quot; &quot; Or s = &quot;	&quot; Then &apos; пробел и табуляция
+				ovCurs.goRight( 1, False )
+			Else
+				If otxtTempCurs.CharEscapement &gt; 0 Then
+					If IsNumeric( s ) Then &apos; цифра в верхнем индексе
+						ovCurs.goRight( 1, False )
+					Else &apos; символ в верхнем индексе
+						&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
+						Exit Do
+					End If
+				Else
+					Exit Do
+				End If
+			End If
+			otxtTempCurs.collapseToEnd()
+		Loop
+		&apos; выделяем текст сноски до конца абзаца
+		otxtTempCurs.gotoEndOfParagraph( True )
+		oDocControl.Select( otxtTempCurs )
 	End If
 End Sub
 
@@ -281,6 +308,25 @@ Sub FindNextFootNoteUpIndex()
 	&apos; ищем заданное регулярное выражение
 	FindRegInText( ovCurs, &quot;[:digit:]+&quot;, sFNUIMD.sTitle )
 	
+	&apos; выбор справа всех цифр в верхнем индексе до символа, или до числа не в верхнем индексе
+	Dim txtTempCursor As Object : txtTempCursor = ovCurs.Text.createTextCursorByRange( ovCurs.End )
+	Dim s As String
+	txtTempCursor.collapseToEnd()
+	Do While txtTempCursor.goRight( 1, True )
+		s = Right( txtTempCursor.getString(), 1 )
+		If ( s &lt;&gt; &quot; &quot; And s &lt;&gt; &quot;	&quot; ) And txtTempCursor.CharEscapement &gt; 0 Then &apos; пропускаем пробел и табуляция
+			&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
+			If  IsNumeric( s ) Then
+				ovCurs.goRight( 1, True )
+				oDocControl.Select( ovCurs )
+			Else
+				Exit Do
+			End If
+		Else
+			Exit Do
+		End If
+		txtTempCursor.collapseToEnd()
+	Loop 
 	IsFirstStep = True
 End Sub
 
@@ -355,6 +401,147 @@ Function FindNextInText( sFind ) As Boolean
 
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
+
+
+&apos; ===========================================================================================================================
+&apos; 										3.	пометка заданным маркером и цветом шрифта номеров сносок
+&apos; ===========================================================================================================================
+
+&apos; пометка заданным маркером и цветом шрифта номеров сносок
+Sub MarkFootNoteNumbers()
+	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sFNUIMD.sProgress, 5 )
+	oProgressBar.setValue(1)
+	&apos; пометка заданным маркером и цветом шрифта всех цифр в верхнем индексе
+	MarkTextForTemplate( &quot;[:digit:]+&quot;, 16711680, 16776960 )
+	oProgressBar.setValue(2)
+	&apos; убираем цвет у цифр, с переди которых - пробулы (из-за багов LO4 на отмеченных цветом цифрах не срабатывает поиск ^[:space:]*[:digit:]+)
+	ClearSpaceNumberColor()
+	oProgressBar.setValue(3)
+	&apos; пометка заданным маркером и цветом шрифта только стартовых цифр в верхнем индексе (номера сносок в списках текста сносок)
+	MarkTextForTemplate( &quot;^[:space:]*[:digit:]+&quot;, 16711680, 10079487 )
+	oProgressBar.setValue(4)
+	MsgBox sFNUIMD.sMarkOK, 64, sFNUIMD.sTitle
+	oProgressBar.end
+End Sub
+
+&apos;***************************************************************************
+&apos; пометка заданным маркером и цветом шрифта текста по шаблону
+Sub MarkTextForTemplate( ByRef SearchStr As String, ByRef FontColor As Long, ByRef BackColor As Long  )
+	Dim oDoc		As Object : oDoc		= ThisComponent
+	Dim oSearch		As Object : oSearch		= oDoc.createReplaceDescriptor()
+	Dim oDocControl	As Object : oDocControl = ThisComponent.getCurrentController()
+	
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharEscapement&quot;
+
+	With oSearch
+		.SetSearchAttributes( SrchAttributes() )
+&apos;		.ReplaceAttributes( ReplAttributes() ) &apos; выдает ошибку (bug LO?)
+		.SearchString				= SearchStr
+&apos;		.SearchStyles 				= True
+		.SearchRegularExpression	= True
+		.ValueSearch 				= False
+		.SearchAll					= True
+	End With
+	
+	
+	&apos; TODO - проверить опции поиска, чтобы искал и 1-ю цифру
+	Dim oFoundAll As Object
+	oFoundAll = oDoc.findFirst( oSearch )
+	If Not IsNull( oFoundAll ) Then
+		If oFoundAll.String &lt;&gt; &quot;&quot; Then
+			oDocControl.Select( oFoundAll )
+			&apos; пометка заданным маркером и цветом шрифта выделенного текста
+			MarkSelectedText( FontColor, BackColor )
+			oDocControl.ViewCursor.gotoStart( False )
+		End If
+	End If
+	
+	oFoundAll = oDoc.findAll( oSearch )
+	If oFoundAll.Count &gt; 0 Then
+		oDocControl.Select( oFoundAll )
+		&apos; пометка заданным маркером и цветом шрифта выделенного текста
+		MarkSelectedText( FontColor, BackColor )
+		oDocControl.ViewCursor.gotoStart( False )
+	End If
+End Sub
+
+&apos;***************************************************************************
+&apos; пометка заданным маркером и цветом шрифта выделенного текста
+Sub MarkSelectedText( ByRef FontColor As Long, ByRef BackColor As Long )
+	Dim oDoc	As Object : oDoc	= ThisComponent.CurrentController.Frame
+	Dim oDisp	As Object : oDisp	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	
+	&apos; цвет цифр
+	Dim pvArgs1(0) As New com.sun.star.beans.PropertyValue
+	pvArgs1(0).Name = &quot;FontColor&quot;
+	pvArgs1(0).Value = FontColor
+	oDisp.executeDispatch( oDoc, &quot;.uno:FontColor&quot;, &quot;&quot;, 0, pvArgs1() )
+
+	&apos; цвет фона цифр
+	Dim pvArgs2(0) As New com.sun.star.beans.PropertyValue
+	pvArgs2(0).Name = &quot;BackColor&quot;
+	pvArgs2(0).Value = BackColor
+	oDisp.executeDispatch( oDoc, &quot;.uno:BackColor&quot;, &quot;&quot;, 0, pvArgs2() )
+End Sub
+
+&apos;***************************************************************************
+&apos; убираем цвет у цифр, с переди которых - пробулы
+Sub ClearSpaceNumberColor()
+	Dim oDoc	As Object : oDoc	= ThisComponent.CurrentController.Frame
+	Dim oDisp	As Object : oDisp	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+
+	Dim args1(18) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;SearchItem.StyleFamily&quot;
+	args1(0).Value = 2
+	args1(1).Name = &quot;SearchItem.CellType&quot;
+	args1(1).Value = 0
+	args1(2).Name = &quot;SearchItem.RowDirection&quot;
+	args1(2).Value = true
+	args1(3).Name = &quot;SearchItem.AllTables&quot;
+	args1(3).Value = false
+	args1(4).Name = &quot;SearchItem.Backward&quot;
+	args1(4).Value = false
+	args1(5).Name = &quot;SearchItem.Pattern&quot;
+	args1(5).Value = false
+	args1(6).Name = &quot;SearchItem.Content&quot;
+	args1(6).Value = false
+	args1(7).Name = &quot;SearchItem.AsianOptions&quot;
+	args1(7).Value = false
+	args1(8).Name = &quot;SearchItem.AlgorithmType&quot;
+	args1(8).Value = 1
+	args1(9).Name = &quot;SearchItem.SearchFlags&quot;
+	args1(9).Value = 65536
+	args1(10).Name = &quot;SearchItem.SearchString&quot;
+	args1(10).Value = &quot;^[:space:]+[:digit:]+&quot;
+	args1(11).Name = &quot;SearchItem.ReplaceString&quot;
+	args1(11).Value = &quot;&quot;
+	args1(12).Name = &quot;SearchItem.Locale&quot;
+	args1(12).Value = 255
+	args1(13).Name = &quot;SearchItem.ChangedChars&quot;
+	args1(13).Value = 2
+	args1(14).Name = &quot;SearchItem.DeletedChars&quot;
+	args1(14).Value = 2
+	args1(15).Name = &quot;SearchItem.InsertedChars&quot;
+	args1(15).Value = 2
+	args1(16).Name = &quot;SearchItem.TransliterateFlags&quot;
+	args1(16).Value = 1280
+	args1(17).Name = &quot;SearchItem.Command&quot;
+	args1(17).Value = 1
+	args1(18).Name = &quot;Quiet&quot;
+	args1(18).Value = true
+	oDisp.executeDispatch(oDoc, &quot;.uno:ExecuteSearch&quot;, &quot;&quot;, 0, args1())
+
+	&apos; убираем цвет шрифта
+	Dim args2(0) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;FontColor&quot;
+	args2(0).Value = -1
+	oDisp.executeDispatch(oDoc, &quot;.uno:FontColor&quot;, &quot;&quot;, 0, args2())
+
+	&apos; убираем цвет фона
+	oDisp.executeDispatch(oDoc, &quot;.uno:BackColor&quot;, &quot;&quot;, 0, Array())
+End Sub
 
 &apos;***************************************************************************
 

@@ -10,8 +10,10 @@ Option Explicit
 Type tFindUpIndexMakerData
 	sToContinueSearch			As String &apos; Достигнут конец документа. Следущее слово не найдено. Продолжить поиск с начала?
 	sToContinuePreviousSearch	As String &apos; Достигнуто начало документа. Следущее слово не найдено. Продолжить поиск с конца?
-	sImpossibleToFind	As String &apos; Невозможно найти слово в выделенном объекте.
-	sTitle				As String &apos; Интерактивное создание сносок
+	sImpossibleToFind			As String &apos; Невозможно найти слово в выделенном объекте.
+	sTitle						As String &apos; Интерактивное создание сносок
+	sMarkOK						As String &apos; Выделение цветом номеров сносок закончено
+	sProgress					As String &apos; Выделение цветом номеров сносок:
 End Type
 
 Public sFNUIMD As tFindUpIndexMakerData
@@ -27,6 +29,8 @@ Sub InitFindUpIndexFootNoteMakerDataMessage()
 									&quot;Продолжить поиск с конца?&quot;
 			.sImpossibleToFind	= &quot;Невозможно найти слово в выделенном объекте.&quot;
 			.sTitle				= &quot;Интерактивное создание сносок&quot;
+			.sMarkOK			= &quot;Выделение цветом номеров сносок закончено.&quot;
+			.sProgress			= &quot;Разметка цветом:&quot;
 		End With
 	Else
 		With sFNUIMD
@@ -36,6 +40,8 @@ Sub InitFindUpIndexFootNoteMakerDataMessage()
 									&quot;To continue search from the end?&quot;
 			.sImpossibleToFind	= &quot;It is impossible to find a Word in the allocated Object.&quot;
 			.sTitle				= &quot;Interactive FootNotes building&quot;
+			.sMarkOK			= &quot;The Color Separation the Footnotes Numbers is finished.&quot;
+			.sProgress			= &quot;Color Marking:&quot;
 		End With
 	End If
 End Sub
@@ -54,6 +60,7 @@ Sub InitFindUpIndexFootNoteMakerDlg()
 			.insertFootNoteCmdBtn.Label		= &quot;2. Вставить сноску&quot;
 			.findPrevUpIndexCmdBtn.Label	= &quot;Предыдущий номер сноски&quot;
 			.findNextUpIndexCmdBtn.Label	= &quot;Следующий номер сноски&quot;
+			.MarkNumbersUpIndexCmdBtn.HelpText	= &quot;Выделение цветом номеров сносок для наглядности&quot; 
 		End With
 	Else
 		With oFootNoteInteractiveMakerDlg.getModel
@@ -61,6 +68,7 @@ Sub InitFindUpIndexFootNoteMakerDlg()
 			.insertFootNoteCmdBtn.Label		= &quot;2. Insert FotNote&quot;
 			.findPrevUpIndexCmdBtn.Label	= &quot;Previous FootNote №&quot;
 			.findNextUpIndexCmdBtn.Label	= &quot;Next FootNote №&quot;
+			.MarkNumbersUpIndexCmdBtn.HelpText	= &quot;Color mark thr Footnotes Numbers for clarity&quot; 
 		End With
 	End If
 End Sub
