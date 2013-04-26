@@ -256,6 +256,28 @@ Function GetNumberFromString( sString As String ) As String
 	GetNumberFromString = Trim( sNumber )
 End Function
 
+&apos; часто после OCR многозначные цифры (100, 235...) получаются не одним числов, а составным (1 и 00; 23 и 5). Это нарушает работу Генератора
+&apos; поэтому &quot;собираем&quot; такие число в &quot;одно&quot; : делаем выбор справа всех цифр в верхнем индексе до символа, или до числа не в верхнем индексе
+Function ExtendFoundToAllUpIndexNumbersInCurrentFootNoteNumber( ByRef vFound )
+	Dim txtTempCursor As Object : txtTempCursor = vFound.Text.createTextCursorByRange( vFound.End )
+	Dim s As String
+	txtTempCursor.collapseToEnd()
+	Do While txtTempCursor.goRight( 1, True )
+		s = Right( txtTempCursor.getString(), 1 )
+		If ( s &lt;&gt; &quot; &quot; And s &lt;&gt; &quot;	&quot; ) And txtTempCursor.CharEscapement &gt; 0 Then &apos; пропускаем пробел и табуляция
+			If  IsNumeric( s ) Then
+				vFound.goRight( 1, True )
+			Else
+				Exit Do
+			End If
+		Else
+			Exit Do
+		End If
+		txtTempCursor.collapseToEnd()
+	Loop
+	ExtendFoundToAllUpIndexNumbersInCurrentFootNoteNumber = vFound
+End Function
+
 &apos; поиск следующей цифры в верхнем индексе в документе
 Function FindNumbersUpIndexText( oLCurs ) As Variant
 	&apos; задаем поиск верхнего индекса
@@ -279,6 +301,9 @@ Function FindNumbersUpIndexText( oLCurs ) As Variant
 				If IsNull( vFound ) Then Exit Do
 			Loop While ( vFound.CharEscapement &lt; 0 )
 		End If
+		&apos; часто после OCR многозначные цифры (100, 235...) получаются не одним числов, а составным (1 и 00; 23 и 5). Это нарушает работу Генератора
+		&apos; поэтому &quot;собираем&quot; такие число в &quot;одно&quot; : делаем выбор справа всех цифр в верхнем индексе до символа, или до числа не в верхнем индексе
+		vFound = ExtendFoundToAllUpIndexNumbersInCurrentFootNoteNumber( vFound )
 	End If
 	FindNumbersUpIndexText = vFound
 End Function
@@ -295,7 +320,7 @@ Function FindNumbersUpIndexList( oLCurs ) As Variant
 		.SetSearchAttributes(SrchAttributes())
 		.SearchStyles = True
 		.ValueSearch = False
-		.SearchString = &quot;^[:digit:]+&quot;
+		.SearchString = &quot;^[:space:]*[:digit:]+&quot; &apos; &quot;^[:digit:]+&quot;
 	End With
 	
 	Dim vFound : vFound = ThisComponent.findNext( oLCurs, oDesc )
@@ -306,6 +331,9 @@ Function FindNumbersUpIndexList( oLCurs ) As Variant
 				If IsNull( vFound ) Then Exit Do
 			Loop While ( vFound.CharEscapement &lt; 0 )
 		End If
+		&apos; часто после OCR многозначные цифры (100, 235...) получаются не одним числов, а составным (1 и 00; 23 и 5). Это нарушает работу Генератора
+		&apos; поэтому &quot;собираем&quot; такие число в &quot;одно&quot; : делаем выбор справа всех цифр в верхнем индексе до символа, или до числа не в верхнем индексе	
+		vFound = ExtendFoundToAllUpIndexNumbersInCurrentFootNoteNumber( vFound )
 	End If
 	FindNumbersUpIndexList = vFound
 End Function
