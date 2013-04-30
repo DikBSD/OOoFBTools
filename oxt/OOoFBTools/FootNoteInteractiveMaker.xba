@@ -410,17 +410,17 @@ End Function
 &apos; пометка заданным маркером и цветом шрифта номеров сносок
 Sub MarkFootNoteNumbers()
 	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( sFNUIMD.sProgress, 5 )
+	oProgressBar.start( sFNUIMD.sProgress, 4 )
 	oProgressBar.setValue(1)
 	&apos; пометка заданным маркером и цветом шрифта всех цифр в верхнем индексе
 	MarkTextForTemplate( &quot;[:digit:]+&quot;, 16711680, 16776960 )
 	oProgressBar.setValue(2)
-	&apos; убираем цвет у цифр, с переди которых - пробулы (из-за багов LO4 на отмеченных цветом цифрах не срабатывает поиск ^[:space:]*[:digit:]+)
-	ClearSpaceNumberColor()
-	oProgressBar.setValue(3)
+&apos;	&apos; убираем цвет у цифр, с переди которых - пробулы (из-за багов LO4 на отмеченных цветом цифрах не срабатывает поиск ^[:space:]*[:digit:]+)
+&apos;	ClearSpaceNumberColor()
+&apos;	oProgressBar.setValue(3)
 	&apos; пометка заданным маркером и цветом шрифта только стартовых цифр в верхнем индексе (номера сносок в списках текста сносок)
 	MarkTextForTemplate( &quot;^[:space:]*[:digit:]+&quot;, 16711680, 10079487 )
-	oProgressBar.setValue(4)
+	oProgressBar.setValue(3)
 	MsgBox sFNUIMD.sMarkOK, 64, sFNUIMD.sTitle
 	oProgressBar.end
 End Sub
