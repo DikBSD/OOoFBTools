@@ -4,11 +4,14 @@
 
 Option Explicit
 
-Public Const sConstBookMarkSimple		As String	= &quot;_ooo_ocr_tc_foot_note_simple_dikbsd_&quot;		&apos; временная закладка
-Public Const sConstBookMarkNZoneNote	As String	= &quot;_ooo_ocr_tc_foot_note_number_zone_dikbsd_&quot;	&apos; закладка - зона поиска номера сноски
-Public Const sConstBookMarkListNote		As String	= &quot;_ooo_ocr_tc_foot_note_list_zone_dikbsd_&quot;		&apos; закладка - зона поиска списка текста сносок
-Public Const sConstBookMarkFNNumber		As String	= &quot;_ooo_ocr_tc_foot_note_find_number_dikbsd_&quot;	&apos; закладка на найденный номер сноски
-Public Const sConstBookMarkFNText		As String	= &quot;_ooo_ocr_tc_foot_note_find_text_dikbsd_&quot;		&apos; закладка на найденный текст сноски, указанного номера
+Public Const sConstBookMarkSimpleLeft	As String	= &quot;_ooo_ocr_tc_foot_note_simple_left_&quot;	&apos; временная закладка левого символа
+Public Const sConstBookMarkSimpleRight	As String	= &quot;_ooo_ocr_tc_foot_note_simple_right_&quot;	&apos; временная закладка правого символа
+Public Const sConstBookMarkSimple		As String	= &quot;_ooo_ocr_tc_foot_note_simple_&quot;		&apos; временная закладка на текст сноски
+
+Public Const sConstBookMarkNZoneNote	As String	= &quot;_ooo_ocr_tc_foot_note_number_zone_&quot;	&apos; закладка - зона поиска номера сноски
+Public Const sConstBookMarkListNote		As String	= &quot;_ooo_ocr_tc_foot_note_list_zone_&quot;	&apos; закладка - зона поиска списка текста сносок
+Public Const sConstBookMarkFNNumber		As String	= &quot;_ooo_ocr_tc_foot_note_find_number_&quot;	&apos; закладка на найденный номер сноски
+Public Const sConstBookMarkFNText		As String	= &quot;_ooo_ocr_tc_foot_note_find_text_&quot;	&apos; закладка на найденный текст сноски, указанного номера
 
 Const sConstBuildFootEndNoteDlgSettings				As String = &quot;BuildFootEndNoteDlgSettings.txt&quot;
 Const sConstFootNoteLinkTransDlgSettingsSettings	As String = &quot;FootNoteLinkTransDlgSettings.txt&quot;
@@ -38,9 +41,9 @@ Type tTestDataFlags
 	sRBookMark							As String	&apos; название закладки для Списка примечаний этой главы
 End Type
 
-&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos;				Функции алгоритма простой генерации сносок
-&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;============================================================================================================================
+&apos;								Функции алгоритма ПРОСТОЙ генерации сносок
+&apos;============================================================================================================================
 &apos; для режима простой генерации сносок - левая часть регулярного выражения
 Function GetRegStringForLeft( oLB As Object ) As String
 	Select Case oLB.SelectedItemPos
@@ -143,18 +146,16 @@ Sub BuildFootNoteSimple()
 	End If
 End Sub
 
-Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As Object, sLeft As String, sRight As String ) As Long
+Function BuildFootNoteSimpleWorker( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef oRCurs As Object, sLeft As String, sRight As String ) As Long
 	BuildFootNoteSimpleWorker = 0
 	
-	If IsNull(oLCurs) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Function
+	If IsNull( oLCurs ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Function
 	If oDoc.Text.compareRegionEnds( oLCurs, oRCurs ) &lt;= 0 Then Exit Function
 	
-	oLCurs.goRight( 0, False )
-	Dim oViewCursor As Object : oViewCursor = oDoc.getCurrentController().getViewCursor()
-	
-	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
-	With vSearch
-		.SearchString				= sLeft &amp; &quot;[^&quot; &amp; sLeft &amp; sRight &amp; &quot;]+&quot; &amp; sRight
+	Dim oViewCursor	As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+	Dim vSearchLeft	As Variant	: vSearchLeft	= oDoc.createSearchDescriptor()
+	With vSearchLeft
+		.SearchString				= sLeft
 		.SearchCaseSensitive		= False
 		.SearchRegularExpression	= True
 	End With
@@ -164,72 +165,128 @@ Function BuildFootNoteSimpleWorker( oDoc As Object, oLCurs As Object, oRCurs As 
 	&apos; удаляем служебные закладки, если они есть
 	DeleteAllBookMarkWithTemplate( oBookMarks, sConstBookMarkSimple )
 	
-	Dim vFound As Variant : vFound = oDoc.findNext( oLCurs, vSearch )
-	Do While Not IsNull( vFound )
+	Dim vFoundLeft As Variant : vFoundLeft = oDoc.findNext( oLCurs, vSearchLeft )
+	Do While Not IsNull( vFoundLeft )
 		&apos; If Not vFound.hasElements() Then Exit Do
-		If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-			If Not IsEmpty( vFound.TextTable ) Then &apos; текст очередной сноски находится в таблице
+		If vFoundLeft.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFoundLeft.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+			If Not IsEmpty( vFoundLeft.TextTable ) Then &apos; текст очередной сноски находится в таблице
 				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
-				oViewCursor.gotoRange( vFound, False )
+				oViewCursor.gotoRange( vFoundLeft, False )
 				CursorAfterCurrentTextTable( oViewCursor )
-				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
-			ElseIf Not IsEmpty( vFound.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
-				&apos; OOo не позволяет вставлять сноску в текстовую врезку.
-				&apos; перепрыгиваем врезку - не обрабатываем ее
+				vFoundLeft = oDoc.findNext( oViewCursor.getStart(), vSearchLeft )
+			ElseIf Not IsEmpty( vFoundLeft.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
+				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Перепрыгиваем врезку - не обрабатываем ее
 				With oViewCursor
-					.gotoRange( vFound, False )
-					.gotoRange( vFound.TextFrame.getEnd(), False )
+					.gotoRange( vFoundLeft, False )
+					.gotoRange( vFoundLeft.TextFrame.getEnd(), False )
 				End With
-				vFound = oDoc.findNext( oViewCursor.getStart(), vSearch )
+				vFoundLeft = oDoc.findNext( oViewCursor.getStart(), vSearchLeft )
 			Else &apos; просто текст
 				&apos; переводим курсор на найденный текст сноски
-				If vFound.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFound.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
-					If oDoc.Text.compareRegionEnds( vFound, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
-						&apos; обработка найденного текста сноски для простого режима генерации сноски
+				If vFoundLeft.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFoundLeft.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+					If oDoc.Text.compareRegionEnds( vFoundLeft, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
 						&apos; переводим курсор на найденный текст сноски
-						oViewCursor.gotoRange( vFound, False )
-						&apos; ставим закладку - по ней потом найдем этот текст сноски
-						_UnoInsertBookmark( sConstBookMarkSimple )
-						
-						Dim symNumber As Integer
-						If Len(sLeft) = 2 Then
-							symNumber = 1
-						ElseIf Len(sLeft) = 4 Then
-							symNumber = 2
-						ElseIf Len(sLeft) = 6 Then
-							symNumber = 3
-						Else
-							symNumber = 1
+						oViewCursor.gotoRange( vFoundLeft, False )
+						&apos; ставим закладку для найденного левого идентификатора текста сноски
+						_UnoInsertBookmark( sConstBookMarkSimpleLeft )
+						Dim vFoundRight As Variant
+						&apos; поиск правого идентификатора текста сноски
+						vFoundRight = BuildFootNoteSimpleFindRight( oDoc, vFoundLeft, oRCurs, sRight )
+						If Not IsNull( vFoundRight ) Then
+							ExtendViewCursorFromStartCursor1ToEndCursor2( oViewCursor, vFoundLeft, vFoundRight )
+							&apos; ставим закладку - по ней потом найдем этот текст сноски
+							_UnoInsertBookmark( sConstBookMarkSimple )
+							&apos; генерация сноски
+							MakeFN( oDoc, oViewCursor, oBookMarks, Len( sLeft ) )
+							BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1 &apos; число обработанных сносок
 						End If
-						
-						MakeFN( oDoc, vFound, oViewCursor, oBookMarks, symNumber )
-						BuildFootNoteSimpleWorker = BuildFootNoteSimpleWorker+1
+						&apos; удаляем временные закладки для левого и правого идектификаторов текста сноски
+						If oBookMarks.hasByName( sConstBookMarkSimpleLeft ) Then _UnoDeleteBookMark( sConstBookMarkSimpleLeft )
+						If oBookMarks.hasByName( sConstBookMarkSimpleRight ) Then _UnoDeleteBookMark( sConstBookMarkSimpleRight )
 					Else Exit Function
 					End if
 				End If
 				&apos; переводим курсор на найденный текст сноски
-				oViewCursor.gotoRange( vFound, False )
-				vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+				oViewCursor.gotoRange( vFoundLeft, False )
+				vFoundLeft = oDoc.findNext( vFoundLeft.getEnd(), vSearchLeft )
 			End If
+		Else Exit Function &apos; в сноске - не обрабатываем
+		End If
+	Loop
+End Function
+
+&apos; поиск правого идентификатора теста сноски
+Function BuildFootNoteSimpleFindRight( ByRef oDoc As Object, ByRef vFoundLeft As Object, ByRef oRCurs As Object, sRight As String ) As Object
+	If IsNull( vFoundLeft ) Or IsNull( oRCurs ) Or IsNull( oDoc ) Then Exit Function
+	If oDoc.Text.compareRegionEnds( vFoundLeft, oRCurs ) &lt;= 0 Then Exit Function
+	
+	Dim oViewCursor		As Object	: oViewCursor	= oDoc.getCurrentController().getViewCursor()
+	Dim vSearchRight	As Variant	: vSearchRight	= oDoc.createSearchDescriptor()
+	With vSearchRight
+		.SearchString				= sRight
+		.SearchCaseSensitive		= False
+		.SearchRegularExpression	= True
+	End With
+
+	Dim oBookMarks	As Object	: oBookMarks	= oDoc.getBookmarks()
+	Dim vFoundRight	As Variant	: vFoundRight	= oDoc.findNext( vFoundLeft.getEnd(), vSearchRight )
+	Do While Not IsNull( vFoundRight )
+		&apos; If Not vFound.hasElements() Then Exit Do
+		If vFoundRight.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFoundRight.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+			If Not IsEmpty( vFoundRight.TextTable ) Then &apos; текст очередной сноски находится в таблице
+				&apos; перепрыгиваем таблицу - не обрабатываем ее (пока не знаю как сделать проверку на выход за oRCurs из таблицы - вылетает ошибка )
+				oViewCursor.gotoRange( vFoundRight, False )
+				CursorAfterCurrentTextTable( oViewCursor )
+				vFoundRight = oDoc.findNext( oViewCursor.getStart(), vSearchRight )
+			ElseIf Not IsEmpty( vFoundRight.TextFrame ) Then &apos; текст очередной сноски находится в текстовой врезке
+				&apos; OOo не позволяет вставлять сноску в текстовую врезку. Перепрыгиваем врезку - не обрабатываем ее
+				With oViewCursor
+					.gotoRange( vFoundRight, False )
+					.gotoRange( vFoundRight.TextFrame.getEnd(), False )
+				End With
+				vFoundRight = oDoc.findNext( oViewCursor.getStart(), vSearchRight )
+			Else &apos; просто текст
+				&apos; переводим курсор на найденный текст сноски
+				If vFoundRight.ParaStyleName &lt;&gt; &quot;Footnote&quot; And vFoundRight.ParaStyleName &lt;&gt; &quot;Endnote&quot;	Then
+					If oDoc.Text.compareRegionEnds( vFoundRight, oRCurs ) &gt;= 0 Then &apos; если не вышли за правую границу или прямо на ней
+						&apos; переводим курсор на найденный текст сноски
+						oViewCursor.gotoRange( vFoundRight, False )
+						&apos; ставим закладку для найденного правого идентификатора текста сноски
+						_UnoInsertBookmark( sConstBookMarkSimpleRight )
+						&apos; возвращаем найденное место правого идентификатора
+						BuildFootNoteSimpleFindRight = vFoundRight
+						Exit Function
+					Else Exit Function
+					End if
+				End If
+				&apos; переводим курсор на найденный текст сноски
+				oViewCursor.gotoRange( vFoundRight, False )
+				vFoundRight = oDoc.findNext( vFoundRight.getEnd(), vSearchRight )
+			End If
+		Else Exit Function &apos; в сноске - не обрабатываем
 		End If
 	Loop
 End Function
 
 &apos; генерация сноски
-Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks As Object, symNumber As Integer )
-	&apos; расширяем выделение курсора до конца найденного
-	oViewCursor.gotoRange(vFound.getEnd(), True)
-	&apos; удаляем и вставляем закладку на место найденного текста сноски
-	&apos; по ней потом найдем этот текст для формирования соответствующего текста сноски
-	_UnoDeleteBookMark( sConstBookMarkSimple )
-	_UnoInsertBookmark( sConstBookMarkSimple )
-	&apos; возвращаемся к закладке - началу текста сноски
+Sub MakeFN( ByRef oDoc As Object, ByRef oViewCursor As Object, ByRef oBookMarks As Object, LeftLen As Integer )
+	Dim symNumber As Integer
+	If LeftLen = 2 Then
+		symNumber = 1
+	ElseIf LeftLen = 4 Then
+		symNumber = 2
+	ElseIf LeftLen = 6 Then
+		symNumber = 3
+	Else
+		symNumber = 1
+	End If
+	
 	Dim b : b = oDoc.getBookmarks().getByName( sConstBookMarkSimple ).getAnchor()
 	&apos; курсор - на начала закладки (текста сноски)
 	With oViewCursor
 		.gotoRange(b.getStart(), False)
 		.goRight( symNumber, False )
-		.gotoRange( vFound.getEnd(), True )
+		.gotoRange( b.getEnd(), True )
 		.goLeft( symNumber, True )
 	End With
 	&apos; вырезать выделенный текст сноски в буфер
@@ -243,9 +300,9 @@ Sub MakeFN( oDoc As Object, vFound As Variant, oViewCursor As Object, oBookMarks
 	If oBookMarks.hasByName( sConstBookMarkSimple ) Then _UnoDeleteBookMark( sConstBookMarkSimple )
 End Sub
 
-&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos;				Функции алгоритма сложной генерации сносок
-&apos;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos;============================================================================================================================
+&apos;									Функции алгоритма СЛОЖНОЙ генерации сносок
+&apos;============================================================================================================================
 &apos; выделяем номер из строки 
 Function GetNumberFromString( sString As String ) As String
 	Dim i As Integer : Dim sNumber As String : sNumber = &quot;&quot;
