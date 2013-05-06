@@ -82,7 +82,7 @@ Sub FootNoteInteractiveMakerStart()
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg,  nX, nY )
-	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 35, 386, com.sun.star.awt.PosSize.POS )
+	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 35, 450, com.sun.star.awt.PosSize.POS )
 
 	bWorkEnd	= False &apos; еще не достигнут конец документа
 	IsFirstStep	= False	&apos; еще не нажимали кнопку поиска
@@ -100,6 +100,46 @@ Sub FootNoteInteractiveMakerStart()
 	&apos; записываем настройки диалога
 	SaveSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg )
 	oFootNoteInteractiveMakerDlg.setVisible( False )
+End Sub
+
+&apos; ===========================================================================================================================
+&apos; 											0. выделение абзаца текста сноски
+&apos; ===========================================================================================================================
+&apos; Выделение абзаца текста сноски
+Sub SelectFNTextPara()
+	Dim oDocControl	As Object : oDocControl	= ThisComponent.getCurrentController()
+	Dim ovCurs		As Object : ovCurs		= oDocControl.getViewCursor()
+	SelectFNText( oDocControl, ovCurs )
+End Sub
+
+&apos;********************************************************************
+&apos; Выделение абзаца текста сноски
+Sub SelectFNText( ByRef oDocControl As Object, ByRef ovCurs As Object )
+	Dim otxtTempCurs As Object : otxtTempCurs = ovCurs.getText().CreateTextCursorByRange( ovCurs )
+	otxtTempCurs.gotoStartOfParagraph( False )
+	Dim s As String
+	otxtTempCurs.collapseToEnd()
+	Do While otxtTempCurs.goRight( 1, True )
+		s = Right( otxtTempCurs.getString(), 1 )
+		If s = &quot; &quot; Or s = &quot;	&quot; Then &apos; пробел и табуляция
+			ovCurs.goRight( 1, False )
+		Else
+			If otxtTempCurs.CharEscapement &gt; 0 Then
+				If IsNumeric( s ) Then &apos; цифра в верхнем индексе
+					ovCurs.goRight( 1, False )
+				Else &apos; символ в верхнем индексе
+					&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
+					Exit Do
+				End If
+			Else
+				Exit Do
+			End If
+		End If
+		otxtTempCurs.collapseToEnd()
+	Loop
+	&apos; выделяем текст сноски до конца абзаца
+	otxtTempCurs.gotoEndOfParagraph( True )
+	oDocControl.Select( otxtTempCurs )
 End Sub
 
 &apos; ===========================================================================================================================
@@ -154,30 +194,8 @@ Sub InsertNoteText()
 		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
 		&apos; переходим к первому символу/цифре после номера сноски (пропускаеи цифры в верхнем индексе и пробелы сначала абзаца)
 		ovCurs.gotoStartOfLine( False )
-		Dim otxtTempCurs As Object : otxtTempCurs = ovCurs.getText().CreateTextCursorByRange( ovCurs )
-		Dim s As String
-		otxtTempCurs.collapseToEnd()
-		Do While otxtTempCurs.goRight( 1, True )
-			s = Right( otxtTempCurs.getString(), 1 )
-			If s = &quot; &quot; Or s = &quot;	&quot; Then &apos; пробел и табуляция
-				ovCurs.goRight( 1, False )
-			Else
-				If otxtTempCurs.CharEscapement &gt; 0 Then
-					If IsNumeric( s ) Then &apos; цифра в верхнем индексе
-						ovCurs.goRight( 1, False )
-					Else &apos; символ в верхнем индексе
-						&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
-						Exit Do
-					End If
-				Else
-					Exit Do
-				End If
-			End If
-			otxtTempCurs.collapseToEnd()
-		Loop
-		&apos; выделяем текст сноски до конца абзаца
-		otxtTempCurs.gotoEndOfParagraph( True )
-		oDocControl.Select( otxtTempCurs )
+		&apos; выделяем абзац текста сноски (игнорируем ее номер в верхнем индексе и все пробелы/тапбуляции ДО текста, если они есть)
+		SelectFNText( oDocControl, ovCurs )
 	End If
 End Sub
 
