@@ -1295,7 +1295,8 @@ Sub FootNoteTest()
 		
 		Dim aLBookMarks() As String &apos; список закладок на главы книги
 		Dim oListBookMark As Object &apos; закладка списка примечаний
-		
+		Dim asReportTemp() As String
+		Dim asReport() As String
 		If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFNTextInBookEnd&quot; ).State Then
 			&apos; Тест для Режима 1: Нумерация - сквозная; Общий список примечаний - в конце книги
 			aLBookMarks = GetFindListNoteZones( oBookMarks, sConstBookMarkNZoneNote )
@@ -1311,15 +1312,17 @@ Sub FootNoteTest()
 			&apos; сгенерировать отчет и запустить его на просмотр
 			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			SaveStartReportText( oTOS, sBTEND.sTestMode1 )
-			&apos; печатаем номер тестируемой зоны (глава и ее Список примечаний) - вся книга
-			oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 			MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
 						lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 						nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
-						vaZoneFlagsArray(), 0, &quot;-&quot;, sConstBookMarkListNote )
-			oProgressBar.setValue( 2 )
+						vaZoneFlagsArray(), 0, &quot;-&quot;, sConstBookMarkListNote, sBTEND, asReport() )
 			&apos; печать финальных таблиц - какие зоны требуют вмешательства, а какие - не требуют
 			SaveTablesFinalReport( oTOS, vaZoneFlagsArray() )
+			oTOS.writeString( &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.Analysis &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) )
+			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
+			&apos; сохранение отчета в файл
+			SaveReport( oTOS, asReport() )
+			oProgressBar.setValue( 2 )
 			&apos; завершающая часть отчета
 			SaveEndReportText( oTOS )
 			oProgressBar.End
@@ -1345,14 +1348,9 @@ Sub FootNoteTest()
 			&apos; сгенерировать отчет и запустить его на просмотр
 			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			SaveStartReportText( oTOS, sBTEND.sTestMode2 )
-			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
-			
 			oStartCurs = oBookMarks.getByName( aLBookMarks(0) ).getAnchor()
 			oLCurs.gotoRange( oStartCurs.getEnd(), False )
-			
 			For l=0 To UBound( aRBookMarks() )
-				&apos; печатаем номер очередной тестируемой зоны (глава и ее Список примечаний)
-				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oRCurs = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
@@ -1362,19 +1360,27 @@ Sub FootNoteTest()
 				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
 							lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
-							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l) )
+							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l), sBTEND, asReportTemp() )
+				Dim j As Integer
+				For j=0 To UBound( asReportTemp() )
+					AddNewItemToArray1( asReport(), asReportTemp( j ) )
+				Next j
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				With oLCurs
 					.gotoRange( oRCurs.getEnd(), False )
 					.goRight( 1, False )
 				End With
-				&apos; очищение всех рабочих массивов для следующего прохода теста
+								&apos; очищение всех рабочих массивов для следующего прохода теста
 				RedimAllArrays( saNumbersInText(), vaRepeatNumbersInText(), saNumbersInList(), vaRepeatNumbersInList(), _
-								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), asReportTemp() )
 			Next l
-			oProgressBar.setValue( 2 )
 			&apos; печать финальных таблиц - какие зоны требуют вмешательства, а какие - не требуют
 			SaveTablesFinalReport( oTOS, vaZoneFlagsArray() )
+			oTOS.writeString( &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.Analysis &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) )
+			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
+			&apos; сохранение отчета в файл
+			SaveReport( oTOS, asReport() )
+			oProgressBar.setValue( 2 )
 			&apos; завершающая часть отчета
 			SaveEndReportText( oTOS )
 			oProgressBar.End
@@ -1400,7 +1406,6 @@ Sub FootNoteTest()
 			&apos; сгенерировать отчет и запустить его на просмотр
 			&apos; записываем в файл отчета &quot;шапку&quot; - название режима
 			SaveStartReportText( oTOS, sBTEND.sTestMode3 )
-			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
 			&apos; получаем L-зоны для поиска номеров примечаний
 			For l=0 To UBound( aRBookMarks() )
 				&apos; левая граница поиска номеров сносок - текстовый курсор на очередной закладке (начало главы и т.д.)
@@ -1413,8 +1418,6 @@ Sub FootNoteTest()
 					oRCurs = oBookMarks.getByName( aRBookMarks(0) ).getAnchor()
 				End If
 
-				&apos; печатаем номер очередной тестируемой зоны (глава и ее Список примечаний)
-				oTOS.writeString( &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10) )
 				oListBookMark = oBookMarks.getByName( aRBookMarks(l) ).getAnchor()
 				GetFootNoteDataTest( oDoc, oViewCursor, oLCurs, oRCurs, oListBookMark, sRegFind, oTOS, oProgressBar, _
 									lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
@@ -1423,7 +1426,11 @@ Sub FootNoteTest()
 				MakeReport( oTOS, lCountAllTextNotes, saNumbersInText(), vaRepeatNumbersInText(), _
 							lCountAllListNotes, saNumbersInList(), vaRepeatNumbersInList(), _
 							nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), _
-							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l) )
+							vaZoneFlagsArray(), l, aLBookMarks(l), aRBookMarks(l), sBTEND, asReportTemp() )
+				Dim k As Integer
+				For k=0 To UBound( asReportTemp() )
+					AddNewItemToArray1( asReport(), asReportTemp( k ) )
+				Next k
 				&apos; &quot;опускаем&quot; верхнюю границу зоны поиска номеров примечаний
 				With oLCurs
 					.gotoRange( oRCurs.getEnd(), False )
@@ -1431,11 +1438,15 @@ Sub FootNoteTest()
 				End With
 				&apos; очищение всех рабочих массивов для следующего прохода теста
 				RedimAllArrays( saNumbersInText(), vaRepeatNumbersInText(), saNumbersInList(), vaRepeatNumbersInList(), _
-								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText() )
+								nAbsentNumbersInText(), nAbsentNumbersInList(), naAbsentTextNumbersInList(), naAbsentListNumbersInText(), asReportTemp() )
 			Next l
-			oProgressBar.setValue( 2 )
 			&apos; печать финальных таблиц - какие зоны требуют вмешательства, а какие - не требуют
 			SaveTablesFinalReport( oTOS, vaZoneFlagsArray() )
+			oTOS.writeString( &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.Analysis &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) )
+			SaveZonesCount( oTOS, UBound( aLBookMarks() )+1, UBound( aRBookMarks() )+1 )
+			&apos; сохранение отчета в файл
+			SaveReport( oTOS, asReport() )
+			oProgressBar.setValue( 2 )
 			&apos; завершающая часть отчета
 			SaveEndReportText( oTOS )
 			oProgressBar.End
@@ -1450,10 +1461,11 @@ Sub FootNoteTest()
 End Sub
 
 &apos; очищение всех рабочих массивов для следующего прохода теста
-Sub RedimAllArrays( saNumbersInText() As String, vaRepeatNumbersInText() As Variant, _
-					saNumbersInList() As String, vaRepeatNumbersInList() As Variant, _
-					nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
-					naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer )
+Sub RedimAllArrays( ByRef saNumbersInText() As String, ByRef vaRepeatNumbersInText() As Variant, _
+					ByRef saNumbersInList() As String, ByRef vaRepeatNumbersInList() As Variant, _
+					ByRef nAbsentNumbersInText() As Integer, ByRef nAbsentNumbersInList() As Integer, _
+					ByRef naAbsentTextNumbersInList() As Integer, ByRef naAbsentListNumbersInText() As Integer, _
+					ByRef asReportTemp() As String )
 	Redim saNumbersInText()
 	Redim vaRepeatNumbersInText()
 	Redim saNumbersInList()
@@ -1462,6 +1474,7 @@ Sub RedimAllArrays( saNumbersInText() As String, vaRepeatNumbersInText() As Vari
 	Redim nAbsentNumbersInList()
 	Redim naAbsentTextNumbersInList()
 	Redim naAbsentListNumbersInText()
+	Redim asReportTemp()
 End Sub
 
 &apos; Тест для режима: Нумерация - сквозная; Общий список примечаний - в конце книги
@@ -1510,8 +1523,8 @@ Sub GetFootNoteDataTest( oDoc As Object, oViewCursor As Object, oLCurs As Object
 End Sub
 
 &apos; Сбор информации по номерам из Текста для теста сложной генерации сносок - режим: Нумерация - сквозная; Общий список примечаний - в конце книги.
-Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, oLCurs As Object, oRCurs As Object, _
-									sRegFind As String, saNumbers() As String, bInText As Boolean ) As Long
+Function GetDataForTestComplexFootNote( ByRef oDoc As Object, ByRef oViewCursor As Object, ByRef oLCurs As Object, ByRef oRCurs As Object, _
+										sRegFind As String, ByRef saNumbers() As String, bInText As Boolean ) As Long
 	GetDataForTestComplexFootNote = 0
 	If IsNull(oViewCursor) Or IsNull(oDoc) Or IsNull(oLCurs) Or IsNull(oRCurs) Then Exit Function
 	If oDoc.Text.compareRegionEnds(oLCurs, oRCurs) &lt;= 0 Then Exit Function &apos; вышли за правую границу или прямо на ней
@@ -1606,7 +1619,7 @@ Function GetDataForTestComplexFootNote( oDoc As Object, oViewCursor As Object, o
 End Function
 
 &apos; тест на наличие одинаковых номеров примечаний в зоне поиска
-Sub TestForIdenticalNumbers( saNumbers() As String, vaNumbersRepeat() As Variant )
+Sub TestForIdenticalNumbers( ByRef saNumbers() As String, ByRef vaNumbersRepeat() As Variant )
 	If UBound( saNumbers() ) = -1 Then Exit Sub
 	Dim l As Long, s As String
 	Dim lCount As Long : lCount = 0
@@ -1639,7 +1652,7 @@ Sub TestForIdenticalNumbers( saNumbers() As String, vaNumbersRepeat() As Variant
 End Sub
 
 &apos; удаление из не сортированного variant массива всех одинаковых элементов
-Function RemoveIdenticalNonSortArrayElements_var( vaArray() As Variant ) As Array
+Function RemoveIdenticalNonSortArrayElements_var( ByRef vaArray() As Variant ) As Array
 	If UBound( vaArray() ) = -1 Then Exit Function
 	Dim l As Long, i As Long
 	Dim vaTemp() As Variant
@@ -1651,7 +1664,7 @@ Function RemoveIdenticalNonSortArrayElements_var( vaArray() As Variant ) As Arra
 	RemoveIdenticalNonSortArrayElements_var = vaTemp()
 End Function
 
-Function IsExsistsElement( vaArray() As Variant, v As Variant ) As Boolean
+Function IsExsistsElement( ByRef vaArray() As Variant, v As Variant ) As Boolean
 	IsExsistsElement = False
 	If UBound( vaArray() ) = -1 Then Exit Function
 	Dim l As Long
@@ -1664,7 +1677,7 @@ Function IsExsistsElement( vaArray() As Variant, v As Variant ) As Boolean
 End Function
 
 &apos; тест на наличие отсутствующих номеров примечаний в зоне поиска
-Sub TestForAbsentNumbers( saNumbers() As String, nAbsentNumbers() As Integer )
+Sub TestForAbsentNumbers( ByRef saNumbers() As String, ByRef nAbsentNumbers() As Integer )
 	If UBound( saNumbers() ) = -1 Then Exit Sub
 	Dim l As Long
 	&apos; выделяем номера числом из найденного
@@ -1697,8 +1710,8 @@ Sub TestForAbsentNumbers( saNumbers() As String, nAbsentNumbers() As Integer )
 End Sub
 
 &apos; какие номера примечаний из текста отсутствуют в списке примечаний
-Sub TestAbsentTextOrListNumbersInListOrText( oProgressBar As Object, saNumbersInText() As String, saNumbersInList() As String, _
-											naAbsentTextNumbersInList() As Integer, naAbsentTextNumbersInText() As Integer )
+Sub TestAbsentTextOrListNumbersInListOrText( ByRef oProgressBar As Object, ByRef saNumbersInText() As String, ByRef saNumbersInList() As String, _
+											ByRef naAbsentTextNumbersInList() As Integer, ByRef naAbsentTextNumbersInText() As Integer )
 	If UBound( saNumbersInText() )=-1 Or UBound( saNumbersInList )=-1 Then Exit Sub
 	&apos; созлаем сортированный массив из чисел номеров примечаний в Тексте
 	Dim l As Long, i As Long
@@ -1765,11 +1778,12 @@ Sub TestAbsentTextOrListNumbersInListOrText( oProgressBar As Object, saNumbersIn
 End Sub
 
 &apos; создание отчета о работе Теста генерации сносок
-Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As String, vaRepeatNumbersInText() As Variant, _
-				lCountAllListNotes As Long, saNumbersInList() As String, vaRepeatNumbersInList() As Variant, _
+Sub MakeReport( ByRef oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As String, ByRef vaRepeatNumbersInText() As Variant, _
+				lCountAllListNotes As Long, saNumbersInList() As String, ByRef vaRepeatNumbersInList() As Variant, _
 				nAbsentNumbersInText() As Integer, nAbsentNumbersInList() As Integer, _
 				naAbsentTextNumbersInList() As Integer, naAbsentListNumbersInText() As Integer, _
-				vaZoneFlagsArray() As Variant, nZoneNumber As Long, sLBookMark As String, sRBookMark As String )
+				ByRef vaZoneFlagsArray() As Variant, nZoneNumber As Long, sLBookMark As String, sRBookMark As String, _
+				sBTEND As tBuildFootEndNoteData, ByRef asReportTemp() As String )
 	&apos; все данные-флаги по конкретной зоне поиска - инициализация
 	Dim t As tTestDataFlags 
 	t.nZoneNumber						= nZoneNumber &apos; порядковый номер тестируемой зоны (глава и ее список примечаний)
@@ -1786,8 +1800,10 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	
 	&apos; зона теста - глава книги
 	Dim s As String, l As Long
-	s = &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestBookChapter &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
-	oTOS.writeString( s )
+	s = &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestZoneSearch &amp; &quot; &quot; &amp; sBTEND.sTestChapterAndNotesList &amp; &quot; - &quot; &amp; l &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	AddNewItemToArray1( asReportTemp(), s )
+	s = &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestBookChapter &amp; &quot; &quot; &amp; sLBookMark &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	AddNewItemToArray1( asReportTemp(), s )
 
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInText &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1828,8 +1844,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	End If
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-	
-	oTOS.writeString( s )
+	AddNewItemToArray1( asReportTemp(), s )
 	
 	&apos; для Главы книги
 	If Not IsNull( saNumbersInText() ) Then
@@ -1842,7 +1857,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( saNumbersInText() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	
@@ -1863,7 +1878,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( iaUniqueNumbers() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	
@@ -1878,7 +1893,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaRepeatNumbersInText(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 			Next l
 			s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	If Not IsNull( nAbsentNumbersInText() ) Then
@@ -1892,7 +1907,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( nAbsentNumbersInText() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	If Not IsNull( naAbsentTextNumbersInList() ) Then
@@ -1906,14 +1921,13 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( naAbsentTextNumbersInList() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 
-	&apos; /////////////// Тестируем Список примечаний /////////////////
-	s = chr(10)
-	s = s &amp; &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestNotesList &amp; &quot;:&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
-	oTOS.writeString( s )
+	&apos; =================== Тестируем Список примечаний ====================
+	s = chr(10) &amp; &quot;&lt;font color=&quot;&quot;#0000ff&quot;&quot;&gt;&lt;h2&gt;&quot; &amp; sBTEND.sTestNotesList &amp; &quot; &quot; &amp; sRBookMark &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot; &amp; chr(10)
+	AddNewItemToArray1( asReportTemp(), s )
 
 	s = &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;tr&gt;&lt;td&gt;&quot; &amp; sBTEND.sTestProcessedNotesNumbersInList &amp; &quot;, &quot; &amp; sBTEND.sCount &amp; &quot;:&lt;/td&gt;&quot; &amp; chr(10)
@@ -1953,7 +1967,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	End If
 	s = s &amp; &quot;&lt;td&gt;&quot; &amp; lBound+1 &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-	oTOS.writeString( s )
+	AddNewItemToArray1( asReportTemp(), s )
 	
 	If Not IsNull( saNumbersInList() ) Then
 		If UBound( saNumbersInList() ) &gt; -1  Then
@@ -1965,7 +1979,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( saNumbersInList() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	
@@ -1985,7 +1999,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( iaUniqueNumbersList() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	
@@ -2000,7 +2014,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaRepeatNumbersInList(l).lCount &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 			Next l
 			s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	If Not IsNull( nAbsentNumbersInList() ) Then
@@ -2013,7 +2027,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( nAbsentNumbersInList() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	If Not IsNull( naAbsentListNumbersInText() ) Then
@@ -2026,7 +2040,7 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 				If l &lt;&gt; Ubound( naAbsentListNumbersInText() ) Then s = s &amp; &quot; &apos; &quot;
 			Next l
 			s = s &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
-			oTOS.writeString( s )
+			AddNewItemToArray1( asReportTemp(), s )
 		End If
 	End If
 	
@@ -2036,20 +2050,39 @@ Sub MakeReport( oTOS As Object, lCountAllTextNotes As Long, saNumbersInText() As
 	vaZoneFlagsArray(k) = t
 End Sub
 
+&apos; сохранение отчета в файл
+Sub SaveReport( ByRef oTOS As Object, ByRef asReport() As String )
+	Dim l As Long
+	For l=0 To UBound( asReport() )
+		oTOS.writeString( asReport( l ) )
+	Next l
+End Sub
 
-Sub SaveStartReportText( oTOS As Object, sMode as String )
+Sub SaveStartReportText( ByRef oTOS As Object, sMode as String )
 	Dim s As String
 	s = &quot;&lt;html&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;head&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;meta http-equiv=&quot;&quot;content-type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;title&gt;Footnote Generator Test&lt;/title&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;style type=&quot;&quot;text/css&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;.test_border {&quot; &amp; chr(10)
+	s = s &amp; &quot;background: #E5E4E4;&quot; &amp; chr(10)
+	s = s &amp; &quot;border: 1px solid red;&quot; &amp; chr(10)
+	s = s &amp; &quot;padding: 10px;&quot; &amp; chr(10)
+	s = s &amp; &quot;}&quot; &amp; chr(10)
+ 	s = s &amp; &quot;&lt;/style&gt;&quot; &amp; chr(10)
+ 	s = s &amp; &quot;&lt;/head&gt;&quot; &amp; chr(10)
+	
 	s = s &amp; &quot;&lt;body&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;font color=&quot;&quot;#FF0000&quot;&quot;&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestResults &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;font color=green&gt;&lt;h1 ALIGN=CENTER&gt;&quot; &amp; sMode &amp; &quot;&lt;/h1&gt;&lt;/font&gt;&quot; &amp; chr(10) &amp; chr(10)
 	oTOS.writeString( s )
 End Sub
 
-Sub SaveEndReportText( oTOS As Object )
+Sub SaveEndReportText( ByRef oTOS As Object )
 	Dim s As String
-	s = &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
+	s = &quot;&lt;p&gt;&lt;hr&gt;&lt;/p&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestAnalysisOfResult &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook &amp; &quot;:&lt;/p&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 	s = s &amp; &quot;&lt;p&gt;&quot; &amp; sBTEND.sTestCorrectlyBook2 &amp; &quot;&lt;/p&gt;&quot;
@@ -2060,7 +2093,7 @@ Sub SaveEndReportText( oTOS As Object )
 	oTOS.writeString( s )
 End Sub
 
-Sub SaveZonesCount( oTOS As Object, lCB As Long, lLB As Long  )
+Sub SaveZonesCount( ByRef oTOS As Object, lCB As Long, lLB As Long  )
 	Dim s As String
 	s = &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestBookmarkForSearchZones &amp; &quot;:&lt;/h3&gt;&lt;/font&gt;&quot;
 	s = s &amp; &quot;&lt;table border=&quot;&quot;1&quot;&quot;&gt;&quot; &amp; chr(10)
@@ -2073,10 +2106,11 @@ Sub SaveZonesCount( oTOS As Object, lCB As Long, lLB As Long  )
 End Sub
 
 &apos; печать финальных таблиц - какие зоны требуют вмешательства, а какие - не требуют
-Sub SaveTablesFinalReport( oTOS As Object, vaZoneFlagsArray() As Variant )
+Sub SaveTablesFinalReport( ByRef oTOS As Object, ByRef vaZoneFlagsArray() As Variant )
 	Dim alOk() As Long, alErr() As Long
 	Dim l As Long, s As String
-	s = &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestGeneralResume &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
+	s = &quot;&lt;div class=&quot;&quot;test_border&quot;&quot;&gt;&quot; &amp; chr(10)
+	s = s &amp; &quot;&lt;font color=red&gt;&lt;h2 ALIGN=CENTER&gt;&quot; &amp; sBTEND.sTestGeneralResume &amp; &quot;&lt;/h2&gt;&lt;/font&gt;&quot;
 	oTOS.writeString( s )
 	
 	For l=0 To UBound( vaZoneFlagsArray() )
@@ -2095,8 +2129,8 @@ Sub SaveTablesFinalReport( oTOS As Object, vaZoneFlagsArray() As Variant )
 	&apos; печать: Все OK, если ни одна зона не нуждается в корректировке
 	If UBound( alOk() ) &gt; -1 And UBound( alErr() ) = -1 Then
 		s = &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestResultOK &amp; &quot;&lt;/h3&gt;&lt;/font&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestResultOKMess &amp; &quot;&lt;/h3&gt;&lt;/font&gt;&quot; &amp; chr(10)
-		s = s &amp; &quot;&lt;font color=magneta&gt;&lt;h3&gt;&quot; &amp; sBTEND.sTestResultOKMess1 &amp; &quot;&lt;/h3&gt;&lt;/font&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;font color=magneta&gt;&lt;p&gt;&quot; &amp; sBTEND.sTestResultOKMess &amp; &quot;&lt;BR&gt;&quot; &amp; sBTEND.sTestResultOKMess1 &amp; &quot;&lt;/p&gt;&lt;/font&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;/div&gt;&quot; &amp; chr(10)
 		oTOS.writeString( s )
 		Exit Sub
 	End If
@@ -2113,7 +2147,8 @@ Sub SaveTablesFinalReport( oTOS As Object, vaZoneFlagsArray() As Variant )
 			s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaZoneFlagsArray( alErr(l) ).sLBookMark &amp; &quot;&lt;/td&gt;&quot; &amp; chr(10)
 			s = s &amp; &quot;&lt;td&gt;&quot; &amp; vaZoneFlagsArray( alErr(l) ).sRBookMark &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&quot; &amp; chr(10)
 		Next l
-		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10) &amp; chr(10)
+		s = s &amp; &quot;&lt;/table&gt;&quot; &amp; chr(10)
+		s = s &amp; &quot;&lt;/div&gt;&quot; &amp; chr(10) &amp; chr(10)
 		oTOS.writeString( s )
 	End If
 End Sub
@@ -2121,7 +2156,7 @@ End Sub
 &apos;////////////////////////////////////////////////////// не работает //////////////////////////
 &apos; возвращает: True, если в зоне списка закладок aListBookMarks есть Врезка и/или Таблица
 &apos; не пустой массив aListBookMarkName() с именами закладок списков примечаний
-Function TextFrameOrAndTableExistsInBookmark( aListBookMarks() As Object, aListBookMarkName() As String ) As Boolean
+Function TextFrameOrAndTableExistsInBookmark( ByRef aListBookMarks() As Object, ByRef aListBookMarkName() As String ) As Boolean
 	TextFrameOrAndTableExistsInBookmark = False
 	Dim oDoc					As Object	: oDoc = ThisComponent
 	Dim i, k					As Integer
