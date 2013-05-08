@@ -1427,11 +1427,11 @@ Sub _UnoDeleteBookMark( sBookMark As String )
 	dispatcher.executeDispatch(document, &quot;.uno:DeleteBookmark&quot;, &quot;&quot;, 0, args1())
 End Sub
 
-Sub _UnoMakeHyperlink( sSelectedText As String, sBookMarkName As String )
-
-	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
-	Dim oDispatcher As Object : oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(4) as new com.sun.star.beans.PropertyValue
+&apos; вставка гиперссылки на выделенный текст: цуль - закладка sBookMarkName
+Sub _UnoMakeBookmarkHyperlink( sSelectedText As String, sBookMarkName As String )
+	Dim oDocControlFrame	As Object : oDocControlFrame	= ThisComponent.CurrentController.Frame
+	Dim oDispatcher			As Object : oDispatcher			= createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
+	Dim args1(4) 			As New com.sun.star.beans.PropertyValue
 	args1(0).Name = &quot;Hyperlink.Text&quot;
 	args1(0).Value = sSelectedText
 	args1(1).Name = &quot;Hyperlink.URL&quot;
@@ -1442,7 +1442,25 @@ Sub _UnoMakeHyperlink( sSelectedText As String, sBookMarkName As String )
 	args1(3).Value = &quot;&quot;
 	args1(4).Name = &quot;Hyperlink.Type&quot;
 	args1(4).Value = 1
-	oDispatcher.executeDispatch(oDoc, &quot;.uno:SetHyperlink&quot;, &quot;&quot;, 0, args1())
+	oDispatcher.executeDispatch( oDocControlFrame, &quot;.uno:SetHyperlink&quot;, &quot;&quot;, 0, args1() )
+End Sub
+
+&apos; вставка гиперссылки на выделенный текст: цуль - элемент оглавления стиля заголовок sOutline
+Sub BuildHyperLink( ByRef oDocControlFrame As Object, sSelectedText As String, sOutline As String )
+	Dim oDocControlFrame	As Object : oDocControlFrame	= ThisComponent.CurrentController.Frame
+	Dim oDispatcher			As Object : oDispatcher			= createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
+	Dim args1(4)			As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Hyperlink.Text&quot;
+	args1(0).Value = sSelectedText
+	args1(1).Name = &quot;Hyperlink.URL&quot;
+	args1(1).Value = &quot;#&quot; &amp; sOutline &amp; &quot;|outline&quot;
+	args1(2).Name = &quot;Hyperlink.Target&quot;
+	args1(2).Value = &quot;&quot;
+	args1(3).Name = &quot;Hyperlink.Name&quot;
+	args1(3).Value = &quot;&quot;
+	args1(4).Name = &quot;Hyperlink.Type&quot;
+	args1(4).Value = 1
+	oDispatcher.executeDispatch( oDocControlFrame, &quot;.uno:SetHyperlink&quot;, &quot;&quot;, 0, args1() )
 End Sub
 
 &apos;//////////////////////////////////////////////////////////////////////////////

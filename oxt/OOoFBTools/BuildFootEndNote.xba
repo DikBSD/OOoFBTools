@@ -670,7 +670,7 @@ Function ProcessingComplexFootNoteList( bIsFootNoteMode As Boolean, nZoneNumber 
 					InsertCurrentFootNote( oViewCursor, sConstBookMarkFNNumber )
 				Else  &apos; режим генерации внутренних ссылок
 					&apos; формирование гиперссылки для найденного по шаблону номера примечания (режим - генерация внутренних ссылок)
-					MakeHiperLink( oViewCursor, sConstBookMarkFNNumber, sBMHyperlink )
+					MakeHyperLink( oViewCursor, sConstBookMarkFNNumber, sBMHyperlink )
 					&apos; перемещаем курсор на конец закладки - к концу текста сгенерированной гиперссылки
 					oViewCursor.gotoRange(oBookMark.getEnd(), False)
 				End If
@@ -707,11 +707,11 @@ Sub InsertCurrentFootNote( oViewCursor As Object, sConstBookMarkFNNumber As Stri
 End Sub
 
 &apos; формирование гиперссылки для найденного по шаблону номера примечания (режим - генерация внутренних ссылок)
-Sub MakeHiperLink( oViewCursor As Object, sConstBookMarkFNNumber As String, sBookMarkNameForLink As String )
+Sub MakeHyperLink( oViewCursor As Object, sConstBookMarkFNNumber As String, sBookMarkNameForLink As String )
 	&apos; переход курсора на закладку - номер примечания
 	GoToViewCursorToBookMark( oViewCursor, sConstBookMarkFNNumber, True )
 	&apos; формируем гиперссылку
-	_UnoMakeHyperlink( oViewCursor.getString(), sBookMarkNameForLink )
+	_UnoMakeBookmarkHyperlink( oViewCursor.getString(), sBookMarkNameForLink )
 End Sub
 
 &apos;////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
