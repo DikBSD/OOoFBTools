@@ -1093,11 +1093,21 @@ End Sub
 
 &apos; Удаление мягких переносов
 Sub DeleteMPer( oDoc, oReplace )
+	Dim b As Boolean
+	b = oReplace.SearchRegularExpression
+	With oReplace
+		.SearchString = &quot;­&quot;&apos; В LO4 поломан поиск мягких переносов в регул. выражениях
+		.ReplaceString = &quot;&quot;
+		.SearchRegularExpression = False
+	End With
+	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchString = &quot;\x00AD&quot;
 		.ReplaceString = &quot;&quot;
+		.SearchRegularExpression = True
 	End With
 	oDoc.ReplaceAll(oReplace)
+	oReplace.SearchRegularExpression = b
 End Sub
 
 &apos; замена разрыва строки на
