@@ -43,6 +43,7 @@ Public JPEGQuality As Integer &apos; Качество вывода jpeg карт
 Public bJPEGColor  As Boolean &apos; Цветовой режим экспорта jpeg: True - Color, False - Grayscale
 &apos; сохранение fb2-файла в utf-8, если в тексте есть маркерные строки
 Public bSaveUTF8 As Boolean
+Public bCourrierNew As Boolean
 &apos; Чистка fb2 кода
 Public bSuperfluous As Boolean &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
 Public bStyleSpace As Boolean  &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
@@ -313,6 +314,7 @@ Sub SetDefaultSettingsToControls()
 		.Model.cboxCorrect.State	= 1
 		.Model.cboxDelEL.State	= 0
 		.Model.cboxDocLinks.State = 1
+		.Model.cboxCourrierNew.State = 0
 		.Model.cboxSaveUTF8.State = 1
 	
 		&apos; Чистка fb2 кода
@@ -392,6 +394,8 @@ Sub SetDefaultSettingsToVars()
 	bDocLinks	= True
 	&apos; значение по-умолчанию для сохранения fb2-файла в utf-8, если в тексте есть маркерные строки
 	bSaveUTF8	= True
+	&apos; по-умолчанию шрифт &quot;Courier New&quot; не воспринимается, как идентификатор листингов програм.
+	bCourrierNew = False
 	&apos; значения по-умолчанию для выравнивания элементов таблиц
 	sHeaderTVA	= &quot;&quot;
 	sLineTVA	= &quot;&quot;
@@ -588,7 +592,9 @@ Sub SetSettingsToVars( sCurrentLine )
 		Case &quot;cboxDocLinks&quot;
 			bDocLinks = sSetting(1)
 		Case &quot;cboxSaveUTF8&quot;
-			bSaveUTF8 = sSetting(1)	
+			bSaveUTF8 = sSetting(1)
+		Case &quot;cboxCourrierNew&quot;
+			bCourrierNew = sSetting(1)	
 		&apos; Чистка fb2 кода
 		Case &quot;cboxSuperfluous&quot;
 			bSuperfluous = sSetting(1)
