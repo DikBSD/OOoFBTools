@@ -272,18 +272,24 @@ Function InLineAllParser(oSect As Object) As String
 	If oSect.CharEscapement &lt; 0 Then
 		sLexem = &quot;&lt;sub&gt;&quot; &amp; sLexem &amp; &quot;&lt;/sub&gt;&quot;
 	End If
-	If oSect.CharStyleName = &quot;code&quot; OR oSect.CharStyleName = &quot;Source Text&quot; OR _
-		oSect.ParaConditionalStyleName = &quot;code&quot; OR oSect.ParaConditionalStyleName = &quot;Source Text&quot; OR _
-		oSect.ParaStyleName = &quot;code&quot; OR oSect.ParaStyleName = &quot;Source Text&quot; OR _
-		oSect.CharShadowed = True OR oSect.CharContoured = True Then
-		sLexem = &quot;&lt;code&gt;&quot; &amp; sLexem &amp; &quot;&lt;/code&gt;&quot;
-	Else
-		If bCourrierNew = True Then
-			If oSect.CharFontName = &quot;Courier New&quot; Then
+	
+	If bCourrierNew = True Then
+		If oSect.CharStyleName = &quot;code&quot; OR oSect.CharStyleName = &quot;Source Text&quot; OR _
+			oSect.ParaConditionalStyleName = &quot;code&quot; OR oSect.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+			oSect.ParaStyleName = &quot;code&quot; OR oSect.ParaStyleName = &quot;Source Text&quot; OR _
+			oSect.CharShadowed = True OR oSect.CharContoured = True OR _
+			oSect.CharFontName = &quot;Courier New&quot; Then
 				sLexem = &quot;&lt;code&gt;&quot; &amp; sLexem &amp; &quot;&lt;/code&gt;&quot;
-			End If
+		End If
+	Else
+		If oSect.CharStyleName = &quot;code&quot; OR oSect.CharStyleName = &quot;Source Text&quot; OR _
+			oSect.ParaConditionalStyleName = &quot;code&quot; OR oSect.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+			oSect.ParaStyleName = &quot;code&quot; OR oSect.ParaStyleName = &quot;Source Text&quot; OR _
+			oSect.CharShadowed = True OR oSect.CharContoured = True Then
+				sLexem = &quot;&lt;code&gt;&quot; &amp; sLexem &amp; &quot;&lt;/code&gt;&quot;
 		End If
 	End If
+
 	If oSect.CharStrikeout &gt; 0 Then
 		sLexem = &quot;&lt;strikethrough&gt;&quot; &amp; sLexem &amp; &quot;&lt;/strikethrough&gt;&quot;
 	End If
