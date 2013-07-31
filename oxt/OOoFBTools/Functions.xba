@@ -129,7 +129,82 @@ Function IsNumber( sVal As String ) As Boolean
 	End If
 End Function
 
-&apos; //////////////////// Работа с файлами ////////////////////
+&apos;========================================================================
+&apos;				Работа со стилями документа
+&apos;========================================================================
+&apos; сортированный список всех символьных стилей, используемых в документе
+Function ListOfDocumentCharacterStyles() As Array
+	ListOfDocumentCharacterStyles = ListOfDocumentStyles( &quot;CharacterStyles&quot; )
+End Function
+
+&apos; сортированный список всех абзацевых стилей, используемых в документе
+Function ListOfDocumentParagraphStyles() As Array
+	ListOfDocumentParagraphStyles = ListOfDocumentStyles( &quot;ParagraphStyles&quot; )
+End Function
+
+&apos; сортированный список всех символьных стилей, используемых в документе
+Function ListOfDocumentStyles( StyleType As String ) As Array
+	Dim oCharacterStyles()		As Variant	: oCharacterStyles			= ThisComponent.StyleFamilies.getByName( StyleType )
+	Dim sCharacterStyleNames()	As String	: sCharacterStyleNames()	= oCharacterStyles.getElementNames()
+	
+	Dim sListOfCharacterStyleNames As String
+	Dim i As Integer
+	Dim aArray() As String
+	
+	For i = LBound(sCharacterStyleNames()) To UBound (sCharacterStyleNames())
+		AddNewItemToArray1( aArray(), sCharacterStyleNames(i) )
+	Next i
+	bubble_sort(aArray())
+	ListOfDocumentStyles = aArray()
+End Function
+
+&apos;========================================================================
+&apos;				Работа со шрифтами документа
+&apos;========================================================================
+&apos; сортированный список всех шрифтов символов, используемых в документе
+Function ListOfDocumentCharactersFonts() As Array
+	ListOfDocumentCharactersFonts = ListOfDocumentFonts( &quot;CharacterStyles&quot; )
+End Function
+
+&apos; сортированный список всех шрифтов абзацев, используемых в документе
+Function ListOfDocumentParagraphsFonts() As Array
+	ListOfDocumentParagraphsFonts = ListOfDocumentFonts( &quot;ParagraphStyles&quot; )
+End Function
+
+&apos; сортированный список всех шрифтов абзацев, используемых в документе
+Function ListOfDocumentFonts( StyleType As String ) As Array
+	Dim oStyleFamilies		: oStyleFamilies	= ThisComponent.StyleFamilies
+	Dim oParagraphStyles	: oParagraphStyles	= oStyleFamilies.getByName( StyleType )
+	Dim oStyle
+	Dim sListFontNames As String
+	Dim aArray() As String
+	Dim i
+	For i = 0 To oParagraphStyles.Count - 1
+		oStyle = oParagraphStyles(i)
+		Dim j As Integer
+		Dim flag As Boolean : flag = False
+		For j=0 To UBound(aArray())
+			If aArray(j) = oStyle.charFontName Then
+				flag = True
+				Exit For
+			End If
+		Next j
+		If UBound(aArray()) = -1 Then
+			AddNewItemToArray1( aArray(), oStyle.charFontName )
+			flag = False
+		Else
+			If flag = False Then
+				AddNewItemToArray1( aArray(), oStyle.charFontName )
+			End If
+		End If
+	Next i
+	bubble_sort(aArray())
+	ListOfDocumentFonts = aArray()
+End Function
+
+&apos; ===========================================================
+&apos; 				Работа с файлами
+&apos; ===========================================================
 &apos; Пуст ли файл
 Function IsFileEmpty( sFileInput As String ) As Boolean
 	Dim bFileEmpty As Boolean : bFileEmpty = False
@@ -1206,7 +1281,8 @@ Sub swap( aArray() As String, nPos1 As Integer, nPos2 As Integer )
 End Sub
 
 &apos; пузырьковая сортировка
-Function bubble_sort( aArray() As String, nSize As Integer )
+Function bubble_sort( aArray() As String )
+	Dim nSize As Integer : nSize = Ubound(aArray())
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Integer, j As Integer
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
@@ -1232,7 +1308,8 @@ Sub swap_int( aArray() As Integer, nPos1 As Integer, nPos2 As Integer )
 End Sub
 
 &apos; пузырьковая сортировка
-Function bubble_sort_int( aArray() As Integer, nSize As Integer )
+Function bubble_sort_int( aArray() As Integer )
+	Dim nSize As Integer : nSize = Ubound(aArray())
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Integer, j As Integer
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
@@ -1792,9 +1869,8 @@ End Sub
 &apos;/////////////////////////////////////////////////////////////////////////////////////////////////
 
 &apos; =======================================================================================================
-&apos; 
+&apos; 									Удаление всех объектов документа
 &apos; =======================================================================================================
-&apos;//////////////////// Удаление всех объектов /////////////////////
 &apos; удаление всех закладок
 Sub DeleteAllBookMarks()
 	Dim oBookMarks() : oBookMarks = thisComponent.getBookmarks()
