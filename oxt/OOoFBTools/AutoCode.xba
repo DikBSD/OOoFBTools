@@ -11,8 +11,120 @@
 
 Option Explicit
 
+Public Const sConstWorkParaStyle	As String = &quot;WorkParaStyle.txt&quot;	&apos; файл выбранных стилей абзаца
+Public Const sConstWorkParaFont		As String = &quot;WorkParaFont.txt&quot;	&apos; файл выбранных шрифтов абзаца
+Public Const sConstWorkCharStyle	As String = &quot;WorkCharStyle.txt&quot;	&apos; файл выбранных стили символов
+Public Const sConstWorkCharFont		As String = &quot;WorkCharFont.txt&quot;	&apos; файл выбранных шрифтов символов
+Private Const sACDlgSettings		As String = &quot;auto_code_listings.txt&quot; &apos; файл настроек
+
+
+Public oACDlg As Object
+Private Iter As Integer
+
+Sub AutoCodeStart()
+	&apos;	DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oACDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.AutoCodeDlg )
+	
+	&apos; инициализация диалога
+	InitAutoCodeMessage()
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sACDlgSettings, oACDlg, nX, nY )
+	oACDlg.setPosSize( nX, nY, 146, 517, com.sun.star.awt.PosSize.POS )
+	
+	&apos; сортированный список всех абзацевых стилей, используемых в документе
+	oACDlg.Model.ParaStyleListBox.StringItemList = ListOfDocumentParagraphStyles()
+	&apos; сортированный список всех шрифтов абзацев, используемых в документе
+	oACDlg.Model.ParaFontListBox.StringItemList = ListOfDocumentParagraphsFonts()
+	&apos; сортированный список всех символьных стилей, используемых в документе
+	oACDlg.Model.CharStyleListBox.StringItemList = ListOfDocumentCharacterStyles()
+	&apos; сортированный список всех шрифтов символов, используемых в документе
+	oACDlg.Model.CharFontListBox.StringItemList = ListOfDocumentCharactersFonts()
+	
+	
+	&apos; загрузка списков
+	Dim aArrayPS() As String
+	ReadFileInArray( aArrayPS(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaStyle )
+	oACDlg.Model.ParaStyleFindListBox.StringItemList = aArrayPS()
+	Dim aArrayPF() As String
+	ReadFileInArray( aArrayPF(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaFont )
+	oACDlg.Model.ParaFontFindListBox.StringItemList = aArrayPF()
+	Dim aArrayCS() As String
+	ReadFileInArray( aArrayCS(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharStyle )
+	oACDlg.Model.CharStyleFindListBox.StringItemList = aArrayCS()
+	Dim aArrayCF() As String
+	ReadFileInArray( aArrayCF(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharFont )
+	oACDlg.Model.CharFontFindListBox.StringItemList = aArrayCF()
+
+	&apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции разметки
+	ParaStyleCheckBoxClick()
+	ParaFontCheckBox()
+	CharStyleCheckBox()
+	CharFontCheckBox()
+	
+	oACDlg.execute()
+End Sub
+
+&apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции разметки
+Sub VerifyCheckOptions()
+	If oACDlg.getControl( &quot;ParaStyleCheckBox&quot; ).State	= 0 And oACDlg.getControl( &quot;ParaFontCheckBox&quot; ).State = 0 _
+		And oACDlg.getControl( &quot;CharStyleCheckBox&quot; ).State = 0  And oACDlg.getControl( &quot;CharFontCheckBox&quot; ).State = 0 Then
+		oACDlg.getControl( &quot;OKCmdBtn&quot; ).Enable = False
+	Else
+		oACDlg.getControl( &quot;OKCmdBtn&quot; ).Enable = True
+	End If
+End Sub
+
 Sub AutoCode()
-	InitAutoCodeMessage() &apos; инициализация сообщений
+	&apos; проверка на задание хотя бы одного критерия поиска
+	Dim allCriteria As Integer : allCriteria = 0
+	Dim oLB As Object
+	oLB = oACDlg.getControl(&quot;ParaStyleFindListBox&quot;)
+	allCriteria = allCriteria + oLB.ItemCount
+	
+	oLB = oACDlg.getControl(&quot;ParaFontFindListBox&quot;)
+	allCriteria = allCriteria + oLB.ItemCount
+	
+	oLB = oACDlg.getControl(&quot;CharStyleFindListBox&quot;)
+	allCriteria = allCriteria + oLB.ItemCount
+	
+	oLB = oACDlg.getControl(&quot;CharFontFindListBox&quot;)
+	allCriteria = allCriteria + oLB.ItemCount
+	
+	If allCriteria = 0 Then
+		MsgBox &quot;В списках не задано ни одного критерия поиска&quot;, 64, sACD.sToolTitle
+		Exit Sub
+	End If
+	
+	&apos; записываем настройки диалога
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sACDlgSettings, oACDlg )
+	&apos; сохраняем списки
+	Dim aArrayPS() As String : aArrayPS = oACDlg.Model.ParaStyleFindListBox.StringItemList
+	SaveArray( aArrayPS(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaStyle
+	Dim aArrayPF() As String : aArrayPF = oACDlg.Model.ParaFontFindListBox.StringItemList
+	SaveArray( aArrayPF(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaFont
+	Dim aArrayCS() As String : aArrayCS = oACDlg.Model.CharStyleFindListBox.StringItemList
+	SaveArray( aArrayCS(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharStyle
+	Dim aArrayCF() As String : aArrayCF = oACDlg.Model.CharFontFindListBox.StringItemList
+	SaveArray( aArrayCF(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharFont
+	
+	
+	Iter = 1
+	Dim ProgressMaxIter As Integer : ProgressMaxIter = 1
+	If oACDlg.getControl( &quot;ParaStyleCheckBox&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1
+	If oACDlg.getControl( &quot;ParaFontCheckBox&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1
+	If oACDlg.getControl( &quot;CharStyleCheckBox&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1
+	If oACDlg.getControl( &quot;CharFontCheckBox&quot; ).State	= 1 Then ProgressMaxIter = ProgressMaxIter + 1
+
+	oACDlg.endExecute()
+	
+	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sACD.sProgress &amp; &quot;:&quot;, ProgressMaxIter )
+	
 	If MsgBox( sACD.sInfoOfTool &amp; chr(10) &amp; sACD.sQuest &amp; chr(10), 1 + 32 + 256, sACD.sToolTitle ) = 1 Then
 		Dim oDoc	As Object : oDoc	= ThisComponent
 		Dim vSearch	As Object : vSearch	= oDoc.createSearchDescriptor()
@@ -32,7 +144,6 @@ Sub AutoCode()
 		If iCount &gt; 0 Then
 			LoadFB2StylesToDoc() &apos; Загрузка шаблона fb2 стилей конвертора
 			sMess = sACD.sFound &amp; iCount &amp; sACD.sMessageOK
-			Dim oProgressBar As Object : oProgressBar = oDoc.CurrentController.StatusIndicator
 			oProgressBar.start( sACD.sProgress, iCount )
 			Dim oArea As Object
 			Dim i As Integer
@@ -71,6 +182,282 @@ Sub ReplaceBlanksTabsToBlankOrTabsInCodeWorker( oDoc As Object, oLCurs As Object
 		vFound.setString( String( Len( vFound.getString() ), chr(160) ) &apos; неразрывные пробелы
 		vFound = oDoc.findNext( vFound.End, vSearch )
 	Loop
+End Sub
+
+Sub ParaStyleCheckBoxClick()
+	VerifyCheckOptions() &apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции разметки
+
+	If oACDlg.getControl( &quot;ParaStyleCheckBox&quot; ).State = 0 Then
+		oACDlg.getControl( &quot;ParaStyleListBox&quot; ).Enable		= False
+		oACDlg.getControl( &quot;ParaStyleFindListBox&quot; ).Enable	= False
+		oACDlg.getControl( &quot;ParaStyleAddCmdBtn&quot; ).Enable	= False
+		oACDlg.getControl( &quot;ParaStyleDeleteCmdBtn&quot; ).Enable	= False
+	Else
+		oACDlg.getControl( &quot;ParaStyleListBox&quot; ).Enable		= True
+		oACDlg.getControl( &quot;ParaStyleFindListBox&quot; ).Enable	= True
+		oACDlg.getControl( &quot;ParaStyleAddCmdBtn&quot; ).Enable	= True
+		oACDlg.getControl( &quot;ParaStyleDeleteCmdBtn&quot; ).Enable	= True
+	End If
+End Sub
+
+Sub ParaFontCheckBox()
+	VerifyCheckOptions() &apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции разметки
+	
+	If oACDlg.getControl( &quot;ParaFontCheckBox&quot; ).State = 0 Then
+		oACDlg.getControl( &quot;ParaFontListBox&quot; ).Enable		= False
+		oACDlg.getControl( &quot;ParaFontFindListBox&quot; ).Enable	= False
+		oACDlg.getControl( &quot;ParaFontAddCmdBtn&quot; ).Enable		= False
+		oACDlg.getControl( &quot;ParaFontDeleteCmdBtn&quot; ).Enable	= False
+	Else
+		oACDlg.getControl( &quot;ParaFontListBox&quot; ).Enable		= True
+		oACDlg.getControl( &quot;ParaFontFindListBox&quot; ).Enable	= True
+		oACDlg.getControl( &quot;ParaFontAddCmdBtn&quot; ).Enable		= True
+		oACDlg.getControl( &quot;ParaFontDeleteCmdBtn&quot; ).Enable	= True
+	End If
+End Sub
+
+Sub CharStyleCheckBox()
+	VerifyCheckOptions() &apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции разметки
+	
+	If oACDlg.getControl( &quot;CharStyleCheckBox&quot; ).State = 0 Then
+		oACDlg.getControl( &quot;CharStyleListBox&quot; ).Enable		= False
+		oACDlg.getControl( &quot;CharStyleFindListBox&quot; ).Enable	= False
+		oACDlg.getControl( &quot;CharStyleAddCmdBtn&quot; ).Enable		= False
+		oACDlg.getControl( &quot;CharStyleDeleteCmdBtn&quot; ).Enable	= False
+	Else
+		oACDlg.getControl( &quot;CharStyleListBox&quot; ).Enable		= True
+		oACDlg.getControl( &quot;CharStyleFindListBox&quot; ).Enable	= True
+		oACDlg.getControl( &quot;CharStyleAddCmdBtn&quot; ).Enable		= True
+		oACDlg.getControl( &quot;CharStyleDeleteCmdBtn&quot; ).Enable	= True
+	End If
+End Sub
+
+Sub CharFontCheckBox()
+	VerifyCheckOptions() &apos; Кнопка запуска обработки доступна только при выборе хотя бы одной опции разметки
+	
+	If oACDlg.getControl( &quot;CharFontCheckBox&quot; ).State = 0 Then
+		oACDlg.getControl( &quot;CharFontListBox&quot; ).Enable		= False
+		oACDlg.getControl( &quot;CharFontFindListBox&quot; ).Enable	= False
+		oACDlg.getControl( &quot;CharFontAddCmdBtn&quot; ).Enable		= False
+		oACDlg.getControl( &quot;CharFontDeleteCmdBtn&quot; ).Enable	= False
+	Else
+		oACDlg.getControl( &quot;CharFontListBox&quot; ).Enable		= True
+		oACDlg.getControl( &quot;CharFontFindListBox&quot; ).Enable	= True
+		oACDlg.getControl( &quot;CharFontAddCmdBtn&quot; ).Enable		= True
+		oACDlg.getControl( &quot;CharFontDeleteCmdBtn&quot; ).Enable	= True
+	End If
+End Sub
+
+Sub ParaStyleAddCmdBtnClick()
+	Dim sTitle As String : sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;Добавление стиля абзаца&quot;
+	Dim sParaStyle As String : sParaStyle = oACDlg.getControl(&quot;ParaStyleListBox&quot;).SelectedItem
+	Dim aArray() As String : aArray() = oACDlg.Model.ParaStyleFindListBox.StringItemList
+	Dim i As Integer
+	
+	&apos; ищем выделенный стиль в списке
+	For i=0 To UBound(aArray())
+		If aArray(i) = sParaStyle Then
+			MsgBox &quot;sGD.sGenreEliteSelected Выбранный стиль абзаца&quot; &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sParaStyle &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteIsExists уже имеется в списке Стилей абзаца для поиска.&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteSelectOther Пожалуйста, выберите другой стиль абзаца!&quot;, 64, sACD.sToolTitle
+			oACDlg.getControl(&quot;ParaStyleListBox&quot;).SetFocus()		
+			Exit Sub
+		End If
+	Next i
+	
+	If sParaStyle &lt;&gt; &quot;&quot; Then
+		oACDlg.getControl(&quot;ParaStyleFindListBox&quot;).AddItem(sParaStyle, oACDlg.getControl(&quot;ParaStyleFindListBox&quot;).ItemCount) &apos; в конец списка
+		oACDlg.getControl(&quot;ParaStyleFindListBox&quot;).selectItem(sParaStyle, True)
+	Else
+		MsgBox &quot;Пожалуйста, выберите Стиль Абзаца из выпадающего списка.&quot;, 64, sACD.sToolTitle
+	End If
+	oACDlg.getControl(&quot;ParaStyleListBox&quot;).SetFocus()
+End Sub
+
+Sub ParaStyleDeleteCmdBtnClick()
+	Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;sGD.sGenreEliteRemove Удаление стиля абзаца&quot;
+	oLB = oACDlg.getControl(&quot;ParaStyleFindListBox&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;sGD.sGenreEliteSelectForRemove Пожалуйста, выберите Стиль абзаца из Списка для удаления.&quot;, 64, sTitle
+		Exit Sub
+	End If
+	
+	If	MsgBox( &quot;sGD.sGenreEliteQuestionRemove Вы действительно хотите удалить выбранный Стиль абзаца из Списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sACD.sToolTitle ) = 6 Then
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+	End If
+End Sub
+
+Sub ParaFontAddCmdBtnClick()
+	Dim sTitle As String : sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;Добавление стиля абзаца&quot;
+	Dim sParaFont As String : sParaFont = oACDlg.getControl(&quot;ParaFontListBox&quot;).SelectedItem
+	Dim aArray() As String : aArray() = oACDlg.Model.ParaFontFindListBox.StringItemList
+	Dim i As Integer
+	
+	&apos; ищем выделенный шрифт в списке
+	For i=0 To UBound(aArray())
+		If aArray(i) = sParaFont Then
+			MsgBox &quot;sGD.sGenreEliteSelected Выбранный шрифт абзаца&quot; &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sParaFont &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteIsExists уже имеется в списке Шрифтов абзаца для поиска.&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteSelectOther Пожалуйста, выберите другой шрифт абзаца!&quot;, 64, sACD.sToolTitle
+			oACDlg.getControl(&quot;ParaFontListBox&quot;).SetFocus()		
+			Exit Sub
+		End If
+	Next i
+	
+	If sParaFont &lt;&gt; &quot;&quot; Then
+		oACDlg.getControl(&quot;ParaFontFindListBox&quot;).AddItem(sParaFont, oACDlg.getControl(&quot;ParaFontFindListBox&quot;).ItemCount) &apos; в конец списка
+		oACDlg.getControl(&quot;ParaFontFindListBox&quot;).selectItem(sParaFont, True)
+	Else
+		MsgBox &quot;Пожалуйста, выберите Шрифт Абзаца из выпадающего списка.&quot;, 64, sACD.sToolTitle
+	End If
+	oACDlg.getControl(&quot;ParaFontListBox&quot;).SetFocus()
+End Sub
+
+Sub ParaFontDeleteCmdBtnClick()
+	Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;sGD.sGenreEliteRemove Удаление шрифта абзаца&quot;
+	oLB = oACDlg.getControl(&quot;ParaFontFindListBox&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;sGD.sGenreEliteSelectForRemove Пожалуйста, выберите Шрифт абзаца из Списка для удаления.&quot;, 64, sTitle
+		Exit Sub
+	End If
+	
+	If	MsgBox( &quot;sGD.sGenreEliteQuestionRemove Вы действительно хотите удалить выбранный Шрифт абзаца из Списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sACD.sToolTitle ) = 6 Then
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+	End If
+End Sub
+
+Sub CharStyleAddCmdBtnClick()
+	Dim sTitle As String : sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;Добавление стиля символов&quot;
+	Dim sCharStyle As String : sCharStyle = oACDlg.getControl(&quot;CharStyleListBox&quot;).SelectedItem
+	Dim aArray() As String : aArray() = oACDlg.Model.CharStyleFindListBox.StringItemList
+	Dim i As Integer
+	
+	&apos; ищем выделенный стиль в списке
+	For i=0 To UBound(aArray())
+		If aArray(i) = sCharStyle Then
+			MsgBox &quot;sGD.sGenreEliteSelected Выбранный стиль абзаца&quot; &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sCharStyle &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteIsExists уже имеется в списке Стилей симловов для поиска.&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteSelectOther Пожалуйста, выберите другой стиль символов!&quot;, 64, sACD.sToolTitle
+			oACDlg.getControl(&quot;CharStyleListBox&quot;).SetFocus()		
+			Exit Sub
+		End If
+	Next i
+	
+	If sCharStyle &lt;&gt; &quot;&quot; Then
+		oACDlg.getControl(&quot;CharStyleFindListBox&quot;).AddItem(sCharStyle, oACDlg.getControl(&quot;CharStyleFindListBox&quot;).ItemCount) &apos; в конец списка
+		oACDlg.getControl(&quot;CharStyleFindListBox&quot;).selectItem(sCharStyle, True)
+	Else
+		MsgBox &quot;Пожалуйста, выберите Стиль Символов из выпадающего списка.&quot;, 64, sACD.sToolTitle
+	End If
+	oACDlg.getControl(&quot;CharStyleListBox&quot;).SetFocus()
+End Sub
+
+Sub CharStyleDeleteCmdBtnClick()
+	Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;sGD.sGenreEliteRemove Удаление стиля символов&quot;
+	oLB = oACDlg.getControl(&quot;CharStyleFindListBox&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;sGD.sGenreEliteSelectForRemove Пожалуйста, выберите Стиль символов из Списка для удаления.&quot;, 64, sTitle
+		Exit Sub
+	End If
+	
+	If	MsgBox( &quot;sGD.sGenreEliteQuestionRemove Вы действительно хотите удалить выбранный Стиль символов из Списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sACD.sToolTitle ) = 6 Then
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+	End If
+End Sub
+
+Sub CharFontAddCmdBtnClick()
+Dim sTitle As String : sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;Добавление стиля символов&quot;
+	Dim sCharFont As String : sCharFont = oACDlg.getControl(&quot;CharFontListBox&quot;).SelectedItem
+	Dim aArray() As String : aArray() = oACDlg.Model.CharFontFindListBox.StringItemList
+	Dim i As Integer
+	
+	&apos; ищем выделенный шрифт в списке
+	For i=0 To UBound(aArray())
+		If aArray(i) = sCharFont Then
+			MsgBox &quot;sGD.sGenreEliteSelected Выбранный шрифт символов&quot; &amp; &quot; &quot;  &amp; &quot;&quot;&quot;&quot; &amp; sCharFont &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteIsExists уже имеется в списке Шрифтов символов для поиска.&quot; &amp; chr(10) &amp; _
+					&quot;sGD.sGenreEliteSelectOther Пожалуйста, выберите другой шрифт символов!&quot;, 64, sACD.sToolTitle
+			oACDlg.getControl(&quot;CharFontListBox&quot;).SetFocus()		
+			Exit Sub
+		End If
+	Next i
+	
+	If sCharFont &lt;&gt; &quot;&quot; Then
+		oACDlg.getControl(&quot;CharFontFindListBox&quot;).AddItem(sCharFont, oACDlg.getControl(&quot;CharFontFindListBox&quot;).ItemCount) &apos; в конец списка
+		oACDlg.getControl(&quot;CharFontFindListBox&quot;).selectItem(sCharFont, True)
+	Else
+		MsgBox &quot;Пожалуйста, выберите Шрифт Символов из выпадающего списка.&quot;, 64, sACD.sToolTitle
+	End If
+	oACDlg.getControl(&quot;CharFontListBox&quot;).SetFocus()
+End Sub
+
+Sub CharFontDeleteCmdBtnClick()
+Dim oLB As Object, aArray() As String, sTitle As String
+	sTitle = sACD.sToolTitle &amp; &quot; - &quot; &amp; &quot;sGD.sGenreEliteRemove Удаление шрифта символов&quot;
+	oLB = oACDlg.getControl(&quot;CharFontFindListBox&quot;)
+	If oLB.SelectedItem = &quot;&quot; Then
+		MsgBox &quot;sGD.sGenreEliteSelectForRemove Пожалуйста, выберите Шрифт символов из Списка для удаления.&quot;, 64, sTitle
+		Exit Sub
+	End If
+	
+	If	MsgBox( &quot;sGD.sGenreEliteQuestionRemove Вы действительно хотите удалить выбранный Шрифт символов из Списка:&quot; &amp;  chr(10) &amp; &quot;&quot;&quot;&quot; &amp; _
+				oLB.SelectedItem &amp; &quot;&quot;&quot;?&quot;, 32 + 4 + 256, sACD.sToolTitle ) = 6 Then
+		Dim sItem As String, i As Integer
+		If (oLB.SelectedItemPos &gt;= 0) AND (oLB.SelectedItemPos &lt; oLB.ItemCount-1) Then
+			i = oLB.SelectedItemPos+1
+		ElseIf oLB.SelectedItemPos = oLB.ItemCount-1 Then
+			i = oLB.ItemCount-2
+		End If
+		If oLB.ItemCount &gt; 1 Then
+			sItem = oLB.getItem(i)
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+			oLB.selectItem(sItem, True)
+		Else
+			oLB.RemoveItems(oLB.SelectedItemPos,1)
+		End If
+	End If
 End Sub
 
 &apos; ================================================================================================================
