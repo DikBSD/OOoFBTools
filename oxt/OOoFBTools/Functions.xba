@@ -150,22 +150,8 @@ Function ListOfDocumentStyles( StyleType As String ) As Array
 	Dim sListOfCharacterStyleNames As String
 	Dim i As Integer
 	Dim aArray() As String
-	Dim sStyle As String
 	For i = LBound(sCharacterStyleNames()) To UBound (sCharacterStyleNames())
-		sStyle = sCharacterStyleNames(i)
-		If getOOoLocal() &lt;&gt; &quot;en&quot; Then
-			If sStyle = &quot;Quotations&quot; Then
-				sStyle = GetLocaCiteStyleName()
-			ElseIf sStyle = &quot;Subtitle&quot; Then
-				sStyle = GetLocaSubtitleStyleName()
-			ElseIf InStr( sStyle, &quot;Heading&quot;) = 1 Then
-				sStyle = ReplaceInString( sStyle, &quot;Heading&quot;, GetLocalHeadingStyleName(), False )
-				GetLocalHeadingStyleName()
-			ElseIf sStyle = &quot;Standard&quot; Then
-				sStyle = GetLocaDefaultStyleName()
-			End If
-		End If
-		AddNewItemToArray1( aArray(), sStyle )
+		AddNewItemToArray1( aArray(), sCharacterStyleNames(i) )
 	Next i
 	bubble_sort(aArray())
 	ListOfDocumentStyles = aArray()
