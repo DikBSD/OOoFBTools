@@ -38,8 +38,6 @@ End Sub
 Sub FB2PropertiesDlg_windowClosing(oEv)
 	bWorkEnd	= True	&apos; флаг закрытия дмалога
 	bWorkStart	= False	&apos; готовность к новому запуску диалога
-	&apos; сохраняем некоторые настройки формы
-	SaveFB2PropEditorDlgSettings()
 End Sub
 
 Sub FB2PropertiesDlg_windowClosed(oEv)
@@ -92,11 +90,15 @@ Sub FB2PropertiesEditorDlgExec()
 	Dim bFB2NotFlagPropertyIsExsist As Boolean : bFB2NotFlagPropertyIsExsist = IsFB2NotFlagPropertyIsExsist()
 	
 	&apos; заполняем списки Жанрами, взависимости от выбранной Схемы
-	If oFB2PropertiesDlg.Model.obtnFB21.State = True Or oFB2PropertiesDlg.Model.obtnFB21.State = 1 Then
-		InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-	Else
-		InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
-	End If
+	With oFB2PropertiesDlg.Model
+		If .obtnFB21.State = True Or .obtnFB21.State = 1 Then
+			InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
+		ElseIf .obtnFB22.State = True Or .obtnFB22.State = 1 Then
+			InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
+		Else
+			InitFBLibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
+		End If
+	End With
 	oProgressBar.setValue(5)
 	oProgressBar.end
 	
@@ -166,6 +168,8 @@ End Sub
 Sub CloseDlg()
 	bWorkEnd	= True	&apos; флаг закрытия дмалога
 	bWorkStart	= False	&apos; готовность к новому запуску диалога
+	&apos; сохраняем некоторые настройки формы
+	SaveFB2PropEditorDlgSettings()
 	oFB2PropertiesDlg.endExecute()
 End Sub
 
@@ -219,6 +223,17 @@ Sub InitFB22()
 End Sub
 
 &apos;***************************************************************************
+&apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
+Sub InitFBLibRusEc()
+	GenreFB2LibRusEc()
+
+	With oFB2PropertiesDlg.Model
+		.Title = sFB2PED.sFB2PropEditorDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB2LibRusEc
+		.GenreComboBox.StringItemList = sGLN()
+	End With
+End Sub
+
+&apos;***************************************************************************
 &apos; Читаем настройки и задаем значения контролам основной формы
 Function LoadFB2PropEditorFormSettings() As Boolean
 	On Error Resume Next
@@ -237,7 +252,7 @@ Function LoadFB2PropEditorFormSettings() As Boolean
 			If sLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные
 				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
-				If sSetting(0) = &quot;obtnFB21&quot; Or sSetting(0) = &quot;obtnFB22&quot; Then
+				If sSetting(0) = &quot;obtnFB21&quot; Or sSetting(0) = &quot;obtnFB22&quot; Or sSetting(0) = &quot;obtnFB2LibRusEc&quot; Then
 					oFB2PropertiesDlg.getControl( sSetting(0) ).setState( sSetting(1) )
 				ElseIf sSetting(0) = &quot;X&quot; Then
 					nX = sSetting(1)
@@ -268,12 +283,12 @@ Sub SaveFB2PropEditorDlgSettings()
 	oOS.truncate()
 	oTOS.setOutputStream( oOS )
 	oTOS.setEncoding( &quot;utf-8&quot; )
-	
+
 	Dim ctrl As Object, i As Integer
 	ctrl = oFB2PropertiesDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			If ctrl(i).Model.Name = &quot;obtnFB21&quot; Or ctrl(i).Model.Name = &quot;obtnFB22&quot; Then
+			If ctrl(i).Model.Name = &quot;obtnFB21&quot; Or ctrl(i).Model.Name = &quot;obtnFB22&quot; Or ctrl(i).Model.Name = &quot;obtnFB2LibRusEc&quot; Then
 				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 			End If
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then

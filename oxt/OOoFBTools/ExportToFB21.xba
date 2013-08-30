@@ -215,7 +215,7 @@ Sub ExportDoc()
 	
 	If bValidate And GetOS() = 0 Then
 		sMess = sMess &amp; sETFB2DD.sFB2ExportStartValidate &amp; chr(10) &amp; chr(10)
-		Validate( sFB2File ) &apos;валидация результата
+		Validate( sFB2File, GetWorkFB2Schema() ) &apos;валидация результата
 	End If
 
 	If bFB2Execute Then
@@ -231,6 +231,46 @@ Sub ExportDoc()
 		RmDir getOOoFBToolsTempPath()
 	End If
 End Sub
+
+&apos;***************************************************************************
+&apos; определяем. какая схема жанров использовалась для конвертации
+Function GetWorkFB2Schema() As String
+	On Error Resume Next
+	Dim sFB21 As String, sFB22 As String, sFB2LibRusEc As String
+	sFB21 = &quot;0&quot; : sFB22 = &quot;0&quot; : sFB2LibRusEc = &quot;0&quot;
+	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
+	Dim nX As Integer, nY As Integer
+	If FileExists( sFileName ) Then
+		Dim sLine As String
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		
+		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+		oFS = oSFA.openFileRead ( ConvertToURL ( sFileName ) )
+		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+		oTIS.setInputStream (oFS)
+		Do While ( NOT oTIS.isEOF() )
+			sLine = oTIS.readLine()
+			If sLine &lt;&gt; &quot;&quot; Then
+				&apos; Устанавливаем данные
+				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
+				If sSetting(0) = &quot;obtnFB2LibRusEc&quot; Then
+					sFB2LibRusEc = sSetting(1)
+					Exit Do
+				End If
+			End If
+		Loop
+		oTIS.closeInput()
+		
+		If sFB2LibRusEc = 1 Then
+			GetWorkFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
+		Else
+			GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
+		End If
+	Else
+		GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
+	End If
+End Function
+
 
 &apos;***************************************************************************
 &apos; проверка, все ли обязательные fb2-свойства документа заполнены

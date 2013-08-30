@@ -33,8 +33,10 @@ Sub cbtnGenreElite_Click()
 	&apos; Загрузка Списка Жанров, в зависимости от выбранной Схемы Жанров
 	If oGEDlg.Model.obtnGEFB21.State = True Or oGEDlg.Model.obtnGEFB21.State = 1 Then
 		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-	Else
+	ElseIf oGEDlg.Model.obtnGEFB22.State = True Or oGEDlg.Model.obtnGEFB22.State = 1 Then
 		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
+	Else
+		InitGEFB2LibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
 	End If
 	
 	oGEDlg.execute()
@@ -57,6 +59,17 @@ Sub InitGEFB22()
 
 	With oGEDlg.Model
 		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+End Sub
+
+&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2 LibRusEc
+Sub InitGEFB2LibRusEc()
+	GenreFB2LibRusEc()
+
+	With oGEDlg.Model
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB2LibRusEc
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
