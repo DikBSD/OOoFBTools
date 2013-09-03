@@ -165,8 +165,8 @@ Sub ExportDoc()
 	Dim sFB2Encoding As String : sFB2Encoding = GetEncodingFromProperty()
 	&apos; если в тексте есть маркерные списки, то экспортируем fb2-файл в UTF-8
 	If bSaveUTF8 And bMarker Then sFB2Encoding = &quot;utf-8&quot;
-	&apos; если в тексте есть хоть один неразрывный дефис, то экспортируем в utf-8
-	If IsNoBreakDefExsist() Then sFB2Encoding = &quot;utf-8&quot;
+	&apos; если в тексте есть хоть один неразрывный дефис или юникодный маркер, то экспортируем в utf-8
+	If IsNoBreakDefExsist() OR IsUnicodeMarkerExistsInText() Then sFB2Encoding = &quot;utf-8&quot;
 	&apos; если в документе были проставлены ударения над русскими гласными (в свойстве _fb2_AccentMark занесено True )
 	If GetStringProperty( _fb2_AccentMark ) &lt;&gt; &quot;&quot; Then sFB2Encoding = &quot;utf-8&quot;
 	oTextOutputStream.setEncoding( sFB2Encoding )
@@ -213,17 +213,17 @@ Sub ExportDoc()
 	Dim sFB2File As String : sFB2File = oExportToFB21Dlg.Model.fb2PathTextField.Text
 	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
 	
-	If bValidate And GetOS() = 0 Then
-		sMess = sMess &amp; sETFB2DD.sFB2ExportStartValidate &amp; chr(10) &amp; chr(10)
-		Validate( sFB2File, GetWorkFB2Schema() ) &apos;валидация результата
+	Dim sValidateResult As String
+	If bValidate Then
+		sValidateResult = Validate( sFB2File, GetWorkFB2Schema() ) &apos;валидация результата
 	End If
 
 	If bFB2Execute Then
 		FileExecute( ConvertToUrl( sFB2File ) )
-		MsgBox sMess &amp; sETFB2DD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
+		MsgBox sMess &amp; sValidateResult &amp; sETFB2DD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
 				sFB2File &amp; chr(10) &amp; sETFB2DD.sFB2ExportReportStartToPreview, 64, sConvertorName
 	Else
-		MsgBox sMess &amp; sETFB2DD.sFB2ExportReportFile &amp; &quot; &quot; &amp; sFB2File, 64, sConvertorName
+		MsgBox sMess &amp; sValidateResult, 64, sConvertorName
 	End If
 	
 	&apos; удаляем временные файлы
@@ -240,6 +240,13 @@ Function GetWorkFB2Schema() As String
 	sFB21 = &quot;0&quot; : sFB22 = &quot;0&quot; : sFB2LibRusEc = &quot;0&quot;
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
 	Dim nX As Integer, nY As Integer
+	
+	If GetOS() = 0 Then
+		GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
+	Else
+		GetWorkFB2Schema = &quot;/fb2-schema/FictionBook.xsd&quot;
+	End If
+	
 	If FileExists( sFileName ) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
@@ -262,12 +269,12 @@ Function GetWorkFB2Schema() As String
 		oTIS.closeInput()
 		
 		If sFB2LibRusEc = 1 Then
-			GetWorkFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
-		Else
-			GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
+			If GetOS() = 0 Then
+				GetWorkFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
+			Else
+				GetWorkFB2Schema = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
+			End If
 		End If
-	Else
-		GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
 	End If
 End Function
 
@@ -1426,5 +1433,6 @@ Function GetLevelNumber(Level As String) As Integer
 End Function
 
 &apos; ///////////////////////////////////////////////////////////////
+
 
 </script:module>

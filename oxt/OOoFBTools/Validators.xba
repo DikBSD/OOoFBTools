@@ -69,13 +69,11 @@ Sub OpenFB2FileForValidate()
 End Sub
 
 Sub FB2Validate()
+	&apos; инициализация сообщений диалога Валидатора в зависимости от локали
+	InitValidateDlgMessage()
+	
 	&apos; записываем настройки диалога
 	SaveSettings( sValidatorSettingsFilename, oValidateDlg )
-	
-	If GetOS() &gt; 0 Then
-		MsgBox( sVD.sFB2FileValidateWarning, 64, sVD.sFB2FileValidate )
-		Exit Sub
-	End If
 	
 	Dim sFile As String : sFile = Trim( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text )
 	If sFile = &quot;&quot; Then
@@ -86,45 +84,116 @@ Sub FB2Validate()
 		Exit Sub
 	End If
 
-	Dim sFB2Schema As String : sFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
+	Dim sFB2Schema As String
+	If GetOS() = 0 Then
+		sFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
+	Else
+		sFB2Schema = &quot;/fb2-schema/FictionBook.xsd&quot;
+	End If
 	With oValidateDlg.Model
 		If .optbtnFB2LibRusEc.State = True Or .optbtnFB2LibRusEc.State = 1 Then
-			sFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
+			If GetOS() = 0 Then
+				sFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
+			Else
+				sFB2Schema = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
+			End If
 		End If
 	End With
 	
-	Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, sFB2Schema )
+	MsgBox Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, sFB2Schema ), 64, sVD.sValidatorTitle
 End Sub
 
 
 &apos; /// Валидация ///
 
-Sub Validate( ByRef sFB2File As String, ByRef sFB2Schema As String )
-	If GetOS() &gt; 0 Then
-		MsgBox( &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;, 64, &quot;Валидация fb2-файлов&quot; )
-		Exit Sub
+Function Validate( ByRef sFB2File As String, ByRef sFB2Schema As String ) As String
+	&apos; инициализация сообщений Валидатора в зависимости от локали
+	InitValidateDlgMessage()
+	
+	Dim sLog As String 
+	If GetOS() = 0 Then &apos; Для Windows
+		sLog = getOOoFBToolsTempPath() &amp; &quot;\log.txt&quot;
+	Else
+		sLog = getOOoFBToolsTempPath() &amp; &quot;/log.txt&quot;
+	End If
+	If FileExists( sLog ) Then
+		Kill sLog
+	End If
+		
+	If GetOS() = 0 Then &apos; Для Windows
+		Dim sFB2VBSFile As String, sFB2VBS As String
+		sFB2VBSFile = getOOoFBToolsTempPath() &amp; &quot;\fb2-valid-win32.vbs&quot;
+		sFB2VBS = &quot;Set doc = WScript.CreateObject(&quot;&quot;MSXML2.DOMDocument.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
+					&quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
+					&quot;doc.async=False&quot; &amp; chr(10) &amp; _
+					&quot;doc.validateOnParse=True&quot; &amp; chr(10) &amp; _
+					&quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp; _
+					&quot;&quot;&quot;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; ConvertFromURL( sFB2Schema ) &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+					&quot;doc.schemas=cache&quot; &amp; chr(10) &amp; _
+					&quot;Dim fso, tf&quot; &amp; chr(10) &amp; &quot;Set fso = CreateObject(&quot;&quot;Scripting.FileSystemObject&quot;&quot;)&quot; &amp; chr(10) &amp;_
+					&quot;Set tf = fso.CreateTextFile(&quot;&quot;&quot; &amp; sLog &amp; &quot;&quot;&quot;, True)&quot; &amp; chr(10) &amp;_
+					&quot;If not doc.load(&quot;&quot;&quot; &amp; ConvertFromURL(sFB2File) &amp; &quot;&quot;&quot;) Then&quot; &amp; chr(10) &amp; _
+					&quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;Parser error at line &quot;&quot; + cstr(doc.parseError.line) + &quot;&quot;, column &quot;&quot; + cstr(doc.parseError.linepos) + &quot;&quot;:&quot;&quot;)&quot; &amp; chr(10) &amp;_
+					&quot;tf.WriteLine(doc.parseError.reason)&quot; &amp; chr(10) &amp;_
+					&quot;Else&quot; &amp; chr(10) &amp; _
+					&quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;File: &quot; &amp; ConvertFromURL(sFB2File) &amp; &quot; - No errors found&quot;&quot;&quot; &amp; &quot;)&quot; &amp; chr(10) &amp; _
+					&quot;End If&quot; &amp; chr(10) &amp;_
+					&quot;tf.Close&quot;
+				
+		SaveText( sFB2VBSFile, sFB2VBS, &quot;windows-1251&quot; )
+	
+		Dim oSSE As Object
+		oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+		oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
+		
+	ElseIf GetOS() &gt; 0 Then &apos; для Nix систем
+		&apos; удаляем временные файлы
+		Dim sFileValidateScript As String : sFileValidateScript = getOOoFBToolsTempPath() &amp; &quot;/fb2-validate.sh&quot;
+		If FileExists( sFileValidateScript ) Then
+			Kill sFileValidateScript
+		End If
+		
+		Dim sScript As String
+		&apos; генерируем скрипт
+		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;xmllint --noout --schema &apos;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; sFB2Schema ) &amp; &quot;&apos; &apos;&quot; &amp; sFB2File &amp; &quot;&apos;&quot; &amp;_
+					&quot; 2&gt; &quot; &amp; sLog
+		SaveText( sFileValidateScript, sScript, &quot;utf-8&quot; )
+
+		Shell(&quot;chmod +x &quot; &amp; sFileValidateScript, true)
+		Shell(&quot;/bin/sh&quot;, 1, sFileValidateScript, true)
 	End If
 	
-	Dim sFB2VBSFile As String, sFB2VBS As String
-	sFB2VBSFile = getTempPath() &amp; &quot;/fb2-valid-win32.vbs&quot;
-	sFB2VBS = &quot;Set doc = WScript.CreateObject(&quot;&quot;MSXML2.DOMDocument.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
-				&quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
-				&quot;doc.async=false&quot; &amp; chr(10) &amp; _
-				&quot;doc.validateOnParse=true&quot; &amp; chr(10) &amp; _
-				&quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp; _
-				&quot;&quot;&quot;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; sFB2Schema &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
-				&quot;doc.schemas=cache&quot; &amp; chr(10) &amp; _
-				&quot;if not doc.load(&quot;&quot;&quot; &amp; ConvertFromURL(sFB2File) &amp; &quot;&quot;&quot;) then&quot; &amp; chr(10) &amp; _
-				&quot;WScript.Echo &quot;&quot;Error at&quot;&quot;, &quot;&quot;&quot; &amp; ConvertFromURL(sFB2File) &amp; &quot;&quot;&quot;+&quot;&quot;, line&quot;&quot;, cstr(doc.parseError.line)+&quot; &amp; &quot;&quot;&quot;, column&quot;&quot;, cstr(doc.parseError.linepos)+&quot;&quot;&quot; &amp; &quot;:&quot;&quot;&quot; &amp; &quot;, doc.parseError.reason&quot; &amp; chr(10) &amp; _
-				&quot;else WScript.Echo &quot; &amp; &quot;&quot;&quot;&quot; &amp; &quot;File: &quot; &amp; ConvertFromURL(sFB2File) &amp; &quot; - No errors found&quot;&quot;&quot; &amp; chr(10) &amp; _
-				&quot;end if&quot;
-				
-	SaveText( sFB2VBSFile, sFB2VBS, &quot;windows-1251&quot; )
-	
-	Dim oSSE As Object
-	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
-	oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
-End Sub
+	Wait 150
+	Validate = LoadResult( sLog )
+End Function
 
+Function LoadResult(ByRef logFile As String) As String
+	Dim ok As Boolean : ok = False
+	Dim filenumber As Integer
+	Dim sLine As String
+	Dim sText As String
+	filenumber = Freefile
+	If FileExists( logFile ) Then
+		Open logFile For Input As filenumber
+		While Not EOF(filenumber)
+			Line Input #filenumber, sLine
+			If (sLine &lt;&gt; &quot;&quot;) Then
+				sText = sText &amp; sLine &amp; chr(10) &amp; chr(10)
+			End If
+		Wend
+		Close #filenumber
+	End If
+	
+	If InStr(sText, &quot;parser error&quot;) = 0 Then ok = True
+
+	Dim sResult As String
+	If ok = True Then
+		sResult = sVD.sNoErrors &amp; chr(10) &amp; chr(10)
+	Else
+		sResult = sVD.sErrors &amp; chr(10) &amp; chr(10)
+	End If
+	
+	LoadResult = sResult &amp; sText
+End Function
 
 </script:module>

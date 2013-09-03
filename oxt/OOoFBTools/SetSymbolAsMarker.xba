@@ -3,7 +3,7 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="SetSymbolAsMarker" script:language="StarBasic">REM  *****  BASIC  *****
 &apos; =======================================================================================================
 &apos; 										модуль инструментов:
-&apos; 						Вставка символа • как маркера в начало заданных абзацев
+&apos; 								Вставка  маркера в начало заданных абзацев
 &apos; =======================================================================================================
 
 Option Explicit
@@ -23,16 +23,27 @@ Sub SetSymbolAsMarker()
 	
 	&apos; инициализация формы
 	InitSetSymbolAsMarkerDlg()
-	
-	With oSSAMDlg.Model
-		.Height = 40
-		.Width  = 260
-	End With
+
+	Dim aMarkerList() As String : aMarkerList() = Array( sSSAMD.sBlackBullet, sSSAMD.sBlackCircle, sSSAMD.sWhiteBullet, sSSAMD.sWhiteCircle, _
+				sSSAMD.sEMDash, sSSAMD.sENDash, sSSAMD.sFigureDash, sSSAMD.sHyphen, sSSAMD.sNonBreakHyphen, sSSAMD.sHyphenMinus, _
+				sSSAMD.sDiamond, sSSAMD.sSnowflake, sSSAMD.sWhiteSun, sSSAMD.sBlackSun, sSSAMD.sWhiteStar, sSSAMD.sBlackStar, sSSAMD.sWhiteFlag, sSSAMD.sBlackFlag, _
+				sSSAMD.sPencil, sSSAMD.sWritingHand, sSSAMD.sWhitePointingIndex, sSSAMD.sBlackPointingIndex, _
+				sSSAMD.sCheckMark, sSSAMD.sHeavyCheckMark, sSSAMD.sBallot_x, sSSAMD.sHeavyBallot_x, sSSAMD.sHeavyMultiplication_x, _
+				sSSAMD.sBallotBox, sSSAMD.sBallotBoxWithCheck, sSSAMD.sBallotBoxWith_x, _
+				sSSAMD.sShadowedWhiteCircle, sSSAMD.sLowerRightShadowedWhiteSquare, sSSAMD.sLowerRightDrop_shadowedWhiteSquare, sSSAMD.sUpperRightShadowedWhiteSquare, sSSAMD.sUpperRightDrop_shadowedWhiteSquare, _
+				sSSAMD.sThree_dTop_lightedArrowhead, sSSAMD.sThree_dBottom_lightedArrowhead, sSSAMD.sBlackRightwardsArrowhead, _
+				sSSAMD.sRight_shadedWhiteArrow, sSSAMD.sLeft_shadedWhiteArrow, sSSAMD.sHeavyLowerRight_shadowedWhiteArrow, sSSAMD.sHeavyUpperRight_shadowedWhiteArrow, _
+				sSSAMD.sBack_tiltedShadowedWhiteArrow, sSSAMD.sFront_tiltedShadowedWhiteArrow, sSSAMD.sNotchedLowerRight_ShadowedWhiteArrow, _
+				sSSAMD.sNotchedUpperRight_shadowedWhiteArrow, sSSAMD.sCircledHeavyWhiteArrow, _
+				sSSAMD.sShadowedWhiteLatinCross, sSSAMD.sOrthodoxCross, sSSAMD.sCrossOfLorraine, sSSAMD.sOutlinedGreekCross, sSSAMD.sHeavyGreekCross, _
+				sSSAMD.sCircleWithLeftHalfBlack, sSSAMD.sCircleWithRightHalfBlack, sSSAMD.sPilcrowSign )
+	oSSAMDlg.Model.lbMarker.StringItemList = aMarkerList()
+	oSSAMDlg.getControl( &quot;lbMarker&quot; ).SelectItemPos( 0, True )
 	
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstMarker, oSSAMDlg, nX, nY )
-	oSSAMDlg.setPosSize( nX, nY, 40, 260, com.sun.star.awt.PosSize.POS )
+	oSSAMDlg.setPosSize( nX, nY, 72, 290, com.sun.star.awt.PosSize.POS )
 	
 	oSSAMDlg.execute()
 
@@ -130,7 +141,124 @@ Sub SetSymbolAsMarkerWorker( ByRef oDoc As Object, ByRef oViewCursor As Object, 
 	End If
 	
 	&apos; вставляем символ маркера
-	_UnoInsertText( &quot;• &quot; )
+	_UnoInsertText( MakeMarkerStr( &quot;lbMarker&quot;) &amp; chr(160) )
 End Sub
+
+&apos; генерация строки для поиска заданного объекта
+Function MakeMarkerStr( ListBoxName As String ) As String
+	MakeMarkerStr = chr(8226) &apos; Черная пулька •
+	Select Case oSSAMDlg.GetControl( ListBoxName ).SelectedItemPos
+		Case 0 &apos; Черная пулька •
+			MakeMarkerStr = chr(8226)
+		Case 1 &apos;Черный кружок ●  0x25CF
+			MakeMarkerStr = chr(9679)
+		Case 2 &apos; белая пулька ◦
+			MakeMarkerStr = chr(9702)
+		Case 3 &apos; Белый кружок ○  0x25CF
+			MakeMarkerStr = chr(9675)
+		Case 4 &apos; Длинное Тире —
+			MakeMarkerStr = chr(8212)
+		Case 5 &apos; Среднее Тире –
+			MakeMarkerStr = chr(8211)
+		Case 6 &apos; Цифровое тире ‒
+			MakeMarkerStr = chr(8210)
+		Case 7 &apos; Дефис ‐
+			MakeMarkerStr = chr(8208)
+		Case 8 &apos; Неразрывный дефис ‑
+			MakeMarkerStr = chr(8209)
+		Case 9 &apos; Дефис-Минус -
+			MakeMarkerStr = chr(45)
+		Case 10 &apos; Алмаз ◈
+			MakeMarkerStr = chr(9672)
+		Case 11 &apos; Снежинка ❄
+			MakeMarkerStr = chr(10052)
+		Case 12 &apos; Незакрашенное солнце с лучами ☼
+			MakeMarkerStr = chr(9788)
+		Case 13 &apos; Закрашенное солнце с лучами ☀
+			MakeMarkerStr = chr(9728)
+		Case 14 &apos; Незакрашенная звезда ☆
+			MakeMarkerStr = chr(9734)
+		Case 15 &apos; Закрашенная звезда ★
+			MakeMarkerStr = chr(9733)
+		Case 16 &apos; Белый флаг ⚐
+			MakeMarkerStr = chr(9872)
+		Case 17 &apos; Черный флаг ⚑
+			MakeMarkerStr = chr(9873)
+		Case 18 &apos; ✎ Карандаш
+			MakeMarkerStr = chr(9998)
+		Case 19 &apos; ✍ Пишущая рука
+			MakeMarkerStr = chr(9997)
+		Case 20 &apos; ☞ Незакрашенный указатель
+			MakeMarkerStr = chr(9758)
+		Case 21 &apos; ☛ Закрашенный указатель 
+			MakeMarkerStr = chr(9755)
+		Case 22 &apos; ✓ Отметка галочкой
+			MakeMarkerStr = chr(10003)
+		Case 23 &apos; ✔ Жирная отметка галочкой
+			MakeMarkerStr = chr(10004)
+		Case 24 &apos; ✗ Крестик в анкете голосования
+			MakeMarkerStr = chr(10007)
+		Case 25 &apos; ✘ Жирный крестик в анкете голосования
+			MakeMarkerStr = chr(10008)
+		Case 26 &apos; ✖ Жирный знак умножения
+			MakeMarkerStr = chr(10006)
+		Case 27 &apos; ☐ Избирательная урна
+			MakeMarkerStr = chr(9744)
+		Case 28 &apos; ☑ Избирательная урна с галочкой
+			MakeMarkerStr = chr(9745)
+		Case 29 &apos; ☒ Избирательная урна с x
+			MakeMarkerStr = chr(9746)
+		Case 30 &apos; ❍ Незакрашенный оттенённый круг
+			MakeMarkerStr = chr(10061)
+		Case 31 &apos; ❑ Незакрашенный квадрат с правой нижней тенью
+			MakeMarkerStr = chr(10065)
+		Case 32 &apos; ❏ Незакрашенный квадрат, отбрасывающий тень вниз вправо
+			MakeMarkerStr = chr(10063)
+		Case 33 &apos; ❒ Незакрашенный квадрат с правой верхней тенью
+			MakeMarkerStr = chr(10066)
+		Case 34 &apos; ❐ Незакрашенный квадрат, отбрасывающий тень вверх вправо
+			MakeMarkerStr = chr(10064)
+		Case 35 &apos; ➢ Трёхмерная закрашенная сверху стрелка
+			MakeMarkerStr = chr(10146)
+		Case 36 &apos; ➣ Трёхмерная закрашенная снизу стрелка
+			MakeMarkerStr = chr(10147)
+		Case 37 &apos; ➤ Закрашенная стрелка
+			MakeMarkerStr = chr(10148)
+		Case 38 &apos; ➩ Незакрашенная стрела с отпадающей вправо тенью
+			MakeMarkerStr = chr(10153)
+		Case 39 &apos; ➪ Незакрашенная стрела с отпадающей влево тенью
+			MakeMarkerStr = chr(10154)
+		Case 40 &apos; ➭ Жирная незакрашенная с отпадающей вправо и вниз тенью стрела
+			MakeMarkerStr = chr(10157)
+		Case 41 &apos; ➮ Жирная незакрашенная с отпадающей вправо и вверх тенью стрела
+			MakeMarkerStr = chr(10158)
+		Case 42 &apos; ➫ Наклонённая вниз оттенённая незакрашенная стрела
+			MakeMarkerStr = chr(10155)
+		Case 43 &apos; ➬ Повёрнутая вверх оттенённая незакрашенная стрела
+			MakeMarkerStr = chr(10156)
+		Case 44 &apos; ➯ Зубчатая незакрашенная с отпадающей вниз и вправо тенью стрела
+			MakeMarkerStr = chr(10159)
+		Case 45 &apos; ➱ Зубчатая незакрашенная с отпадающей вверх и вправо тенью стрела
+			MakeMarkerStr = chr(10161)
+		Case 46 &apos; ➲ Незакрашенная жирная стрела в закрашенном круге
+			MakeMarkerStr = chr(10162)
+		Case 47 &apos; ✞ Незакрашенный оттенённый латинский крест
+			MakeMarkerStr = chr(10014)
+		Case 48 &apos; ☦ Православный крест
+			MakeMarkerStr = chr(9766)
+		Case 49 &apos; ☨ Лотарингский крест
+			MakeMarkerStr = chr(9768)
+		Case 50 &apos; ✙ Обведённый греческий крест
+			MakeMarkerStr = chr(10009)
+		Case 51 &apos; ✚ Жирный закрашенный греческий крест
+			MakeMarkerStr = chr(10010)
+		Case 52 &apos; ◐ Круг с левой черной половиной
+			MakeMarkerStr = chr(9680)
+		Case 53 &apos; ◑ Круг с черной правой половиной
+			MakeMarkerStr = chr(9681)
+		Case 54 &apos; ¶ Знак абзаца
+			MakeMarkerStr = chr(182)
+	End Select
+End Function
 
 </script:module>

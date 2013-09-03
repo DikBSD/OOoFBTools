@@ -1180,6 +1180,22 @@ Function IsNoBreakDefExsist() As Boolean
 End Function
 
 &apos;********************************************************************************
+&apos; есть ли в документе юникодные маркеры
+Function IsUnicodeMarkerExistsInText() As Boolean
+	IsUnicodeMarkerExistsInText = False
+	Dim vSearch As Variant : vSearch = ThisComponent.createSearchDescriptor()
+	With vSearch
+		.SearchString				= &quot;[●◦○◈❄☼☀☆★⚐⚑✎✍☞☛✓✔✗✘✖☐☑☒❍❑❏❒❐➢➣➤➩➪➭➮➫➬➯➱➲✞☦☨✙✚◐◑]&quot; &apos;0x25FF
+		.SearchRegularExpression	= True
+	End With
+
+	Dim vFound As Variant : vFound = ThisComponent.findFirst( vSearch )
+	If Not IsNull( vFound ) Then
+		IsUnicodeMarkerExistsInText = True
+	End If
+End Function
+
+&apos;********************************************************************************
 &apos; поиск текста заданного стиля
 Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	Dim sResult As String

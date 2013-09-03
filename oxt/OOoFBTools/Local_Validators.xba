@@ -13,7 +13,9 @@ Type tValidatorsDlgData
 	sChooseFB2FileToValidate	As String &apos; Выберите fb2 файл для валидации
 	sFileNotExists				As String &apos; Файл не найден
 	sFB2FileValidate			As String &apos; Валидация fb2-файла
-	sFB2FileValidateWarning		As String &apos; Извините, Валидатор fb2-файлов работает пока только для системы Windows
+	sNoErrors					As String &apos; Ошибок валидации файла не обнаружено:
+	sErrors						As String &apos; Найдены ошибки валидации файла:
+	sValidatorTitle				As String &apos; Результат вадидации
 End Type
 
 Public sVD As tValidatorsDlgData
@@ -21,9 +23,6 @@ Public sVD As tValidatorsDlgData
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; инициализация диалога Валидатора в зависимости от локали
 Sub InitValidateDlg()
-	&apos; инициализация сообщений диалога Валидатора в зависимости от локали
-	InitValidateDlgMessage()
-	
 	With oValidateDlg.getModel
 		.Title = sVD.sFB2FileValidate
 	End With
@@ -51,7 +50,9 @@ Sub InitValidateDlgMessage()
 			.sFileNotExists				= &quot;Файл не найден:&quot;
 			.sChooseFB2File				= &quot;Выберите fb2 файл...&quot;
 			.sChooseFB2FileToValidate	= &quot;Выберите fb2 файл для валидации&quot;
-			.sFB2FileValidateWarning	= &quot;Извините, Валидатор fb2-файлов работает пока только для системы Windows&quot;
+			.sNoErrors					= &quot;Ошибок валидации файла не обнаружено!&quot;
+			.sErrors					= &quot;Найдены ошибки валидации файла:&quot;
+			.sValidatorTitle			= &quot;Результат вадидации&quot;
 		End With
 	Else
 		With sVD
@@ -59,7 +60,9 @@ Sub InitValidateDlgMessage()
 			.sFileNotExists				= &quot;File Not Exists:&quot;
 			.sChooseFB2File				= &quot;Choose the fb2 File...&quot;
 			.sChooseFB2FileToValidate	= &quot;Choose the fb2 File for Validate&quot;
-			.sFB2FileValidateWarning	= &quot;Excuse, Validate fb2-files works while only for system Windows&quot;
+			.sNoErrors					= &quot;Validation errors is not found!&quot;
+			.sErrors					= &quot;Found the error validation:&quot;
+			.sValidatorTitle			= &quot;Result of validation&quot;
 		End With
 	End If
 End Sub
