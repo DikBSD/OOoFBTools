@@ -1838,7 +1838,7 @@ Sub SetSymbolStyle(Style As String)
 	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
 End Sub
 
-&apos;  очистка всех стилей для выделенногосимвола
+&apos;  очистка всех стилей для выделенного символа
 Sub ClearSymbolFormat()
 	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
 	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
@@ -1862,6 +1862,22 @@ Sub ClearSymbolFormat()
 	args3(0).Value = False
 	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args3())
 	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+&apos;  очистка всех цветов для выделенного символа
+Sub ClearFont_Back_BackgroundColor()
+	Dim document   As Object : document = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;FontColor&quot;
+	args1(0).Value = -1
+	dispatcher.executeDispatch(document, &quot;.uno:FontColor&quot;, &quot;&quot;, 0, args1())
+	dispatcher.executeDispatch(document, &quot;.uno:BackColor&quot;, &quot;&quot;, 0, Array())
+	
+	Dim args3(0) As New com.sun.star.beans.PropertyValue
+	args3(0).Name = &quot;BackgroundColor&quot;
+	args3(0).Value = -1
+	dispatcher.executeDispatch(document, &quot;.uno:BackgroundColor&quot;, &quot;&quot;, 0, args3())
 End Sub
 
 &apos;/////////////////////////////////////// Очистка всех стилей в абзаце//////////////////////////////////////
