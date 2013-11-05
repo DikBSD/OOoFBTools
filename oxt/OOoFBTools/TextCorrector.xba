@@ -1234,11 +1234,29 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
+	&apos; в LO4 и OO4 сломан механизм замены ([»&quot;&quot;”]) на $1  - заменяем на &quot;прямые&quot; замены
+&apos;	With oReplace
+&apos;		.SearchString = &quot;([»&quot;&quot;”]) *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+&apos;		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
+&apos;	End With
+&apos;	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;([»&quot;&quot;”]) *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
+		.SearchString = &quot;» *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;&quot;&quot; *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;” *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	
 	With oReplace
 		.SearchString = &quot;\&gt; *- *([«&quot;&quot;“„])&quot;			&apos;&quot;\&gt; - «&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
@@ -1608,15 +1626,15 @@ Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 		Next i
 	End If
 	
-&apos;	&apos; в условие поиска игнорируем цифры в верхнем или нижнем индексе
-&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-&apos;	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
-&apos;	SrchAttributes(0).Value	= False
+	&apos; в условие поиска игнорируем цифры в верхнем или нижнем индексе
+	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
+	SrchAttributes(0).Value	= False
 	
 	Dim oDesc : oDesc = oDoc.createSearchDescriptor()
 	With oDesc
 		.SearchRegularExpression = True
-&apos;		.SetSearchAttributes(SrchAttributes())
+		.SetSearchAttributes(SrchAttributes())
 &apos;&apos;		.SearchString = &quot;([:alnum:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
 &apos;		.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alpha:]|[\({\[«&apos;“\&quot;&quot;])&quot;
 		If bTCNBDelSpace Then

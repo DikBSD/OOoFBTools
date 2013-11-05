@@ -72,8 +72,8 @@ Sub OCRErrorFormatWorking()
 	
 	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State = 1 Then
 		&apos; обработка курсива на кавычках в тексте, таблицах, сносках и текстовых врезок (ошибки OCR форматирования
-		aLeftList()		= Array( &quot;«&quot;, &quot;“&quot;, &quot;„&quot; )
-		aRightList()	= Array( &quot;»&quot;, &quot;”&quot;, &quot;”&quot; )
+		aLeftList()		= Array( &quot;«&quot; , &quot;“&quot;, &quot;„&quot; )
+		aRightList()	= Array( &quot;»&quot; , &quot;”&quot;, &quot;”&quot; )
 		TextNoteTableTextFrameWorker( aLeftList(), aRightList(), oProgressBar )
 	End If
 	
@@ -97,7 +97,7 @@ Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef o
 	Dim vLSymSearch	As Variant	: vLSymSearch	= oDoc.createSearchDescriptor()
 	Dim vLSymFound	As Variant
 
-	&apos; леввый поисковый символ
+	&apos; левый поисковый символ
 	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
 	SrchAttributes(0).Name = &quot;CharPosture&quot;
 	With vLSymSearch
@@ -140,19 +140,39 @@ Sub UnItalicBracketWorker( ByRef vLSymFound As Variant, sFindLeftSymbol As Strin
 	
 FindLSym:
 	Do While oRSymCurs.goRight(1, True) And ( Not oRSymCurs.Text.compareRegionEnds( oRSymCurs, oRSymCurs.End ) &lt;= 0 )
+&apos;		dim s : s = oRSymCurs.String
+&apos;		dim p : p = InStr(s, &quot;Или же это автор Книги Иова насмехается над Богом?&quot;)
+&apos;		if p &gt; 0 then
+&apos;			print &quot;@@@@@@@@@@@@&quot;
+&apos;		End If
+		
 		FirstWordLetterAfterRightSymbol = False
+		Dim symbol As String : symbol = Right( oRSymCurs.getString(), 1 )
 		If Right( oRSymCurs.getString(), 1 ) = sFindLeftSymbol Then
 			&apos; нашли еще один левый поисковый символ ДО правого поискового символ
 			oLSymCurs.gotoRange( oRSymCurs, False )
 			oLSymCurs.collapseToEnd()
 			GoTo FindLSym
-		ElseIf Right( oRSymCurs.getString(), 1 ) = sFindRightSymbol Then
-			&apos; нашли парный правый поисковый символ
-			oRSymCurs.goLeft(1, True)
-			oRSymCurs.collapseToEnd()
-			&apos; ищем 1-й символ после правого символа, кроме пробелоа и/или табуляции
-			FirstWordLetterAfterRightSymbol = FindFirstWordLetterAfterRightSymbol( oRSymCurs )
-			Exit Do
+		Else
+			If symbol = sFindRightSymbol Then
+				&apos; нашли парный правый поисковый символ
+				oRSymCurs.goLeft(1, True)
+				oRSymCurs.collapseToEnd()
+				&apos; ищем 1-й символ после правого символа, кроме пробелоа и/или табуляции
+				FirstWordLetterAfterRightSymbol = FindFirstWordLetterAfterRightSymbol( oRSymCurs )
+				Exit Do
+			Else
+				If ( sFindLeftSymbol = &quot;“&quot; OR sFindLeftSymbol = &quot;„&quot; ) And _
+					( symbol = sFindRightSymbol Or symbol = &quot;&quot;&quot;&quot; ) Then
+					&apos; защита на случай, если вместо &quot;парной&quot; кавычки будет просто &quot;
+					&apos; нашли парный правый поисковый символ
+					oRSymCurs.goLeft(1, True)
+					oRSymCurs.collapseToEnd()
+					&apos; ищем 1-й символ после правого символа, кроме пробелоа и/или табуляции
+					FirstWordLetterAfterRightSymbol = FindFirstWordLetterAfterRightSymbol( oRSymCurs )
+					Exit Do
+				End If
+			End If
 		End If
 	Loop
 
