@@ -1043,9 +1043,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	&apos; Заменить минус на дефис между цифрами
+	&apos; Заменить минус, дефис и тире на короткое тире между цифрами
 	If bMinusToDashBetweenNumbers = True Then
-		ReplaceMinusToDashBetweenNumbers( oDoc, oReplace )
+		ReplaceMinusHyphenDashToShortDashBetweenNumbers( oDoc, oReplace )
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1324,11 +1324,23 @@ Sub ReplaceMinusToDash( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos; Заменить минус на дефис между цифрами
-Sub ReplaceMinusToDashBetweenNumbers( oDoc, oReplace )
+&apos; Заменить минус, дефис и тире на короткое тире между цифрами
+Sub ReplaceMinusHyphenDashToShortDashBetweenNumbers( oDoc, oReplace )
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:digit:])-([:digit:])&quot;
+		.SearchString = &quot;([:digit:])&quot; + Chr(45) + &quot;([:digit:])&quot; &apos; минус
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])&quot; + Chr(8208) + &quot;([:digit:])&quot; &apos; дефис
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])&quot; + Chr(8212) + &quot;([:digit:])&quot; &apos; тире
 		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)

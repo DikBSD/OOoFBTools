@@ -31,7 +31,7 @@ Function MakeNumberingNumberParaLess31( oPar, sStringPara, sFormatPara ) As Stri
 			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
 			If sFormatPara &lt;&gt; &quot;&quot; Then
 				If sNumber &lt;&gt; &quot;&quot; Then
-					sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
+					sFormatPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; sNumber &amp; chr(160) &amp; sFormatPara
 				Else
 					sFormatPara = sFormatPara
 				End If
@@ -40,12 +40,13 @@ Function MakeNumberingNumberParaLess31( oPar, sStringPara, sFormatPara ) As Stri
 		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If n = 1 Then &apos; GraphicBitman
 				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
-				Dim sMarkerPara As String : sMarkerPara = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot; &quot; &amp; sFormatPara
+				Dim sMarkerPara As String
+				sMarkerPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
 				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
 				MakeNumberingNumberParaLess31 = sMarkerPara
 &apos;				MakeNumberingNumberParaLess31 = &quot;• &quot; &amp; sFormatPara &apos; маркеры-картинки заменяем на •
 			Else &apos; BulletChar
-				MakeNumberingNumberParaLess31 = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
+				MakeNumberingNumberParaLess31 = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; &quot;&lt;/code&gt;&quot; &amp; sFormatPara
 			End If
 			bMarker = True
 		End If
@@ -64,7 +65,7 @@ Function MakeNumberingNumberPara31( oPar, sFormatPara ) As String
 			Dim sNumber As String : sNumber = oPar.ListLabelString
 			If sFormatPara &lt;&gt; &quot;&quot; Then
 				If sNumber &lt;&gt; &quot;&quot; Then
-					sFormatPara = sNumber &amp; &quot; &quot; &amp; sFormatPara
+					sFormatPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; sNumber &amp; chr(160) &amp; sFormatPara
 				Else
 					sFormatPara = sFormatPara
 				End If
@@ -73,15 +74,26 @@ Function MakeNumberingNumberPara31( oPar, sFormatPara ) As String
 		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If n = 1 Then &apos; GraphicBitman
 				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
-				Dim sMarkerPara As String : sMarkerPara = &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot; &quot; &amp; sFormatPara
+				Dim sMarkerPara As String
+				sMarkerPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
 				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
 				MakeNumberingNumberPara31 = sMarkerPara
 			Else &apos; BulletChar
-				MakeNumberingNumberPara31 = GetBulletChar( oPar ) &amp; &quot; &quot; &amp; sFormatPara
+				MakeNumberingNumberPara31 = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; &quot;&lt;/code&gt;&quot; &amp; sFormatPara
 			End If
 			bMarker = True
 		End If
 	End If
+End Function
+
+&apos; формирование строки неразрывных пробелов для создания псевдоотступов во вложенных списках
+Function MakeLevelNotBreakSpaseString( oPar ) As String
+	Dim i As Integer
+	Dim nCount As Integer : nCount = nListSpaceCount
+	Dim nLevel As Integer : nLevel = oPar.NumberingLevel
+	For i=1 To nLevel*nCount + nCount
+		MakeLevelNotBreakSpaseString = MakeLevelNotBreakSpaseString &amp; chr(160)
+	Next i
 End Function
 
 &apos; Что за абзац: 0 - нумерованный список, 1 или 2 - маркер

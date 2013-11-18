@@ -36,8 +36,8 @@ Public sJpegAs As String &apos; формат преоьбразования дл
 Public sPngAs As String &apos; формат преоьбразования для png
 Public sGifAs As String &apos; формат преоьбразования для gif
 Public sTifBMPAs As String &apos; формат преоьбразования для tif, tiff, bmp
-Public sAnyAs As String &apos; формат преоьбразования для остальных форматов
-Public sOLEAs As String &apos; формат преоьбразования для формул и диаграмм
+Public sAnyAs As String &apos; формат преобразования для остальных форматов
+Public sOLEAs As String &apos; формат преобразования для формул и диаграмм
 Public bExportAsOriginal As Boolean &apos; режим экспорта размеров графики (True: оригинал, как в тексте; False: Logical Size)
 Public JPEGQuality As Integer &apos; Качество вывода jpeg картинок (100 - максимальное качество/минимальное сжатие, 5 - минимальное качество/максимальное сжатие)
 Public bJPEGColor  As Boolean &apos; Цветовой режим экспорта jpeg: True - Color, False - Grayscale
@@ -51,6 +51,7 @@ Public bStyleSpace As Boolean  &apos; Обработка пробелов, об�
 Public bFB2Execute As Boolean
 &apos; валидация
 Public bValidate As Boolean
+Public nListSpaceCount As Integer &apos; число неразрывных пробелов для иммитации отступов во вложенных списках
 
 Private oServiceDlg		As Object
 Private sHeaderTVA		As String
@@ -62,6 +63,8 @@ Private sFootTitleList()	As String &apos; Название секции снос
 Private sHVList()			As String &apos; выравнивание по высоте
 Private sTFList()			As String &apos; вид экспорта врезок
 Private sGraphList()		As String &apos; форматы для преобразования графики
+Private sSpaceList()		As String &apos; число неразрывных пробелов для иммитации отступов во вложенных списках
+
 
 Sub ServiceDlgExec()
 	&apos;DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -78,6 +81,7 @@ Sub ServiceDlgExec()
 	sHVList()			= Array( &quot; &quot;, sServD.sOnTop, sServD.sOnCentre, sServD.sFromBottom )
 	sTFList()			= Array( sServD.sTable, sServD.sText, sServD.sCite, sServD.sStructure )
 	sGraphList()		= Array( &quot;png&quot;, &quot;jpg&quot;, &quot;jpeg&quot; )
+	sSpaceList()		= Array( &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot; )
 						
 	With oServiceDlg.Model
 		.cmbboxStyle.StringItemList		= sFootStyleList()
@@ -93,6 +97,7 @@ Sub ServiceDlgExec()
 		.lbTifBMPAs.StringItemList		= sGraphList()
 		.lbAnyAs.StringItemList			= sGraphList()
 		.lbOLEAs.StringItemList			= sGraphList()
+		.lbListSpaceCount.StringItemList	= sSpaceList()
 	End With
 	
 	&apos; Настройки По умолчанию - в контролы
@@ -294,6 +299,9 @@ Sub SetDefaultSettingsToControls()
 		oLB.SelectItemPos(0, True)
 		oLB = .getControl(&quot;lboxJPEGQuality&quot;)
 		oLB.SelectItemPos(0, True)
+		oLB = .getControl(&quot;lbListSpaceCount&quot;)
+		oLB.SelectItemPos(2, True)
+		
 		&apos; качество jpeg
 		.Model.obtnJPEGColor.State = 1
 		.Model.obtnJPEGGrayscale.State = 0
@@ -411,6 +419,9 @@ Sub SetDefaultSettingsToVars()
 	
 	&apos; валидация
 	bValidate = True
+	
+	&apos; число неразрывных пробелов для иммитации отступов во вложенных списках
+	nListSpaceCount = 3
 End Sub
 
 &apos; Настройки из файла - в переменные
@@ -612,6 +623,9 @@ Sub SetSettingsToVars( sCurrentLine )
 		&apos; генерировать сложный ID Книги
 		Case &quot;cboxComplexID&quot;
 			bComplexID = sSetting(1)
+		&apos; число неразрывных пробелов для иммитации отступов во вложенных списках
+		Case &quot;lbListSpaceCount&quot;
+			nListSpaceCount = sSetting(1) : nListSpaceCount = nListSpaceCount + 1
 	End Select
 End Sub
 
