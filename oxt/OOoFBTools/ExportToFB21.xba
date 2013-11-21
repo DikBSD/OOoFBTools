@@ -133,6 +133,7 @@ Sub ExportDoc()
 	If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
 		MkDir getOOoFBToolsTempPath()
 	End If
+
 	&apos; для Windows системы копируем base64.exe из расширения в OOoFBToolsTemp папку для работы экспорта графики в портабельном режиме
 	If GetOS() = 0 Then &apos; для Windows-системы
 		Dim base64Path As String : base64Path = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\base64.exe&quot;
@@ -422,8 +423,6 @@ Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
 	If bSuperfluous = True Then
 		RemoveSuperfluous(sStr, sR)
 		RemoveSuperfluousLR(sStr, sR)
-	End If
-	If bStyleSpace = True Then
 		ClearStyleSpace(sStr, sR1, sR2)
 	End If
 	If bCHR10 = True Then

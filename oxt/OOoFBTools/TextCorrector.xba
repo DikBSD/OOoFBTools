@@ -61,6 +61,7 @@ Private bRemoveSpaceInQuote		As Boolean
 
 Private bInsertNoBreakBlankToFIO		As Boolean
 Private bInsertNoBreakBlankToShortening	As Boolean
+Private bInsertNoBreakBlankToDate	As Boolean
 
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -75,7 +76,7 @@ Sub TextCorrector()
 	Dim sAnchorsList() As String &apos; виды привязки картинки
 	sAnchorsList() = Array( sTCD.sToParagraph, sTCD.sToSymbol, sTCD.sAsSymbol )
 	With oTextCorrectorDlg.Model
-		.Height = 408
+		.Height = 324
 		.Width  = 392
 		.cbAnchor.StringItemList = sAnchorsList()
 	End With
@@ -97,7 +98,7 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 425, 392, com.sun.star.awt.PosSize.POS )
+	oTextCorrectorDlg.setPosSize( nX, nY, 324, 392, com.sun.star.awt.PosSize.POS )
 	
 	ControlsEnabled()
 		
@@ -146,6 +147,7 @@ Sub SaveCorrectorSettings()
 		bInsertSpaceBPunctAndSym = 	.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State
 		bInsertNoBreakBlankToFIO =	.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State
 		bInsertNoBreakBlankToShortening = .GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State
+		bInsertNoBreakBlankToDate = .GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State
 		bDefis = 					.GetControl(&quot;cboxHyphen&quot;).State
 		bNoBreakDefis = 			.GetControl(&quot;obSimpleHyphen&quot;).State
 		bKav = 						.GetControl(&quot;cboxKav&quot;).State
@@ -258,6 +260,19 @@ Sub cboxDefisPartEnabled()
 	End With
 End Sub
 
+&apos;***************************************************************************
+&apos; перключение &quot;вкладок&quot; групп настроек
+Sub ChangeOptionsGroup(o)
+	With oTextCorrectorDlg.Model
+		If o.Source.Model.Name = &quot;optbtnSpaceAndBreak&quot; Then
+			.Step = 1
+		ElseIf o.Source.Model.Name = &quot;optbtnHypenDashAndOther&quot; Then
+			.Step = 2
+		End If
+	End With
+End Sub
+&apos;***************************************************************************
+
 &apos; ////////////////////////////////////// Задание профиля книг (вид литературы) ////////////////
 &apos; Установка настроек по умолчанию в контролы
 Sub SetCorrectorSettingDefault()
@@ -283,6 +298,7 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 		
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -346,6 +362,7 @@ Sub SetDocumentType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -409,6 +426,7 @@ Sub SetFictionType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 0	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -472,6 +490,7 @@ Sub SetPublicismType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -535,6 +554,7 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -598,6 +618,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -661,6 +682,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -724,6 +746,7 @@ Sub SetReligionType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
 		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -968,6 +991,13 @@ Sub TextCorrectorDlgOk()
 	&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 	If bInsertNoBreakBlankToShortening = True Then
 		InsertNoBreakBlankToShortening( oDoc, oReplace )
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Вставка неразрывного пробела в датах (19 января ... )
+	If bInsertNoBreakBlankToDate = True Then
+		InsertNoBreakBlankToDate( oDoc, oReplace )
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1549,7 +1579,7 @@ Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	oReplace.SearchCaseSensitive=bReplCase
 End Sub
 
-&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е. и в датах (19 января ...)
 Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
 	&apos; для русского языка
 	With oReplace
@@ -1613,6 +1643,20 @@ Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
 	With oReplace
 		.SearchString	= &quot;(i\.)\x20*(e\.)&quot;
 		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Вставка неразрывного пробела в датах (19 января, January 19 ... )
+Sub InsertNoBreakBlankToDate( oDoc, oReplace )
+	With oReplace
+		.SearchString	= &quot;([0-9])([:space:]+)(январ|феврал|март|апрел|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;(january|february|march|april|may|june|july|august|september|october|november|december)([:space:]+)([0-9])&quot;
+		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub

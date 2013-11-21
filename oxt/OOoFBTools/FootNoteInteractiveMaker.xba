@@ -78,21 +78,29 @@ Sub FootNoteInteractiveMakerStart()
 	
 	&apos; файл начтроек
 	Dim sFUIMSettingsFilename As String : sFUIMSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;FootNoteInteractiveMaker.txt&quot;
-	
-	&apos; считаем положение диалога из файла настроек
-	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg,  nX, nY )
-	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 35, 450, com.sun.star.awt.PosSize.POS )
 
 	bWorkEnd	= False &apos; еще не достигнут конец документа
 	IsFirstStep	= False	&apos; еще не нажимали кнопку поиска
 	IsFirstCut	= True	&apos; еще не нажимали кнопку вырезать в буфер
 	
+	Dim aNFNInListList() As String
+	aNFNInListList() = Array( &quot;x. &quot; &amp; sBTEND.sText &amp; &quot; ...&quot;, sFNUIMD.sNumberInUpIndex &amp; &quot; ...&quot;	)
+	
 	Dim oList : oList = createUnoListener( &quot;FootNoteInteractiveMakerDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
 	With oFootNoteInteractiveMakerDlg
 		.addTopWindowListener( oList )
 		.setVisible( True )
+		.Model.lbNumberInFNListTemplate.StringItemList = aNFNInListList()
+		Dim oLB As Object
+		oLB = 	.getControl( &quot;lbNumberInFNListTemplate&quot; )
+		oLB.SelectItemPos( 1, True )
 	End With
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( sFUIMSettingsFilename, oFootNoteInteractiveMakerDlg,  nX, nY )
+	oFootNoteInteractiveMakerDlg.setPosSize( nX, nY, 54, 425, com.sun.star.awt.PosSize.POS )
+	
 	While Not bWorkEnd
 		Wait 200     
 	Wend
@@ -119,20 +127,36 @@ Sub SelectFNText( ByRef oDocControl As Object, ByRef ovCurs As Object )
 	otxtTempCurs.gotoStartOfParagraph( False )
 	Dim s As String
 	otxtTempCurs.collapseToEnd()
+	Dim oLB As Object : oLB = oFootNoteInteractiveMakerDlg.getControl( &quot;lbNumberInFNListTemplate&quot; )
 	Do While otxtTempCurs.goRight( 1, True )
 		s = Right( otxtTempCurs.getString(), 1 )
-		If s = &quot; &quot; Or s = &quot;	&quot; Then &apos; пробел и табуляция
+		If s = &quot; &quot; Or s = &quot;	&quot; Or s = &quot;.&quot; Then &apos; пробел, табуляция или точка
 			ovCurs.goRight( 1, False )
 		Else
-			If otxtTempCurs.CharEscapement &gt; 0 Then
-				If IsNumeric( s ) Then &apos; цифра в верхнем индексе
-					ovCurs.goRight( 1, False )
-				Else &apos; символ в верхнем индексе
-					&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
+			If oLB.SelectedItemPos = 1 Then
+				&apos; для цифр в верхнем индексе
+				If otxtTempCurs.CharEscapement &gt; 0 Then
+					If IsNumeric( s ) Then &apos; цифра в верхнем индексе
+						ovCurs.goRight( 1, False )
+					Else &apos; символ в верхнем индексе
+						&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
+						Exit Do
+					End If
+				Else
 					Exit Do
 				End If
 			Else
-				Exit Do
+				&apos; для цифр без индекса
+				If otxtTempCurs.CharEscapement = 0 Then
+					If IsNumeric( s ) Then &apos; цифра без индекса
+						ovCurs.goRight( 1, False )
+					Else &apos; символ без индекса
+						&apos; TODO ввести опцию: ищем только цифры или еще и символы  (неверно распознанная цифра после OCR)
+						Exit Do
+					End If
+				Else
+					Exit Do
+				End If
 			End If
 		End If
 		otxtTempCurs.collapseToEnd()
@@ -433,13 +457,21 @@ Sub MarkFootNoteNumbers()
 	oProgressBar.start( sFNUIMD.sProgress, 4 )
 	oProgressBar.setValue(1)
 	&apos; пометка заданным маркером и цветом шрифта всех цифр в верхнем индексе
-	MarkTextForTemplate( &quot;[:digit:]+&quot;, 16711680, 16776960 )
+	MarkTextForTemplate( &quot;[:digit:]+&quot;, 16711680, 16776960, True )
 	oProgressBar.setValue(2)
-&apos;	&apos; убираем цвет у цифр, с переди которых - пробулы (из-за багов LO4 на отмеченных цветом цифрах не срабатывает поиск ^[:space:]*[:digit:]+)
+&apos;	&apos; убираем цвет у цифр, спереди которых - пробелы (из-за багов LO4 на отмеченных цветом цифрах не срабатывает поиск ^[:space:]*[:digit:]+)
 &apos;	ClearSpaceNumberColor()
 &apos;	oProgressBar.setValue(3)
-	&apos; пометка заданным маркером и цветом шрифта только стартовых цифр в верхнем индексе (номера сносок в списках текста сносок)
-	MarkTextForTemplate( &quot;^[:space:]*[:digit:]+&quot;, 16711680, 10079487 )
+	&apos; пометка номеров примечаний в списках примечаний в зависимости от режима поиска
+	Dim oLB As Object : oLB = oFootNoteInteractiveMakerDlg.getControl( &quot;lbNumberInFNListTemplate&quot; )
+	If oLB.SelectedItemPos = 1 Then
+		&apos; пометка заданным маркером и цветом шрифта только стартовых цифр в верхнем индексе (номера сносок в списках текста сносок)
+		MarkTextForTemplate( &quot;^[:space:]*[:digit:]+&quot;, 16711680, 10079487, True )
+	Else
+		&apos; пометка заданным маркером и цветом шрифта только стартовых цифр без индекса (номера сносок в списках текста сносок)
+		MarkTextForTemplate( &quot;^[:space:]*[:digit:]+\.&quot;, 16711680, 10079487, False )
+	End If
+	
 	oProgressBar.setValue(3)
 	MsgBox sFNUIMD.sMarkOK, 64, sFNUIMD.sTitle
 	oProgressBar.end
@@ -447,16 +479,18 @@ End Sub
 
 &apos;***************************************************************************
 &apos; пометка заданным маркером и цветом шрифта текста по шаблону
-Sub MarkTextForTemplate( ByRef SearchStr As String, ByRef FontColor As Long, ByRef BackColor As Long  )
+Sub MarkTextForTemplate( ByRef SearchStr As String, ByRef FontColor As Long, ByRef BackColor As Long, bForUpIndex As Boolean )
 	Dim oDoc		As Object : oDoc		= ThisComponent
 	Dim oSearch		As Object : oSearch		= oDoc.createReplaceDescriptor()
 	Dim oDocControl	As Object : oDocControl = ThisComponent.getCurrentController()
-	
-	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name	= &quot;CharEscapement&quot;
-
+		
 	With oSearch
-		.SetSearchAttributes( SrchAttributes() )
+		If bForUpIndex = True Then
+			&apos; для цифр в верхнем индексе
+			Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+			SrchAttributes(0).Name	= &quot;CharEscapement&quot;
+			.SetSearchAttributes( SrchAttributes() )
+		End If
 &apos;		.ReplaceAttributes( ReplAttributes() ) &apos; выдает ошибку (bug LO?)
 		.SearchString				= SearchStr
 &apos;		.SearchStyles 				= True

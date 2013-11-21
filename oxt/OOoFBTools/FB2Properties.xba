@@ -41,6 +41,21 @@ Sub FB2PropertiesDlg_windowClosing(oEv)
 End Sub
 
 Sub FB2PropertiesDlg_windowClosed(oEv)
+	Dim guidPath As String, guidTxtPath As String
+	If GetOS() = 0 Then
+		&apos; для Windows системы удаляем guid.exe и guid.txt из временной папки OOoFBToolsTemp
+		guidPath = ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\uuidgen.exe&quot; )
+		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;\guid.txt&quot;
+	Else
+		guidPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot;
+		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;/guid.txt&quot;
+	End If
+	If FileExists( guidPath ) Then
+		Kill guidPath
+	End If
+	If FileExists( guidTxtPath ) Then
+		Kill guidTxtPath
+	End If
 End Sub
 
 Sub FB2PropertiesDlg_windowMinimized(oEv)
@@ -52,6 +67,7 @@ End Sub
 Sub FB2PropertiesDlg_disposing(oEv)
 End Sub
 
+
 &apos;***************************************************************************
 &apos; запуск формы Редактора fb2 свойств
 Sub FB2PropertiesEditorDlgExec()
@@ -62,7 +78,7 @@ Sub FB2PropertiesEditorDlgExec()
 	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog+&quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgInit, 5 )
 	oProgressBar.setValue(0)
-	
+
 	&apos; Создание формы
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	oFB2PropertiesDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;FB2PropertiesDlg&quot; )
@@ -136,10 +152,9 @@ Sub FB2PropertiesEditorDlgExec()
 			.VersionField.Text		= &quot;1.0&quot;
 			&apos; язык книги по-умолчанию - локаль Ooo
 			SetBookLangOOoDefaultLocal( oFB2PropertiesDlg, &quot;LangComboBox&quot; )
-			&apos; генерируем ID Книги
-			bComplexID = IsComplexID() &apos; Задана ли сложная генерация ID?
-			.IDField.Text = GetNewBookID( bComplexID )
 		End With
+		&apos; генерируем ID Книги
+		NewBookID()
 		&apos; Читаем установки и задаем значения контролам профиля автора документа fb2
 		_ReadProfile( getOOoFBToolsSettingsDir() &amp; sConstFB2AuthorProfile, 1 )
 		If IsFB2AuthorInput() Then
@@ -149,7 +164,7 @@ Sub FB2PropertiesEditorDlgExec()
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 	End If
 
-	oProgressBar.end
+	oProgressBar.End
 	
 	bWorkEnd = False
 	
@@ -172,33 +187,6 @@ Sub CloseDlg()
 	SaveFB2PropEditorDlgSettings()
 	oFB2PropertiesDlg.endExecute()
 End Sub
-
-&apos;***************************************************************************
-&apos; Нужно ли генерировать сложный ID fb2 файла: Возвращает True - да; False - нет
-Function IsComplexID() As Boolean
-	If FileExists( getOOoFBToolsSettingsDir() &amp; sConstSettings ) Then
-		Dim sLine As String
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-
-		oSFA = createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
-		oFS = oSFA.openFileRead ( ConvertToURL ( getOOoFBToolsSettingsDir() &amp; sConstSettings ) )
-		oTIS = createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
-		oTIS.setInputStream ( oFS )
-		Do While ( NOT oTIS.isEOF() )
-			sLine = oTIS.readLine()
-			If sLine &lt;&gt; &quot;&quot; Then
-				Dim sSetting() As String : sSetting = Split( sLine, &quot;=&quot; )
-				Select Case sSetting(0)
-				Case &quot;cboxComplexID&quot; &apos; генерировать сложный ID Книги
-					IsComplexID = sSetting(1)
-					oTIS.closeInput()
-					Exit Function
-				End Select
-			End If
-		Loop
-		oTIS.closeInput()
-	End If
-End Function
 
 &apos;***************************************************************************
 &apos; Инициализация жанрами схемы FictionBook 2.1
@@ -632,9 +620,6 @@ Sub _BookAuthorAdd()
 			.Model.tiEmail.Text		= &quot;&quot;
 			.Model.tiHomepage.Text	= &quot;&quot;
 		End If
-		If bComplexID = True Then
-			NewBookID( bComplexID )
-		End If
 	End With
 End Sub
 
@@ -675,9 +660,6 @@ Sub BookAuthorRemove()
 		If oListOfBookAuthors.getItemCount() &gt; 0 Then
 			Redim sAuthors( oListOfBookAuthors.getItemCount(), 5 )
 		End If
-	End If
-	If bComplexID = True Then
-		NewBookID( bComplexID )
 	End If
 End Sub
 
@@ -902,9 +884,6 @@ Sub _FB2AuthorAdd()
 			.Model.diEmailField.Text	= &quot;&quot;
 			.Model.diHomepageField.Text	= &quot;&quot;
 		End If
-		If bComplexID = True Then
-			NewBookID( bComplexID )
-		End If
 	End With
 End Sub
 	
@@ -945,9 +924,6 @@ Sub FB2AuthorRemove()
 		If oListOfFB2Authors.getItemCount() &gt; 0 Then
 			Redim sDocAuthors(oListOfFB2Authors.getItemCount(), 5)
 		End If
-	End If
-	If bComplexID = True Then
-		NewBookID( bComplexID )
 	End If
 End Sub
 
@@ -1389,68 +1365,77 @@ Sub InsertGEToGenreBox( oEvent )
 End Sub
 
 &apos; ===========================================================================================================================
-&apos;										генерация ID
+&apos;										генерация ID для Книги
 &apos; ===========================================================================================================================
 
 &apos; генерация нового ID
 Sub NewBookID()
-	oFB2PropertiesDlg.Model.IDField.Text = GetNewBookID( bComplexID )
+	With oFB2PropertiesDlg.Model
+		.IDField.Text = generateID()
+		If .IDField.Text = &quot;&quot; Then
+			&apos; генерация ID на основе времени и случайных чисел...
+			Dim sNow As String : sNow = Now
+			.IDField.Text = &quot;OOoFBTools-&quot; &amp; _
+				Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow) &amp; _
+				&quot;-&quot; &amp; Year(sNow)*2 &amp; Month(sNow)*3 &amp; Day(sNow)*4 &amp; Hour(sNow)*5 &amp; Minute(sNow)*6 &amp; Second(sNow)*7 &amp; _
+				&quot;-&quot; &amp; Int((3568998 * Rnd) - 3/(37 * Rnd))
+		End If
+	End With
 End Sub
 
 &apos;***************************************************************************
-&apos; формирование ID-книги в зависимости от Автора Книги и fb2-Автора
-Function GetNewBookID( ComplexID As Boolean ) As String
-	Dim sNow As String : sNow = Now
-	GetNewBookID = &quot;OOoFBTools-&quot; &amp; _
-				Year(sNow) &amp; &quot;-&quot; &amp; Month(sNow) &amp; &quot;-&quot; &amp; Day(sNow) &amp; &quot;-&quot; &amp; Hour(sNow) &amp; &quot;-&quot; &amp; Minute(sNow) &amp; &quot;-&quot; &amp; Second(sNow)
-	If ComplexID Then
-		&apos; формирование ID-книги в зависимости от Автора Книги и fb2-Автора
-		Dim oListOfAuthors As Object
-		With oFB2PropertiesDlg.Model
-			oListOfAuthors = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
-			GetNewBookID = GetNewBookID &amp; GetNewBookIDBookAuthors( oListOfAuthors )
-			oListOfAuthors = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
-			GetNewBookID = GetNewBookID &amp; GetNewBookIDBookAuthors( oListOfAuthors )
-		End With
+&apos; генерация GUID в текстовый файл для ID книги
+Function generateID() As String
+	generateID = &quot;&quot;
+	Dim guidTxtPath As String, sScript As String, sScriptPath As String
+	&apos; для Windows системы копируем guid.exe из расширения в OOoFBToolsTemp папку для создания ID книги в портабельном режиме
+	If GetOS() = 0 Then &apos; для Windows-системы
+		&apos; создаем OOoFBToolsTemp папку, если ее нет
+		If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+			MkDir getOOoFBToolsTempPath()
+		End If
+		&apos; копируем в OOoFBToolsTemp папку guid.exe
+		Dim guidPath As String : guidPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\uuidgen.exe&quot;
+		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;\guid.txt&quot;
+		If FileExists( guidPath ) Then
+			FileCopy guidPath, ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\uuidgen.exe&quot; )
+			sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL( getOOoFBToolsTempPath() ) &amp; &quot;\uuidgen.exe&quot;&quot; -o&quot; &amp; &quot;&quot;&quot;&quot; &amp; &quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
+			&apos; генерируем GUID в текстовый файл guid.txt
+			Shell( sScript, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;	
+		End If
+	Else
+		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;/guid.txt&quot;
+		If FileExists( guidTxtPath ) Then
+			Kill guidTxtPath
+		End If
+		sScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
+		If GetOS() = 1 Then &apos; для mac Os X
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;uuidgen &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
+		Else &apos; для Linux и других Unix-систем
+			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;uuidgen -t &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
+		End If
+		sScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
+		SaveText( sScriptPath, sScript, &quot;utf-8&quot; )
+		Shell( &quot;/bin/sh&quot;, 1, sScriptPath, true )
 	End If
-	GetNewBookID = GetNewBookID &amp; &quot;-&quot; &amp; Int((1500 * Rnd) - 2/(12 * Rnd))
+	generateID = UCase( getGUID( guidTxtPath ) )
 End Function
 
 &apos;***************************************************************************
-&apos; формирование ID-книги в зависимости от fb2-Автора
-Function GetNewBookIDBookAuthors( ByRef ListBox As stardiv.Toolkit.UnoListBoxControl ) As String
-	Dim i As Integer, ID As String
-	If ListBox.getItemCount() &gt; 0 Then
-		&apos; раскадываем строку из ListBox на данные Автора Книги (fb2 файла)
-		Dim aAuthorData() As String
-		For i=0 To ListBox.getItemCount()-1
-			aAuthorData() = SplitStringToArray(ListBox.getItem(i))
-			If UBound( aAuthorData() ) &lt;&gt; -1 Then
-				If Trim( aAuthorData(3) ) &lt;&gt; &quot;&quot; Then
-					ID = ID &amp; &quot;-&quot; &amp; i+1 &amp; &quot;-&quot;
-					If getOOoLocal() = &quot;ru&quot; Then
-						ID = ID &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(3) ) ) )
-					Else
-						ID = ID &amp; StrictString( Trim( aAuthorData(3) ) )
-					End if
-				Else
-					If Trim( aAuthorData(2) ) &lt;&gt; &quot;&quot; Or Trim( aAuthorData(0) ) &lt;&gt; &quot;&quot; Then
-						ID = ID &amp; &quot;-&quot; &amp; i+1
-					End If
-					If getOOoLocal() = &quot;ru&quot; Then
-						If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(2) ) ) )
-						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(0) ) ) )
-&apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( RusTransliterationString( saTranslitLetters(), Trim( aAuthorData(1) ) ) )
-					Else
-						If aAuthorData(2) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( Trim( aAuthorData(2) ) )
-						If aAuthorData(0) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( Trim( aAuthorData(0) ) )
-&apos;						If aAuthorData(1) &lt;&gt; &quot;&quot; Then ID = ID &amp; &quot;-&quot; &amp; StrictString( Trim( aAuthorData(1) ) )
-					End If
-				End If
-			End If
-		Next i
+Function getGUID( guidTxtPath As String ) As String
+	&apos; считываем GUID из сгенерированного txt файла
+	If FileExists( guidTxtPath ) Then
+		&apos; считываем GUID из файла		
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL ( guidTxtPath ) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		If Not IsFileEmpty( guidTxtPath ) Then
+			getGUID = oTIS.readLine()
+			oTIS.closeInput()
+		End If
 	End If
-	GetNewBookIDBookAuthors = ID
 End Function
 
 &apos; ===========================================================================================================================
