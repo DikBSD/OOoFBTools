@@ -1,90 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="MarkersAndNumbers" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; ================================================================================================================================
+&apos; 											Маркеры и Нумерованные Списки
+&apos; ================================================================================================================================
+
 Option Explicit
 
 Public bMarker As Boolean &apos; флаг - если в книге есть маркерованные списки, то - True (для принудительного сохранения в UTF-8)
-&apos; //////////////////////////////////////// Маркеры и Нумерованные Списки //////////////////////////////////////////////////////
 
 &apos; Обработка нумерованных и маркированных списков
-Function MakeNumberingNumberPara( oPar, sStringPara, sFormatPara ) As String	
-	&apos; sStringPara - текст абзаца без тэгов форматирования
-	&apos; sFormatPara - текст абзаца с тэгами форматирования
-	If OOoWriterVersion() &lt; &quot;3.1&quot; Then
-		MakeNumberingNumberPara = MakeNumberingNumberParaLess31( oPar, sStringPara, sFormatPara )
-	Else
-		MakeNumberingNumberPara = MakeNumberingNumberPara31( oPar, sFormatPara )
-	End If
-End Function
-
-&apos; Обработка нумерованных и маркированных списков для &lt; OOo3.1
-Function MakeNumberingNumberParaLess31( oPar, sStringPara, sFormatPara ) As String	
-	&apos; sStringPara - текст абзаца без тэгов форматирования
+Function MakeNumberingNumberPara( oPar, sFormatPara ) As String	
+	&apos; Обработка нумерованных и маркированных списков для &gt;= OOo3.1
 	&apos; sFormatPara - текст абзаца с тэгами форматирования
 	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
-		Dim oRN, oRNI
-		oRN = oPar.NumberingRules
-		oRNI = oRN.getByIndex(0)
-		Dim n As Integer : n = IsMarker( oPar )
-		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
-			Dim sNumber As String
-			sNumber = Mid( oPar.getString(), 1, Len( oPar.getString() )-Len( sStringPara ) )
-			If sFormatPara &lt;&gt; &quot;&quot; Then
-				If sNumber &lt;&gt; &quot;&quot; Then
-					sFormatPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; sNumber &amp; chr(160) &amp; sFormatPara
-				Else
-					sFormatPara = sFormatPara
-				End If
-			End If
-			MakeNumberingNumberParaLess31 = sFormatPara	
-		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
-			If n = 1 Then &apos; GraphicBitman
-				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
-				Dim sMarkerPara As String
-				sMarkerPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
-				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
-				MakeNumberingNumberParaLess31 = sMarkerPara
-&apos;				MakeNumberingNumberParaLess31 = &quot;• &quot; &amp; sFormatPara &apos; маркеры-картинки заменяем на •
-			Else &apos; BulletChar
-				MakeNumberingNumberParaLess31 = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; &quot;&lt;/code&gt;&quot; &amp; sFormatPara
-			End If
-			bMarker = True
-		End If
-	End If
-End Function
-
-&apos; Обработка нумерованных и маркированных списков для &gt;= OOo3.1
-Function MakeNumberingNumberPara31( oPar, sFormatPara ) As String	
-	&apos; sFormatPara - текст абзаца с тэгами форматирования
-	If oPar.NumberingIsNumber = True Then &apos; нумерованные или маркерованные списки
-		Dim oRN, oRNI
-		oRN = oPar.NumberingRules
-		oRNI = oRN.getByIndex(0)
 		Dim n As Integer : n = IsMarker( oPar )
 		If n = 0 Then &apos; нумерованные списки - нумерация видна в строке oPar.getString()
 			Dim sNumber As String : sNumber = oPar.ListLabelString
 			If sFormatPara &lt;&gt; &quot;&quot; Then
 				If sNumber &lt;&gt; &quot;&quot; Then
-					sFormatPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; sNumber &amp; chr(160) &amp; sFormatPara
+					If bCourrierNew = True Then
+						If oPar.Start.CharStyleName = &quot;code&quot; OR oPar.Start.CharStyleName = &quot;Source Text&quot; OR _
+							oPar.Start.ParaConditionalStyleName = &quot;code&quot; OR oPar.Start.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+							oPar.Start.ParaStyleName = &quot;code&quot; OR oPar.Start.ParaStyleName = &quot;Source Text&quot; OR _
+							oPar.Start.CharShadowed = True OR oPar.Start.CharContoured = True OR _
+							oPar.Start.CharFontName = &quot;Courier New&quot; Then
+								sFormatPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; sNumber &amp; chr(160) &amp; sFormatPara
+						Else
+							sFormatPara = MakeLevelNotBreakSpaseString( oPar ) &amp; sNumber &amp; chr(160) &amp; sFormatPara
+						End If
+					Else
+						If oPar.Start.CharStyleName = &quot;code&quot; OR oPar.Start.CharStyleName = &quot;Source Text&quot; OR _
+							oPar.Start.ParaConditionalStyleName = &quot;code&quot; OR oPar.Start.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+							oPar.Start.ParaStyleName = &quot;code&quot; OR oPar.Start.ParaStyleName = &quot;Source Text&quot; OR _
+							oPar.Start.CharShadowed = True OR oPar.Start.CharContoured = True Then
+								sFormatPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; sNumber &amp; chr(160) &amp; sFormatPara
+						Else
+							sFormatPara = MakeLevelNotBreakSpaseString( oPar ) &amp; sNumber &amp; chr(160) &amp; sFormatPara
+						End If
+					End If
 				Else
 					sFormatPara = sFormatPara
 				End If
 			End If
-			MakeNumberingNumberPara31 = sFormatPara	
+			MakeNumberingNumberPara = sFormatPara	
 		Else &apos; маркированные списки - маркер не виден в строке oPar.getString()
 			If n = 1 Then &apos; GraphicBitman
 				Dim oGraphic As Object : oGraphic = GetMarkerGraphic( oPar )
 				Dim sMarkerPara As String
-				sMarkerPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
+				
+				If bCourrierNew = True Then
+					If oPar.Start.CharStyleName = &quot;code&quot; OR oPar.Start.CharStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaConditionalStyleName = &quot;code&quot; OR oPar.Start.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaStyleName = &quot;code&quot; OR oPar.Start.ParaStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.CharShadowed = True OR oPar.Start.CharContoured = True OR _
+						oPar.CharFontName = &quot;Courier New&quot; Then
+							sMarkerPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
+					Else
+						sMarkerPara = MakeLevelNotBreakSpaseString( oPar )  &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
+					End If
+				Else
+					If oPar.Start.CharStyleName = &quot;code&quot; OR oPar.Start.CharStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaConditionalStyleName = &quot;code&quot; OR oPar.Start.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaStyleName = &quot;code&quot; OR oPar.Start.ParaStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.CharShadowed = True OR oPar.Start.CharContoured = True Then
+							sMarkerPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; &quot;&lt;/code&gt;&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
+					Else
+						sMarkerPara = MakeLevelNotBreakSpaseString( oPar )  &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.png&quot; &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(160) &amp; sFormatPara
+					End If
+				End If
 				MakeMarkerGraphic( oGraphic, &quot;png&quot; ) &apos; кодирование маркера-картинки
-				MakeNumberingNumberPara31 = sMarkerPara
+				MakeNumberingNumberPara = sMarkerPara
 			Else &apos; BulletChar
-				MakeNumberingNumberPara31 = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; &quot;&lt;/code&gt;&quot; &amp; sFormatPara
+				If bCourrierNew = True Then
+					If oPar.Start.CharStyleName = &quot;code&quot; OR oPar.Start.CharStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaConditionalStyleName = &quot;code&quot; OR oPar.Start.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaStyleName = &quot;code&quot; OR oPar.Start.ParaStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.CharShadowed = True OR oPar.Start.CharContoured = True OR _
+						oPar.Start.CharFontName = &quot;Courier New&quot; Then
+							MakeNumberingNumberPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; &quot;&lt;/code&gt;&quot; &amp; sFormatPara
+					Else
+						MakeNumberingNumberPara = MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; sFormatPara
+					End If
+				Else
+					If oPar.Start.CharStyleName = &quot;code&quot; OR oPar.Start.CharStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaConditionalStyleName = &quot;code&quot; OR oPar.Start.ParaConditionalStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.ParaStyleName = &quot;code&quot; OR oPar.Start.ParaStyleName = &quot;Source Text&quot; OR _
+						oPar.Start.CharShadowed = True OR oPar.Start.CharContoured = True Then
+							MakeNumberingNumberPara = &quot;&lt;code&gt;&quot; &amp; MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; &quot;&lt;/code&gt;&quot; &amp; sFormatPara
+					Else
+						MakeNumberingNumberPara = MakeLevelNotBreakSpaseString( oPar ) &amp; GetBulletChar( oPar ) &amp; chr(160) &amp; sFormatPara
+					End If
+				End If
 			End If
 			bMarker = True
 		End If
 	End If
 End Function
+
 
 &apos; формирование строки неразрывных пробелов для создания псевдоотступов во вложенных списках
 Function MakeLevelNotBreakSpaseString( oPar ) As String

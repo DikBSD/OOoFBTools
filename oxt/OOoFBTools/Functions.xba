@@ -893,88 +893,106 @@ Function FB2CorrectAmpWord(sWord As String, iResult As Integer)
 End Function
 
 &apos; Убираем пустышки типа &lt;/x&gt;&lt;x&gt;
-Sub RemoveSuperfluous( sSource As String, iResult() As Integer )
-	iResult(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
-	iResult(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
-	iResult(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
-	iResult(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
-	iResult(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
-	iResult(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
-End Sub
+Function RemoveSuperfluous( sSource As String )
+	Dim count As Integer
+	count = 0
+	count = count + ReplaceFromString(sSource, &quot;&lt;/strong&gt;&lt;strong&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/emphasis&gt;&lt;emphasis&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/sub&gt;&lt;sub&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/sup&gt;&lt;sup&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/code&gt;&lt;code&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt;&lt;strikethrough&gt;&quot;, &quot;&quot;)
+	RemoveSuperfluous = count
+End Function
 
 &apos; Убираем пустышки типа &lt;x&gt;&lt;/x&gt;
-Sub RemoveSuperfluousLR( sSource As String, iResult() As Integer )
-	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;&lt;/strong&gt;&quot;, &quot;&quot;)
-	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot;, &quot;&quot;)
-	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;&lt;/sub&gt;&quot;, &quot;&quot;)
-	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;&lt;/sup&gt;&quot;, &quot;&quot;)
-	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;&lt;/code&gt;&quot;, &quot;&quot;)
-	iResult(5) = ReplaceFromString(sSource, &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot;, &quot;&quot;)
-End Sub
+Function RemoveSuperfluousLR( sSource As String )
+	Dim count As Integer
+	count = 0
+	count = count + ReplaceFromString(sSource, &quot;&lt;strong&gt;&lt;/strong&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;emphasis&gt;&lt;/emphasis&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sub&gt;&lt;/sub&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;&lt;/sup&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;code&gt;&lt;/code&gt;&quot;, &quot;&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot;, &quot;&quot;)
+	RemoveSuperfluousLR = count
+End Function
 
 &apos; Обработка пробелов, обрамленными стилями &lt;/x&gt; &lt;x&gt; и &lt;x&gt; &lt;/x&gt;
-Function ClearStyleSpace(sSource As String, iResult1 As Integer, iResult2 As Integer)
-	iResult1(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
-	iResult1(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt; &lt;/emphasis&gt;&quot;, &quot; &quot;)
-	iResult1(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt; &lt;/sub&gt;&quot;, &quot; &quot;)
-	iResult1(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt; &lt;/sup&gt;&quot;, &quot; &quot;)
-	iResult1(4) = ReplaceFromString(sSource, &quot;&lt;code&gt; &lt;/code&gt;&quot;, &quot; &quot;)
-	iResult1(5) = ReplaceFromString(sSource, &quot;&lt;strikethrough&gt; &lt;/strikethrough&gt;&quot;, &quot; &quot;)
+Function ClearStyleSpace( sSource As String )
+	Dim count As Integer
+	count = 0
+	count = count + ReplaceFromString(sSource, &quot;&lt;strong&gt; &lt;/strong&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;emphasis&gt; &lt;/emphasis&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sub&gt; &lt;/sub&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt; &lt;/sup&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;code&gt; &lt;/code&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;strikethrough&gt; &lt;/strikethrough&gt;&quot;, &quot; &quot;)
 	
-	iResult2(0) = ReplaceFromString(sSource, &quot;&lt;/strong&gt; &lt;strong&gt;&quot;, &quot; &quot;)
-	iResult2(1) = ReplaceFromString(sSource, &quot;&lt;/emphasis&gt; &lt;emphasis&gt;&quot;, &quot; &quot;)
-	iResult2(2) = ReplaceFromString(sSource, &quot;&lt;/sub&gt; &lt;sub&gt;&quot;, &quot; &quot;)
-	iResult2(3) = ReplaceFromString(sSource, &quot;&lt;/sup&gt; &lt;sup&gt;&quot;, &quot; &quot;)
-	iResult2(4) = ReplaceFromString(sSource, &quot;&lt;/code&gt; &lt;code&gt;&quot;, &quot; &quot;)
-	iResult2(5) = ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt; &lt;strikethrough&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/strong&gt; &lt;strong&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/emphasis&gt; &lt;emphasis&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/sub&gt; &lt;sub&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/sup&gt; &lt;sup&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/code&gt; &lt;code&gt;&quot;, &quot; &quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;/strikethrough&gt; &lt;strikethrough&gt;&quot;, &quot; &quot;)
+	ClearStyleSpace = count
 End Function
 
 &apos; Обработка круглых скобок
-Function WorkingRoundBracket(sSource As String, iResult As Integer)
-	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;(&quot;, &quot;(&lt;strong&gt;&quot;)
-	iResult(0) = iResult(0) &amp; ReplaceFromString(sSource, &quot;)&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;)&quot;)
-	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;(&quot;, &quot;(&lt;emphasis&gt;&quot;)
-	iResult(1) = iResult(1) &amp; ReplaceFromString(sSource, &quot;)&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;)&quot;)
-	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;(&quot;, &quot;(&lt;sub&gt;&quot;)
-	iResult(2) = iResult(2) &amp; ReplaceFromString(sSource, &quot;)&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;)&quot;)
-	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;(&quot;, &quot;(&lt;sup&gt;&quot;)
-	iResult(3) = iResult(3) &amp; ReplaceFromString(sSource, &quot;)&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;)&quot;)
-	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;(&quot;, &quot;(&lt;code&gt;&quot;)
-	iResult(4) = iResult(4) &amp; ReplaceFromString(sSource, &quot;)&lt;/code&gt;&quot;, &quot;&lt;/code&gt;)&quot;)
-	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;(&quot;, &quot;(&lt;sup&gt;&quot;)
-	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;)&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;)&quot;)
+Function WorkingRoundBracket( sSource As String )
+	Dim count As Integer
+	count = 0
+	count = count + ReplaceFromString(sSource, &quot;&lt;strong&gt;(&quot;, &quot;(&lt;strong&gt;&quot;)
+	count = count + iResult(0) &amp; ReplaceFromString(sSource, &quot;)&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;)&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;emphasis&gt;(&quot;, &quot;(&lt;emphasis&gt;&quot;)
+	count = count + iResult(1) &amp; ReplaceFromString(sSource, &quot;)&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;)&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sub&gt;(&quot;, &quot;(&lt;sub&gt;&quot;)
+	count = count + iResult(2) &amp; ReplaceFromString(sSource, &quot;)&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;)&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;(&quot;, &quot;(&lt;sup&gt;&quot;)
+	count = count + iResult(3) &amp; ReplaceFromString(sSource, &quot;)&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;)&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;code&gt;(&quot;, &quot;(&lt;code&gt;&quot;)
+	count = count + iResult(4) &amp; ReplaceFromString(sSource, &quot;)&lt;/code&gt;&quot;, &quot;&lt;/code&gt;)&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;(&quot;, &quot;(&lt;sup&gt;&quot;)
+	count = count + iResult(5) &amp; ReplaceFromString(sSource, &quot;)&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;)&quot;)
+	WorkingRoundBracket = count
 End Function
 
 &apos; Обработка квадратных скобок
-Function WorkingSquarteBracket(sSource As String, iResult As Integer)
-	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;[&quot;, &quot;[&lt;strong&gt;&quot;)
-	iResult(0) = iResult(0) &amp; ReplaceFromString(sSource, &quot;]&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;]&quot;)
-	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;[&quot;, &quot;[&lt;emphasis&gt;&quot;)
-	iResult(1) = iResult(1) &amp; ReplaceFromString(sSource, &quot;]&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;]&quot;)
-	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;[&quot;, &quot;[&lt;sub&gt;&quot;)
-	iResult(2) = iResult(2) &amp; ReplaceFromString(sSource, &quot;]&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;]&quot;)
-	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;[&quot;, &quot;[&lt;sup&gt;&quot;)
-	iResult(3) = iResult(3) &amp; ReplaceFromString(sSource, &quot;]&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;]&quot;)
-	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;[&quot;, &quot;[&lt;code&gt;&quot;)
-	iResult(4) = iResult(4) &amp; ReplaceFromString(sSource, &quot;]&lt;/code&gt;&quot;, &quot;&lt;/code&gt;]&quot;)
-	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;[&quot;, &quot;[&lt;sup&gt;&quot;)
-	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;]&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;]&quot;)
+Function WorkingSquarteBracket( sSource As String )
+	Dim count As Integer
+	count = 0
+	count = count + ReplaceFromString(sSource, &quot;&lt;strong&gt;[&quot;, &quot;[&lt;strong&gt;&quot;)
+	count = count + iResult(0) &amp; ReplaceFromString(sSource, &quot;]&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;]&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;emphasis&gt;[&quot;, &quot;[&lt;emphasis&gt;&quot;)
+	count = count + iResult(1) &amp; ReplaceFromString(sSource, &quot;]&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;]&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sub&gt;[&quot;, &quot;[&lt;sub&gt;&quot;)
+	count = count + iResult(2) &amp; ReplaceFromString(sSource, &quot;]&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;]&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;[&quot;, &quot;[&lt;sup&gt;&quot;)
+	count = count + iResult(3) &amp; ReplaceFromString(sSource, &quot;]&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;]&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;code&gt;[&quot;, &quot;[&lt;code&gt;&quot;)
+	count = count + iResult(4) &amp; ReplaceFromString(sSource, &quot;]&lt;/code&gt;&quot;, &quot;&lt;/code&gt;]&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;[&quot;, &quot;[&lt;sup&gt;&quot;)
+	count = count + iResult(5) &amp; ReplaceFromString(sSource, &quot;]&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;]&quot;)
+	WorkingSquarteBracket = count
 End Function
 
 &apos; Обработка фигурных скобок
-Function WorkingFiguredBracket(sSource As String, iResult As Integer)
-	iResult(0) = ReplaceFromString(sSource, &quot;&lt;strong&gt;{&quot;, &quot;{&lt;strong&gt;&quot;)
-	iResult(0) = iResult(0) &amp; ReplaceFromString(sSource, &quot;}&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;}&quot;)
-	iResult(1) = ReplaceFromString(sSource, &quot;&lt;emphasis&gt;{&quot;, &quot;{&lt;emphasis&gt;&quot;)
-	iResult(1) = iResult(1) &amp; ReplaceFromString(sSource, &quot;}&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;}&quot;)
-	iResult(2) = ReplaceFromString(sSource, &quot;&lt;sub&gt;{&quot;, &quot;{&lt;sub&gt;&quot;)
-	iResult(2) = iResult(2) &amp; ReplaceFromString(sSource, &quot;}&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;}&quot;)
-	iResult(3) = ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
-	iResult(3) = iResult(3) &amp; ReplaceFromString(sSource, &quot;}&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;}&quot;)
-	iResult(4) = ReplaceFromString(sSource, &quot;&lt;code&gt;{&quot;, &quot;{&lt;code&gt;&quot;)
-	iResult(4) = iResult(4) &amp; ReplaceFromString(sSource, &quot;}&lt;/code&gt;&quot;, &quot;&lt;/code&gt;}&quot;)
-	iResult(5) = ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
-	iResult(5) = iResult(5) &amp; ReplaceFromString(sSource, &quot;}&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;}&quot;)
+Function WorkingFiguredBracket( sSource As String )
+	Dim count As Integer
+	count = 0
+	count = count + ReplaceFromString(sSource, &quot;&lt;strong&gt;{&quot;, &quot;{&lt;strong&gt;&quot;)
+	count = count + iResult(0) &amp; ReplaceFromString(sSource, &quot;}&lt;/strong&gt;&quot;, &quot;&lt;/strong&gt;}&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;emphasis&gt;{&quot;, &quot;{&lt;emphasis&gt;&quot;)
+	count = count + iResult(1) &amp; ReplaceFromString(sSource, &quot;}&lt;/emphasis&gt;&quot;, &quot;&lt;/emphasis&gt;}&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sub&gt;{&quot;, &quot;{&lt;sub&gt;&quot;)
+	count = count + iResult(2) &amp; ReplaceFromString(sSource, &quot;}&lt;/sub&gt;&quot;, &quot;&lt;/sub&gt;}&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
+	count = count + iResult(3) &amp; ReplaceFromString(sSource, &quot;}&lt;/sup&gt;&quot;, &quot;&lt;/sup&gt;}&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;code&gt;{&quot;, &quot;{&lt;code&gt;&quot;)
+	count = count + iResult(4) &amp; ReplaceFromString(sSource, &quot;}&lt;/code&gt;&quot;, &quot;&lt;/code&gt;}&quot;)
+	count = count + ReplaceFromString(sSource, &quot;&lt;sup&gt;{&quot;, &quot;{&lt;sup&gt;&quot;)
+	count = count + iResult(5) &amp; ReplaceFromString(sSource, &quot;}&lt;/strikethrough&gt;&quot;, &quot;&lt;/strikethrough&gt;}&quot;)
+	WorkingFiguredBracket = count
 End Function
 
 &apos; /// Для таблиц ///

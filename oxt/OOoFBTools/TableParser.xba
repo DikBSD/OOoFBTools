@@ -61,7 +61,6 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 	Do While oCellParEnum.hasMoreElements()
 		oCellPar = oCellParEnum.nextElement()
 		sFormatPara = &quot;&quot;
-		Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 &apos;		If oCellPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			oCEnum = oCellPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
@@ -124,7 +123,6 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 						End If
 					Loop
 				Else
-					sString = sString &amp; oSect.getString()		
 					If oSect.TextPortionType = &quot;Footnote&quot; Then
 						&apos; парсер сносок
 						sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
@@ -146,7 +144,7 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 		If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
 			bMarker = True
 			For i = 0 To UBound( aLines() )
-				aLines( i ) = MakeNumberingNumberPara( oCellPar, sString, aLines( i ) )
+				aLines( i ) = MakeNumberingNumberPara( oCellPar, aLines( i ) )
 			Next i
 		End If
 		

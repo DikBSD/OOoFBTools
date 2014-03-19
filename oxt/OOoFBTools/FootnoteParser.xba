@@ -44,7 +44,6 @@ Function FootEndNoteParser( oSect As Object ) As String
 	Dim sBookMark : sBookMark = &quot;&quot;
 	Dim asFNPart()		As String	&apos; временный массив для хранения всех данных одного абзаца текста сноски
 	Dim vTextArray()	As Variant	&apos; временный массив для хранения всех строк одного абзаца текста сноски
-	Dim sString As String : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 	
 	Dim oCEnum				As Object &apos;Перебирает содержимое, такое как графические объекты
 	Dim oContent			As Object &apos;Перебираемое содержимое
@@ -63,7 +62,6 @@ Function FootEndNoteParser( oSect As Object ) As String
 		While oEnumF.hasMoreElements()
 			sParagFN	= &quot;&quot;
 			oTextF		= oEnumF.nextElement()
-			sString		= oTextF.getString()	
 			oSecEnumF	= oTextF.createEnumeration()
 			&apos;////////////////////////////////////////////////////////////
 			oCEnum = oTextF.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
@@ -137,7 +135,7 @@ Function FootEndNoteParser( oSect As Object ) As String
 
 			&apos; маркеры и нумерация в сносках
 			If oTextF.NumberingIsNumber = True Then &apos; нумерованные списки
-				sParagFN = MakeNumberingNumberPara( oTextF, sString, sParagFN )
+				sParagFN = MakeNumberingNumberPara( oTextF, sParagFN )
 				bMarker = True
 			End If
 			
@@ -145,7 +143,7 @@ Function FootEndNoteParser( oSect As Object ) As String
 				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
 			Else
 				Dim i As Integer, sStr As String : sStr = &quot;&quot;
-				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot;)
+				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot; )
 				For i=0 To UBound( aStr() )
 					If aStr(i) &lt;&gt; &quot;&quot; Then
 						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )

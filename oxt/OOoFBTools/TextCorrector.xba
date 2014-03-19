@@ -61,7 +61,9 @@ Private bRemoveSpaceInQuote		As Boolean
 
 Private bInsertNoBreakBlankToFIO		As Boolean
 Private bInsertNoBreakBlankToShortening	As Boolean
-Private bInsertNoBreakBlankToDate	As Boolean
+Private bInsertNoBreakBlankToDate		As Boolean
+
+Private bReplaceMarkerDashToSymbol		As Boolean &apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус. Актуально для художственной литературы
 
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -98,11 +100,12 @@ Sub TextCorrector()
 	&apos; только теперь считывание настройки из файла
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstCorrector, oTextCorrectorDlg, nX, nY )
-	oTextCorrectorDlg.setPosSize( nX, nY, 324, 392, com.sun.star.awt.PosSize.POS )
-	
-	ControlsEnabled()
-		
-	oTextCorrectorDlg.execute()
+	With oTextCorrectorDlg
+		.setPosSize( nX, nY, 324, 392, com.sun.star.awt.PosSize.POS )
+		.GetControl(&quot;optbtnSpaceAndBreak&quot;).State = 1
+		ControlsEnabled()
+		.execute()
+	End With
 
 End Sub
 
@@ -159,6 +162,7 @@ Sub SaveCorrectorSettings()
 		bDelMP = 					.GetControl(&quot;cboxMP&quot;).State
 		bDelPB = 					.GetControl(&quot;cboDelPB&quot;).State
 		bDeleteAllLineShape = 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State
+		bReplaceMarkerDashToSymbol = .GetControl(&quot;cboxMarkerDashToSymbol&quot;).State
 	End With
 End Sub
 
@@ -334,6 +338,9 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -398,6 +405,9 @@ Sub SetDocumentType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -462,6 +472,9 @@ Sub SetFictionType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 1
 	End With
 	ControlsEnabled()
 End Sub
@@ -526,6 +539,9 @@ Sub SetPublicismType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -590,6 +606,9 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -654,6 +673,9 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -718,6 +740,9 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -782,6 +807,9 @@ Sub SetReligionType()
 		.GetControl(&quot;cboxImages&quot;).State = 0
 		oLB = 	.getControl(&quot;cbAnchor&quot;)
 		oLB.SelectItemPos(0, True) &apos; &quot;К абзацу&quot;
+		
+		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
+		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
 	End With
 	ControlsEnabled()
 End Sub
@@ -813,9 +841,9 @@ Sub TextCorrectorDlgOk()
 
 	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	&apos; //////////////////////////////////////////// Очистка текста ///////////////////////////////////////////////
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; ===========================================================================================================
+	&apos; 													Очистка текста
+	&apos; ===========================================================================================================
 	oDoc = ThisComponent
 	oReplace = oDoc.createReplaceDescriptor
 	oReplace.SearchRegularExpression = True
@@ -877,7 +905,35 @@ Sub TextCorrectorDlgOk()
 		Next i
 	End If
 
+	&apos; ===========================================================================================================
+	&apos; замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус
+	&apos; ===========================================================================================================
 	Dim nCur As Integer : nCur = 0
+	If bReplaceMarkerDashToSymbol = True Then
+		Dim oText As Variant : oText = ThisComponent.Text
+		Dim oViewCursor As Object : oViewCursor = ThisComponent.getCurrentController().getViewCursor()
+		Dim oCursor As Variant : oCursor = oText.CreateTextCursor()
+		oCursor.GoToStart(False)
+		Dim symbol As String
+		oProgressBar.start( sTCD.sDirectSpeech, ThisComponent.ParagraphCount )
+		Do
+			If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do
+			If oCursor.NumberingIsNumber = True Then
+				symbol = GetBulletChar( oCursor )
+				If symbol = chr(8212) OR symbol = chr(8211) OR symbol = chr(8210) OR symbol = chr(8208) OR symbol = chr(45) OR symbol = chr(8209) Then
+					oCursor.NumberingIsNumber = False
+					oCursor.NumberingStyleName = &quot;&quot;
+					oViewCursor.gotoRange(oCursor, False)
+					oViewCursor.collapseToStart()
+					_UnoInsertText( symbol + &quot; &quot; )
+				End If
+			End If
+			oProgressBar.setValue(nCur)
+			nCur = nCur+1
+		Loop Until NOT oCursor.gotoNextParagraph(False)
+	End If
+
+	nCur = 0
 	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 28 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -905,9 +961,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	&apos; //////////////////////////////////////// Работа с пробелами и табуляциями /////////////////////////////////
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; ===========================================================================================================
+	&apos; 											Работа с пробелами и табуляциями
+	&apos; ===========================================================================================================
 	&apos; Удаляем все стартовые ПРОСТЫЕ пробелы
 	If bTCDelStartSpace = True Then
 		DelStartSpace( oDoc, oReplace )
@@ -1002,9 +1058,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	&apos; //////////////////////////////////////////// Работа с абзацами и разрывами ////////////////////////////////
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; ===========================================================================================================
+	&apos; 										Работа с абзацами и разрывами
+	&apos; ===========================================================================================================
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
 	If bWordDefisPara = True Then
 		&apos; Удаление мягких переносов, иначе результат будет неверен
@@ -1042,9 +1098,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	&apos; //////////////////////////////////// Дефисы, тире и минусы ////////////////////////////////////////////////
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; ===========================================================================================================
+	&apos; 									Дефисы, тире и минусы
+	&apos; ===========================================================================================================
 	&apos; Заменить двойной минус двойной дефис (--) на тире
 	If b2HyphenToDash = True Then
 		Replace2HyphenToDash( oDoc, oReplace )
@@ -1080,9 +1136,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	&apos; /////////////////////////////////////////////// Разное ////////////////////////////////////////////////////
-	&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	&apos; ===========================================================================================================
+	&apos; 													Разное
+	&apos; ===========================================================================================================
 	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
 	If bKav = True Then
 		QuotationMarks( oDoc, oReplace )
@@ -1115,9 +1171,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.end
 End Sub
 
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
-&apos; ////////////////////////////////////////// Функции обработки ///////////////////////////////////////
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ===========================================================================================================
+&apos; 												Функции обработки
+&apos; ===========================================================================================================
 
 &apos; //////////////////////////////// Разрывы и абзацы ////////////////////////////////////
 
@@ -1847,7 +1903,7 @@ Sub QuotationMarks( oDoc, oReplace )
 End Sub
 
 &apos; Удаляем все разрывы страниц
-Sub DeleteAllPageBreaks() As Integer 
+Function DeleteAllPageBreaks() As Integer 
 	Dim lCount As Integer : lCount = 0
 	Dim oText As Variant : oText = ThisComponent.Text
 	Dim oCursor As Variant
@@ -1862,7 +1918,7 @@ Sub DeleteAllPageBreaks() As Integer
 		End If
 	Loop Until NOT oCursor.gotoNextParagraph(False)
 	DeleteAllPageBreaks = lCount
-End Sub
+End Function
 
 &apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов

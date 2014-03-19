@@ -44,7 +44,6 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 	
 	Dim oCEnum As Object, oSectEnum As Object, oSect As Object, oContent As Object 
 	Dim sExt As String
-	Dim sString : sString = &quot;&quot; &apos; Для &quot;отлова&quot; нумерованных списков
 	Dim sFormatPara : sFormatPara = &quot;&quot; &apos; отформатированный fb2-кодом текст
 	
 	oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
@@ -108,7 +107,6 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 				End If
 			Loop
 		Else
-			sString = sString &amp; oSect.getString()		
 			If oSect.TextPortionType = &quot;Footnote&quot; Then
 				&apos; парсер сносок
 				sFormatPara = sFormatPara &amp; FootEndNoteParser( oSect )
@@ -121,7 +119,7 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 		End If
 	Loop
 	If oPar.NumberingIsNumber = True Then &apos; нумерованные списки
-		sFormatPara = MakeNumberingNumberPara( oPar, sString, sFormatPara )
+		sFormatPara = MakeNumberingNumberPara( oPar, sFormatPara )
 		bMarker = True
 	End If
 			

@@ -92,14 +92,10 @@ Sub DocumentParser()
 			&apos; Теперь переберем текстовые разделы (sections) и поищем графические объекты,
 			&apos; которые привязаны к символу, или вставлены как символы
 			oSectEnum = oPar.createEnumeration()
-			Dim sAllSectString As String &apos; текст всех секций параграфа (нужен для определения нумерации и маркеров)
 			sPara = &quot;&quot;
 			Do While oSectEnum.hasMoreElements()
 				oSect = oSectEnum.nextElement()				
 				If oSect.TextPortionType = &quot;Text&quot; Then
-					If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then &apos; заголовки стиля Heading игнорируются
-						sAllSectString = sAllSectString &amp; oSect.getString()
-					End If
 					&apos; парсер текстового абзаца
 					sPara = sPara &amp; InLineAllParser( oSect )
 					&apos; Обработка текста - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
@@ -162,14 +158,12 @@ Sub DocumentParser()
 				&apos;	MsgBox &quot;Что-то другое : &quot; &amp; oSect.TextPortionType
 				End If
 			Loop
-			
-			&apos; Нумерованные и маркерованные списки
+
+			&apos; Нумерованные и маркерованные списки (заголовки стиля Heading игнорируются)
 			If oSect.NumberingIsNumber = True AND oSect.NumberingStyleName &lt;&gt; &quot;Outline&quot; Then
-				&apos; заголовки стиля Heading игнорируются
-				sPara = MakeNumberingNumberPara( oPar, sAllSectString, sPara )
-				sAllSectString = &quot;&quot; &apos; &quot;обнуляем&quot;
+				sPara = MakeNumberingNumberPara( oPar, sPara )
 			End If
-			StyleParser(oPar.ParaStyleName, sPara)
+			StyleParser( oPar.ParaStyleName, sPara )
 		End If
 	Loop
 End Sub
