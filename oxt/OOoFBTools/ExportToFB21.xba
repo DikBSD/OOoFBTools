@@ -237,8 +237,8 @@ End Sub
 &apos; определяем. какая схема жанров использовалась для конвертации
 Function GetWorkFB2Schema() As String
 	On Error Resume Next
-	Dim sFB21 As String, sFB22 As String, sFB2LibRusEc As String
-	sFB21 = &quot;0&quot; : sFB22 = &quot;0&quot; : sFB2LibRusEc = &quot;0&quot;
+	Dim sFB21 As String, sFB22 As String, sFB2LibRusEc As String, sFB2Flibusta As String
+	sFB21 = &quot;0&quot; : sFB22 = &quot;0&quot; : sFB2LibRusEc = &quot;0&quot; : sFB2Flibusta = &quot;0&quot;
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
 	Dim nX As Integer, nY As Integer
 	
@@ -263,7 +263,8 @@ Function GetWorkFB2Schema() As String
 				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
 				If sSetting(0) = &quot;obtnFB2LibRusEc&quot; Then
 					sFB2LibRusEc = sSetting(1)
-					Exit Do
+				ElseIf sSetting(0) = &quot;obtnFB2Flibusta&quot; Then
+					sFB2Flibusta = sSetting(1)
 				End If
 			End If
 		Loop
@@ -274,6 +275,12 @@ Function GetWorkFB2Schema() As String
 				GetWorkFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
 			Else
 				GetWorkFB2Schema = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
+			End If
+		ElseIf sFB2Flibusta = 1 Then
+			If GetOS() = 0 Then
+				GetWorkFB2Schema = &quot;\fb2-flibusta-schema\FictionBook.xsd&quot;
+			Else
+				GetWorkFB2Schema = &quot;/fb2-flibusta-schema/FictionBook.xsd&quot;
 			End If
 		End If
 	End If

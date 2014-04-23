@@ -801,18 +801,25 @@ Function CorrectPara(sPara As String) As String
 	Dim i As Integer, iLen As Integer
 	Dim newPara As String, sChar As String
 	iLen = Len(sPara)&apos; длина анализируемой строки
-	For i = 1 To iLen
-		sChar = Mid(sPara, i, 1)
-		If sChar = &quot;&amp;&quot; Then
-			newPara = newPara + &quot;&amp;amp;&quot;
-		ElseIf sChar = &quot;&lt;&quot; Then
-			newPara = newPara + &quot;&amp;lt;&quot;
-		ElseIf sChar = &quot;&gt;&quot; Then
-			newPara = newPara + &quot;&amp;gt;&quot;
-		Else
-			newPara = newPara  + sChar
+	If iLen &gt; 0 Then
+		For i = 1 To iLen
+			sChar = Mid(sPara, i, 1)
+			If sChar = &quot;&amp;&quot; Then
+				newPara = newPara + &quot;&amp;amp;&quot;
+			ElseIf sChar = &quot;&lt;&quot; Then
+				newPara = newPara + &quot;&amp;lt;&quot;
+			ElseIf sChar = &quot;&gt;&quot; Then
+				newPara = newPara + &quot;&amp;gt;&quot;
+			Else
+				newPara = newPara  + sChar
+			End If
+		Next i
+		Dim s As String
+		s = Mid(newPara, Len(newPara), 1)
+		If s = chr(10) Or s = chr(13) Then
+			newPara = Mid(newPara, 1, Len(newPara)-1)
 		End If
-	Next i
+	End If
 	CorrectPara = newPara
 End Function
 

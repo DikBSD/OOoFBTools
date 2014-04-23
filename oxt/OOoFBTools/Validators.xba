@@ -21,13 +21,13 @@ Sub StartValidate()
 
 	With oValidateDlg.getModel
 		.Height	= 73
-		.Width	= 196
+		.Width	= 256
 	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( sValidatorSettingsFilename, oValidateDlg, nX, nY )
-	oValidateDlg.setPosSize( nX, nY, 73, 196, com.sun.star.awt.PosSize.POS )
+	oValidateDlg.setPosSize( nX, nY, 73, 256, com.sun.star.awt.PosSize.POS )
 	
 	oValidateDlg.Execute()
 End Sub
@@ -84,23 +84,30 @@ Sub FB2Validate()
 		Exit Sub
 	End If
 
-	Dim sFB2Schema As String
-	If GetOS() = 0 Then
-		sFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
-	Else
-		sFB2Schema = &quot;/fb2-schema/FictionBook.xsd&quot;
-	End If
+	Dim sFB2SchemaPath As String
 	With oValidateDlg.Model
 		If .optbtnFB2LibRusEc.State = True Or .optbtnFB2LibRusEc.State = 1 Then
 			If GetOS() = 0 Then
-				sFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
+				sFB2SchemaPath = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
 			Else
-				sFB2Schema = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
+				sFB2SchemaPath = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
+			End If
+		ElseIf .optbtnFB2Flibusta.State = True Or .optbtnFB2Flibusta.State = 1 Then
+			If GetOS() = 0 Then
+				sFB2SchemaPath = &quot;\fb2-flibusta-schema\FictionBook.xsd&quot;
+			Else
+				sFB2SchemaPath = &quot;/fb2-flibusta-schema/FictionBook.xsd&quot;
+			End If
+		Else
+			If GetOS() = 0 Then
+				sFB2SchemaPath = &quot;\fb2-schema\FictionBook.xsd&quot;
+			Else
+				sFB2SchemaPath = &quot;/fb2-schema/FictionBook.xsd&quot;
 			End If
 		End If
 	End With
 	
-	MsgBox Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, sFB2Schema ), 64, sVD.sValidatorTitle
+	MsgBox Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, sFB2SchemaPath ), 64, sVD.sValidatorTitle
 End Sub
 
 
@@ -127,7 +134,7 @@ Function Validate( ByRef sFB2File As String, ByRef sFB2Schema As String ) As Str
 					&quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
 					&quot;doc.async=False&quot; &amp; chr(10) &amp; _
 					&quot;doc.validateOnParse=True&quot; &amp; chr(10) &amp; _
-					&quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp; _
+					&quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp;_
 					&quot;&quot;&quot;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; ConvertFromURL( sFB2Schema ) &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
 					&quot;doc.schemas=cache&quot; &amp; chr(10) &amp; _
 					&quot;Dim fso, tf&quot; &amp; chr(10) &amp; &quot;Set fso = CreateObject(&quot;&quot;Scripting.FileSystemObject&quot;&quot;)&quot; &amp; chr(10) &amp;_

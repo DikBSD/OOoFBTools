@@ -16,14 +16,14 @@ Sub cbtnGenreElite_Click()
 	
 	With oGEDlg.Model
 		.Height	= 165
-		.Width	= 215
+		.Width	= 261
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstMyGenreSettings, oGEDlg, nX, nY )
-	oGEDlg.setPosSize( nX, nY, 165, 215, com.sun.star.awt.PosSize.POS )
+	oGEDlg.setPosSize( nX, nY, 165, 261, com.sun.star.awt.PosSize.POS )
 	
 	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
@@ -35,7 +35,7 @@ Sub cbtnGenreElite_Click()
 		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
 	ElseIf oGEDlg.Model.obtnGEFB22.State = True Or oGEDlg.Model.obtnGEFB22.State = 1 Then
 		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
-	Else
+	ElseIf oGEDlg.Model.obtnGEFB2LibRuSec.State = True Or oGEDlg.Model.obtnGEFB2LibRuSec.State = 1 Then
 		InitGEFB2LibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
 	End If
 	
@@ -70,6 +70,17 @@ Sub InitGEFB2LibRusEc()
 
 	With oGEDlg.Model
 		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB2LibRusEc
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+End Sub
+
+&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2 Flibusta
+Sub InitGEFB2Flibusta()
+	GenreFB2Flibusta()
+
+	With oGEDlg.Model
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB2Flibusta
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
