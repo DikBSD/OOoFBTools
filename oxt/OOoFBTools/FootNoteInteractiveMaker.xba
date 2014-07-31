@@ -130,7 +130,7 @@ Sub SelectFNText( ByRef oDocControl As Object, ByRef ovCurs As Object )
 	Dim oLB As Object : oLB = oFootNoteInteractiveMakerDlg.getControl( &quot;lbNumberInFNListTemplate&quot; )
 	Do While otxtTempCurs.goRight( 1, True )
 		s = Right( otxtTempCurs.getString(), 1 )
-		If s = &quot; &quot; Or s = &quot;	&quot; Or s = &quot;.&quot; Then &apos; пробел, табуляция или точка
+		If s = chr(32) Or s = chr(160) Or s = chr(9) Or s = &quot;.&quot; Then &apos; пробел, неразрывный пробле, табуляция или точка
 			ovCurs.goRight( 1, False )
 		Else
 			If oLB.SelectedItemPos = 1 Then
@@ -358,7 +358,7 @@ Sub FindNextFootNoteUpIndex()
 	txtTempCursor.collapseToEnd()
 	Do While txtTempCursor.goRight( 1, True )
 		s = Right( txtTempCursor.getString(), 1 )
-		If ( s &lt;&gt; &quot; &quot; And s &lt;&gt; &quot;	&quot; ) And txtTempCursor.CharEscapement &gt; 0 Then &apos; пропускаем пробел и табуляция
+		If ( s &lt;&gt; chr(32) And s &lt;&gt; chr(160) And s &lt;&gt; chr(9) ) And txtTempCursor.CharEscapement &gt; 0 Then &apos; пропускаем пробел, неразрывный пробел и табуляция
 			&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
 			If  IsNumeric( s ) Then
 				ovCurs.goRight( 1, True )

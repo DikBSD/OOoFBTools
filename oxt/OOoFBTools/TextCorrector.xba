@@ -63,7 +63,8 @@ Private bInsertNoBreakBlankToFIO		As Boolean
 Private bInsertNoBreakBlankToShortening	As Boolean
 Private bInsertNoBreakBlankToDate		As Boolean
 
-Private bReplaceMarkerDashToSymbol		As Boolean &apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус. Актуально для художственной литературы
+Private bReplaceMarkerDashToSymbol		As Boolean &apos; замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус. Актуально для художственной литературы
+Private bDirectSpeech					As Boolean &apos; Заменить дефисы и минусы в прямой речи на тире
 
 Sub TextCorrector()
 &apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
@@ -163,6 +164,7 @@ Sub SaveCorrectorSettings()
 		bDelPB = 					.GetControl(&quot;cboDelPB&quot;).State
 		bDeleteAllLineShape = 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State
 		bReplaceMarkerDashToSymbol = .GetControl(&quot;cboxMarkerDashToSymbol&quot;).State
+		bDirectSpeech =				.GetControl(&quot;checkBoxDirectSpeech&quot;).State
 	End With
 End Sub
 
@@ -318,6 +320,7 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -385,6 +388,7 @@ Sub SetDocumentType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -452,6 +456,7 @@ Sub SetFictionType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -519,6 +524,7 @@ Sub SetPublicismType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -586,6 +592,7 @@ Sub SetScientificType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 0	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -653,6 +660,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -720,6 +728,7 @@ Sub SetProgrammingType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -787,6 +796,7 @@ Sub SetReligionType()
 		.GetControl(&quot;obtnSpace&quot;).State = 0			&apos; Заменить на 1 пробел
 		
 		&apos; Минусы, дефисы и тире
+		.GetControl(&quot;checkBoxDirectSpeech&quot;).State = 1 &apos; Заменить дефисы и минусы в прямой речи на тире
 		.GetControl(&quot;cbox2HyphenToDash&quot;).State = 1	&apos; умная замена 2 минусов на тире
 		.GetControl(&quot;cboxHyphenToDash&quot;).State = 1	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 		.GetControl(&quot;cboxHyphen&quot;).State = 1			&apos; Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.
@@ -934,7 +944,7 @@ Sub TextCorrectorDlgOk()
 	End If
 
 	nCur = 0
-	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 28 )
+	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 29 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
@@ -1108,6 +1118,13 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 
+	&apos; Заменить дефисы и минусы в прямой речи на тире
+	If bDirectSpeech = True Then
+		ReplaceMinusHyphenForDirectSpeechToDash( oDoc, oReplace )
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+
 	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 	If bHyphenToDashBetweenWords = True Then
 		HyphenToDashBetweenWords( oDoc, oReplace )
@@ -1229,7 +1246,9 @@ Sub DelEmptyPar( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos;  /////////////////////////////////// Минус, Тире и Дефис ///////////////////////////////
+&apos; =========================================================================================================================
+&apos;  															Минус, Тире и Дефис
+&apos; =========================================================================================================================
 &apos; Заменить двойной минус двойной дефис (--) на тире
 Sub Replace2HyphenToDash( oDoc, oReplace )
 	With oReplace
@@ -1238,24 +1257,40 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString	= &quot;(\n) *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *([а-яА-ЯёЁ])&quot;
+		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}[:space:]*([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString	= &quot;^ *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *([а-яА-ЯёЁ])&quot;
+		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}[:space:]*([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 		
+	&apos; для русских слов обработку &quot; --пример&quot;, но не &quot; --i&quot;
+	With oReplace
+		.SearchString	= &quot;[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}([а-яА-ЯёЁ])&quot;
+		.ReplaceString	= &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	&apos; для русских слов обработку &quot;пример-- &quot;, но не &quot;i-- &quot;
+	With oReplace
+		.SearchString	= &quot;([а-яА-ЯёЁ])[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *&quot;
+		.ReplaceString	= &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Заменить дефисы и минусы в прямой речи на тире
+Sub ReplaceMinusHyphenForDirectSpeechToDash()
 	&apos; Прямая речь: Заменить минус или дефис в начале абзаца на тире 
 	With oReplace
-		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁ])&quot;
+		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁa-zA-Z])&quot;
 		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁ])&quot;
+		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁa-zA-Z])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1269,33 +1304,30 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-		
-	&apos; для русских слов обработку &quot; --пример&quot;, но не &quot; --i&quot;
 	With oReplace
-		.SearchString	= &quot; *[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}([а-яА-ЯёЁ])&quot;
-		.ReplaceString	= &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;
+		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([\.\.\.|…])&quot;
+		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; …&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	&apos; для русских слов обработку &quot;пример-- &quot;, но не &quot;i-- &quot;
 	With oReplace
-		.SearchString	= &quot;([а-яА-ЯёЁ])[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *&quot;
-		.ReplaceString	= &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;
+		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([\.\.\.|…])&quot;
+		.ReplaceString	= chr(8212) &amp; &quot; …&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
+&apos; Заменить дефис или минус, используемый между слов вместо тире, на тире
 Sub HyphenToDashBetweenWords( oDoc, oReplace )
 	&apos; Между слов
 	With oReplace
-		.SearchString = &quot;\&gt; {1,}- {1,}\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
+		.SearchString = &quot;\&gt;[:space:]+-[:space:]+\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
 	&apos; только для русских слов:
 	With oReplace
-	 .SearchString = &quot;([а-яА-ЯёЁ])\&gt; {1,}- *\&lt;([а-яА-ЯёЁ])&quot;
+	 .SearchString = &quot;([а-яА-ЯёЁ])\&gt;[:space:]+-[:space:]+\&lt;([а-яА-ЯёЁ])&quot;
 	 .ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1304,19 +1336,19 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 		
 	&apos; После знаков препинания
 	With oReplace
-		.SearchString = &quot;([\.,:;\!\?…]) *-&quot; 		&apos;&quot;\.-&quot;
+		.SearchString = &quot;([\.,:;\!\?…])[:space:]*-[:space:]*&quot; 	&apos;&quot;\.-&quot;
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;. — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;( &apos;) *-&quot;					&apos;&quot; &apos;-&quot;
-		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
+		.SearchString = &quot;[:space:]+(&apos;)[:space:]*-&quot;
+		.ReplaceString = &quot; $1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
 	&apos; кавычки и тире
 	With oReplace
-		.SearchString = &quot;([»&quot;&quot;”]) *- *([«&quot;&quot;“„])&quot;		&apos;&quot;» - «&quot;
+		.SearchString = &quot;([»&quot;&quot;”])[:space:]*-[:space:]*([«&quot;&quot;“„])&quot;	&apos;&quot;» - «&quot;
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1327,36 +1359,35 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 &apos;	End With
 &apos;	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;» *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.SearchString = &quot;»[:space:]*-[:space:]*\&lt;&quot;	&apos;&quot;» - \&lt;&quot;
 		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;&quot;&quot; *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.SearchString = &quot;&quot;&quot;[:space:]*-[:space:]*\&lt;&quot;	&apos;&quot;» - \&lt;&quot;
 		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;” *- *\&lt;&quot;			&apos;&quot;» - \&lt;&quot;
+		.SearchString = &quot;”[:space:]*-[:space:]*\&lt;&quot;	&apos;&quot;» - \&lt;&quot;
 		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
-	
 	With oReplace
-		.SearchString = &quot;\&gt; *- *([«&quot;&quot;“„])&quot;			&apos;&quot;\&gt; - «&quot;
+		.SearchString = &quot;\&gt;[:space:]*-[:space:]*([«&quot;&quot;“„])&quot;	&apos;&quot;\&gt; - «&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
 	&apos; скобки и тире
 	With oReplace
-		.SearchString = &quot;([\]\)\}]) *- *&quot;			&apos;&quot;)- &quot;
+		.SearchString = &quot;([\]\)\}])[:space:]*-[:space:]*&quot;	&apos;&quot;)- &quot;
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;) — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot; *- *([\[\(\{])&quot;			&apos;&quot;-(&quot;
+		.SearchString = &quot;[:space:]*-[:space:]*([\[\(\{])&quot;	&apos;&quot;-(&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — (&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1365,16 +1396,15 @@ End Sub
 &apos; Вместо минуса или тире - дефис в &quot;кое-что&quot;, &quot;куда-то&quot; и т.д.
 Sub ReplaceMinusToDefis( oDoc, oReplace )
 	Dim bReplCase As Boolean : bReplCase = oReplace.SearchCaseSensitive
-	Dim sRight As String
 	&apos; обрабатываем русские слова
-	sRight = &quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой|кто|что|как|ли|под|за)([^а-яА-ЯёЁ])&quot;
-	If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
+	Dim sRight As String : sRight = &quot;(то|либо|нибудь|что|таки|ка|де|никак|никакой|кто|что|как|ли|под|за)([^а-яА-ЯёЁ])&quot;
+	If bNoBreakDefis = True Then	&apos; заменить на неразрывный дефис
 		With oReplace
 			.SearchCaseSensitive = True
 			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; sRight
 			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2$3&quot;
 		End With
-	Else &apos; заменить на простой дефис
+	Else							&apos; заменить на простой дефис
 		With oReplace
 			.SearchCaseSensitive = True
 			.SearchString = &quot;([а-яА-ЯёЁ])&quot; &amp; &quot;[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}&quot; &amp; sRight
@@ -1383,65 +1413,192 @@ Sub ReplaceMinusToDefis( oDoc, oReplace )
 	End If
 	oDoc.ReplaceAll(oReplace)
 	&apos; Теперь восстанавливаем значение учета регистра при поиске и замене
-	oReplace.SearchCaseSensitive=bReplCase
+	oReplace.SearchCaseSensitive = bReplCase
 
-	&apos; обрабатываем иностранные слова
-	If bNoBreakDefis = True Then &apos; заменить на неразрывный дефис
-		With oReplace
-			.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
-			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
-		End With
-	Else &apos; заменить на простой дефис
-		With oReplace
-			.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
-			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
-		End With
-	End If
-	oDoc.ReplaceAll(oReplace)
+&apos;	&apos; обрабатываем иностранные слова
+&apos;	If bNoBreakDefis = True Then	&apos; заменить на неразрывный дефис
+&apos;		With oReplace
+&apos;			.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8211) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
+&apos;			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+&apos;		End With
+&apos;	Else							&apos; заменить на простой дефис
+&apos;		With oReplace
+&apos;			.SearchString = &quot;([a-zA-Z])[-&quot; &amp; chr(8209) &amp; chr(8212) &amp; &quot;]{1}([a-zA-Z])&quot;
+&apos;			.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+&apos;		End With
+&apos;	End If
+&apos;	oDoc.ReplaceAll(oReplace)
 End Sub
 
 &apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб, 1900-е, и т.д.)
 Sub ReplaceMinusToDash( oDoc, oReplace )
+	Dim SearchCaseSensitive As Boolean : SearchCaseSensitive = False &apos; запоминаем опцию регистра поиска, чтобы потом ее восстановить
+	&apos; Между 2-х слов с Большой буквы: Париж-Берлин
 	With oReplace
+		SearchCaseSensitive = .SearchCaseSensitive
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:alnum:])-([:alpha:])&quot;
+		.SearchString = &quot;([:upper:]{1}[:lower:]{1,})[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:upper:]{1}[:lower:]{1,})&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8212) &amp; &quot;$2&quot; &apos; длинное тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; Между 2-х слов, все буквы которых - строчные
+	With oReplace
+		SearchCaseSensitive = .SearchCaseSensitive
+		.SearchCaseSensitive = True
+		.SearchString = &quot;(\&lt;[:lower:]{2,})[-&quot; &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:lower:]{2,})&quot;
 		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; Между 2-х слов, 1-е начинается с Заглавной буквы, 2-е - состоит из всех строчных: Черно-белый
+	With oReplace
+		SearchCaseSensitive = .SearchCaseSensitive
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:upper:]{1}[:lower:]{1,})[-&quot; &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:lower:]{2,})&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	oReplace.SearchCaseSensitive = SearchCaseSensitive
+	
+	&apos; 1900-е, и т.д
+	With oReplace
+		.SearchString = &quot;([:digit:])[-&quot; &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:alpha:])&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+
+	&apos; Обработка слов вида: Да-а-а, Э-э-э
+	With oReplace
+		SearchCaseSensitive = .SearchCaseSensitive
+		.SearchString = &quot;([:alpha:]{1,})[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:alpha:]{1,})&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:alpha:]{1,})&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &amp; chr(8211) &amp; &quot;$3&quot; &apos; короткое тире
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos; Заменить минус, дефис и тире на короткое тире между цифрами
+&apos; Заменить минус, дефис, неразрывный дефис и тире на короткое тире между цифрами
 Sub ReplaceMinusHyphenDashToShortDashBetweenNumbers( oDoc, oReplace )
+	&apos; арабские цифры
+	&apos; без обрамляющих пробелов
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:digit:])&quot; + Chr(45) + &quot;([:digit:])&quot; &apos; минус
-		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+		.SearchString = &quot;([:digit:])&quot; &amp; chr(45) &amp; &quot;([:digit:])&quot; &apos; минус
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:digit:])&quot; + Chr(8208) + &quot;([:digit:])&quot; &apos; дефис
-		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+		.SearchString = &quot;([:digit:])&quot; &amp; chr(8208) &amp; &quot;([:digit:])&quot; &apos; дефис
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:digit:])&quot; + Chr(8212) + &quot;([:digit:])&quot; &apos; тире
-		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+		.SearchString = &quot;([:digit:])&quot; &amp; chr(8209) &amp; &quot;([:digit:])&quot; &apos; неразрывный дефис
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])&quot; &amp; chr(8212) &amp; &quot;([:digit:])&quot; &apos; длинное тире
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; с обрамляющими пробелами
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])[:space:]+&quot; &amp; chr(45) &amp; &quot;[:space:]+([:digit:])&quot; &apos; минус
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])[:space:]+&quot; &amp; chr(8208) &amp; &quot;[:space:]+([:digit:])&quot; &apos; дефис
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])[:space:]+&quot; &amp; chr(8209) &amp; &quot;[:space:]+([:digit:])&quot; &apos; неразрывный дефис
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([:digit:])[:space:]+&quot; &amp; chr(8212) &amp; &quot;[:space:]+([:digit:])&quot; &apos; длинное тире
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; римские цифры
+	&apos; без обрамляющих пробелов
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])&quot; &amp; chr(45) &amp; &quot;([MDCLXVI])&quot; &apos; минус
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])&quot; &amp; chr(8208) &amp; &quot;([MDCLXVI])&quot; &apos; дефис
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])&quot; &amp; chr(8209) &amp; &quot;([MDCLXVI])&quot; &apos; неразрывный дефис
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])&quot; &amp; chr(8212) &amp; &quot;([MDCLXVI])&quot; &apos; длинное тире
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; с обрамляющими пробелами
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])[:space:]+&quot; &amp; chr(45) &amp; &quot;[:space:]+([MDCLXVI])&quot; &apos; минус
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])[:space:]+&quot; &amp; chr(8208) &amp; &quot;[:space:]+([MDCLXVI])&quot; &apos; дефис
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])[:space:]+&quot; &amp; chr(8209) &amp; &quot;[:space:]+([MDCLXVI])&quot; &apos; неразрывный дефис
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchCaseSensitive = True
+		.SearchString = &quot;([MDCLXVI])[:space:]+&quot; &amp; chr(8212) &amp; &quot;[:space:]+([MDCLXVI])&quot; &apos; длинное тире
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8211) &amp; &quot; $2&quot; &apos; короткое тире
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos;/////////////////////////////////////// Работа с пробелами и табуляциями ////////////////////////////////////////
+&apos; =========================================================================================================================
+&apos; 													Работа с пробелами и табуляциями 
+&apos; =========================================================================================================================
 &apos; Удалить пробелы в начале и в конце скобок
 Sub RemoveSpaceInBrackets( oDoc, oReplace )
 	With oReplace
-		.SearchString = &quot;(\[|\(|\{)\x20+&quot;
+		.SearchString = &quot;(\[|\(|\{)[:space:]+&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;\x20+(\]|\)|\})&quot;
+		.SearchString = &quot;[:space:]+(\]|\)|\})&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1451,12 +1608,12 @@ End Sub
 Sub	RemoveSpaceInQuote( oDoc, oReplace )
 	With oReplace
 &apos;		.SearchString = &quot;([\&gt;“\&quot;&quot;«])\x20+|\x20+([”\&quot;&quot;»\&lt;])&quot;
-		.SearchString = &quot;(\&gt;«)\x20+&quot; &apos; &quot;([\&gt;„«])\x20+&quot;
+		.SearchString = &quot;(\&gt;«)[:space:]+&quot; &apos; &quot;([\&gt;„«])\x20+&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;\x20+(»\&lt;)&quot; &apos; &quot;\x20+([“»\&lt;])&quot;
+		.SearchString = &quot;[:space:]+(»\&lt;)&quot; &apos; &quot;\x20+([“»\&lt;])&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1467,7 +1624,7 @@ Sub RemoveSpaceBeforePunct( oDoc, oReplace )
 	With oReplace
 		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]+([.,:;!?…])&quot;
 		&apos;.ReplaceString = &quot;$1$2&quot;
-		.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,}([.,!?…])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
+		.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[:space:]{1,}([.,!?…])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
 		.ReplaceString = &quot;$1$2$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1483,13 +1640,13 @@ Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 &apos;	End With
 &apos;	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([,:;!?])([а-яА-ЯёЁ])&quot;
-		.ReplaceString = &quot;$1$2$3 $4&quot;
+		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»])[:space:]*([,:;!?])([а-яА-ЯёЁ])&quot;
+		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([,;!?])([a-zA-Z])&quot;
-		.ReplaceString = &quot;$1$2$3 $4&quot;
+		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»])[:space:]*([,;!?])([a-zA-Z])&quot;
+		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 &apos;	With oReplace
@@ -1501,13 +1658,13 @@ Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 &apos;	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»][&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})([\.])([а-яА-ЯёЁ])&quot;
+		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»][:space:]{1,})([\.])([а-яА-ЯёЁ])&quot;
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»][&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})([\.])([A-Z])&quot;
+		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»][:space:]{1,})([\.])([A-Z])&quot;
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1532,8 +1689,8 @@ Sub InsertSpaceBetweenSymbolAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	
 	&apos; дефис, тире или минус, кавычки
 	With oReplace
-		.SearchString = chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])\&lt;&quot;	&apos; &quot;-“&quot;
-		.ReplaceString = chr(nSymbolCode) &amp; &quot; $1&quot;			&apos; &quot; - “&quot;
+		.SearchString = chr(nSymbolCode) &amp; &quot;([“\&quot;&quot;«])&quot;	&apos; &quot;-“&quot;
+		.ReplaceString = chr(nSymbolCode) &amp; &quot; $1&quot;		&apos; &quot; - “&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
@@ -2146,26 +2303,26 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, bDefisWord
 	Dim s As String		: s = vL.GetString()
 	&apos; определяем тип символа переноса
 	Dim sPer As String	: sPer = &quot;-&quot;
-	If InStr(s,&quot;-&quot; )&gt;0 Then
+	If InStr(s,&quot;-&quot; ) &gt; 0 Then
 		sPer = &quot;-&quot;
-	ElseIf InStr(s,chr(8211) )&gt;0 Then
+	ElseIf InStr(s,chr(8211) ) &gt; 0 Then
 		sPer = chr(8211)
-	ElseIf InStr(s,chr(8209) )&gt;0 Then
+	ElseIf InStr(s,chr(8209) ) &gt; 0 Then
 		sPer = chr(8209)
 	End If
 	
 	&apos; определяем язык символа слева от знака переноса
-	Dim c As String : c = Trim( Mid( s, InStr(s,sPer )-1, 1 )
+	Dim c As String : c = Trim( Mid( s, InStr(s,sPer ) - 1, 1 )
 	Dim sLeftLang As String, sRightLang As String
 	If IsLetter(c) = True Then
 		&apos; определяем язык буквы слева от переноса
 		sLeftLang = GetLang(c)
 		&apos; смотрим, является ли буквой символ справа от переноса и обрыва абзаца в следующем обзаце
-		c = Trim( Mid( s, InStr(s,chr(10))+1 ) ) : c = Mid( c, 1, 1 )
+		c = Trim( Mid( s, InStr(s, chr(10)) + 1 ) ) : c = Mid( c, 1, 1 )
 		If IsLetter(c) = True Then
 			&apos; определяем язык буквы справа от переноса и обрыва абзаца в следующем обзаце
 			sRightLang = GetLang(c)
-			If sLeftLang&lt;&gt;&quot;Unknow&quot; And sRightLang&lt;&gt;&quot;Unknow&quot; Then
+			If sLeftLang &lt;&gt; &quot;Unknow&quot; And sRightLang &lt;&gt; &quot;Unknow&quot; Then
 				If sLeftLang = sRightLang Then
 					&apos; обрабатываем разорванные дефисы
 					If IsHyphen( vL.getString() ) = True Then
@@ -2207,7 +2364,7 @@ Sub RegReplaceSymbol( sFindSymbol As String, sReplSymbol As String, oLCurs, oRCu
 	vFound = oDoc.findNext( oLCurs, vDescriptor )
 &apos;	Do While Not IsNull(vFound)
 	If Not IsNull(vFound) Then
-		If l&gt;=100 Then l = 0
+		If l &gt;= 100 Then l = 0
 		l = l + 1
 		oProgressBar.setValue(l)
 		If bText Then &apos; толька для текста (не для сносок, таблиц и врезок)

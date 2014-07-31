@@ -121,9 +121,50 @@ Sub MakeCoverTag( oPar As Object, oContent As Object )
 	End If
 End Sub
 
+&apos; ===============================================================================================================================
+&apos; создание картинки из графических объектов
+Sub MakeGraphic( oPara As Object, oContent As Object, bIsText As Boolean, sParagraph As String, bIsFootnote As Boolean )
+	&apos; определение типа (расширения) графики и приведение расширения графики к допустимому для fb2-читалок
+	Dim sExt As String : sExt = ValidateFileExt( GetGraphicExt( oContent ) )
+	
+	If bIsText Then &apos; Только для основного текста документа (не для таблиц и Врезок)
+		&apos; создание тэгов картинок
+		If bIsFootnote=True Then
+			If oContent.AnchorType = 1 Then
+				sParagraph = sParagraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+			Else
+				&apos;sParagraph = sParagraph &amp; chr(10) &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
+				sParagraph = sParagraph &amp; &quot;__fn__OOo_graphics__&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot;__fn__OOo_graphics__&quot;
+			End If
+		Else
+			If oContent.AnchorType = 1 Then
+				sParagraph = sParagraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+			Else
+				If oPara.ParaStyleName = sStyle_BookAnnotation Then
+					sParagraph = sParagraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+				Else
+					If bSaveImageTitle=True Then
+						AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+					Else
+						AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+					End If
+				End If
+			End If
+		End If
+	End If
+	
+	If bExportGraphics Then
+		&apos; Экспорт картинки
+		SaveGraphicToFile( oContent, sExt )
+	End If
+	
+	iImgCurrent = iImgCurrent + 1
+	sPrevStyle = &quot;Image&quot;
+End Sub
+
 &apos; данные графики и ее расширение
 Function GetGraphicExt( ByVal oContent As Object ) As String
-	Dim sExt As String, sFD As tFileData, i As Integer
+	Dim sExt As String, sFD As tFileData
 	If oContent.ShapeType = &quot;com.sun.star.drawing.GraphicObjectShape&quot; Then
 		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
@@ -185,50 +226,7 @@ Function ValidateFileExt( sExt As String ) As String
 	ValidateFileExt = LCase(sExt)
 End Function
 
-&apos; создание картинки из графических объектов
-Sub MakeGraphic( oPara As Object, oContent As Object, bIsText As Boolean, sParadraph As String, bIsFootnote As Boolean )
-	&apos; определяем тип (расширение) картинки
-	Dim sExt As String
-	sExt = GetGraphicExt( oContent )
-	&apos; приведение расширения графики к допустимому для fb2-читалок
-	sExt = ValidateFileExt( sExt )
-	
-	If bIsText Then &apos; Только для основного текста документа (не для таблиц и Врезок)
-		&apos; создание тэгов картинок
-		If bIsFootnote=True Then
-			If oContent.AnchorType = 1 Then
-				sParadraph = sParadraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-			Else
-				&apos;sParadraph = sParadraph &amp; chr(10) &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
-				sParadraph = sParadraph &amp; &quot;__fn__OOo_graphics__&quot; &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot; &amp; &quot;__fn__OOo_graphics__&quot;
-			End If
-		Else
-			If oContent.AnchorType = 1 Then
-				sParadraph = sParadraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-			Else
-				If oPara.ParaStyleName = sStyle_BookAnnotation Then
-					sParadraph = sParadraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-				Else
-					If bSaveImageTitle=True Then
-						AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-					Else
-						AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
-					End If
-				End If
-			End If
-		End If
-	End If
-	
-	&apos; Если не надо экспортрировать саму картинку - то выходим из sub
-	If bExportGraphics Then
-		SaveGraphicToFile( oContent, sExt )
-	End If
-	
-	iImgCurrent = iImgCurrent+1
-	sPrevStyle = &quot;Image&quot;
-End Sub
-
-&apos; сохранение картинки в файл png или jpg
+&apos; сохранение картинки в файл png или jpeg
 Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
 	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
@@ -248,7 +246,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 	If FileExists( GetOOoFBToolsImageURL( sExt ) ) Then
 		Kill GetOOoFBToolsImageURL( sExt )
 	End If
-	
+
 	If oContent.supportsService( graphicService ) Then
 		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
@@ -277,7 +275,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 		ExportGraphicToFile( oContent, sFileNameURL, sExt )
 	Else
-		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
+		If oContent.supportsService( textGraphService ) Then &apos; Картинки
 			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
 			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
@@ -332,7 +330,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 	Dim sFileExt As String : sFileExt = sExt
 	Dim oGraphic As Object
 
-	If oContent.ShapeType = &quot;com.sun.star.drawing.GraphicObjectShape&quot; Then
+	If oContent.ShapeType = graphicService Then
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
 			&apos; Картинка &quot;встроена&quot; в файл:
 			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
@@ -348,7 +346,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 		&apos; Векторная графика
 		oGraphic = oContent.Bitmap
 	Else
-		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
+		If oContent.supportsService( textGraphService ) Then &apos; Картинки
 			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
@@ -365,7 +363,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 			
 		End If
 	End If
-	
+
 	&apos; для jpg-файлов приводим mime-тип к правильному значению
 	If LCase(sExt) = &quot;jpg&quot; Then
 		sFileExt = &quot;jpeg&quot;
@@ -373,7 +371,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 
 	Dim aFilterData(7) As New com.sun.star.beans.PropertyValue
 	If Not IsNull( oGraphic ) Then
-		aFilterData(0).Name  = &quot;PixelWidth&quot;        &apos;
+		aFilterData(0).Name  = &quot;PixelWidth&quot;
 		aFilterData(0).Value = oGraphic.Size.Width
 		aFilterData(1).Name  = &quot;PixelHeight&quot;
 		aFilterData(1).Value = oGraphic.Size.Height
@@ -383,7 +381,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 
 	If sFileExt = &quot;png&quot; Then
 		aFilterData(3).Name  =&quot;Compression&quot;
-		aFilterData(3).Value = 9	&apos; 0^ min сжатие; 9^ max сжатие
+		aFilterData(3).Value = 9	&apos; 0: min сжатие; 9: max сжатие
 		aFilterData(4).Name  =&quot;Interlaced&quot;
 		aFilterData(4).Value = 0
 	Else &apos; jpeg
@@ -416,9 +414,9 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 	args(1).Value = ConvertToURL( sFileNameURL )
 	args(2).Name  = &quot;FilterData&quot;
 	args(2).Value = aFilterData
-	
+
 	&apos; сохраняем картинку
-	Dim oGP As Object : oGP = createUnoService( &quot;com.sun.star.graphic.GraphicProvider&quot; )   
+	Dim oGP As Object : oGP = createUnoService( &quot;com.sun.star.graphic.GraphicProvider&quot; )
 	oGP.storeGraphic( oGraphic, args )
 End Sub
 

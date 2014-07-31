@@ -138,7 +138,7 @@ Sub FB2PropertiesEditorDlgExec()
 		.SrcLangComboBox.StringItemList	= sLangList()
 		.ProgrammUsedField.Text		= &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot; &quot; &amp; &quot;(ExportToFB21)&quot;
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		.NumericFieldMatch.Value	= &quot;0&quot;
+		.NumericFieldMatch.Value	= &quot;100&quot;
 		If bFB2NotFlagPropertyIsExsist Then
 			&apos; загрузка из свойств документа fb2 свойств в контролы формы
 			GetFB2PropertiesFromDoc( oProgressBar, Iter )
@@ -315,6 +315,19 @@ Sub SavePropertiesToDoc()
 		Exit Sub
 	End If
 	
+	&apos; проверка, верно ли введены данные Даты написания книги (value), если они есть
+	With oFB2PropertiesDlg
+		.getControl(&quot;tiDateTextField&quot;).Text = Trim( .getControl(&quot;tiDateTextField&quot;).Text )
+		.getControl(&quot;tiDateValueField&quot;).Text = Trim( .getControl(&quot;tiDateValueField&quot;).Text )
+		If Len( .getControl(&quot;tiDateValueField&quot;).Text ) &gt; 0 Then
+			If Not IsBookDateValueCorrect( .getControl(&quot;tiDateValueField&quot;).Text ) Then
+				MsgBox sFB2PED.sFB2PropEditorDlgDateValue, 64, sConvertorName
+				.getControl(&quot;tiDateValueField&quot;).setFocus()
+				Exit Sub
+			End If
+		End If	
+	End With
+	
 	oFB2PropertiesDlg.setEnable(False)
 	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	oProgressBar.start( sFB2PED.sFB2PropEditorDlgSaveFB2Properties, 27 )
@@ -382,6 +395,30 @@ Function IsAllNeedDataExsist() As Boolean
 	End With
 	
 	IsAllNeedDataExsist = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка, верно ли введены данные Даты написания книги (value), если они есть
+Function IsBookDateValueCorrect( BookDateValue As String ) As Boolean
+	IsBookDateValueCorrect = False
+
+	Dim aArray : aArray = Split(BookDateValue, &quot;-&quot;)
+	If UBound( aArray ) &lt;&gt; 2 Then
+		Exit Function
+	End If
+	&apos; aArray(0) - год; aArray(1) - месяц; aArray(2) - день
+	If Len( aArray(0) ) &lt;&gt; 4 Or Len( aArray(1) ) &lt;&gt; 2 Or Len(aArray(2) ) &lt;&gt; 2 Then
+		Exit Function
+	End If
+	
+On Local Error GoTo Errorhandler
+	&apos; еслим дата введена корректно (YYYY-MM-DD), и граница Дня не превышает соответствующему ему Месяцу, то ошибки не будет, и ф-я вернет True. В противном случае вернется False
+	Dim sDateSerial As String : sDateSerial = DateSerial( aArray(0), aArray(1), aArray(2) )
+	IsBookDateValueCorrect = True
+	Exit Function
+	
+Errorhandler:
+	IsBookDateValueCorrect = False
 End Function
 
 &apos;***************************************************************************

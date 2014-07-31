@@ -14,6 +14,8 @@ Public oJoinBreakLinesDlg			As Object
 Private bBreakLinesInParaStartSpace	As Boolean
 Private bBreakLinesInParaEndSymbols	As Boolean
 Private bBreakLinesInFPara			As Boolean
+Private bBreakLinesInParaBetweenIndent	As Boolean
+Private bBreakLinesInSentence		As Boolean
 
 Private bDefisWordDelOnlyPara		As Boolean
 Private bDefisWordDeAll				As Boolean
@@ -34,13 +36,13 @@ Sub JoinBreakLines()
 	InitJoinBreakLinesDlg()
 	
 	With oJoinBreakLinesDlg.Model
-		.Height = 153
+		.Height = 173
 		.Width  = 305
 	End With
 	
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstJoinBreakLines, oJoinBreakLinesDlg, nX, nY )
-	oJoinBreakLinesDlg.setPosSize( nX, nY, 153, 305, com.sun.star.awt.PosSize.POS )
+	oJoinBreakLinesDlg.setPosSize( nX, nY, 173, 305, com.sun.star.awt.PosSize.POS )
 	
 	oJoinBreakLinesDlg.execute()
 
@@ -54,6 +56,8 @@ Sub SaveJoinBreakLinesDlgSettings()
 		bBreakLinesInParaStartSpace = .GetControl(&quot;obtBreakLinesInParaStartSpace&quot;).State
 		bBreakLinesInParaEndSymbols = .GetControl(&quot;obtBreakLinesInParaEndSymbols&quot;).State
 		bBreakLinesInFPara			= .GetControl(&quot;obtBreakLinesInFPara&quot;).State
+		bBreakLinesInParaBetweenIndent	= .GetControl(&quot;obtBreakLinesInParaBetweenIndent&quot;).State
+		bBreakLinesInSentence			= .GetControl(&quot;obtBreakLinesInSentence&quot;).State
 	
 		bDefisWordDelOnlyPara		= .GetControl(&quot;obtnDefisWordDelOnlyPara&quot;).State
 		bDefisWordDeAll				= .GetControl(&quot;obtnDefisWordDeAll&quot;).State
@@ -111,13 +115,19 @@ Sub JoinBreakLinesDlgOkClick()
 	oProgressBar.start( sJBLD.sJoinLines &amp; &quot;:&quot;, 100 )
 	If bBreakLinesInParaStartSpace = True Then
 		JoinBreakLinesInParaStartSpace( oDoc, oProgressBar )
+	ElseIf bBreakLinesInParaBetweenIndent = True Then
+		JoinParaBetweenIndent( oDoc, oProgressBar )
 	ElseIf bBreakLinesInParaEndSymbols = True Then
 		JoinBreakLinesInParaEndSymbols( oDoc, oProgressBar )
 	ElseIf bBreakLinesInFPara = True Then
 		JoinBreakLinesInEmptyPara( oDoc, oProgressBar )
+	ElseIf bBreakLinesInSentence = True Then
+		JoinBreakLinesInSentence( oDoc, oProgressBar )
 	End If
 	
-	&apos; ============ постобработка =================
+	&apos; =================================================================================================
+	&apos; 										Постобработка
+	&apos; =================================================================================================
 	nCur = 1
 	With oProgressBar
 		.start( sJBLD.sPostProcessing &amp; &quot;:&quot;, 5 )
@@ -206,9 +216,9 @@ End Sub
 &apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких множество в сети)
 Sub JoinBreakLinesInParaEndSymbols( oDoc As Object, oProgressBar As Object )
 	&apos; Создаем поисковые дескрипторы для документа
-	Dim vStartSearch	As Variant : vStartSearch	= oDoc.createSearchDescriptor()
-	Dim vEndSearch		As Variant : vEndSearch		= oDoc.createSearchDescriptor()
-
+	Dim vStartSearch	As Variant	: vStartSearch	= oDoc.createSearchDescriptor()
+	Dim vEndSearch		As Variant	: vEndSearch	= oDoc.createSearchDescriptor()
+	Dim JoinCount		As Long		: JoinCount		= 0
 	With vStartSearch
 		.SearchRegularExpression = True
 		.SearchString = &quot;$&quot; &apos; поисковый аргумент начала абзаца для склейки
@@ -229,12 +239,16 @@ Sub JoinBreakLinesInParaEndSymbols( oDoc As Object, oProgressBar As Object )
 			&apos; Выделить текст внутри разделителей
 			vStartFound.gotoStartOfParagraph(False)
 			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			JoinCount = JoinCount + 1
 			vStartFound = oDoc.findNext( vStartFound.End, vStartSearch )
 		Else
-			&apos; Найден стартовый идентификатор без завершающего: склеиваем абзацы от vStartFound и до конца документа
-			vEndFound = oDoc.Text.createTextCursor()
-			vEndFound.GoToEnd(False)
-			JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			&apos; Найден стартовый идентификатор без завершающего
+			If JoinCount &gt; 0 Then
+				&apos; только для случаев, когда уже были склейки: склеиваем абзацы от vStartFound и до конца документа
+				vEndFound = oDoc.Text.createTextCursor()
+				vEndFound.GoToEnd(False)
+				JoinLines( vStartFound, vEndFound, oDoc, oProgressBar, l )
+			End If
 			Exit Do
 		End If
 	Loop
@@ -278,6 +292,152 @@ Sub JoinBreakLinesInEmptyPara( oDoc As Object, oProgressBar As Object )
 	Loop
 End Sub
 
+&apos; склейка всех абзацев. которые расположены между абзацев с отступом
+Sub JoinParaBetweenIndent( oDoc As Object, oProgressBar As Object )
+	Dim oDocControl		As Object : oDocControl 	= oDoc.getCurrentController()
+	Dim oCursorStart	As Object : oCursorStart	= oDoc.getText().getStart()
+	Dim oCursorEnd		As Object : oCursorEnd		= oDoc.getText().getEnd()
+	
+	Dim oPar			As Object	&apos; Перебираемый параграф
+	Dim oStartIter		As Object	&apos; Курсор начала обрабатываемой зоны
+	Dim oEndIter		As Object	&apos; Курсор завершения обрабатываемой зоны
+	
+	Dim oFirstPar		As Object	: oFirstPar = oCursorStart.createEnumeration().nextElement()
+	Dim ParaExsist		As Boolean	: ParaExsist = False
+	Dim l As Long : l = 0
+	If oFirstPar.ParaFirstLineIndent &gt; 0 Then
+		&apos; первый абзац текста - с отступом
+		JoinParaBetweenIndentWorker( oCursorStart, oCursorEnd, oProgressBar )
+	Else
+		&apos; первый абзац текста - без отступом
+		Do
+			&apos; ищем первый абзац с отступом - с него и начнем склейку
+			oPar = oCursorStart.createEnumeration().nextElement()
+			If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+				If oPar.ParaFirstLineIndent &gt; 0 Then
+					ParaExsist = True
+					Exit Do
+				End If
+			End If
+		Loop While oCursorStart.gotoNextParagraph( False )
+		
+		If ParaExsist Then
+			oStartIter	= oPar.getText().createTextCursor() 
+			oEndIter	= oCursorStart.getText().createTextCursorByRange( oCursorStart )
+			oEndIter.goLeft( 1, False )
+			&apos; склейка найденного
+			l = 0 : JoinLines( oStartIter, oEndIter, oDoc, oProgressBar, l )		
+			&apos; первый абзац текста - без отступом
+			JoinParaBetweenIndentWorker( oCursorStart, oCursorEnd, oProgressBar )
+		End if
+	End If
+
+	&apos; обработка последних абзацев, если они удовлетворяют критерию обработки
+	ParaExsist = False
+	Do
+		&apos; идем вверх по тексту и ищем первый абзац с отступом - с него и начнем склейку до самого низа текста
+		oPar = oCursorStart.createEnumeration().nextElement()
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			If oPar.ParaFirstLineIndent &gt; 0 Then
+				ParaExsist = True
+				Exit Do
+			End If
+		End If
+	Loop While oCursorStart.gotoPreviousParagraph( False )
+	
+	If ParaExsist Then
+		l = 0 : JoinLines( oCursorStart, oCursorEnd, oDoc, oProgressBar, l )
+	End If
+End Sub
+
+Sub JoinParaBetweenIndentWorker( oCursorStart As Object, oCursorEnd As Object, oProgressBar As Object )
+	Dim oDoc			As Object : oDoc			= ThisComponent
+	Dim oDocControl		As Object : oDocControl 	= oDoc.getCurrentController()
+	Dim oTemp			As Object &apos; первоначальное состояние должэно быть Null
+	
+	Dim oPar		As Object	&apos; Перебираемый параграф
+	Dim oStartIter	As Object	&apos; Курсор начала обрабатываемой зоны
+	Dim oEndIter	As Object	&apos; Курсор завершения обрабатываемой зоны
+	Dim Counter		As Long		: Counter = -1 &apos; счетчик для определения окончания блока склейки
+	
+	Do While oCursorStart.Text.compareRegionEnds( oCursorStart, oCursorEnd ) &gt; 0
+		oPar = oCursorStart.createEnumeration().nextElement()
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			If oPar.ParaFirstLineIndent &gt; 0 Then
+				Counter = Counter + 1
+				If IsNull( oTemp ) Then
+					oStartIter = oPar.getText().createTextCursor() &apos; первый поиск
+				Else
+					oStartIter = oTemp.getText().createTextCursorByRange( oTemp ) &apos; продолжение поиска
+					oStartIter.goRight( 1, False )
+				End If
+			
+				If Counter &gt; 0 Then
+					oEndIter = oCursorStart.getText().createTextCursorByRange( oCursorStart )
+					oEndIter.goLeft( 1, False )
+					&apos; склейка найденного
+					Dim l As Long : l = 0
+					JoinLines( oStartIter, oEndIter, oDoc, oProgressBar, l )
+					&apos; начинаем поиск сначала
+					Counter = 0 &apos; сброс признака найденного - начинаем сначала
+				Else
+					oEndIter = oCursorStart.getText().createTextCursorByRange( oCursorStart )
+				End If
+			End If
+		End If
+		oTemp = oCursorStart.getText().createTextCursorByRange( oCursorStart )
+		oTemp.goToRange( oEndIter.getEnd(), False )
+		oCursorStart.gotoEndOfParagraph(False)
+		oCursorStart.gotoNextParagraph(False)
+	Loop
+End Sub
+
+&apos; сборка в одно предложение разорваных строк предложений знаком абзаца.
+&apos; Идентификатор: строчная буква или строчная буква и пробел в конце абзаца И строчная буква в начале следующего.
+&apos; Полезно при обработке книг после сканирования и сохраненных в txt формате (таких множество в сети)
+Sub JoinBreakLinesInSentence( oDoc As Object, oProgressBar As Object )
+	Dim oDoc			As Object : oDoc			= ThisComponent
+	Dim oCursorStart	As Object : oCursorStart	= oDoc.getText().getStart()
+	Dim oCursorEnd		As Object : oCursorEnd		= oDoc.getText().getEnd()
+	Dim l				As Long	  : l				= 0
+	
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
+	With vSearch
+		.SearchRegularExpression	= True
+		.SearchString = &quot;\&lt;[:alnum:]+[:space:]*[)}\],»”\&quot;&quot;:;]*[:space:]*$&quot;
+	End With
+	
+	Dim vFound As Object : vFound = oDoc.findNext( oCursorStart, vSearch )
+	Do While Not IsNull( vFound )
+		If l &gt;= 100 Then l = 0
+		l = l + 1
+		oProgressBar.setValue(l)
+		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
+		If vFound.Text.compareRegionEnds( vFound, oCursorEnd ) = -1 Then Exit Do
+		&apos; нашли искомое. Теперь проверяем первые символы на следующей строке - строчные ли они (пустые абзацы пропускаем)
+		vFound.collapseToEnd()
+		Dim oCursor As Object : oCursor = vFound.getText().createTextCursorByRange( vFound )
+		oCursor.gotoNextParagraph( False )
+		If IsSmallLetters( oCursor ) Then
+			vFound.goRight(1, True)
+			vFound.setString(&quot; &quot;)
+			vFound.collapseToEnd()
+		End If
+		vFound = oDoc.findNext( vFound.getEnd(), vSearch )
+	Loop
+End Sub
+
+Function IsSmallLetters( ByRef oCursor As Object ) As Boolean
+	IsSmallLetters = False
+	oCursor.goRight(1, True)
+	Dim s As String : s = Right( oCursor.getString(), 1 )
+	If s &lt;&gt; &quot;&quot; Then
+		If IsSmallGeneralCirillicLetter( s ) OR IsSmallGeneralLatinLetter( s ) Then
+			IsSmallLetters = True
+		End If
+	End If
+End Function
+
 &apos; ==========================================================================================
 &apos; 								склейка строк и/или абзацев
 &apos; ==========================================================================================
@@ -296,7 +456,7 @@ Sub JoinLines( oLCurs, oRCurs, oDoc, oProgressBar, l )
 	
 	Dim vFound  As Object : vFound = oDoc.findNext( oCursorL, vSearch )
 	Do While Not IsNull( vFound )
-		If l&gt;=100 Then l = 0
+		If l &gt;= 100 Then l = 0
 		l = l + 1
 		oProgressBar.setValue(l)
 		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.

@@ -17,6 +17,33 @@ Sub ActiveDocument()
 	oDoc.CurrentController.Frame.Activate()
 End Sub
 
+&apos; сохранение документа, если он был изменен
+Sub SaveDocIsModified( oDoc As Object )
+	If ( oDoc.isModified ) Then
+		If ( oDoc.hasLocation AND ( Not oDoc.isReadOnly ) ) Then
+			oDoc.store()
+		Else
+			oDoc.setModified( False )
+		End If
+	End If
+End Sub
+
+&apos; закрытие документа
+Sub CloseDoc( oDoc As Object )
+	If HasUnoInterfaces( oDoc, &quot;com.sun.star.util.XCloseable&quot; ) Then
+		oDoc.close( True )
+	Else
+		oDoc.dispose()
+	End If
+End Sub
+
+&apos; загрузка документа (возвращает oDoc)
+Function LoadDocFromUrl( sUrl As String ) As Object
+	Dim args()
+	Dim oDeskTop : oDeskTop = CreateUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	LoadDocFromUrl = oDeskTop.Loadcomponentfromurl( sUrl, &quot;_blank&quot;, 0, args() )
+End Function
+
 &apos; ====================================================================
 &apos;						 Работа с датой и временем
 &apos; ====================================================================
@@ -40,6 +67,26 @@ Function IsCirillicLetter( sVal As String ) As Boolean
 	End If
 End Function
 
+&apos; Проверка является ли sVal кирилической строчной буквой основного набора символов
+Function IsSmallGeneralCirillicLetter( sVal As String ) As Boolean
+	&apos;а-я,ё : 1072-1103, 1105
+	IsSmallGeneralCirillicLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=1072 And s&lt;=1103) Or s=1105 Then
+		IsSmallGeneralCirillicLetter = True
+	End If
+End Function
+
+&apos; Проверка является ли sVal кирилической ПРОПИСНОЙ буквой основного набора символов
+Function IsCapitalGeneralCirillicLetter( sVal As String ) As Boolean
+	&apos;А-Я,Ё : 1040-1071, 1025
+	IsCapitalGeneralCirillicLetter = False
+	Dim s : s = Asc(sVal)
+	If (s&gt;=1040 And s&lt;=1071) Or s=1025 Then
+		IsCapitalGeneralCirillicLetter = True
+	End If
+End Function
+
 &apos; Проверка является ли sVal латинской буквой
 Function IsLatinLetter( sVal As String ) As Boolean
 	&apos; Основная латиница A-Z, a-z : 65-90, 97-122
@@ -53,6 +100,26 @@ Function IsLatinLetter( sVal As String ) As Boolean
 		(s&gt;=256 And s&lt;=383) Or (s&gt;=399 And s&lt;=539) Or s=552 Or s=553 Or s=601 Or s=658 Or _
 		(s&gt;=7680 And s&lt;=7929) Then
 		IsLatinLetter = True
+	End If
+End Function
+
+&apos; Проверка является ли sVal строчной латинской буквой основного набора символов
+Function IsSmallGeneralLatinLetter( sVal As String ) As Boolean
+	&apos; Основная латиница a-z : 97-122
+	IsSmallGeneralLatinLetter = False
+	Dim s : s = Asc(sVal)
+	If s &gt;= 97 And s &lt;= 122 Then
+		IsSmallGeneralLatinLetter = True
+	End If
+End Function
+
+&apos; Проверка является ли sVal ПРОПИСНОЙ латинской буквой основного набора символов
+Function IsCapitalGeneralLatinLetter( sVal As String ) As Boolean
+	&apos; Основная латиница A-Z : 65-90
+	IsCapitalGeneralLatinLetter = False
+	Dim s : s = Asc(sVal)
+	If s &gt;= 65 And s &lt;= 90 Then
+		IsCapitalGeneralLatinLetter = True
 	End If
 End Function
 
@@ -111,21 +178,28 @@ End Function
 &apos; является ли sVal буквой
 Function IsLetter( sVal As String ) As Boolean
 	IsLetter = False
-	If IsCirillicLetter(sVal)=True Or IsLatinLetter(sVal)=True Or _
-		IsGreekLetter(sVal)=True Or IsHebrewLetter(sVal)=True Or IsArabicLetter(sVal)=True Then
+	If IsCirillicLetter(sVal) = True Or IsLatinLetter(sVal) = True Or _
+		IsGreekLetter(sVal) = True Or IsHebrewLetter(sVal) = True Or IsArabicLetter(sVal) = True Then
 		IsLetter = True
 	End If
 End Function
-
 
 &apos; является ли sVal цифрой
 Function IsNumber( sVal As String ) As Boolean
 	IsNumber = False
 	If sVal &lt;&gt; &quot;&quot; Then
-		Dim s : s = Asc(sVal)
-		If (s&gt;=48 And s&lt;=57) Then
+		Dim s : s = Asc( sVal )
+		If ( s &gt;= 48 And s &lt;= 57 ) Then
 			IsNumber = True
 		End If
+	End If
+End Function
+
+&apos; является ли sVal строчной буквой
+Function IsSmallLetter( sVal As String ) As Boolean
+	IsLetter = False
+	If IsCirillicLetter(sVal) = True Or IsLatinLetter(sVal) = True Then
+		IsLetter = True
 	End If
 End Function
 
@@ -576,7 +650,31 @@ Function AddNewItemToArray4( sArray() As String, sValue0 As String, sValue1 As S
 	sArray(l,3) = sValue3
 End Function
 
-Function AddNewItemToArray2ISS( sArray() As String, nValue0 As Integer, sValue1 As String )
+Function AddNewItemToArray2SB( sArray() As String, sValue0 As String, bValue1 As Boolean )
+	Dim l As Long : l = Ubound(sArray(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve sArray(l, 1)
+	Else Redim sArray(l, 1)
+	End If
+	
+	sArray(l,0) = sValue0
+	sArray(l,1) = bValue1	
+End Function
+
+Function AddNewItemToArray3SBB( aArray() As String, sValue0 As String, bValue1 As Boolean, bValue2 As Boolean )
+	Dim l As Long : l = Ubound(aArray(), 1) + 1
+	If l &gt; 0 Then
+		ReDim Preserve aArray(l, 2)
+	Else Redim aArray(l, 2)
+	End If
+	
+	aArray(l,0) = sValue0
+	aArray(l,1) = bValue1
+	aArray(l,2) = bValue2
+End Function
+
+
+Function AddNewItemToArray2IS( sArray() As String, nValue0 As Integer, sValue1 As String )
 	Dim l As Long : l = Ubound(sArray(), 1) + 1
 	If l &gt; 0 Then
 		ReDim Preserve sArray(l, 1)
@@ -619,6 +717,31 @@ Function DelCR( sTextArray() As String )
 			sTextArray(i) = ReplaceInString( sCR, chr(13), &quot;&quot;, False )
 		End If
 	Next i
+End Function
+
+&apos; удаление из массива указанного элемента
+Function RemoveItemFrom3SBB( aArray() As String, ItemForRemove As String ) As Object
+	&apos; ищем элемент (l), который нужно удалить
+	Dim counter As Long
+	For counter = 0 To UBound( aTablesName() )
+		If aTablesName(counter,0) = ItemForRemove Then
+			Exit For
+		End If
+	Next counter
+	
+	&apos; новый массив
+	Dim aNewArray() As String
+	
+	&apos; заполняем его данными ДО удаляемого элемента
+	Dim l As Long
+	For l = 0 To counter-1
+		AddNewItemToArray3SBB( aNewArray(), aArray(l,0), aArray(l,1), aArray(l,2) )
+	Next l
+	&apos; заполняем его данными ПОСЛЕ удаляемого элемента
+	For l = counter + 1 To UBound( aArray() )
+		AddNewItemToArray3SBB( aNewArray(), aArray(l,0), aArray(l,1), aArray(l,2) )
+	Next l
+	RemoveItemFrom3SBB = aNewArray
 End Function
 
 &apos; /// Работа со строками ///
@@ -1004,27 +1127,27 @@ End Function
 
 &apos; /// Для таблиц ///
 
-Function IsMatrix(oTable As Object) As Boolean
-	&apos; для простой прямоугольной матрицы возвращает True
-	&apos; для сложной таблицы - False
+Function IsTableNotInsertedTable(oTable As Object) As Boolean
+	&apos; для таблицы без вложенных таблиц возвращает True
+	&apos; для таблиц с вложенными таблицами - False
 	&apos; РАЗОБРАТЬСЯ!!! - Не на всех сложных таблицах DataArray НЕ КАК ARRAY - глюк OOo
 	On Error Goto ErrorHandler
-&apos;	IsMatrix = IsArray(oTable.DataArray)
-	If oTable.Columns.Count&gt;0 OR IsArray(oTable.Data)=True OR IsArray(oTable.DataArray)=True Then
-		IsMatrix = True
+&apos;	IsTableNotInsertedTable = IsArray(oTable.DataArray)
+	If oTable.Columns.Count &gt; 0 OR IsArray(oTable.Data) = True OR IsArray(oTable.DataArray) = True Then
+		IsTableNotInsertedTable = True
 		Exit Function
 	End If
 	ErrorHandler:
-	IsMatrix = False
+	IsTableNotInsertedTable = False
 End Function
 
+&apos; Тип сложности таблицы
 Function IsComplexRowsCollTable(oTable As Object) As Boolean
 	&apos; True - если сложная таблица с разным числом столбцов и строк В ЯЧЕЙКЕ
 	&apos; False - если сложная таблица с разным числом столбцов в строке
-	Dim sNames() As String
 	Dim oCell As Object
 	Dim n As String, i As Integer
-	sNames() = oTable.getCellNames()
+	Dim sNames() As String : sNames() = oTable.getCellNames()
 	For i = LBound(sNames()) To UBound(sNames())
 		oCell = oTable.getCellByName(sNames(i))
 		n = &quot;&quot;

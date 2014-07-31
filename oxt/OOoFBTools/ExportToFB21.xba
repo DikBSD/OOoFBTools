@@ -9,7 +9,7 @@ Public Const sConstFB2ConverterDialogSettings	As String = &quot;FB2ConverterDial
 Public oExportToFB21Dlg	As Object
 Public oProgressBar		As Object
 
-Public sCurDocFile			As String
+Public sCurDocFile			As String &apos; обрабатываемый документ
 Public oTextOutputStream	As Object
 Public sBookAnnotation()	As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
 Public sBodyParagraphs()	As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
@@ -22,6 +22,14 @@ Public sIDFNPrev As String &apos; хранит имя закладки-ID
 &apos; ===========================================================================================================================
 &apos; 												Работа контролов и формы Конвертера
 &apos; ===========================================================================================================================
+&apos; перезапуск документа (возвращает oDoc)
+Function ReOpenDoc( oDoc As Object ) As Object
+&apos;	SaveDocIsModified( oDoc )
+	Dim sUrl As String : sUrl = oDoc.getURL()
+	CloseDoc( oDoc )
+	ReOpenDoc = LoadDocFromUrl( sUrl )
+End Function
+
 &apos; Запуск Формы конвертера
 Sub ExportToFB21DlgExec()
 	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
@@ -30,20 +38,20 @@ Sub ExportToFB21DlgExec()
 	&apos; основные проверки
 	Dim oDoc As Object : oDoc = ThisComponent
 	If oDoc.hasLocation() Then
-		sCurDocFile = oDoc.getURL
+		sCurDocFile = oDoc.getURL()
 	Else
 		MsgBox sETFB2DD.sFB2ExportSaveMessage, 64, sConvertorName
 		Exit Sub
 	End If
 	
-	If oDoc.isModified() Then
-		If MsgBox ( sETFB2DD.sFB2ExportSaveModified, 32 + 1 + 256, sConvertorName ) = 2 Then
-			Exit Sub
-		End If
+	SaveDocIsModified( oDoc )
+	If oDoc.getGraphicObjects().getCount() &gt; 0 Or oDoc.getDrawpage().getCount() &gt; 0 Then
+		&apos; перезапуск документа
+		oDoc = ReOpenDoc( oDoc )
 	End If
 	
-	oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarCreateDialog+&quot;, &quot;+sETFB2DD.sFB2ExportProgressBarInit, 5 )
+	oProgressBar = oDoc.CurrentController.StatusIndicator
+	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarCreateDialog + &quot;, &quot; + sETFB2DD.sFB2ExportProgressBarInit, 5 )
 	oProgressBar.setValue(0)
 	
 	&apos; Создание формы
@@ -96,6 +104,13 @@ End Sub
 &apos;***************************************************************************
 &apos; запуск экспорта документа в fb2 формат
 Sub ExportDoc()
+	With oExportToFB21Dlg
+		.getControl(&quot;fb2PathTextField&quot;).Enable = False
+		.getControl(&quot;fb2PathSaveAsCmdBtn&quot;).Enable = False
+		.getControl(&quot;cmdbtnExportToFB21&quot;).Enable = False
+		.getControl(&quot;cmdbtnCancel&quot;).Enable = False
+	End With
+	
 	&apos; Есть ли хоть одно fb2 свойство в документе?
 	Dim nVar As Integer
 	If Not IsFB2NotFlagPropertyIsExsist() Then
@@ -107,6 +122,7 @@ Sub ExportDoc()
     	End If
     	Exit Sub
 	End If
+	
 	&apos; все ли обязательные fb2-свойства документа заполнены?
 	Dim sErrorMess As String : sErrorMess = IsFB2BindingPropertiesCorrect()
 	If sErrorMess &lt;&gt; &quot;&quot; Then
@@ -146,15 +162,27 @@ Sub ExportDoc()
 	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
 	oProgressBar.setValue( 0 )
 	
+	Dim oProgress As Object
+	Dim oProgressLabel As Object
+	oProgress = oExportToFB21Dlg.getControl(&quot;exportProgressBar&quot;)
+	oProgress.setRange(0, 6)
+	oProgress.setValue(0)
+	oProgressLabel = oExportToFB21Dlg.getControl(&quot;exportLabel&quot;)
+	oProgressLabel.Text = &quot;1. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCovers &amp; &quot; ...&quot; &amp; chr(10)
+	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
 	If IsStyleExists( sStyleBookTitle ) And ( oDoc.getGraphicObjects().Count &gt; 0 Or oDoc.getDrawPage().Count &gt; 0) Then
 		MakeCoverParser()
 	End If
+	oProgress.setValue(1)
+	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;2. &quot; &amp; sETFB2DD.sFB2ExportProgressBarAnalysis &amp; &quot; ...&quot; &amp; chr(10)
 	
-	oExportToFB21Dlg.endExecute()
+&apos;	oExportToFB21Dlg.endExecute()
 	
 	&apos; запускаем парсинг всего текста
 	DocumentParser()
+	oProgress.setValue(2)
+	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;3. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCreate &amp; &quot;...&quot; &amp; chr(10)
 	
 	&apos; Создание fb2 файла
 	Dim oFileAccess As Object : oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
@@ -177,28 +205,34 @@ Sub ExportDoc()
 	oProgressBar.setValue(0)
 	&apos; печатаем данные из &lt;description&gt;
 	SaveDescription( sFB2Encoding, False )
+	oProgress.setValue(3)
 	
 	&apos; печатаем данные из &lt;body&gt;
 	oTextOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; chr(10))
 	SaveBody()
+	oProgress.setValue(4)
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
-	If UBound(vFootnoteText()) &lt;&gt; -1 Or UBound(vEndnoteText()) &lt;&gt; -1 Then
+	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;4. &quot; &amp; sETFB2DD.sFB2ExportProgressBarFootnote &amp; &quot;...&quot; &amp; chr(10)
+	If UBound( vFootnoteText() ) &lt;&gt; -1 Or UBound( vEndnoteText() ) &lt;&gt; -1 Then
 		Dim imaxProgress As Integer
-		If UBound(vFootnoteText()) &lt;&gt; -1 Then imaxProgress = UBound(vFootnoteText()
-		If  UBound(vEndnoteText()) &lt;&gt; -1 Then imaxProgress = imaxProgress + UBound(vEndnoteText()
+		If UBound( vFootnoteText() ) &lt;&gt; -1 Then imaxProgress = UBound( vFootnoteText() )
+		If UBound( vEndnoteText() ) &lt;&gt; -1 Then imaxProgress = imaxProgress + UBound( vEndnoteText() )
 		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarFootnote, imaxProgress )
 		oProgressBar.setValue(0)
 		SaveNotes()
 	End If
+	oProgress.setValue(5)
+	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;5. &quot; &amp; sETFB2DD.sFB2ExportProgressBarGraphics &amp; &quot;...&quot; &amp; chr(10)
 	
 	&apos; печатаем коды картинок, если они есть
-	Dim iSI As Integer
 	If UBound(Images()) &lt;&gt; -1 Then
 		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound(Images() )
 		oProgressBar.setValue(0)
-		iSI = SaveImages()
+		SaveImages()
 	End If
+	oProgress.setValue(6)
+	oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportEnd &amp; chr(10)
 	
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
 	oTextOutputStream.closeOutput()
@@ -206,13 +240,8 @@ Sub ExportDoc()
 		
 	&apos; запустить полученный файл на просмотр и валидацию, если нужно
 	Dim sEndMessage	As String : sEndMessage	= sETFB2DD.sFB2ExportEnd
-	If iSI &gt; 0 Then
-		sEndMessage = sEndMessage &amp; chr(10) &amp; sETFB2DD.sFB2ExportReport &amp; &quot; &quot; &amp; iSI &amp; &quot; &quot; &amp; _
-					sETFB2DD.sFB2ExportReportFrom &amp; &quot; &quot; &amp; UBound(Images())+1 &amp; &quot; &quot; &amp; sETFB2DD.sFB2ExportReportFromSearching
-	End If
-	
-	Dim sFB2File As String : sFB2File = oExportToFB21Dlg.Model.fb2PathTextField.Text
-	Dim sMess As String : sMess = sEndMessage &amp; chr(10) &amp; chr(10)
+	Dim sFB2File	As String : sFB2File	= oExportToFB21Dlg.Model.fb2PathTextField.Text
+	Dim sMess		As String : sMess		= sEndMessage &amp; chr(10) &amp; chr(10)
 	
 	Dim sValidateResult As String
 	If bValidate Then
@@ -226,6 +255,7 @@ Sub ExportDoc()
 	Else
 		MsgBox sMess &amp; sValidateResult, 64, sConvertorName
 	End If
+	oExportToFB21Dlg.endExecute()
 	
 	&apos; удаляем временные файлы
 	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
@@ -349,7 +379,7 @@ Sub SaveFB2FileAs()
 	If oFileDlg.execute() Then
 		Dim sFile As String
 		sFile = ConvertFromUrl(oFileDlg.Files(0))
-		IF (InStr(sFile,&quot;.fb2&quot;)=0) Then
+		IF (InStr(sFile,&quot;.fb2&quot;) = 0) Then
 			sFile = sFile + &quot;.fb2&quot;
 		End If
 		oExportToFB21Dlg.Model.fb2PathTextField.Text = sFile

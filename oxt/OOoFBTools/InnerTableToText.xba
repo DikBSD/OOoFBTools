@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="InnerTableToText" script:language="StarBasic">REM  *****  BASIC  *****
+Option Explicit
+
+Const sConstFileSettings As String = &quot;InnerTableToText.txt&quot; &apos; файл настроек инструмента преобразования вложенных таблиц в текст
+Private oInnerTableToTextDlg As Object
+
+Private oDoc As Object
+Private oDocControl	As Object
+Private oFrame As Object
+Private oDispatcher As Object
+Private aTablesName() As String &apos; список всех вложенных таблиц
+Private CurrentInnerTableName As String &apos; текущая найденная вложенная таблица
+
+Sub InnerTableToTextStart()
+	&apos; инициализация сообщений инструмента преобразования вложенных таблиц в текст в зависимости от локали
+	InnerTableToTextDlgMessage()
+	
+	oDoc		= ThisComponent
+	oDocControl	= oDoc.getCurrentController()
+	oFrame		= oDocControl.getFrame()	
+	oDispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	
+	Dim oTables As Object : oTables = oDoc.getTextTables()
+	If oTables.getCount() = 0 Then
+		MsgBox sITTTD.sNotTable, 64, sITTTD.sTitle
+		Exit Sub
+	End If
+	
+	Dim i As Integer
+	&apos; список вложенных таблиц
+	For i=0 To oTables.getCount() - 1
+		Dim oTable As Object : oTable = oTables.getByIndex(i)
+		Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+		If Not IsEmpty( oCurs.TextTable ) Then
+			&apos; нашли вложенную таблицу в ячейку другой
+			AddNewItemToArray3SBB( aTablesName(), oTable.getName(), False, False )
+		End If
+	Next i
+	CurrentInnerTableName = &quot;?&quot;
+	
+	&apos;	DialogLibraries.LoadLibrary(&quot;OOoFBTools&quot;)
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oInnerTableToTextDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.InnerTableToTextDlg )
+	
+	&apos; инициализация формы
+	InitInnerTableToTextDlg()
+	
+	With oInnerTableToTextDlg.Model
+		.Height = 39
+		.Width  = 236
+	End With
+		
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstFileSettings, oInnerTableToTextDlg, nX, nY )
+	With oInnerTableToTextDlg
+		.setPosSize( nX, nY, 39, 236, com.sun.star.awt.PosSize.POS )
+		.execute()
+	End With
+
+	&apos; записываем настройки диалога
+ 	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstFileSettings, oInnerTableToTextDlg )
+End Sub
+
+&apos; поиск следующей вложенной таблицы в ячейку внешней таблицы
+Sub FindNextInnerTable()
+	If UBound( aTablesName() ) = -1 Then
+		MsgBox sITTTD.sNotInnerTable, 64, sITTTD.sTitle
+		Exit Sub
+	Else
+		Dim i As Integer
+		&apos; помечаем в aTablesName(), что CurrentInnerTableName уже был найден
+		For i = 0 To UBound( aTablesName() )
+			If aTablesName(i,0) = CurrentInnerTableName Then
+				aTablesName(i,1) = True
+				Exit For
+			End If
+		Next i
+	
+		Dim oTables As Object : oTables = oDoc.getTextTables()
+		For i = 0 To oTables.getCount() - 1
+			Dim oTable As Object : oTable = oTables.getByIndex(i)
+			Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+			If Not IsEmpty( oCurs.TextTable ) Then
+				&apos; нашли вложенную таблицу в ячейку другой
+				Dim otxtCurs As Object : otxtCurs = oTable.getCellByName(&quot;A1&quot;).createTextCursor()
+				With otxtCurs
+					.gotoRange( oTable.getCellByName(&quot;A1&quot;).getText().getStart(), False )
+					.gotoRange( oTable.getCellByName(&quot;A1&quot;).getText().getEnd(), True )
+				End With
+				&apos; выделяем найденное
+				oDocControl.Select( otxtCurs )
+				CurrentInnerTableName = oTable.getName()
+				&apos; кнопка преобразования теперь может быть доступной
+				oInnerTableToTextDlg.getControl( &quot;cmdbtnTransform&quot; ).Enable = True
+				
+				&apos; ищем текущую таблицу в списке вложенных таблиц
+				Dim j As Integer
+				For j = 0 To UBound( aTablesName() )
+					If aTablesName(j,0) = CurrentInnerTableName Then
+						Exit For
+					End If
+				Next j
+				
+				If aTablesName(j,1) = True And aTablesName(j,2) = False Then
+					aTablesName(j,1) = False
+				Else
+					Exit For
+				End If
+				
+			End If
+		Next i
+	End If
+End Sub
+
+&apos; трансформация вложенной таблицы в ячейку внешней таблицы
+Sub TransformInnerTableToText()
+	&apos; помечаем в aTablesName(), что CurrentInnerTableName трансформирован
+	Dim i As Integer
+	For i = 0 To UBound( aTablesName() )
+		If aTablesName(i,0) = CurrentInnerTableName Then
+			aTablesName(i,2) = True
+			Exit For
+		End If
+	Next i
+	
+	&apos; Удаление из массива записи обработанной таблицы
+	aTablesName() = RemoveItemFrom3SBB( aTablesName(), CurrentInnerTableName )
+	Dim DelimiterChar As String
+	With oInnerTableToTextDlg
+		If .getControl( &quot;optbtnTab&quot; ).State Then
+			DelimiterChar = CHR$(9)
+		ElseIf .getControl( &quot;optbtnPara&quot; ).State Then
+			DelimiterChar = CHR$(10)
+		ElseIf .getControl( &quot;optbtnDotComma&quot; ).State Then
+			DelimiterChar = &quot;;&quot;
+		Else
+			DelimiterChar = .getControl( &quot;tfOther&quot; ).Text
+		End If
+	End With
+	
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Delimiter&quot;
+	args1(0).Value = DelimiterChar
+	oDispatcher.executeDispatch( oFrame, &quot;.uno:ConvertTableToText&quot;, &quot;&quot;, 0, args1() )
+	
+	oInnerTableToTextDlg.getControl( &quot;cmdbtnTransform&quot; ).Enable = False
+End Sub
+
+&apos; инициализация форм
+Sub InitInnerTableToTextDlg()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oInnerTableToTextDlg.getModel
+			.Title 					= &quot;Преобразовать вложенные таблицы в текст&quot;
+			.cmdbtnFind.Label		= &quot;Найти&quot;
+			.cmdbtnTransform.Label	= &quot;Преобразовать&quot;
+			.fcDelimiter.Label		= &quot;Разделитель текста&quot;
+			.optbtnTab.Label		= &quot;Табуляция&quot;
+			.optbtnPara.Label		= &quot;Абзац&quot;
+			.optbtnDotComma.Label	= &quot;Точка с запятой&quot;
+			.optbtnOther.Label		= &quot;Другое&quot;
+		End With
+	Else
+		With oInnerTableToTextDlg.getModel
+			.Title 					= &quot;Convert nested tables to text&quot;
+			.cmdbtnFind.Label		= &quot;Find&quot;
+			.cmdbtnTransform.Label	= &quot;Convert&quot;
+			.fcDelimiter.Label		= &quot;Text Delimiter&quot;
+			.optbtnTab.Label		= &quot;Tab&quot;
+			.optbtnPara.Label		= &quot;Paragraph&quot;
+			.optbtnDotComma.Label	= &quot;Semicolon&quot;
+			.optbtnOther.Label		= &quot;Other&quot;
+		End With
+	End If
+End Sub
+
+&apos; для хранения сообщений
+Type tInnerTableToTextData
+	sTitle			As String &apos; Преобразовать вложенные таблицы в текст
+	sNotTable		As String &apos; В документе нет ни одной таблицы.
+	sNotInnerTable	As String &apos; В документе нет вложенных таблиц в другие таблицы.
+End Type
+
+Public sITTTD As tInnerTableToTextData
+
+&apos; инициализация сообщений инструмента преобразования вложенных таблиц в текст в зависимости от локали
+Sub InnerTableToTextDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sITTTD
+			.sTitle			= &quot;Преобразовать вложенные таблицы в текст&quot;
+			.sNotTable		= &quot;В документе нет ни одной таблицы.&quot;
+			.sNotInnerTable	= &quot;В документе нет вложенных таблиц в другие таблицы.&quot;
+		End With
+	Else
+		With sITTTD
+			.sTitle			= &quot;Convert nested tables to text&quot;
+			.sNotTable		= &quot;In the document there is no table.&quot;
+			.sNotInnerTable	= &quot;The document no nested tables in other tables.&quot;
+		End With
+	End If
+End Sub
+
+</script:module>

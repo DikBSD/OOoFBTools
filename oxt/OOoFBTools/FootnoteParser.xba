@@ -6,12 +6,10 @@ Option Explicit
 &apos; /////////////// парсер сносок /////////////////////////////
 Function FootEndNoteParser( oSect As Object ) As String
 	Dim bIsFootNote As Boolean : bIsFootNote = False &apos; флаг - сноска (True) или концевая сноска (False)
-	
-	Dim oFootnoteCursor As Object
-	Dim sNote 			As String : sNote = &quot;&quot;
+	Dim sNote 		As String : sNote = &quot;&quot;
 	
 	&apos; форматирование текста сноски по стилям
-	oFootnoteCursor = oSect.Footnote.createTextCursor()
+	Dim oFootnoteCursor As Object : oFootnoteCursor = oSect.Footnote.createTextCursor()
 	oFootnoteCursor.gotoStart(False)
 	oFootnoteCursor.gotoEndOfParagraph(True)
 	
@@ -19,7 +17,7 @@ Function FootEndNoteParser( oSect As Object ) As String
 	
 	If bFENoteSeparately = True Then
 		&apos; раздельный вывод сносок и концевых сносок в разные блоки
-		If FNType( oFootnoteCursor.ParaStyleName ) = &quot;FootNote&quot; Then
+		If FNType( oFootnoteCursor ) = &quot;FootNote&quot; Then
 			If bFootnoteSpace = True Then sNote = sNote &amp; &quot; &quot;
 			sNote = sNote &amp; &quot;&lt;a l:href=&quot;&quot;#n&quot; &amp; fn &amp; &quot;&quot;&quot; type=&quot;&quot;note&quot;&quot;&gt;&quot; &amp; sFootnoteLeft &amp; fn &amp; sFootnoteRight &amp; &quot;&lt;/a&gt;&quot;
 			bIsFootNote = True
@@ -140,13 +138,13 @@ Function FootEndNoteParser( oSect As Object ) As String
 			End If
 			
 			If InStr(sParagFN,  &quot;__fn__OOo_graphics__&quot; ) = 0 Then
-				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
+				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor, sBookMark, asFNPart() )
 			Else
 				Dim i As Integer, sStr As String : sStr = &quot;&quot;
 				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot; )
 				For i=0 To UBound( aStr() )
 					If aStr(i) &lt;&gt; &quot;&quot; Then
-						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor.ParaStyleName, sBookMark, asFNPart() )
+						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor, sBookMark, asFNPart() )
 					End If
 				Next i
 			End If
@@ -174,17 +172,21 @@ Function FootEndNoteParser( oSect As Object ) As String
 End Function
 
 &apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////+
-Function FNType( sNoteType As String )
+Function FNType( oFootnoteCursor As Object ) As String
 	FNType = &quot;FootNote&quot;
-	If LCase(sNoteType) = &quot;endnote&quot; Then FNType = &quot;EndNote&quot;
+	If LCase( oFootnoteCursor.ParaStyleName ) = &quot;endnote&quot; _
+		Or LCase( oFootnoteCursor.PageStyleName ) = &quot;endnote&quot; _
+		Or LCase( oFootnoteCursor.CharStyleName ) = &quot;endnote symbol&quot; Then
+		FNType = &quot;EndNote&quot;
+	End If
 End Function
 
-Function MakeTextArray( sStr As String, sParaStyleName As String, sBookMark As String, asFNPart() As String )
+Function MakeTextArray( sStr As String, oFootnoteCursor As Object, sBookMark As String, asFNPart() As String )
 	Dim sTemp() As String
 	&apos; парсер стилей сносок
-	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), sParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), oFootnoteCursor.PageStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
 	Dim sNoteText	As String : sNoteText = sTemp( UBound( sTemp() )
-	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType(sParaStyleName) )
+	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType( oFootnoteCursor ) )
 
 	MakeTextArray = asFNPart()
 End Function

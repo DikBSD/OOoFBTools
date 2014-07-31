@@ -7,6 +7,11 @@
 &apos; ================================================================================================================
 Option Explicit
 
+&apos; для отлова нажатия клавиш
+Private oDocController
+Global oKeyHandler
+Private IsKeyHandlerRegistered As Boolean &apos; Если наш обработчик клавиш уже зарегестрирован, то повторно его не регистрируем
+
 &apos; fb2 стили
 &apos; Данные книги
 Public sStyleBookTitle As String
@@ -62,6 +67,8 @@ End Sub
 Sub FB2StylesDlg_windowClosing(oEv)
 	bWorkEnd	= True	&apos; флаг закрытия дмалога
 	bWorkStart	= False	&apos; готовность к новому запуску диалога
+	oFB2StylesDlg.getControl( &quot;cbF1F10&quot; ).State = 0 &apos;F1... F10 срабатывают только при запущенном диалоге стилей.
+	UnregisterKeyHandler() &apos; удаление обработчика нажатия клавиш
 End Sub
 
 Sub FB2StylesDlg_windowClosed(oEv)
@@ -115,7 +122,6 @@ Sub FB2StylesDlgStart()
 	&apos; записываем настройки диалога
 	SaveSettings( sFB2StylesDlgSettings, oFB2StylesDlg )
 	oFB2StylesDlg.setVisible( False )
-
 End Sub
 
 &apos; ***********************************************************************************************
@@ -158,7 +164,7 @@ Function LoadFB2StylesToDoc() As Boolean
 		oDoc.DocumentProperties.Title			= oTemplate.DocumentProperties.Title
 		oDoc.DocumentProperties.TemplateName	= fb21StylesPath
        
-&apos;    	oTemplate.Close( false ) &apos;TODO на 7-ке закрытие шаблона на больших документах - до 30 мин.
+    	oTemplate.Close( false ) &apos;TODO на 7-ке закрытие шаблона на больших документах - до 30 мин.
 	    oProgressBar.setValue( 4 )
     
     	&apos; добавляем свойство документа _fb2_FB2StylesIsLoaded, если его нет
@@ -386,6 +392,7 @@ Sub InitFB2StylesDlg()
 			.cmdbtnSup.HelpText				= &quot;Верхний индекс (SuperScript)&quot;
 			.cmdbtnSub.HelpText				= &quot;Нижний индекс (SubScript)&quot;
 			.cmdbtnCode.HelpText			= &quot;Код программ, пример, иллюстрация&quot;
+			.cbF1F10.Label					= &quot;F1... F10 для Заголовков&quot;
 		End With
 	Else
 		With oFB2StylesDlg.getModel
@@ -401,6 +408,7 @@ Sub InitFB2StylesDlg()
 			.cmdbtnSup.HelpText				= &quot;SuperScript&quot;
 			.cmdbtnSub.HelpText				= &quot;SubScript&quot;
 			.cmdbtnCode.HelpText			= &quot;Program code, example, illustration&quot;
+			.cbF1F10.Label					= &quot;use F1... F10 for Heading&quot;
 		End With
 	End If
 End Sub
@@ -1461,7 +1469,84 @@ Sub Code()
 	ActiveDocument()
 End Sub
 
-&apos; ***********************************************************************************************
+&apos; ===========================================================================================================
+&apos; 				Перехватчики нажатия клавиш для форматирования Заголовков по нажатию F1... F10
+&apos; ===========================================================================================================
 
+Sub ToggleF1F10KeyHandler()
+	Dim state As Integer : state = oFB2StylesDlg.getControl( &quot;cbF1F10&quot; ).State
+	If state = 1 Then
+		RegisterKeyHandler()
+	Else
+		UnregisterKeyHandler()
+	End If
+End Sub
+
+Sub RegisterKeyHandler()
+	If Not IsKeyHandlerRegistered Then
+		IsKeyHandlerRegistered = True
+		oDocController = ThisComponent.getCurrentController()
+		oKeyHandler = createUnoListener(&quot;OOoFBToolsFB2Styles_&quot;, &quot;com.sun.star.awt.XKeyHandler&quot;)
+		oDocController.addKeyHandler( oKeyHandler )
+	End If
+End Sub
+
+Sub UnregisterKeyHandler()
+	IsKeyHandlerRegistered = False
+	If Not IsEmpty( oDocController ) Then
+		oDocController.removeKeyHandler( oKeyHandler )
+	End If
+End Sub
+
+Sub OOoFBToolsFB2Styles_disposing( oEvt )
+	&apos; здесь ничего не делается
+End Sub
+
+Function OOoFBToolsFB2Styles_KeyReleased( oEvt ) As Boolean
+	OOoFBToolsFB2Styles_KeyReleased = False
+End Function
+
+&apos; запуск разметки Заголовков стилями по нажатию F1... F10
+Function OOoFBToolsFB2Styles_KeyPressed( oEvt ) As Boolean
+	&apos; заполнение структуры стилей локализованными стилями
+	OOoFBToolsFB2Styles_KeyPressed = True
+	If oEvt.MODIFIERS = 0 Then
+		Select Case oEvt.KeyCode
+			Case com.sun.star.awt.Key.F1
+				ShortcutsForHeading1()
+			Case com.sun.star.awt.Key.F2
+				ShortcutsForHeading2()
+			Case com.sun.star.awt.Key.F3
+				ShortcutsForHeading3()
+			Case com.sun.star.awt.Key.F4
+				ShortcutsForHeading4()
+			Case com.sun.star.awt.Key.F5
+				ShortcutsForHeading5()
+			Case com.sun.star.awt.Key.F6
+				ShortcutsForHeading6()
+			Case com.sun.star.awt.Key.F7
+				ShortcutsForHeading7()
+			Case com.sun.star.awt.Key.F8
+				ShortcutsForHeading8()
+			Case com.sun.star.awt.Key.F9
+				ShortcutsForHeading9()
+			Case com.sun.star.awt.Key.F10
+				ShortcutsForHeading10()
+			Case Else
+				OOoFBToolsFB2Styles_KeyPressed = False
+		End Select
+	Else
+		OOoFBToolsFB2Styles_KeyPressed = False
+	End If
+End Function
+
+&apos; ===========================================================================================================
+&apos; 									сохранение настроек при нажатия любого чекбокса
+&apos; ===========================================================================================================
+Sub SaveSettingOfCheckBoxesStateToggle()
+	&apos; файл настроек
+	Dim sFB2StylesDlgSettings As String : sFB2StylesDlgSettings = getOOoFBToolsSettingsDir() &amp; sConstfb2StylesDlgSettings
+	SaveSettings( sFB2StylesDlgSettings, oFB2StylesDlg )	
+End Sub
 
 </script:module>
