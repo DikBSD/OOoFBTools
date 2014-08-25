@@ -3,16 +3,16 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="InCutParser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////
-&apos; ///////////////////////////////// Парсер текстовых врезок //////////////////////////////////
-&apos; ////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ==============================================================================================
+&apos; 									Парсер текстовых врезок
+&apos; ==============================================================================================
 
 Type tTableRowsInCut	&apos; для хранения данных по каждой структуре или параграфу Врезки
 	str As String		&apos; текст структуры врезки (параграф, таблица)
 	isTable As Boolean	&apos; если просто текст - то False, если таблица - True
 End Type
 
-&apos; /////////////////////////////////////////////////////////////////
+&apos; ==============================================================================================
 &apos; Парсер Текстовой Врезки
 Sub TextFrameParser( oContent As Object )
 	Select Case sTextFrameToFB2
@@ -33,15 +33,6 @@ End Sub
 
 &apos; парсер графики и сносок для Врезок - Общий для разных видов экспорта Врезок
 Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
-	
 	Dim oCEnum As Object, oSectEnum As Object, oSect As Object, oContent As Object 
 	Dim sExt As String
 	Dim sFormatPara : sFormatPara = &quot;&quot; &apos; отформатированный fb2-кодом текст
@@ -49,28 +40,21 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 	oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 	Do While oCEnum.hasMoreElements()
 		oContent = oCEnum.nextElement()
-		If oContent.supportsService( textGraphService ) Or oContent.supportsService( graphicService ) Then
-			&apos; парсер графики, привязанной к параграфу
+		If isRasterGraphic( oContent ) Then
+			&apos; парсер растровой графики, привязанной к параграфу
 			sExt = GetValidateForFB2FileExt( oContent )
 			sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 			MakeGraphic( oPar, oContent, False, sPara, False )
-		ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-			oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-			oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+		ElseIf isVectorGraphic( oContent ) Then
 			&apos; парсер векторной графики, привязанной к параграфаму
 			sExt = GetValidateForFB2FileExt( oContent )
 			sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 			MakeGraphic( oPar, oContent, False, sPara, False )
-		Else
-			&apos; Привязка к параграфу
-			If oContent.ShapeType = &quot;FrameShape&quot; Then
-				If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-					&apos; парсер формул и диаграм, привязанной к параграфу
-					sExt = GetValidateForFB2FileExt( oContent )
-					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-					MakeGraphic( oPar, oContent, False, sPara, False )
-				End If
-			End If
+		ElseIf isTextEmbeddedObject( oContent ) Then
+			&apos; парсер OLE, формул и диаграм, привязанной к параграфу
+			sExt = GetValidateForFB2FileExt( oContent )
+			sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+			MakeGraphic( oPar, oContent, False, sPara, False )
 		End If
 	Loop
 
@@ -79,31 +63,24 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 	Do While oSectEnum.hasMoreElements()
 		oSect = oSectEnum.nextElement()				
 		If oSect.TextPortionType = &quot;Frame&quot; Then
-			oCEnum = oSect.createContentEnumeration( textGraphService )
+			oCEnum = oSect.createContentEnumeration( &quot;com.sun.star.text.TextGraphicObject&quot; )
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService( textGraphService ) Or oContent.supportsService( graphicService ) Then
+				If isRasterGraphic( oContent ) Then
 					&apos; парсер графики, привязанной к символу
 					sExt = GetValidateForFB2FileExt( oContent )
 					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 					MakeGraphic( oPar, oContent, False, sPara, False )
-				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+				ElseIf isVectorGraphic( oContent ) Then
 					&apos; парсер векторной графики, привязанной к символу
 					sExt = GetValidateForFB2FileExt( oContent )
 					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 					MakeGraphic( oPar, oContent, False, sPara, False )
-				Else
-					&apos; Привязка к символу
-					If oContent.ShapeType = &quot;FrameShape&quot; Then
-						If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-							&apos; парсер диаграм и формул, привязка &quot;символ&quot;
-							sExt = GetValidateForFB2FileExt( oContent )
-							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							MakeGraphic( oPar, oContent, False, sPara, False )
-						End If
-					End If
+				ElseIf isTextEmbeddedObject( oContent ) Then
+					&apos; парсер OLE, диаграм и формул, привязка &quot;символ&quot;
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oPar, oContent, False, sPara, False )
 				End If
 			Loop
 		Else
@@ -136,7 +113,7 @@ Sub TextFrameTableParser( oCont As Object )
 	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
-		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			sFormatPara = GraphicsFootEndNoteTextFrameParser( oPar )
 		
 			If bDelEL = True Then &apos; удаление пустых параграфов
@@ -156,7 +133,7 @@ Sub TextFrameTableParser( oCont As Object )
 				sTable = sTable &amp; &quot;&lt;/tr&gt;&quot; &amp; chr(10)
 				AddNewItemTotTableRowsInCutArray( TableRows(), sTable, False )
 			End If
-		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
+		ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
 			&apos; парсер таблицы
 			Dim sT As String, sTI As String, nMaxCol As Integer
 			nMaxCol = GetMaxColInTable( oPar )
@@ -196,7 +173,7 @@ Sub TextFrameCiteParser( oCont As Object )
 	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
-		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			sFormatPara = GraphicsFootEndNoteTextFrameParser( oPar )
 		
 			If bDelEL = True Then &apos; удаление пустых параграфов
@@ -210,7 +187,7 @@ Sub TextFrameCiteParser( oCont As Object )
 					sCite = sCite &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
 				End If
 			End If
-		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
+		ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
 			&apos; парсер таблицы
 			sCite = sCite &amp; OOo23TextTableParserForTextInCut( oPar ) &amp; chr(10)
 		End If
@@ -228,7 +205,7 @@ Sub TextFrameTextParser( oCont As Object )
 	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
-		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			sFormatPara = GraphicsFootEndNoteTextFrameParser( oPar )
 			
 			If bDelEL = True Then &apos; удаление пустых параграфов
@@ -242,7 +219,7 @@ Sub TextFrameTextParser( oCont As Object )
 					sText = sText &amp; &quot;&lt;empty-line/&gt;&quot; &amp; chr(10)
 				End If
 			End If
-		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
+		ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
 			&apos; парсер таблицы
 			sText = sText &amp; OOo23TextTableParserForTextInCut( oPar ) &amp; chr(10)
 		End If
@@ -253,7 +230,7 @@ Sub TextFrameTextParser( oCont As Object )
 	AddBodyArray( sText, &quot;Para&quot;, False )
 End Sub
 
-&apos;////////////////////////////////////////////////////////
+&apos; ===============================================================================================
 &apos; парсер текстовой врезки как структуры
 Sub TextFrameStructParser( oCont As Object )
 	Dim oParEnum As Object, oPar As Object
@@ -262,11 +239,11 @@ Sub TextFrameStructParser( oCont As Object )
 	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
-		If oPar.ImplementationName = &quot;SwXParagraph&quot; Then
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			sFormatPara = GraphicsFootEndNoteTextFrameParser( oPar )
 		
 			StyleParser( oPar.ParaStyleName, sFormatPara )
-		ElseIf oPar.ImplementationName = &quot;SwXTextTable&quot; Then
+		ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
 			&apos; парсер таблицы
 			Dim sTable as String
 			sTable = OOo23TextTableParserForTextInCut( oPar )
@@ -276,7 +253,7 @@ Sub TextFrameStructParser( oCont As Object )
 	Loop
 End Sub
 
-&apos;////////////////////////////////////////////////////////////////////
+&apos; ===============================================================================================
 &apos; парсер таблиц внутри Текстовой Врезки
 Function OOo23TextTableParserForTextInCut( oTable As Object ) As String
 	Dim nHeaderRowCount As Integer

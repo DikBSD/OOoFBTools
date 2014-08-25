@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ObjectRemover" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; =====================================================================================
+&apos;								модуль инструмсента:
+&apos;						удаления всех выбранных объектов из документа
+&apos; =====================================================================================
+
+Option Explicit
+Public oObjectRemoverDlg As Object
+Private Const sObjectRemoverDlgSettingsFilename As String = &quot;ObjectRemover.txt&quot; &apos; файл настроек
+
+&apos; инициализация и запуск диалога
+Sub ObjectRemoverStart()
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oObjectRemoverDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.ObjectRemoverDialog )
+	
+	&apos; инициализация диалога
+	InitObjectRemoverDlg()
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sObjectRemoverDlgSettingsFilename, oObjectRemoverDlg, nX, nY )
+	oObjectRemoverDlg.setPosSize( nX, nY, 82, 298, com.sun.star.awt.PosSize.POS )
+	
+	&apos; доступность контролов
+	BookmarkCheckBoxCheck()
+	TablesCheckBoxCheck()
+	
+	&apos; доступность кнопки старта удаления объектов из документа
+	CheckBoxesCheck()
+	
+	oObjectRemoverDlg.execute()
+End Sub
+
+&apos; Принятие параметров
+Sub RemoveObjects()
+	&apos; записываем настройки диалога
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sObjectRemoverDlgSettingsFilename, oObjectRemoverDlg )
+	
+	oObjectRemoverDlg.endExecute()
+	
+	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	Dim nStep As Integer : nStep = 1
+	oProgressBar.start( sORD.sProgress, countCheckBoxesCheched( oObjectRemoverDlg ) ) &apos; сколько помечено CheckBox
+	&apos; запуск удаления объектов
+	With oObjectRemoverDlg.getModel
+		&apos; удаление закладок
+		If .BookmarkCheckBox.State = 1 Then
+			If .AllBookmarksOptionButton.State = 1 Then
+				&apos; удаление всех закладок
+				DeleteAllBookMarks()
+			Else
+				&apos; удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе (текст, Врезки, таблицы)
+				DeleteNotUsedBookmarksInDocument()
+			End If
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+		
+		&apos; удаление таблиц
+		If .TablesCheckBox.State = 1 Then
+			&apos; снятие защиты со всех ячеек всех таблиц (видимый курсор должен находиться ВНЕ таблицы)
+			ResetAllTablesProtection()
+			If .AllTablesOptionButton.State = 1 Then
+				&apos; удаление всех таблиц
+				DeleteAllTables() 
+			Else
+				&apos; удаление только вложенных таблиц
+				DeleteOnlyInnerTables()
+			End If
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+		
+		&apos; удаление всех врезок
+		If .AllTextFramesCheckBox.State = 1 Then
+			DeleteAllTextFrames()
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+		
+		&apos; удаление всей растровой графики
+		If .RasterGraphicsCheckBox.State = 1 Then
+			DeleteAllRasterGraphics()
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+		
+		&apos; удаление всей векторной графики
+		If .VectorGraphicsCheckBox.State = 1 Then
+			DeleteAllVectorGraphics()
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+		
+		&apos; удаление всех встроенных объектов (OLE, формулы, диаграммы, презентации...)
+		If .EmbeddedGraphicsCheckBox.State = 1 Then
+			DeleteAllEmbeddedObjects()
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+	End With
+	MsgBox sORD.sOk, 64, sORD.sMessTitle
+	oProgressBar.end
+End Sub
+
+&apos; доступность кнопки старта удаления объектов из документа
+Sub ApplyEnabled()
+	With oObjectRemoverDlg.getModel
+		&apos; помечен ли хоть один CheckBox?
+		If isOneCheckBoxeCheched( oObjectRemoverDlg ) Then
+			.RemoveCommandButton.Enabled = True
+		Else
+			.RemoveCommandButton.Enabled = False
+		End If
+	End With
+End Sub
+
+Sub BookmarkCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oObjectRemoverDlg.getModel
+		isCheck = .BookmarkCheckBox.State
+		.NotUsedBookmarksOptionButton.Enabled	= isCheck
+		.AllBookmarksOptionButton.Enabled		= isCheck
+	End With
+	&apos; доступность кнопки старта удаления объектов из документа
+	CheckBoxesCheck()
+End Sub
+
+Sub TablesCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oObjectRemoverDlg.getModel
+		isCheck = .TablesCheckBox.State
+		.AllTablesOptionButton.Enabled		= isCheck
+		.InnerTablesOptionButton.Enabled	= isCheck
+	End With
+	&apos; доступность кнопки старта удаления объектов из документа
+	CheckBoxesCheck()
+End Sub
+
+Sub CheckBoxesCheck()
+	&apos; доступность кнопки старта удаления объектов из документа
+	ApplyEnabled()
+End Sub
+
+&apos;============================================================================================================
+&apos; 										Удаление всех объектов документа
+&apos;============================================================================================================
+&apos; удаление всех закладок
+Sub DeleteAllBookMarks()
+	Dim oDoc			As Object : oDoc		= ThisComponent
+	Dim oBookMarks()	As Object : oBookMarks	= oDoc.getBookmarks()
+	
+	Do While oBookMarks.getCount() &gt; 0
+		_UnoDeleteBookMark( oBookMarks.getByIndex(0).getName() )
+		oDoc.setModified( True )
+	Loop
+End Sub
+
+&apos; удаление всех врезок
+Sub DeleteAllTextFrames()
+	Dim oDoc			As Object : oDoc		= ThisComponent
+	Dim oTextFrames()	As Object : oTextFrames = oDoc.getTextFrames()
+	&apos; TODO перебор ячеек таблиц на поиск в них Врезок и их удаление
+	
+	Do While oTextFrames.getCount() &gt; 0
+		oDoc.Text.removetextcontent(oTextFrames.getByIndex(0))
+	Loop
+End Sub
+
+&apos; удаление всех таблиц
+Sub DeleteAllTables()
+	Dim oDoc As Object : oDoc = ThisComponent
+	&apos; сначала удаляем таблицы во Врезках, если Таблицы есть во Врезках
+	Dim oTextFrames() As Object : oTextFrames = oDoc.getTextFrames()
+	Dim i As Integer
+	For i = 0 To oTextFrames.getCount() - 1
+		Dim oTextFrame As Object : oTextFrame = oTextFrames.getByIndex(i)
+		DeleteTablesInTextFrame( oTextFrame, oDoc )
+	Next i
+	
+	&apos; теперь удаляем все оставшиеся таблицы
+	Dim enum, txtContent
+	enum = oDoc.getText().createEnumeration()
+	While enum.hasMoreElements()
+		txtContent = enum.nextElement()
+		If txtcontent.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+			oDoc.Text.removetextcontent(txtContent)
+		End If
+	Wend
+End Sub
+
+&apos; парсер текстовой врезки (удаление таблиц)
+Sub DeleteTablesInTextFrame( ByRef oTextFrame As Object, ByRef oDoc As Object )
+	If oTextFrame.supportsService(&quot;com.sun.star.text.TextFrame&quot;) Then
+		Dim oObjEnum As Object, oObj As Object
+		oObjEnum = oTextFrame.createEnumeration()
+		Do While oObjEnum.hasMoreElements()
+			oObj = oObjEnum.nextElement()
+			If oObj.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+				oDoc.Text.removetextcontent(oObj)
+			End If
+		Loop
+	End If
+End Sub
+
+&apos; удаление только вложденных таблиц
+Sub DeleteOnlyInnerTables()
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim aInnerTableNames() As String
+	&apos; список названий всех вложенных таблиц в другие таблицы
+	aInnerTableNames() = getInnerTableNames( oDoc )
+	
+	Dim oTextTables() : oTextTables = oDoc.getTextTables()
+	Dim i As Integer
+	For i = 0 To UBound( aInnerTableNames )
+		If oTextTables.hasByName( aInnerTableNames(i) ) Then
+			oDoc.Text.removetextcontent( oTextTables.getByName( aInnerTableNames(i) )
+		End If	
+	Next i
+End Sub
+
+&apos; удаление всей растровой графики
+Sub DeleteAllRasterGraphics()
+	Dim oDoc				As Object : oDoc			= ThisComponent
+	Dim oGraphicObjects()	As Object : oGraphicObjects	= oDoc.getGraphicObjects()
+
+	Do While oGraphicObjects.getCount() &gt; 0
+		If isRasterGraphic( oGraphicObjects.getByIndex(0) ) Then
+			oDoc.Text.removetextcontent( oGraphicObjects.getByIndex(0) )
+		End If
+	Loop
+End Sub
+
+&apos; удаление всей векторной графики
+Sub DeleteAllVectorGraphics()
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim oDrawPage()		As Object	: oDrawPage		= oDoc.getDrawPage()
+	Dim nAllDrawPage	As Integer	: nAllDrawPage	= oDrawPage.getCount()
+	Dim nVectorShape	As Integer	: nVectorShape	= -1 &apos;счетчик всех шейпов (счетчик проходов)
+	Dim oShape			As Object
+	
+	&apos; подсчет всей векторной графики
+	Dim i As Integer
+	For i = 0 To nAllDrawPage - 1
+		oShape = oDrawPage.getByIndex ( i )
+		If isVectorGraphic( oShape ) Then
+			nVectorShape = nVectorShape + 1
+		End If
+	Next i
+	
+	&apos; удаление из документа всей векторной график
+	Do While oDrawPage.getCount() &gt;= 0 And nVectorShape &gt; -1 And nAllDrawPage &gt; -1
+		oShape = oDrawPage.getByIndex ( nAllDrawPage - 1 )
+		If isVectorGraphic( oShape ) Then
+			oDrawPage.remove( oShape )
+			nVectorShape = nVectorShape - 1
+		End If
+		nAllDrawPage = nAllDrawPage - 1
+	Loop
+End Sub
+
+&apos; удаление всех встроенных объектов (OLE, формулы, диаграммы, презентации...)
+Sub DeleteAllEmbeddedObjects()
+	Dim oDoc				As Object : oDoc				= ThisComponent
+	Dim oEmbeddedObjects()	As Object : oEmbeddedObjects	= oDoc.getEmbeddedObjects() 
+
+	Do While oEmbeddedObjects.getCount() &gt; 0
+		oDoc.Text.removetextcontent( oEmbeddedObjects.getByIndex(0) )
+	Loop
+End Sub
+
+&apos;============================================================================================================
+&apos; 											Локализация
+&apos;============================================================================================================
+&apos; для хранения сообщений диалога
+Type tObjectRemoverDlgData
+	sProgress		As String
+	sOk				As String
+	sMessTitle		As String
+End Type
+
+Private sORD As tObjectRemoverDlgData
+
+&apos; инициализация сообщений диалога удаления всех объектов
+Sub InitObjectRemoverDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sORD
+			.sMessTitle			= &quot;Удаление всех выбранных объектов&quot;
+			.sProgress			= .sMessTitle
+			.sOk				= &quot;Работа завершена.&quot;
+		End With
+	Else
+		With sORD
+			.sMessTitle			= &quot;Remove all Objects&quot;
+			.sProgress			= .sMessTitle
+			.sOk				= &quot;The work is completed.&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога в зависимости от локали
+Sub InitObjectRemoverDlg()
+	&apos; инициализация сообщений диалога удаления всех объектов
+	InitObjectRemoverDlgMessage()
+
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oObjectRemoverDlg.getModel
+			.Title							= &quot;Удаление всех объектов в документе&quot;
+			.BookmarkCheckBox.Label			= &quot;Закладки&quot;
+			.NotUsedBookmarksOptionButton.Label	= &quot;На которые ничто не ссылается&quot;
+			.AllBookmarksOptionButton.Label	= &quot;Все закладки&quot;
+			.TablesCheckBox.label			= &quot;Таблицы&quot;
+			.AllTablesOptionButton.Label	= &quot;Все таблицы&quot;
+			.InnerTablesOptionButton.Label	= &quot;Только вложенные таблицы&quot;
+			.AllTextFramesCheckBox.Label	= &quot;Текстовые Врезки&quot;
+			.GraphicsFrameControl.Label		= &quot;Графика и встроенные объекты&quot;
+			.RasterGraphicsCheckBox.Label	= &quot;Растровая графика&quot;
+			.VectorGraphicsCheckBox.Label	= &quot;Векторная графика&quot;
+			.EmbeddedGraphicsCheckBox.Label	= &quot;Встроенные объекты: OLE, формулы, диаграммы...&quot;
+			
+			.RemoveCommandButton.Label		= &quot;Удалить&quot;
+			.CancelCommandButton.Label		= &quot;Отмена&quot;
+		End With
+	Else
+		With oObjectRemoverDlg.getModel
+			.Title							= &quot;Delete all objects in the document&quot;
+			.BookmarkCheckBox.Label			= &quot;The Bookmarks&quot;
+			.NotUsedBookmarksOptionButton.Label	= &quot;Which refers to nothing (not used)&quot;
+			.AllBookmarksOptionButton.Label	= &quot;All Bookmarks&quot;
+			.TablesCheckBox.label			= &quot;The Tables&quot;
+			.AllTablesOptionButton.Label	= &quot;All Tables&quot;
+			.InnerTablesOptionButton.Label	= &quot;Only Inner Tables&quot;
+			.AllTextFramesCheckBox.Label	= &quot;The Text Frames&quot;
+			.GraphicsFrameControl.Label		= &quot;Graphics and embedded Objects&quot;
+			.RasterGraphicsCheckBox.Label	= &quot;Raster Graphics&quot;
+			.VectorGraphicsCheckBox.Label	= &quot;Vector Graphics&quot;
+			.EmbeddedGraphicsCheckBox.Label	= &quot;Embedded Objects: OLE, Formula, Diagramms...&quot;
+			
+			.RemoveCommandButton.Label		= &quot;Remove&quot;
+			.CancelCommandButton.Label		= &quot;Cancel&quot;
+		End With
+	End If
+End Sub
+
+</script:module>

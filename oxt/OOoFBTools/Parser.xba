@@ -41,15 +41,6 @@ Sub DocumentParser()
 	Dim oSect		As Object &apos;Перебиремый текстовый раздел (section)
 	Dim oCEnum		As Object &apos;Перебирает содержимое, такое как графические объекты
 	Dim oContent	As Object &apos;Перебираемое содержимое
-	
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
 
 	lBATIndex = -1 &apos; пока нет ни Автора Книги, ни Названия Книги
 			
@@ -63,13 +54,11 @@ Sub DocumentParser()
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService( textGraphService ) OR oContent.supportsService( graphicService ) Then
-					&apos; парсер растровой графики, привязанной к параграфаму
+				If isRasterGraphic( oContent ) Then
+					&apos; парсер растровой графики, привязанной к параграфу
 					MakeGraphic( oPar, oContent, True, sPara, False )
-				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
-					&apos; парсер векторной графики, привязанной к параграфаму
+				ElseIf isVectorGraphic( oContent ) Then
+					&apos; парсер векторной графики, привязанной к параграфу
 					MakeGraphic( oPar, oContent, True, sPara, False )
 				Else
 					&apos; Привязка к параграфу
@@ -100,15 +89,13 @@ Sub DocumentParser()
 					&apos; Обработка текста - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
 					sPara = DelBreakLineInString( sPara )
 				ElseIf LCase( oSect.TextPortionType ) = &quot;frame&quot; Then
-					oCEnum = oSect.createContentEnumeration(textGraphService)
+					oCEnum = oSect.createContentEnumeration(&quot;com.sun.star.text.TextGraphicObject&quot;)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService( textGraphService ) OR oContent.supportsService( graphicService ) Then
+						If isRasterGraphic( oContent ) Then
 							&apos; парсер растровой графики, привязанной к символу
 							MakeGraphic( oPar, oContent, True, sPara, False )
-						ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-							oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-							oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+						ElseIf isVectorGraphic( oContent ) Then
 							&apos; парсер векторной графики, привязанной к символу
 							MakeGraphic( oPar, oContent, True, sPara, False )
 						Else
@@ -145,11 +132,10 @@ Sub DocumentParser()
 						&apos; сохраняем позицию ОТКУДА ссылка и ее ID
 						&apos; не заносим дважды одну и ту же закладку...
 						If UBound(sLinksTo) = -1 Then
-							AddNewItemToArray2IS(sLinksTo(), UBound(sBodyParagraphs) + 1, &quot;_&quot; &amp; oSect.Bookmark.Name)
+							AddNewItemToArray2IS( sLinksTo(), UBound(sBodyParagraphs) + 1, oSect.Bookmark.getName() )
 						Else
-							If sLinksTo(UBound(sLinksTo), 0) &lt;&gt; UBound(sBodyParagraphs) + 1 AND _
-								sLinksTo(UBound(sLinksTo), 1) &lt;&gt; &quot;_&quot; &amp; oSect.Bookmark.Name Then
-								AddNewItemToArray2IS(sLinksTo, UBound(sBodyParagraphs) + 1, &quot;_&quot; &amp; oSect.Bookmark.Name)
+							If sLinksTo( UBound(sLinksTo), 1 ) &lt;&gt; oSect.Bookmark.getName() Then
+								AddNewItemToArray2IS( sLinksTo, UBound(sBodyParagraphs) + 1, oSect.Bookmark.getName() )
 							End If
 						End If
 					End If
@@ -221,6 +207,56 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 	sPrevStyle = sParaStyleName
 End Sub
 
+&apos; переадресация закладки, если в одном абзаце вставлено несколько закладок
+Function RelinkBookMark( ByRef BookMarkName As String ) As String
+	RelinkBookMark = BookMarkName
+	
+	Dim newBookMarkName As String : newBookMarkName = BookMarkName
+	If UBound( sLinksTo() )	&gt; -1 Then
+		&apos; по названию закладки находим номер &quot;ее&quot; абзаца
+		Dim bmNPara As Long : bmNPara = -1	&apos; номер абзаца для обрабатываемой закладки
+		Dim bmIndex As Long : bmIndex = 0	&apos; индекс массива для обрабатываемой закладки
+		Dim l As Long
+		For l = 0 To UBound( sLinksTo() )
+&apos;			If BookMarkName = Mid( sLinksTo(l,1), 2 ) Then
+			If BookMarkName = sLinksTo(l,1) Then
+				bmNPara = sLinksTo(l,0)
+				bmIndex = l
+				Exit For
+			End If
+		Next l
+		
+		&apos; есть ли такая закладка в массиве закладок?
+		Dim isWorkingBookMark As Boolean : isWorkingBookMark = False
+		For l = LBound( sLinksTo() ) To UBound( sLinksTo() )
+			If BookMarkName = sLinksTo(l,1) Then
+				isWorkingBookMark = True
+				Exit For
+			End If
+		Next l
+		
+		&apos; только для закладок, на которые ссылаются гиперссылки
+		If isWorkingBookMark Then
+			&apos; формируем закладки по группе (по одному и тому же номеру &quot;их&quot; абзаца - bmNPara)
+			Dim bmLIndex As Long : bmLIndex = bmIndex
+			If bmIndex = 0 Then &apos; bmIndex = 0 (первый элемент массива)
+				bmLIndex = 0
+			ElseIf bmIndex &gt; 0 Then
+				For l = bmIndex - 1 To 0 Step -1
+					If sLinksTo(l,0) &lt; bmNPara Then &apos; уже другая группа закладок
+						bmLIndex = l+1
+						Exit For
+					ElseIf sLinksTo(l,0) = bmNPara Then
+						bmLIndex = 0
+					End If
+				Next l
+			End If
+			newBookMarkName = sLinksTo(bmLIndex,1)
+		End If
+	End If
+	RelinkBookMark = newBookMarkName
+End Function
+
 &apos; перебор по всем in-line стилям
 Function InLineAllParser(oSect As Object) As String
 	Dim sLexem As String, sLSpace As String, sRSpace As String, sStr As String
@@ -236,7 +272,7 @@ Function InLineAllParser(oSect As Object) As String
 	sStr = Trim( sLexem )
 	If Len( sLexem ) &gt; Len( sStr ) Then &apos; изначальная лексема содержала пробелы в начале и(или) в конце
 		Dim iPos As Integer : iPos = InStr( sLexem, sStr )
-		sLSpace = Space( iPos-1 )
+		sLSpace = Space( iPos - 1 )
 		sRSpace = Space( Len( sLexem ) - Len ( Trim (sLexem ) ) - Len( sLSpace ) )
 		sLexem = sStr
 	End If
@@ -248,7 +284,7 @@ Function InLineAllParser(oSect As Object) As String
 			s = CorrectPara( oSect.HyperLinkURL )
 		Else			&apos; закладка
 			s = Mid(oSect.HyperLinkURL, 2)
-			s = &quot;#_&quot; &amp; CorrectBMLink( s )
+			s = &quot;#&quot; &amp; CorrectBMLink( RelinkBookMark( s ) ) &apos; RelinkBookMark - переадресация закладки, если в одном абзаце вставлено несколько закладок
 		End If
 		sLexem = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sLexem &amp; &quot;&lt;/a&gt;&quot;
 	End If

@@ -44,6 +44,156 @@ Function LoadDocFromUrl( sUrl As String ) As Object
 	LoadDocFromUrl = oDeskTop.Loadcomponentfromurl( sUrl, &quot;_blank&quot;, 0, args() )
 End Function
 
+&apos; ======================================================================================================================
+&apos;						 							Работа графикой
+&apos; ======================================================================================================================
+&apos; OLE, диаграммы, формулы...
+Function isTextEmbeddedObject( ByRef oGraphic As Object ) As Boolean
+	Dim textEmbeddedObject As String : textEmbeddedObject = &quot;com.sun.star.text.TextEmbeddedObject&quot;
+	
+	If oGraphic.supportsService( textEmbeddedObject ) Then
+		isTextEmbeddedObject = True
+	Else
+		isTextEmbeddedObject = False
+	End If
+End Function	
+
+&apos; векторная графика
+Function isVectorGraphic( ByRef oGraphic As Object ) As Boolean
+	Dim customShapeService			As String : customShapeService			= &quot;com.sun.star.drawing.CustomShape&quot;
+	Dim rectangleShapeService		As String : rectangleShapeService		= &quot;com.sun.star.drawing.RectangleShape&quot;
+	Dim captionShapeService			As String : captionShapeService			= &quot;com.sun.star.drawing.CaptionShape&quot;
+	Dim openBezierShapeService		As String : openBezierShapeService		= &quot;com.sun.star.drawing.OpenBezierShape&quot;
+	Dim closedBezierShapeService	As String : closedBezierShapeService	= &quot;com.sun.star.drawing.ClosedBezierShape&quot;
+	Dim lineShapeService			As String : lineShapeService			= &quot;com.sun.star.drawing.LineShape&quot;
+	Dim ellipseShapeService			As String : ellipseShapeService			= &quot;com.sun.star.drawing.EllipseShape&quot;
+	Dim polyLineShapeService		As String : polyLineShapeService		= &quot;com.sun.star.drawing.PolyLineShape&quot;
+	Dim polyPolygonShapeService		As String : polyPolygonShapeService		= &quot;com.sun.star.drawing.PolyPolygonShape&quot;
+	
+	If oGraphic.supportsService( customShapeService ) OR oGraphic.supportsService( rectangleShapeService ) OR _
+		oGraphic.supportsService( captionShapeService ) OR oGraphic.supportsService( openBezierShapeService ) OR _
+		oGraphic.supportsService( closedBezierShapeService ) OR oGraphic.supportsService( lineShapeService ) OR _
+		oGraphic.supportsService( ellipseShapeService ) OR oGraphic.supportsService( polyLineShapeService ) OR _
+		oGraphic.supportsService( polyPolygonShapeService ) Then
+		isVectorGraphic = True
+	Else
+		isVectorGraphic = False
+	End If
+End Function
+
+&apos; растровая графика
+Function isRasterGraphic( ByRef oGraphic As Object ) As Boolean
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+	
+	If oGraphic.supportsService( textGraphService ) OR oGraphic.supportsService( graphicService ) Then
+		isRasterGraphic = True
+	Else
+		isRasterGraphic = False
+	End If
+End Function
+
+&apos; количество растровой графики в документе (TextGraphicObject и GraphicObjectShape)
+Function DocRasterGraphicsCount() As Long
+	DocRasterGraphicsCount = 0
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim DrawPageCount	As Long		: DrawPageCount	= oDoc.getDrawPage().getCount()
+	Dim oGraphic		As Object
+	Dim l As Long
+	For l = 0 To DrawPageCount - 1
+		oGraphic = oDoc.getDrawPage().getByIndex(l)
+		If isRasterGraphic( oGraphic ) Then
+			DocRasterGraphicsCount = DocRasterGraphicsCount + 1
+    	End If
+	Next l
+End Function
+
+&apos; количество растровой графики (TextGraphicObject) в документе
+Function TextGraphicObjectCount() As Long
+	TextGraphicObjectCount = 0
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim DrawPageCount	As Long		: DrawPageCount	= oDoc.getDrawPage().getCount()
+	Dim oGraphic		As Object
+	Dim l As Long
+	For l = 0 To DrawPageCount - 1
+		oGraphic = oDoc.getDrawPage().getByIndex(l)
+		If oGraphic.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Then
+			TextGraphicObjectCount = TextGraphicObjectCount + 1
+    	End If
+	Next l
+End Function
+
+&apos; количество растровой графики (GraphicObjectShape) в документе
+Function GraphicObjectShapeCount() As Long
+	GraphicObjectShapeCount = 0
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim DrawPageCount	As Long		: DrawPageCount	= oDoc.getDrawPage().getCount()
+	Dim oGraphic		As Object
+	Dim l As Long
+	For l = 0 To DrawPageCount - 1
+		oGraphic = oDoc.getDrawPage().getByIndex(l)
+		If oGraphic.supportsService(&quot;com.sun.star.drawing.GraphicObjectShape&quot;) Then
+			GraphicObjectShapeCount = GraphicObjectShapeCount + 1
+    	End If
+	Next l
+End Function
+
+&apos; встраивание всей графики-ссылок в документ (файлы картинок находятся на жестком диске)
+Sub EmbeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim DrawPageCount	As Long		: DrawPageCount	= oDoc.getDrawPage().getCount()
+	
+	&apos; ищем все графические объекты-ссылки
+	Dim oGraphic	As Object
+	Dim oGraphics() As Object
+	Dim l As Long
+	For l = 0 To DrawPageCount - 1
+		oGraphic = oDoc.getDrawPage().getByIndex(l)
+		If isRasterGraphic( oGraphic ) Then
+			If InStr(oGraphic.GraphicURL, &quot;vnd.sun&quot;) = 0 Then
+				AddNewItemToObjectArray1( oGraphics(), oGraphic )
+			End If
+    	End If
+	Next l
+	
+	Dim oText As Object
+	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+		oProgressBar.start( ProgressLabel, UBound( oGraphics() )
+	End If
+	For l = 0 To UBound( oGraphics() )
+		If FileExists( oGraphics(l).GraphicUrl ) Then
+			oText = oGraphics(l).getAnchor().getText()
+			EmbeddingGraphicLinkToDoc( oDoc, oGraphics(l) )
+			oText.removeTextContent( oGraphics(l) )
+		End if
+		If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+			oProgressBar.setValue(l)
+		End If
+	Next l
+End Sub
+
+&apos; встраивание графики-ссылки oGraphic в документ oDoc
+Sub EmbeddingGraphicLinkToDoc ( oDoc, oGraphic )
+	Dim oProvider		As Object : oProvider		= createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)
+	Dim oShape			As Object : oShape			= oDoc.createInstance(&quot;com.sun.star.drawing.GraphicObjectShape&quot;)
+	Dim oGraphicObject	As Object : oGraphicObject	= oDoc.createInstance(&quot;com.sun.star.text.GraphicObject&quot;)
+	oDoc.getDrawPage().add( oShape )
+
+  	Dim props(0) As New com.sun.star.beans.PropertyValue
+	props(0).Name  = &quot;URL&quot;
+	props(0).Value = oGraphic.GraphicUrl
+
+	oShape.Graphic = oProvider.queryGraphic( props() )
+
+	oGraphicObject.GraphicUrl	= oShape.GraphicUrl
+	oGraphicObject.Width		= oGraphic.getSize().Width
+	oGraphicObject.Height		= oGraphic.getSize().Height
+	oGraphicObject.AnchorType	= oGraphic.AnchorType &apos;com.sun.star.text.TextContentAnchorType.AS_CHARACTER
+
+	oGraphic.getAnchor().getText().insertTextContent( oGraphic.getAnchor(), oGraphicObject, False )
+	oDoc.getDrawPage().remove(oShape)
+End Sub
+
 &apos; ====================================================================
 &apos;						 Работа с датой и временем
 &apos; ====================================================================
@@ -344,7 +494,7 @@ Sub ReadFileInArray( aArray() As String, sFile As String )
 	End If
 End Sub
 
-&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; ===============================================================================================
 &apos; Читаем настройки и задаем координаты X,Y форме
 Function ReadXYFormPos( sFileName As String, nX As Integer, nY As Integer ) As Boolean
 	On Error Resume Next
@@ -524,7 +674,9 @@ Function ToScreenCenter(oDlg)
 	oDlg.setPosSize(iXPos, iYPos, DialogWidth, DialogHeight, com.sun.star.awt.PosSize.POS)
 End Function
 
-&apos; /// Работа с числами ///
+&apos; ====================================================================================
+&apos; 								Работа с числами
+&apos; ====================================================================================
 
 &apos; Если число четное - возвращаем True, если нечетное - False
 Function IsEvenNumber( lNumber As Long ) As Boolean
@@ -537,7 +689,10 @@ Function IsEvenNumber( lNumber As Long ) As Boolean
 	End If
 End Function
 
-&apos; /// Работа с массивами ///
+&apos; ====================================================================================
+&apos; 									Работа с массивами
+&apos; ====================================================================================
+
 &apos; удаление из сортированного массива int чисел всех одинаковых
 Function RemoveIdenticalSortArrayElements_int( naArray() As Integer ) As Array
 	If UBound( naArray() ) = -1 Then Exit Function
@@ -590,6 +745,12 @@ Function AddNewItemToVarArray1( vArray() As Variant, vValue As Variant )
 	Dim l As Long : l = Ubound(vArray()) + 1
 	ReDim Preserve vArray(l)
 	vArray(l) = vValue
+End Function
+
+Function AddNewItemToObjectArray1( oArray() As Object, oValue As Object )
+	Dim l As Long : l = Ubound(oArray()) + 1
+	ReDim Preserve oArray(l)
+	oArray(l) = oValue
 End Function
 
 Function AddNewItemToIntArray1( nArray() As Integer, nValue As Integer )
@@ -744,7 +905,9 @@ Function RemoveItemFrom3SBB( aArray() As String, ItemForRemove As String ) As Ob
 	RemoveItemFrom3SBB = aNewArray
 End Function
 
-&apos; /// Работа со строками ///
+&apos; ====================================================================================
+&apos; 								Работа со строками
+&apos; ====================================================================================
 
 &apos; возвращает регистр символа
 Function IsLCase( s As String )
@@ -808,7 +971,9 @@ Function StrictString( sString As String ) As String
 	StrictString = sStrict
 End Function
 
-&apos; /// Корректура строки ///
+&apos; ====================================================================================
+&apos; 								Корректура строки
+&apos; ====================================================================================
 
 &apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert
 Function InsertInString( sSource As String, sBefore As String, sInsert As String ) As String
@@ -840,16 +1005,16 @@ Function ReplaceFromString( sSource As String, sDel As String, sReplace As Strin
 		Exit Function
 	End If
 	
-	On Error goto ErrH &apos; на случай переполнения строки - таблица и т.д. Тогда просто возвращаем исходную строку, ничего не делая с ней.
+On Local Error goTo ErrHandler &apos; на случай переполнения строки - таблица и т.д. Тогда просто возвращаем исходную строку, ничего не делая с ней.
 	Do While i &gt; 0
 		&apos; В LO4 Mid в режиме замены работает неверно, поэтому используем ее в режиме функции возвпрата значений.
-		sSource = Mid( sSource, 1, i-1 ) &amp; sReplace &amp; Mid( sSource, i+Len(sDel) )
-		i = InStr(i, sSource, sDel)
-		c = c+1
+		sSource = Mid( sSource, 1, i-1 ) &amp; sReplace &amp; Mid( sSource, i + Len( sDel ) )
+		i = InStr( i, sSource, sDel )
+		c = c + 1
 	Loop
 	ReplaceFromString = c
 	Exit Function
-ErrH:
+ErrHandler:
 	ReplaceFromString = sSource
 End Function
 
@@ -920,13 +1085,15 @@ Function ReplaceInString( sSource As String, sSearch As String, sReplace As Stri
 End Function
 
 &apos; корректировка абзаца - отлов символов &lt;,&gt;,&amp;
-Function CorrectPara(sPara As String) As String
+&apos; если размер строки больше допустимого в OpenBasic, то не обрабатываем строку - возвращаем ее, как есть (генерация исключения из-за переполнения).
+Function CorrectPara( sPara As String ) As String
 	Dim i As Integer, iLen As Integer
 	Dim newPara As String, sChar As String
-	iLen = Len(sPara)&apos; длина анализируемой строки
+On Local Error GoTo ErrorHandler
+	iLen = Len( sPara )&apos; длина анализируемой строки
 	If iLen &gt; 0 Then
 		For i = 1 To iLen
-			sChar = Mid(sPara, i, 1)
+			sChar = Mid( sPara, i, 1 )
 			If sChar = &quot;&amp;&quot; Then
 				newPara = newPara + &quot;&amp;amp;&quot;
 			ElseIf sChar = &quot;&lt;&quot; Then
@@ -938,12 +1105,16 @@ Function CorrectPara(sPara As String) As String
 			End If
 		Next i
 		Dim s As String
-		s = Mid(newPara, Len(newPara), 1)
+		s = Mid( newPara, Len( newPara ), 1 )
 		If s = chr(10) Or s = chr(13) Then
-			newPara = Mid(newPara, 1, Len(newPara)-1)
+			newPara = Mid( newPara, 1, Len( newPara ) - 1 )
 		End If
 	End If
 	CorrectPara = newPara
+	Exit Function
+ErrorHandler:
+	&apos; не обрабатываем строку - переполлнение (размер строки больше допустимого в OpenBasic)
+	CorrectPara = sPara
 End Function
 
 &apos; корректировка названия закладки - замена символов &lt;,&gt;,&amp; на _
@@ -963,7 +1134,7 @@ Function CorrectBMLink( sPara As String ) As String
 End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
-Function FB2CorrectWord(sWord As String, iResult As Integer)
+Function FB2CorrectWord( sWord As String, iResult As Integer )
 	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
@@ -986,7 +1157,7 @@ Function FB2CorrectWord(sWord As String, iResult As Integer)
 End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
-Function FB2CorrectBracketsWord(sWord As String, iResult As Integer)
+Function FB2CorrectBracketsWord( sWord As String, iResult As Integer )
 	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
@@ -1125,7 +1296,35 @@ Function WorkingFiguredBracket( sSource As String )
 	WorkingFiguredBracket = count
 End Function
 
-&apos; /// Для таблиц ///
+&apos; ====================================================================================
+&apos; 								Работа с таблицами
+&apos; ====================================================================================
+&apos; снятие защиты со всех ячеек всех таблиц (видимый курсор должен находиться ВНЕ таблицы)
+Sub ResetAllTablesProtection()
+	Dim oDoc   		As Object : oDoc  		= ThisComponent
+	Dim oViewCursor	As Object : oViewCursor	= oDoc.getCurrentController().getViewCursor()
+	If Not IsEmpty( oViewCursor.TextTable ) Then
+		&apos; перепрыгиваем таблицу
+		CursorAfterCurrentTextTable( oViewCursor )
+	End If
+	_UnoResetAllTablesProtection()
+End Sub
+
+&apos; список названий всех вложенных таблиц в ячейки других таблиц
+Function getInnerTableNames( oDoc As Object )
+	Dim aTablesName()	As String &apos; список всех вложенных таблиц
+	Dim oTables			As Object : oTables = oDoc.getTextTables()
+	Dim i As Integer
+	&apos; список вложенных таблиц
+	For i=0 To oTables.getCount() - 1
+		Dim oTable As Object : oTable = oTables.getByIndex(i)
+		Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+		If Not IsEmpty( oCurs.TextTable ) Then
+			AddNewItemToArray1( aTablesName(), oTable.getName() )
+		End If
+	Next i
+	getInnerTableNames = aTablesName()
+End Function
 
 Function IsTableNotInsertedTable(oTable As Object) As Boolean
 	&apos; для таблицы без вложенных таблиц возвращает True
@@ -1300,9 +1499,10 @@ Sub CursorAfterCurrentTextTable( oCursor )
 	oCursor.gotoStartOfLine( False )
 End Sub
 
-&apos; /// Поиск ///
+&apos; ===============================================================================
+&apos; 						Поиск данных в документе
+&apos; ===============================================================================
 
-&apos;********************************************************************************
 &apos; есть ли строка Template в строковом массиве sArray()
 Function IsExsistStringInArray( ByRef sArray() As String, Template As String ) As Integer
 	IsExsistStringInArray = -1
@@ -1343,56 +1543,9 @@ Function IsUnicodeMarkerExistsInText() As Boolean
 	End If
 End Function
 
-&apos;********************************************************************************
-&apos; поиск текста заданного стиля
-Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
-	Dim sResult As String
-	Dim oStr As Object, oEnum As Object
-	Dim oDesc As Object, iCount As Integer
-	oDesc = ThisComponent.createSearchDescriptor()
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyle)
-	End With
-	oEnum = ThisComponent.findAll(oDesc)
-	If oEnum.getCount = 0 Then 
-		GetTextOfStyle = &quot;&quot;
-		Exit Function
-	End If
-	For iCount = 0 To oEnum.getCount() - 1
-		oStr = oEnum.getByIndex(iCount)
-		If bMerge Then
-			sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
-		Else
-			sResult = sResult &amp; chr(10) &amp; oStr.getString()
-		End If
-	Next iCount
-	If bMerge Then
-		sResult = Mid(sResult, 1, Len(sResult)-1)
-	Else
-		sResult = Mid(sResult, 2, Len(sResult)-1)
-	End If
-	GetTextOfStyle = sResult
-End Function
-
-&apos;********************************************************************************
-&apos; есть ли в тексте абзац со стелем sStyle
-Function IsStyleExists( sStyle As String ) As Boolean
-	Dim oDesc As Object, oEnum As Object
-	oDesc = ThisComponent.createSearchDescriptor()
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyle)
-	End With
-	oEnum = ThisComponent.findAll(oDesc)
-	If oEnum.getCount = 0 Then 
-		IsStyleExists = False
-	Else
-		IsStyleExists = True
-	End If
-End Function
-
-&apos; /////////////////////////////////////////////// Работа с контролами  ////////////////////////////////////////////////////////
+&apos; ====================================================================================
+&apos; 									Работа с контролами
+&apos; ====================================================================================
 &apos; Установка итема языкового листбокса - язык системы по-умолчанию
 Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
 	Dim i as Integer
@@ -1404,7 +1557,39 @@ Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
 	Next i
 End Sub
 
-&apos; //////////// сортировка //////////////
+&apos; помечен ли хоть один CheckBox?
+Function isOneCheckBoxeCheched( oDlg As Object ) As Boolean
+	isOneCheckBoxeCheched = False
+	Dim ctrl As Object : ctrl = oDlg.getControls()
+	Dim i As Integer
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			If ctrl(i).Model.State Then
+				isOneCheckBoxeCheched = True
+				Exit For
+			End If
+		End If
+	Next i
+End Function
+
+&apos; сколько помечено CheckBox
+Function countCheckBoxesCheched( oDlg As Object ) As Integer
+	countCheckBoxesCheched = 0
+	Dim ctrl As Object : ctrl = oDlg.getControls()
+	Dim i As Integer
+	For i=LBound(ctrl) To UBound(ctrl)
+		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			If ctrl(i).Model.State Then
+				countCheckBoxesCheched = countCheckBoxesCheched + 1
+				Exit For
+			End If
+		End If
+	Next i
+End Function
+
+&apos; ====================================================================================
+&apos; 								сортировка
+&apos; ====================================================================================
 &apos; перемена местами двух int массивов одинаковой размерности
 Function swap_arrays_int( aArray1() As Integer, aArray2() As Integer ) As Boolean
 	swap_arrays_int = False
@@ -1488,7 +1673,9 @@ Function bubble_sort_int( aArray() As Integer )
 	Next i
 End Function
 
-&apos; /// Работа с системой ///
+&apos; ====================================================================================
+&apos; 							Работа с системой
+&apos; ====================================================================================
 
 &apos; Версия OOo
 Function OOoWriterVersion() As String
@@ -1597,9 +1784,9 @@ Sub FileExecute( sFilePath As String )
 	oSSE.execute( sFilePath, &quot;&quot;, 0)
 End Sub
 
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos;							UNO функции
-&apos;//////////////////////////////////////////////////////////////////////////////
+&apos; ====================================================================================
+&apos;								UNO функции
+&apos; ====================================================================================
 Sub _UnoDelete()
 	&apos; удаление выделенного текста
 	dim document   as object : document   = ThisComponent.CurrentController.Frame
@@ -1669,7 +1856,7 @@ Sub _UnoDeleteBookMark( sBookMark As String )
 	dispatcher.executeDispatch(document, &quot;.uno:DeleteBookmark&quot;, &quot;&quot;, 0, args1())
 End Sub
 
-&apos; вставка гиперссылки на выделенный текст: цуль - закладка sBookMarkName
+&apos; вставка гиперссылки на выделенный текст: цель - закладка sBookMarkName
 Sub _UnoMakeBookmarkHyperlink( sSelectedText As String, sBookMarkName As String )
 	Dim oDocControlFrame	As Object : oDocControlFrame	= ThisComponent.CurrentController.Frame
 	Dim oDispatcher			As Object : oDispatcher			= createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
@@ -1687,7 +1874,7 @@ Sub _UnoMakeBookmarkHyperlink( sSelectedText As String, sBookMarkName As String 
 	oDispatcher.executeDispatch( oDocControlFrame, &quot;.uno:SetHyperlink&quot;, &quot;&quot;, 0, args1() )
 End Sub
 
-&apos; вставка гиперссылки на выделенный текст: цуль - элемент оглавления стиля заголовок sOutline
+&apos; вставка гиперссылки на выделенный текст: цель - элемент оглавления стиля заголовок sOutline
 Sub BuildHyperLink( ByRef oDocControlFrame As Object, sSelectedText As String, sOutline As String )
 	Dim oDocControlFrame	As Object : oDocControlFrame	= ThisComponent.CurrentController.Frame
 	Dim oDispatcher			As Object : oDispatcher			= createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
@@ -1705,9 +1892,161 @@ Sub BuildHyperLink( ByRef oDocControlFrame As Object, sSelectedText As String, s
 	oDispatcher.executeDispatch( oDocControlFrame, &quot;.uno:SetHyperlink&quot;, &quot;&quot;, 0, args1() )
 End Sub
 
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; 			Функции по работе с закладками
-&apos;//////////////////////////////////////////////////////////////////////////////
+&apos; снятие защиты со всех ячеек всех таблиц (видимый курсор должен находиться ВНЕ таблицы)
+Sub _UnoResetAllTablesProtection()
+	Dim oDoc   		As Object : oDoc  		= ThisComponent.CurrentController.Frame
+	Dim oDispatcher As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	oDispatcher.executeDispatch(oDoc, &quot;.uno:ResetTableProtection&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+&apos; снятие защиты с ячейки таблиц (видимый курсор должен находиться в этой ячейке)
+Sub _UnoResetCellProtection()
+	Dim oDoc   		As Object : oDoc  		= ThisComponent.CurrentController.Frame
+	Dim oDispatcher As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	oDispatcher.executeDispatch(oDoc, &quot;.uno:UnsetCellsReadOnly&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+&apos; ====================================================================================
+&apos; 						Функции по работе с закладками
+&apos; ====================================================================================
+&apos; удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе (текст, Врезки, таблицы)
+Function DeleteNotUsedBookmarksInDocument()
+	DeleteNotUsedBookmarksInDocument = False
+	Dim oDoc As Object : oDoc = thisComponent
+	Dim sNotUseBookMarksArray()	As String &apos; массив всех неиспользуемых закладок в документе
+	sNotUseBookMarksArray() = FindNotUsedBookmarksInDocument()
+	
+	&apos; удаление найденных неиспользуемых закладок в документе
+	Dim oBookMarks()  As Object : oBookMarks = oDoc.getBookmarks()
+	Dim i As Integer, count As Integer
+	count = UBound( sNotUseBookMarksArray() )
+	For i = 0 To count
+		_UnoDeleteBookMark( oBookMarks.getByName( sNotUseBookMarksArray(i) ).getName() )
+		oDoc.setModified( True )
+		DeleteNotUsedBookmarksInDocument = True
+	Next i
+End Function
+
+&apos; поиск неиспользуемых закладок (на них ничто не ссылается) во всем Документе (текст, Врезки, таблицы)
+Function FindNotUsedBookmarksInDocument()
+	Dim oDoc As Object : oDoc = thisComponent
+	Dim sAllBookMarksArray() As String &apos; массив всех закладок в документе
+	Dim sUseBookMarksArray() As String &apos; массив всех используемых закладок в документе
+	Dim sNotUseBookMarksArray()	As String &apos; массив всех неиспользуемых закладок в документе
+
+	sAllBookMarksArray() = getAllBookmarksName()
+	
+	&apos; поиск по тексту
+	_FindNotUsedBookmarksInText( oDoc, sAllBookMarksArray(), sUseBookMarksArray(), sNotUseBookMarksArray() )
+	
+	&apos; поиск по Текстовым врезкам
+	Dim oTextFrames() As Object : oTextFrames = oDoc.getTextFrames()
+	Dim count As Integer : count = oTextFrames.getCount()
+	Dim i As Integer
+	For i = 0 To count - 1
+		_FindNotUsedBookmarksInText( oTextFrames.getByIndex(i), sAllBookMarksArray(), sUseBookMarksArray(), sNotUseBookMarksArray() )
+	Next i
+	
+	&apos; поиск по таблицам
+	Dim oTextTables()  As Object : oTextTables = oDoc.getTextTables()
+	count = oTextTables.getCount()
+	For i = 0 To count - 1
+		Dim oTable As Object : oTable = oTextTables.getByIndex(i)
+		Dim oCellNames() As String : oCellNames() = oTable.getCellNames()
+		Dim j As Integer
+		count = UBound( oCellNames() )
+		For j = 0 To count
+			_FindNotUsedBookmarksInText( oTable.getCellByName( oCellNames(j) ), sAllBookMarksArray(), sUseBookMarksArray(), sNotUseBookMarksArray() )
+		Next j
+	Next i
+	FindNotUsedBookmarksInDocument() = sNotUseBookMarksArray()
+End Function
+
+&apos; поиск неиспользуемых закладок (на них ничто не ссылается) в текстовых объектах (текст, врезки, ячейки таблиц)
+Sub _FindNotUsedBookmarksInText( oTextObject As Object, sAllBookMarksArray() As String, _
+								ByRef sUseBookMarksArray() As String, ByRef sNotUseBookMarksArray() As String )
+	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
+	Dim oPar		As Object &apos;Перебираемый параграф
+	Dim oSectEnum	As Object &apos;Счетчик, используемый для перебора текстовых разделов
+	Dim oSect		As Object &apos;Перебиремый текстовый раздел (section)
+
+	oParEnum = oTextObject.getText().createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			&apos; Перебор текстовых разделов
+			oSectEnum = oPar.createEnumeration()
+			Do While oSectEnum.hasMoreElements()
+				oSect = oSectEnum.nextElement()				
+				If LCase( oSect.TextPortionType ) = &quot;text&quot; Then
+					Dim BookMarkName As String : BookMarkName = getUseBookmarkname( oSect )
+					If BookMarkName &lt;&gt; &quot;&quot; Then
+						AddNewItemToArray1( sUseBookMarksArray(), BookMarkName )
+					End If
+				End If
+			Loop
+		End If
+	Loop
+	
+	&apos; определение неиспользуемых закладок в документе
+	sNotUseBookMarksArray() = getNotUseBookmarksName( sAllBookMarksArray(), sUseBookMarksArray() )
+End Sub
+
+&apos; список используемых закладок в текстовой врезке
+Sub getUseBookmerkFromTextFrame( ByRef sUseBookMarksArray() As String )
+	Dim oTextFrames() : oTextFrames = thisComponent.getTextFrames()
+	Dim i As Integer, f As Integer
+	f = oTextFrames.getCount()
+	For i=0 To f-1
+		oTextFrames.getByIndex(i)
+	Next i
+End Sub
+
+&apos; имя используемой закладки в oLexsem, если закладка есть
+Function getUseBookmarkname( oLexsem As Object ) As String
+	getUseBookmarkname = &quot;&quot;
+	If oLexsem.HyperLinkURL &lt;&gt; &quot;&quot; Then &apos; гиперссылка
+		Dim s As String : s = Mid(oLexsem.HyperLinkURL, 1, 1)
+		IF s = &quot;#&quot; Then
+			getUseBookmarkname = Mid(oLexsem.HyperLinkURL, 2)
+		End If
+	End If
+End Function
+
+&apos; список имен всех закладок в документе
+Function getAllBookmarksName()
+	Dim sAllBookMarksArray() As String
+	Dim oBookMarks() : oBookMarks = thisComponent.getBookmarks()
+	Dim i As Integer, b As Integer
+	b = oBookMarks.getCount()
+	For i=0 To b-1
+		AddNewItemToArray1( sAllBookMarksArray(), oBookMarks.getByIndex(i).getName() )
+	Next i
+	getAllBookmarksName = sAllBookMarksArray()
+End Function
+
+&apos; список имен всех неиспользуемых закладок в документе (сравнение со списками всех закладок и всех используемых закладок в документе)
+Function getNotUseBookmarksName( sAllBookMarksArray() As String, sUseBookMarksArray() As String )
+	Dim sNotUseBookMarksArray()	As String
+	Dim i As Integer, j As Integer
+	For i = LBound( sAllBookMarksArray() ) To UBound( sAllBookMarksArray() )
+		&apos; смотрим закладку из списка sAllBookMarksArray() в списке sUseBookMarksArray() - есть ли такая?
+		Dim Exist As Boolean : Exist = False
+		For j = LBound( sUseBookMarksArray() ) To UBound( sUseBookMarksArray() )
+			If sAllBookMarksArray(i) &lt;&gt; sUseBookMarksArray(j) Then
+				Exist = False
+			Else
+				Exist = True
+				Exit For
+			End If
+		Next j
+		If Not Exist Then
+			AddNewItemToArray1( sNotUseBookMarksArray(), sAllBookMarksArray(i) )
+		End If
+	Next i
+	getNotUseBookmarksName = sNotUseBookMarksArray()
+End Function
+
 &apos; Вставить текст в место закладки.
 &apos; возвращает: True - если вставили текст в место закладки. False - если нет такой закладки
 Function InsertTextToBookMark( sBookMarkName As String, sText As String ) As Boolean
@@ -1800,9 +2139,9 @@ Sub ExtendViewCursorFromStartCursor1ToEndCursor2( ByRef oViewCursor As Object, B
 	oViewCursor.gotoRange(oRCurs, True)
 End Sub
 
-&apos;//////////////////////////////////////////////////////////////////////////////
-&apos; 			Функции по работе с выделенным текстом
-&apos;//////////////////////////////////////////////////////////////////////////////
+&apos; ====================================================================================
+&apos; 					Функции по работе с выделенным текстом
+&apos; ====================================================================================
 &apos; есть ли выделение курсором. True - есть
 Function IsSelection( ByRef oSel As Object ) As Boolean
 	Dim oCursor : oCursor = oSel.Text.CreateTextCursorByRange( oSel )
@@ -1960,8 +2299,55 @@ Function ExtendViewCursorToStartEndParaOfSelections( ByRef oViewCursor As Object
 End Function
 
 &apos; =======================================================================================================
-&apos; 												Работа со стилями 
+&apos; 										Работа со стилями 
 &apos; =======================================================================================================
+&apos; поиск текста заданного стиля
+Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
+	Dim sResult As String
+	Dim oStr As Object, oEnum As Object
+	Dim oDesc As Object, iCount As Integer
+	oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchStyles = true
+		.setSearchString(sStyle)
+	End With
+	oEnum = ThisComponent.findAll(oDesc)
+	If oEnum.getCount = 0 Then 
+		GetTextOfStyle = &quot;&quot;
+		Exit Function
+	End If
+	For iCount = 0 To oEnum.getCount() - 1
+		oStr = oEnum.getByIndex(iCount)
+		If bMerge Then
+			sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
+		Else
+			sResult = sResult &amp; chr(10) &amp; oStr.getString()
+		End If
+	Next iCount
+	If bMerge Then
+		sResult = Mid(sResult, 1, Len(sResult)-1)
+	Else
+		sResult = Mid(sResult, 2, Len(sResult)-1)
+	End If
+	GetTextOfStyle = sResult
+End Function
+
+&apos; есть ли в тексте абзац со стилем sStyle
+Function IsStyleExists( sStyle As String ) As Boolean
+	Dim oDesc As Object, oEnum As Object
+	oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchStyles = true
+		.setSearchString(sStyle)
+	End With
+	oEnum = ThisComponent.findAll(oDesc)
+	If oEnum.getCount = 0 Then 
+		IsStyleExists = False
+	Else
+		IsStyleExists = True
+	End If
+End Function
+
 &apos; форматирование абзаца заданным стилем
 Sub SetParaStyle(Style As String)
 	Dim document   As Object : document		= ThisComponent.CurrentController.Frame
@@ -2045,45 +2431,46 @@ Sub _ClearStyleToBase_(BaseStyle As String)
 	SetSymbolStyle( GetLocaDefaultStyleName() )
 End Sub
 
-&apos;/////////////////////////////////////////////////////////////////////////////////////////////////
 
-&apos; =======================================================================================================
-&apos; 									Удаление всех объектов документа
-&apos; =======================================================================================================
-&apos; удаление всех закладок
-Sub DeleteAllBookMarks()
-	Dim oBookMarks() : oBookMarks = thisComponent.getBookmarks()
-	Dim i As Integer, b As Integer
-	b = oBookMarks.getCount()
-	For i=0 To b-1
-		_UnoDeleteBookMark( oBookMarks.getByIndex(0).getName() )
-	Next i
+&apos; ====================================================================================
+&apos; 									Полезные заготовки
+&apos; ====================================================================================
+&apos; парсер текстовой врезки
+Sub TextFrameParser( ByRef oTextFrame As Object )
+	If oTextFrame.supportsService(&quot;com.sun.star.text.TextFrame&quot;) Then
+		Dim oObjEnum As Object, oObj As Object
+		oObjEnum = oTextFrame.createEnumeration()
+		Do While oObjEnum.hasMoreElements()
+			oObj = oObjEnum.nextElement()
+			If oObj.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+				&apos; работа с таблицей
+			ElseIf oObj.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+				&apos; работа с текстом
+			End If
+		Loop
+	End If
 End Sub
 
-&apos; удаление всех врезок
-Sub DeleteAllTextFrames()
-	Dim oTextFrames() : oTextFrames = thisComponent.getTextFrames()
-	Dim i As Integer, f As Integer
-	f = oTextFrames.getCount()
-	For i=0 To f-1
-		oTextFrames.getByIndex(0).removeTextContent(oTextFrames.getByIndex(0))
-	Next i
+&apos; перебор текста по абзацам
+Sub TextParser( Optional ByRef oText As Object)
+	Dim oText As Variant : oText = ThisComponent.Text
+	Dim oCursor As Variant : oCursor = oText.CreateTextCursor()
+	oCursor.GoToStart(False)
+	Do
+		If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do
+		&apos; работа с текстом
+	Loop Until NOT oCursor.gotoNextParagraph(False)
 End Sub
 
-&apos; удаление всех таблиц
-Sub DeleteAllTables()
-	Dim enum, txtcontent
-	enum = thisComponent.getText().createEnumeration
-	While enum.hasMoreElements()
-		txtcontent = enum.nextElement()
-		If txtcontent.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
-			thisComponent.Text.removetextcontent(txtcontent)
-		End If
-	Wend
-End Sub
-&apos;///////////////////////////////////////////////////////
+&apos; ====================================================================================
+&apos; 									Для отладки
+&apos; ====================================================================================
 
-&apos; /// Для отладки ///
+Sub ssn( ByRef oObject As Object )
+	MsgBox &quot;Object Name: &quot; + oObject.Name + chr(10) + chr(10) + _
+		&quot;SupportedServiceName: &quot; + chr(10) + _
+		Join( oObject.getSupportedServiceNames(), chr(10) ), 64, &quot;SupportedServiceName&quot;
+End Sub
 
 Sub SaveGebugObjectListPMS( oObject, sObjectName As String, sFilePath As String )
 	Dim s As String

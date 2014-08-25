@@ -47,15 +47,6 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 	
 	Dim sRes As String, sFormatPara As String, sExt As String
 	Dim oCellPar As Object, oCellParEnum As Object, oSectEnum As Object, oSect As Object, oCEnum As Object, oContent As Object
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
-				
 	&apos; параграфы
 	oCellParEnum = oCell.createEnumeration()
 	Do While oCellParEnum.hasMoreElements()
@@ -65,28 +56,21 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 			oCEnum = oCellPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-					&apos; парсер графики, привязанной к параграфу
+				If isRasterGraphic( oContent ) Then
+					&apos; парсер растровой графики, привязанной к параграфу
 					sExt = GetValidateForFB2FileExt( oContent )
 					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 					MakeGraphic( oCell, oContent, False, sPara, False )
-				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+				ElseIf isVectorGraphic( oContent ) Then
 					&apos; парсер векторной графики, привязанной к параграфу
 					sExt = GetValidateForFB2FileExt( oContent )
 					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 					MakeGraphic( oCell, oContent, False, sPara, False )
-				Else
-					&apos; Привязка к параграфу
-					If oContent.ShapeType = &quot;FrameShape&quot; Then
-						If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-							&apos; парсер формул и диаграм, привязанной к параграфу
-							sExt = GetValidateForFB2FileExt( oContent )
-							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-							MakeGraphic( oCell, oContent, False, sPara, False )
-						End If
-					End If
+				ElseIf isTextEmbeddedObject( oContent ) Then
+					&apos; парсер OLE, формул и диаграм, привязанной к параграфу
+					sExt = GetValidateForFB2FileExt( oContent )
+					sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+					MakeGraphic( oCell, oContent, False, sPara, False )
 				End If
 			Loop
 
@@ -95,31 +79,24 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 			Do While oSectEnum.hasMoreElements()
 				oSect = oSectEnum.nextElement()				
 				If oSect.TextPortionType = &quot;Frame&quot; Then
-					oCEnum = oSect.createContentEnumeration(textGraphService)
+					oCEnum = oSect.createContentEnumeration(&quot;com.sun.star.text.TextGraphicObject&quot;)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-							&apos; парсер графики, привязанной к символу
+						If isRasterGraphic( oContent ) Then
+							&apos; парсер растровой графики, привязанной к символу
 							sExt = GetValidateForFB2FileExt( oContent )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							MakeGraphic( oCell, oContent, False, sPara, False )
-						ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-							oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-							oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+						ElseIf isVectorGraphic( oContent ) Then
 							&apos; парсер векторной графики, привязанной к символу
 							sExt = GetValidateForFB2FileExt( oContent )
 							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 							MakeGraphic( oCell, oContent, False, sPara, False )
-						Else
-							&apos; Привязка к символу
-							If oContent.ShapeType = &quot;FrameShape&quot; Then
-								If oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; парсер диаграм и формул, привязка &quot;символ&quot;
-									sExt = GetValidateForFB2FileExt( oContent )
-									sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
-									MakeGraphic( oCell, oContent, False, sPara, False )
-								End If
-							End If
+						ElseIf isTextEmbeddedObject( oContent ) Then
+							&apos; парсер OLE, диаграм и формул, привязка &quot;символ&quot;
+							sExt = GetValidateForFB2FileExt( oContent )
+							sFormatPara = sFormatPara &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
+							MakeGraphic( oCell, oContent, False, sPara, False )
 						End If
 					Loop
 				Else

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="OCRError" script:language="StarBasic">REM  *****  BASIC  *****
-&apos; ////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 &apos; модуль инструментов:
 &apos; 1. поиск в документе Слов с дефисом, тире или минусом
 &apos; 2. поиск в документе Слов с разорванным абзацем переносом (дефис, тире или минус)
 &apos; 3. поиск в документе Обрыва предложения на словах, знаках препинания, кавычках и скобках
 &apos; 4. поиск в документе Места с недостающим пробелом между словами
-&apos; ////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 Option Explicit
 
 Type tFindData
@@ -25,7 +25,7 @@ Private asWords() As String &apos; массив с &quot;нормальными&
 
 Public Const sWordsDefisListFile As String = &quot;words_defis_list.txt&quot; &apos; файл с запомненными дефисными словами
 
-&apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 Sub OCRErrorDlg_windowActivated(oEv)
 	oDocControl = ThisComponent.getCurrentController()
 End Sub
@@ -56,7 +56,7 @@ End Sub
 Sub OCRErrorDlg_disposing(oEv)
 End Sub
 
-&apos; //////////////////////////////////////////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 &apos; инициализация и запуск диалога поиска
 Sub OCRErrorStart()
 	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
@@ -234,7 +234,7 @@ Function GetRegString( oLB As Object ) As tFindData
 	GetRegString = sTDF
 End Function
 
-&apos; ////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 &apos; поиск в заданной строке дефиса, тире или минуса
 Function IsDashExsist( sString As String ) As Integer
 	IsDashExsist = 0
@@ -275,7 +275,7 @@ Sub FindRegWord( sFind As String, sTitle As String )
 	FindRegInText( ovCurs, sFind, sTitle )
 End Sub
 
-&apos; ////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 &apos; поиск следующего заданного регекса в документе
 Function FindNextInText( sFind ) As Boolean
 	Dim oDesc : oDesc = ThisComponent.createSearchDescriptor()
@@ -313,7 +313,7 @@ Function FindNextInText( sFind ) As Boolean
 	FindNextInText = True &apos; нашли искомое регулярное выражение
 End Function
 
-&apos; ////////////////////////////////////////////////////////////////
+&apos; =====================================================================================
 &apos; ищем заданный регекс
 Sub FindRegInText( ovCurs, sFind As String, sTitle As String )
 NextWord:

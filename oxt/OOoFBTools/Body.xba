@@ -505,7 +505,166 @@ Function SaveCloseSection(nCount As Integer) As Long
 	End If
 End Function
 
-&apos;/////////////////
+Function SaveElements(sArray() As String, sParaStyleName As String, sPara As String, bBody As Boolean)
+	&apos; перебор по стилям
+	Dim sStr As String, bFB2Clear As Boolean
+	Select Case sParaStyleName
+		Case sStylePoemTitle
+			sStr = MakePoem(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStylePoemSubTitle
+			sStr = MakePoem(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStylePoem
+			sStr = MakePoem(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleEpigraph
+			sStr = MakeEpigraph(sArray, sStyleEpigraph, sStyleEpigraphAuthor, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleCite
+			sStr = MakeCite(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleCiteSubTitle
+			sStr = MakeCite(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleCiteAuthor
+			&apos; если после текста стоит Автор Цитаты (без самой цитаты) - обычно - в конце Введения книги
+			sStr = MakeCiteAuthor(sArray, bBody)
+			If sStr &lt;&gt; &quot;&quot; Then sStr = &quot;&lt;cite&gt;&quot; + sStr + &quot;&lt;/cite&gt;&quot;
+			SaveFBCorrectText(sStr, True)
+		Case sStyleAnnotation
+			sStr = MakeAnnotation(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleAnnotationSubTitle
+			sStr = MakeAnnotation(sArray, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleSubTitle
+			sStr = MakeSubTitle(sArray, sStyleSubTitle, bMergeSubTitle, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel1
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel2
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel3
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel4
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel5
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel6
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel7
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel8
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel9
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel10
+			sStr = MakeSection(sArray, sParaStyleName, bBody)
+			SaveFBCorrectText(sStr, True)
+
+		Case &quot;&quot; &apos; &lt;empty-line/&gt;
+			If bDelEL = False Then
+				If bDocLinks = True Then
+					&apos; обработка ссылок внутри документа
+					Dim sIDEL As String
+					If FindIndexForID( lCurrentElement, sIDEL, bBody ) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						oTextOutputStream.writeString( &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sIDEL &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) )
+					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+						oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+					End If
+				Else
+					oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+				End If
+			Else
+				If lCurrentElement &gt; 0 And lCurrentElement &lt; UBound(sArray) Then
+					If IsLevel( sArray(lCurrentElement-1,1) ) And IsLevel( sArray(lCurrentElement+1,1) ) Then
+						If sArray(lCurrentElement-1,1) = sArray(lCurrentElement+1,1) Then
+							&apos; обработка смежных уровней одного ранга - если между ними только пустая строка, то ее не удаляем - иначе - невалидность fb2-файла.
+							oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+						Else
+							&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
+							Dim sLevels(9) As String
+							Dim i As Integer, nPrev As Integer, nNext As Integer
+							sLevels = Array(sStyleLevel1, sStyleLevel2, sStyleLevel3, sStyleLevel4, sStyleLevel5, _
+											sStyleLevel6, sStyleLevel7, sStyleLevel8, sStyleLevel9, sStyleLevel10)
+							For i=LBound(sLevels) To UBound(sLevels)
+								If sArray(lCurrentElement-1, 1) = sLevels(i) Then
+									nPrev = i
+								End If
+								If sArray(lCurrentElement+1, 1) = sLevels(i) Then
+									nNext = i
+								End If
+							Next i
+							If nPrev = nNext+1 Then
+								&apos; пустая строка между уровнями с большего на меньший ранг - оставляем
+								oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+							End If
+						End If
+					ElseIf sArray(lCurrentElement-1,1) = &quot;Table&quot; And sArray(lCurrentElement+1,1) = &quot;Table&quot; Then
+						&apos; не убираем пустую строку между 2-мя таблицами - в читалке сливаются иначе...
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				Else
+					If sArray(lCurrentElement, 1) = &quot;&quot; Then
+						&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац -
+						&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поема, Цитата
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				End If
+			End If
+			lCurrentElement = lCurrentElement+1
+		Case &quot;Table&quot; 
+			sStr = sPara
+			SaveFBCorrectText(sStr, True)
+			lCurrentElement = lCurrentElement+1
+		Case &quot;Image&quot; 
+			oTextOutputStream.writeString(sPara &amp; chr(10))
+			lCurrentElement = lCurrentElement+1
+		Case &quot;end-fn&quot; &apos; только для сносок - последний &quot;ненужный&quot; элемент массива
+			If bBody = False Then &apos; еще раз убедимся, что это - сноска
+				If lCurrentElement &lt;= UBound( sArray() ) Then &apos; чтобы &quot;не вылетить&quot; за границу индекса, на всякий случай
+					If IsLevel( sArray( lCurrentElement-1, 1 ) ) = True Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleAnnotation Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleAnnotationSubTitle Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleEpigraph Or _
+						sArray( lCurrentElement-1, 1 ) = sStyleEpigraphAuthor Then
+						&apos; Только для Уровней, Аннотации и Эпиграфа оставляем пустую строку
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				End If
+			End If
+			lCurrentElement = lCurrentElement+1
+		Case Else &apos; что-то другое или просто параграф - записываем как параграф
+			If bDocLinks = True Then
+				&apos; обработка ссылок внутри документа
+				Dim sID As String
+				If FindIndexForID(lCurrentElement, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+					sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				End If
+			Else
+				sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			End If
+			SaveFBCorrectText(sStr, False)
+			lCurrentElement = lCurrentElement+1
+	End Select
+End Function
+
+&apos;=======================================================================
+&apos; 						Пояснения к алгоритму
+&apos;=======================================================================
 &apos; для уровней одного ранга (1,1; 3,3) ничего обрамлять секциями между этими уровнями не надо.
 &apos; ТОЛЬКО Аннотация и (или) ТОЛЬКО Эпиграф - если они одни между уровнями одного ранга (поотдельности), то после них обязательно ставил пустую строку!!!
+
 </script:module>

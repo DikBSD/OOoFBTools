@@ -36,24 +36,16 @@ Function FootEndNoteParser( oSect As Object ) As String
 	
 	
 	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
-	Dim sFNTH As String
-	Dim sParagFN As String : sParagFN = &quot;&quot;
+	Dim sFNTH		As String
+	Dim sParagFN	As String : sParagFN = &quot;&quot;
 
 	Dim sBookMark : sBookMark = &quot;&quot;
 	Dim asFNPart()		As String	&apos; временный массив для хранения всех данных одного абзаца текста сноски
 	Dim vTextArray()	As Variant	&apos; временный массив для хранения всех строк одного абзаца текста сноски
 	
-	Dim oCEnum				As Object &apos;Перебирает содержимое, такое как графические объекты
-	Dim oContent			As Object &apos;Перебираемое содержимое
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
-	
+	Dim oCEnum			As Object	&apos;Перебирает содержимое, такое как графические объекты
+	Dim oContent		As Object	&apos;Перебираемое содержимое
+
 	Do
 		oFootnoteCursor.gotoEndOfParagraph(True)
 		oEnumF = oFootnoteCursor.createEnumeration()
@@ -65,61 +57,41 @@ Function FootEndNoteParser( oSect As Object ) As String
 			oCEnum = oTextF.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-					&apos; парсер графики, привязанной к параграфу
+				If isRasterGraphic( oContent ) Then
+					&apos; парсер растровой графики, привязанной к параграфу
 					MakeGraphic( oSect, oContent, True, sParagFN, True )
-				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+				ElseIf isVectorGraphic( oContent ) Then
 					&apos; парсер векторной графики, привязанной к параграфаму
 					MakeGraphic( oSect, oContent, True, sParagFN, True )
-				Else
-					&apos; Привязка к параграфу
-					If oContent.ShapeType = &quot;FrameShape&quot; Then
-						If oContent.FrameStyleName = &quot;Frame&quot; Then
-							&apos; Парсер Текстовой Врезки
-&apos;							TextFrameParser(oContent)
-						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-							&apos; парсер формул и диаграм, привязка &quot;параграф&quot;
-							MakeGraphic( oSect, oContent, True, sParagFN, True )
-						End If
-					End If
+				ElseIf isTextEmbeddedObject( oContent ) Then
+					&apos; парсер OLE, формул и диаграм, привязка &quot;параграф&quot;
+					MakeGraphic( oSect, oContent, True, sParagFN, True )
 				End If
-			Loop			
+			Loop
+						
 			&apos;////////////////////////////////////////////////////////////
-			
 			While oSecEnumF.hasMoreElements()
 				oTextPortionF = oSecEnumF.nextElement()
 				&apos;////////////////////////////////////////////////////////////
 				If oTextPortionF.TextPortionType = &quot;Frame&quot; Then
-					oCEnum = oTextPortionF.createContentEnumeration(textGraphService)
+					oCEnum = oTextPortionF.createContentEnumeration(&quot;com.sun.star.text.TextGraphicObject&quot;)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-							&apos; парсер графики, привязанной к символу
+						If isRasterGraphic( oContent ) Then
+							&apos; парсер растровой графики, привязанной к символу
 							MakeGraphic( oSect, oContent, True, sParagFN, True )
-						ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-							oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-							oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+						ElseIf isVectorGraphic( oContent ) Then
 							&apos; парсер векторной графики, привязанной к символу
 							MakeGraphic( oSect, oContent, True, sParagFN, True )
-						Else
-							&apos; Привязка к символу
-							If oContent.ShapeType = &quot;FrameShape&quot; Then
-								If oContent.FrameStyleName = &quot;Frame&quot; Then
-									&apos; Парсер Текстовой Врезки
-&apos;									TextFrameParser(oContent)
-								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Or oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; парсер формул и диаграм, привязка &quot;символ&quot;
-									MakeGraphic( oSect, oContent, True, sParagFN, True )
-								End If
-							End If
+						ElseIf isTextEmbeddedObject( oContent ) Then
+							&apos; парсер OLE, формул и диаграм, привязка &quot;символ&quot;
+							MakeGraphic( oSect, oContent, True, sParagFN, True )
 						End If
 					Loop
 				ElseIf oTextPortionF.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
 					If bDocLinks = True Then
-						sBookMark = &quot;_&quot; &amp; oTextPortionF.Bookmark.Name
+						sBookMark = oTextPortionF.Bookmark.getName()
 					End If
 				End If
 				&apos;///////////////////////////////////////////////////////////
@@ -148,7 +120,6 @@ Function FootEndNoteParser( oSect As Object ) As String
 					End If
 				Next i
 			End If
-
 		Wend
 	Loop While oFootnoteCursor.gotoNextParagraph( False )
 	
@@ -184,7 +155,7 @@ End Function
 Function MakeTextArray( sStr As String, oFootnoteCursor As Object, sBookMark As String, asFNPart() As String )
 	Dim sTemp() As String
 	&apos; парсер стилей сносок
-	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), oFootnoteCursor.PageStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), oFootnoteCursor.ParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
 	Dim sNoteText	As String : sNoteText = sTemp( UBound( sTemp() )
 	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType( oFootnoteCursor ) )
 

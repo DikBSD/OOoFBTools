@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="Graphic" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; =============================================================================================
+&apos;									модуль инструментов:
+&apos; 								экспорт Графики разного вида
+&apos; =============================================================================================
+
 Option Explicit
 
 Private nCoverNumber As Integer	&apos; Счетчик картинок ДО Обложек
@@ -12,7 +17,9 @@ Type tFileData	&apos; для хранения данных файла
 	sExt As String
 End Type
 
-&apos; //////////////////////////////////////// Графика //////////////////////////////////////////////////////
+&apos; ===========================================================================
+&apos; 									Графика
+&apos; ===========================================================================
 &apos; парсер обложек книги
 Sub MakeCoverParser()
 	nCoverNumber = -1		&apos; Счетчик картинок ДО Обложек
@@ -23,15 +30,6 @@ Sub MakeCoverParser()
 	Dim oSect As Object 	&apos;Перебиремый текстовый раздел (section)
 	Dim oCEnum As Object 	&apos;Перебирает содержимое, такое как графические объекты
 	Dim oContent As Object 	&apos;Перебираемое содержимое
-	
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
 
 	oParEnum = ThisComponent.getText().createEnumeration()
 	Do While oParEnum.hasMoreElements()
@@ -40,27 +38,15 @@ Sub MakeCoverParser()
 			oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
-				If oContent.supportsService( textGraphService ) Or oContent.supportsService( graphicService ) Then
-					&apos; нашли обложку книги, привязанной к параграфу
+				If isRasterGraphic( oContent ) Then
+					&apos; растровая обложка книги, привязанной к параграфу
 					MakeCoverTag( oPar, oContent )
-				ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-					oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-					oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+				ElseIf isVectorGraphic( oContent ) Then
 					&apos; обложка векторной графики, привязанной к параграфу
 					MakeCoverTag( oPar, oContent )
-				Else
-					&apos; Привязка к параграфу
-					If oContent.ShapeType = &quot;FrameShape&quot; Then
-						If oContent.FrameStyleName = &quot;Frame&quot; Then
-							&apos; Парсер Текстовой Врезки
-						ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
-							&apos; нашли обложку книги - формулу, привязанную к параграфу
-							MakeCoverTag( oPar, oContent )
-						ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
-							&apos; нашли обложку книги - диаграмму, привязанную к параграфу
-							MakeCoverTag( oPar, oContent )
-						End If
-					End If
+				ElseIf isTextEmbeddedObject( oContent ) Then
+					&apos; Formula, диаграмма, OLE...
+					MakeCoverTag( oPar, oContent )
 				End If
 			Loop
 
@@ -69,29 +55,18 @@ Sub MakeCoverParser()
 			Do While oSectEnum.hasMoreElements()
 				oSect = oSectEnum.nextElement()
 				If oSect.TextPortionType = &quot;Frame&quot; Then
-					oCEnum = oSect.createContentEnumeration(textGraphService)
+					oCEnum = oSect.createContentEnumeration(&quot;com.sun.star.text.TextGraphicObject&quot;)
 					Do While oCEnum.hasMoreElements()
 						oContent = oCEnum.nextElement()
-						If oContent.supportsService(textGraphService) Or oContent.supportsService(graphicService) Then
-							&apos; нашли обложку книги, привязанной к символу
-							MakeCoverTag(oPar, oContent )
-						ElseIf oContent.supportsService( customShapeService ) OR oContent.supportsService( rectangleShapeService ) OR _
-							oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-							oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+						If isRasterGraphic( oContent ) Then
+							&apos; растровая обложка книги, привязанной к символу
+							MakeCoverTag( oPar, oContent )
+						ElseIf isVectorGraphic( oContent ) Then
 							&apos; обложка векторной графики, привязанной к символу
 							MakeCoverTag( oPar, oContent )
-						Else
-							If oContent.ShapeType = &quot;FrameShape&quot; Then
-								If oContent.FrameStyleName = &quot;Frame&quot; Then
-									&apos; Парсер Текстовой Врезки
-								ElseIf oContent.FrameStyleName = &quot;Formula&quot; Then
-									&apos; нашли обложку книги - формулу, привязанную к символу
-									MakeCoverTag( oPar, oContent )
-								ElseIf oContent.FrameStyleName = &quot;OLE&quot; Then
-									&apos; нашли обложку книги - диаграмму, привязанную к символу
-									MakeCoverTag( oPar, oContent )
-								End If
-							End If
+						ElseIf isTextEmbeddedObject( oContent ) Then
+							&apos; Formula, диаграмма, OLE...
+							MakeCoverTag( oPar, oContent )
 						End If
 					Loop
 				End If
@@ -106,7 +81,7 @@ End Sub
 
 &apos; добавляем данные об очередной картинке-обложке в массив
 Sub MakeCoverTag( oPar As Object, oContent As Object )
-	nCoverNumber = nCoverNumber+1
+	nCoverNumber = nCoverNumber + 1
 	If oPar.ParaStyleName &lt;&gt; sStyle_BookAnnotation Then
 		&apos; заносим тэги обложек в массив
 		Dim sExt As String
@@ -196,10 +171,12 @@ Function GetGraphicExt( ByVal oContent As Object ) As String
 				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
 				sExt = sFD.sExt	
-			Else
+			ElseIf Not IsNull( oContent.Graphic ) Then
 				&apos; Картинка &quot;встроена&quot; в файл:
 				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
-				sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
+				sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; ) + 1, Len(oContent.Graphic.MimeType) )
+			Else
+				sExt = sAnyAs
 			End If
 		Else &apos; OLE (Диаграммы) или Formula:
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
@@ -228,14 +205,8 @@ End Function
 
 &apos; сохранение картинки в файл png или jpeg
 Sub	SaveGraphicToFile( oContent As Object, sExt As String)
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 	
 	Dim sFileNameURL As String, sFD As tFileData
 	
@@ -248,7 +219,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 	End If
 
 	If oContent.supportsService( graphicService ) Then
-		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
+		&apos; 1. встроенные в текст или 2. ссылки на них (сами картинки лежат где-то на диске)
 		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
 			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
@@ -268,15 +239,13 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
 		End If
-	ElseIf oContent.supportsService( rectangleShapeService ) OR oContent.supportsService( customShapeService ) OR _
-			oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-			oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+	ElseIf isVectorGraphic( oContent ) Then
 		&apos; Векторная графика
 		sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 		ExportGraphicToFile( oContent, sFileNameURL, sExt )
 	Else
 		If oContent.supportsService( textGraphService ) Then &apos; Картинки
-			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
+			&apos; 1. встроенные в текст или 2. ссылки на них (сами картинки лежат где-то на диске)
 			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
 				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
@@ -296,7 +265,7 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 				ExportGraphicToFile( oContent, sFileNameURL, sExt )
 			End If
-		Else &apos; oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; : OLE (Диаграммы) или Formula:
+		ElseIf isTextEmbeddedObject( oContent ) Then &apos; OLE (Диаграммы) или Formula: (ImplementationName = &quot;SwXTextEmbeddedObject&quot;)
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
@@ -318,15 +287,9 @@ End Function
 
 &apos; экспорт картинки в файл
 Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt As String )
-	Dim textGraphService		As String : textGraphService		= &quot;com.sun.star.text.TextGraphicObject&quot;
-	Dim graphicService			As String : graphicService			= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
-	Dim customShapeService		As String : customShapeService		= &quot;com.sun.star.drawing.CustomShape&quot;
-	Dim rectangleShapeService	As String : rectangleShapeService	= &quot;com.sun.star.drawing.RectangleShape&quot;
-	Dim captionShapeService		As String : captionShapeService		= &quot;com.sun.star.drawing.CaptionShape&quot;
-	Dim openBezierShapeService	As String : openBezierShapeService	= &quot;com.sun.star.drawing.OpenBezierShape&quot;
-	Dim lineShapeService		As String : lineShapeService		= &quot;com.sun.star.drawing.LineShape&quot;
-	Dim ellipseShapeService		As String : ellipseShapeService		= &quot;com.sun.star.drawing.EllipseShape&quot;
-	
+	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
+	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
+
 	Dim sFileExt As String : sFileExt = sExt
 	Dim oGraphic As Object
 
@@ -340,9 +303,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		End If
-	ElseIf oContent.supportsService( rectangleShapeService ) OR oContent.supportsService( customShapeService ) OR _
-			oContent.supportsService( captionShapeService ) OR oContent.supportsService( openBezierShapeService ) OR _
-			oContent.supportsService( lineShapeService ) OR oContent.supportsService( ellipseShapeService ) Then
+	ElseIf isVectorGraphic( oContent ) Then
 		&apos; Векторная графика
 		oGraphic = oContent.Bitmap
 	Else
@@ -356,7 +317,7 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			End If
-		ElseIf  oContent.ImplementationName = &quot;SwXTextEmbeddedObject&quot; Then &apos;OLE (Диаграммы) или Formula:
+		ElseIf isTextEmbeddedObject( oContent ) Then &apos;OLE (Диаграммы) или Formula: (ImplementationName = &quot;SwXTextEmbeddedObject&quot;)
 			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			oGraphic = oContent.ReplacementGraphic
 		Else
@@ -478,13 +439,13 @@ Function GetFileData( sFileUrl As String ) As tFileData
 	Dim sFD As tFileData
 	Dim i As Integer, sExt As String
 	Dim j As Integer : j = 0
-	For i=1 To Len(sFileUrl)-1
+	For i = 1 To Len(sFileUrl) - 1
 		If Mid(sFileUrl, i, 1) = &quot;.&quot; Then
-			j=i+1
+			j=i + 1
 		End If
 	Next i
 	
-	If j&gt;0 Then
+	If j &gt; 0 Then
 		sExt = Mid(sFileUrl, j, Len(sFileUrl))
 	Else
 		sExt = &quot;?&quot;
@@ -493,7 +454,7 @@ Function GetFileData( sFileUrl As String ) As tFileData
 	sFD.sFileUrl = sFileUrl
 	sFD.sFile = Dir(ThisComponent.getURL, 0)
 	If sExt &lt;&gt; &quot;?&quot; Then
-		sFD.sName = Mid( sFileUrl, 1, Len(sFileUrl) - (Len(sExt)+1) )
+		sFD.sName = Mid( sFileUrl, 1, Len(sFileUrl) - (Len(sExt) + 1) )
 	Else
 		sFD.sName = sFileUrl
 	End If
