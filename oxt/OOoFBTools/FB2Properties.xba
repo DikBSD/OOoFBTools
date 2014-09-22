@@ -94,10 +94,16 @@ Sub FB2PropertiesEditorDlgExec()
 	MakeLangList( sLangList() )
 	oProgressBar.setValue(3)
 
-	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
-	ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
-	oFB2PropertiesDlg.Model.lbGenreElite.StringItemList = aArray()
+	With oFB2PropertiesDlg
+		&apos; читаем избранные жанры из файла, если он есть
+		ReadFileInArray( aArray(), getOOoFBToolsSettingsDir() &amp; sConstMyGenre )
+		.getModel().lbGenreElite.StringItemList = aArray()
+		&apos; список готовых Custom Info типов
+		.getModel().cusTypeListBox.StringItemList = Array( _
+			&quot;copyright&quot;, &quot;edition&quot;, &quot;editor&quot;, &quot;original_author&quot;, &quot;original_booktitle&quot;,&quot;original_publisher&quot; )
+		.getControl( &quot;cusTypeListBox&quot; ).SelectItemPos( 0, True )
+	End With
 	oProgressBar.setValue(4)
 	
 	&apos; задаем положение диалога из файла настроек
@@ -118,16 +124,16 @@ Sub FB2PropertiesEditorDlgExec()
 		End If
 	End With
 	oProgressBar.setValue(5)
-	oProgressBar.end
+	oProgressBar.End
 	
 	&apos; заполнение контролов формы
 	Dim ProgressCount As Integer : ProgressCount = 3
 	If bFB2NotFlagPropertyIsExsist Then ProgressCount = 43
-	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog+&quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgLoadFB2Properties, ProgressCount )
+	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog &amp; &quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgLoadFB2Properties, ProgressCount )
 	oProgressBar.setValue(0)
 	With oFB2PropertiesDlg
 		.getControl( &quot;SrcLangComboBox&quot; ).AddItem( &quot;&quot;, 0 )
-		.getControl( &quot;Codepage&quot; ).addItems(Array( &quot;utf-8&quot;, &quot;windows-1251&quot;), 0 )
+		.getControl( &quot;Codepage&quot; ).addItems( Array( &quot;utf-8&quot;, &quot;windows-1251&quot;), 0 )
 		.getControl( &quot;Codepage&quot; ).SelectItemPos( 0, True )
 	End With
 	Dim Iter As Integer : Iter = 1
@@ -342,6 +348,9 @@ Sub SavePropertiesToDoc()
 	If IsFB2AuthorInput()			Then _FB2AuthorAdd()
 	If IsPublisherSequenseInput()	Then _PublisherSequenceAdd()
 	If IsCustomInfoInput()			Then _CustomInfoAdd()
+	If IsUDCCustomInfoInput()		Then _UDCCustomInfoAdd()
+	If IsBBCCustomInfoInput()		Then _BBCCustomInfoAdd()
+	If IsAuthorSignCustomInfoInput() Then _AuthorSignCustomInfoAdd()
 	oProgressBar.setValue(0) : Iter = Iter + 1
 	&apos; сохраняем fb2 данные в свойства документа
 	SaveFB2PropertiesToDoc( oProgressBar, Iter )
@@ -1054,6 +1063,136 @@ Sub PublisherSequenceRemove()
 End Sub
 
 &apos;***************************************************************************
+&apos; проверка, задан ли УДК
+Function IsUDCCustomInfoInput() As Boolean
+	IsUDCCustomInfoInput = False
+	With oFB2PropertiesDlg.Model
+		If Trim(.pubUDCTextField.Text) = &quot;&quot; Then
+			Exit Function
+		End If
+	End With
+	IsUDCCustomInfoInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимой УДК Custom Info на наличие в Списке добавленных Custom Info
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
+Function IsNewUDCCustomInfo() As String
+	IsNewUDCCustomInfo = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim UDCCustomInfoDataString As String
+		UDCCustomInfoDataString = Make2ColDataString( &quot;udc&quot;, Trim(.Model.pubUDCTextField.Text) )
+		If IsExsistStringInArray(oListOfCustomInfos.Items, UDCCustomInfoDataString) = -1 Then
+			IsNewUDCCustomInfo = UDCCustomInfoDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление УДК в Custom Info
+Sub _UDCCustomInfoAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимой Custom Info UDC на наличие в Списке добавленных Custom Info
+		Dim oListOfCustomInfos		As Object : oListOfCustomInfos		= .getControl(&quot;lbCustomInfos&quot;)
+		Dim UDCCustomInfoDataString	As String : UDCCustomInfoDataString	= IsNewUDCCustomInfo()
+		If UDCCustomInfoDataString &lt;&gt; &quot;&quot; Then
+			oListOfCustomInfos.addItem( UDCCustomInfoDataString, oListOfCustomInfos.getItemCount() )
+		End If
+	End With
+End Sub
+
+&apos;***************************************************************************
+&apos; проверка, задан ли ББК
+Function IsBBCCustomInfoInput() As Boolean
+	IsBBCCustomInfoInput = False
+	With oFB2PropertiesDlg.Model
+		If Trim(.pubBBCTextField.Text) = &quot;&quot; Then
+			Exit Function
+		End If
+	End With
+	IsBBCCustomInfoInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимой ББК Custom Info на наличие в Списке добавленных Custom Info
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
+Function IsNewBBCCustomInfo() As String
+	IsNewBBCCustomInfo = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim BBCCustomInfoDataString As String
+		BBCCustomInfoDataString = Make2ColDataString( &quot;bbc&quot;, Trim(.Model.pubBBCTextField.Text) )
+		If IsExsistStringInArray(oListOfCustomInfos.Items, BBCCustomInfoDataString) = -1 Then
+			IsNewBBCCustomInfo = BBCCustomInfoDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление ББК в Custom Info
+Sub _BBCCustomInfoAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимой Custom Info BBC на наличие в Списке добавленных Custom Info
+		Dim oListOfCustomInfos		As Object : oListOfCustomInfos		= .getControl(&quot;lbCustomInfos&quot;)
+		Dim BBCCustomInfoDataString	As String : BBCCustomInfoDataString	= IsNewBBCCustomInfo()
+		If BBCCustomInfoDataString &lt;&gt; &quot;&quot; Then
+			oListOfCustomInfos.addItem( BBCCustomInfoDataString, oListOfCustomInfos.getItemCount() )
+		End If
+	End With
+End Sub
+
+&apos;***************************************************************************
+&apos; проверка, задан ли Авторский знак
+Function IsAuthorSignCustomInfoInput() As Boolean
+	IsAuthorSignCustomInfoInput = False
+	With oFB2PropertiesDlg.Model
+		If Trim(.pubAuthorSignTextField.Text) = &quot;&quot; Then
+			Exit Function
+		End If
+	End With
+	IsAuthorSignCustomInfoInput = True
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимого Авторского знака Custom Info на наличие в Списке добавленных Custom Info
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
+Function IsNewAuthorSignCustomInfo() As String
+	IsNewAuthorSignCustomInfo = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim AuthorSignCustomInfoDataString As String
+		AuthorSignCustomInfoDataString = Make2ColDataString( &quot;author_sign&quot;, Trim(.Model.pubAuthorSignTextField.Text) )
+		If IsExsistStringInArray(oListOfCustomInfos.Items, AuthorSignCustomInfoDataString) = -1 Then
+			IsNewAuthorSignCustomInfo = AuthorSignCustomInfoDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; добавление Авторского знака в Custom Info
+Sub _AuthorSignCustomInfoAdd()
+	With oFB2PropertiesDlg
+		&apos; проверка вводимой Custom Info AuthorSign на наличие в Списке добавленных Custom Info
+		Dim oListOfCustomInfos		As Object : oListOfCustomInfos	= .getControl(&quot;lbCustomInfos&quot;)
+		Dim AuthorSignCustomInfoDataString	As String : AuthorSignCustomInfoDataString	= IsNewAuthorSignCustomInfo()
+		If AuthorSignCustomInfoDataString &lt;&gt; &quot;&quot; Then
+			oListOfCustomInfos.addItem( AuthorSignCustomInfoDataString, oListOfCustomInfos.getItemCount() )
+		End If
+	End With
+End Sub
+
+&apos;***************************************************************************
+&apos; добавление Готовых типов Custom Info
+Sub PresetCustomInfoAdd()
+	With oFB2PropertiesDlg
+		Dim oCusTypeListBox	As Object : oCusTypeListBox = .getControl(&quot;cusTypeListBox&quot;)
+		.Model.cusTypeTextField.Text = oCusTypeListBox.SelectedItem
+		.getControl(&quot;cusTypeTextField&quot;).setFocus()
+	End With
+End Sub
+
+&apos;***************************************************************************
 &apos; проверка, задан ли хоть один из данных на Custom Info
 Function IsCustomInfoInput() As Boolean
 	IsCustomInfoInput = False
@@ -1179,7 +1318,7 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		&apos; для Жанров Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbGenre&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			For i = 0 To oListOfData.getItemCount()-1
+			For i = 0 To oListOfData.getItemCount() - 1
 				SetUserProperty( _fb2_ti_GenreCM &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
@@ -1188,7 +1327,7 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		&apos; для Авторов Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbBookAuthors&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			For i = 0 To oListOfData.getItemCount()-1
+			For i = 0 To oListOfData.getItemCount() - 1
 				SetUserProperty( _fb2_ti_BookAuthor &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
@@ -1206,7 +1345,7 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		&apos; для Серий Книги
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbSequencies&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			For i = 0 To oListOfData.getItemCount()-1
+			For i = 0 To oListOfData.getItemCount() - 1
 				SetUserProperty( _fb2_ti_Sequence &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
@@ -1237,7 +1376,7 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbFB2Author&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			For i = 0 To oListOfData.getItemCount()-1
+			For i = 0 To oListOfData.getItemCount() - 1
 				SetUserProperty( _fb2_di_FB2Author &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
@@ -1269,7 +1408,7 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbPubSequensies&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			For i = 0 To oListOfData.getItemCount()-1
+			For i = 0 To oListOfData.getItemCount() - 1
 				SetUserProperty( _fb2_pi_Sequence &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
@@ -1279,7 +1418,7 @@ Sub SaveFB2PropertiesToDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		&apos; Массивы свойств
 		oListOfData = oFB2PropertiesDlg.getControl(&quot;lbCustomInfos&quot;)
 		If oListOfData.getItemCount() &gt; 0 Then
-			For i = 0 To oListOfData.getItemCount()-1
+			For i = 0 To oListOfData.getItemCount() - 1
 				SetUserProperty( _fb2_ci_CustomInfo &amp; i, oListOfData.getItem(i) )
 			Next i
 		End If
@@ -1379,13 +1518,43 @@ Sub GetFB2PropertiesFromDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		.pubISBNTextField.Text		= GetISBNFromProperty()
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		
+				
 		GetPublishSequenceArray()
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 		
 		&apos; = Custom Info =
 		GetCustomInfosArray()
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
+		
+		&apos; УДК и ББК из CustomInfo
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = oFB2PropertiesDlg.getControl(&quot;lbCustomInfos&quot;)
+		Dim i As Integer, itemsCount As Integer
+		If UBound( oListOfCustomInfos.Items ) &gt; 0 Then
+			itemsCount = UBound( oListOfCustomInfos.getItems() )
+			For i = LBound( oListOfCustomInfos.getItems() ) To itemsCount
+				Dim Item As String : Item = oListOfCustomInfos.Items(i)
+				If InStr( Item, &quot;udc | &quot; ) = 1 Then
+					Dim aUDC() As String : aUDC() = Split( Item, &quot; | &quot; )
+					.pubUDCTextField.Text = Trim( aUDC(1) )
+					oListOfCustomInfos.removeItems( i, 1 )
+					itemsCount = UBound( oListOfCustomInfos.getItems() )
+					i = i - 1
+				ElseIf InStr( Item, &quot;bbc | &quot; ) = 1 Then
+					Dim aBBC() As String : aBBC() = Split( Item, &quot; | &quot; )
+					.pubBBCTextField.Text = Trim( aBBC(1) )
+					oListOfCustomInfos.removeItems( i, 1 )
+					itemsCount = UBound( oListOfCustomInfos.getItems() )
+					i = i - 1
+				ElseIf InStr( Item, &quot;author_sign | &quot; ) = 1 Then
+					Dim aAS() As String : aAS() = Split( Item, &quot; | &quot; )
+					.pubAuthorSignTextField.Text = Trim( aAS(1) )
+					oListOfCustomInfos.removeItems( i, 1 )
+					itemsCount = UBound( oListOfCustomInfos.getItems() )
+					i = i - 1
+				End If
+			Next i
+		End If
+		
 		&apos; = Разное =
 		oLB = oFB2PropertiesDlg.getControl(&quot;Codepage&quot;)
 		oLB.selectItem( GetEncodingFromProperty(), True )

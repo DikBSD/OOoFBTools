@@ -848,12 +848,12 @@ Sub TextCorrectorDlgOk()
 	oTextCorrectorDlg.endExecute()
 	
 	SaveCorrectorSettings() &apos; сохранение настроек чистки текста
-
-	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
 	
 	oDoc = ThisComponent
 	oReplace = oDoc.createReplaceDescriptor
 	oReplace.SearchRegularExpression = True
+	
+	Dim oProgressBar : oProgressBar = oDoc.CurrentController.StatusIndicator
 	
 	&apos; удаление из документа всех векторных линий (после OCR)
 	If bDeleteAllLineShape = True Then

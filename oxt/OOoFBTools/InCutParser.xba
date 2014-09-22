@@ -242,7 +242,17 @@ Sub TextFrameStructParser( oCont As Object )
 		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			sFormatPara = GraphicsFootEndNoteTextFrameParser( oPar )
 		
-			StyleParser( oPar.ParaStyleName, sFormatPara )
+			&apos;В LO поломано восприятие локализованных стилец Цитата
+			If isLibreOffice() Then
+				Dim ParaStyle As String : ParaStyle = oPar.ParaStyleName
+				If ParaStyle = GetLocaCiteStyleName() Then
+					ParaStyle = &quot;Quotations&quot;
+				End If
+				StyleParser( ParaStyle, sFormatPara )
+			Else &apos; для OpenOffice
+				StyleParser( oPar.ParaStyleName, sFormatPara )
+			End If
+
 		ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
 			&apos; парсер таблицы
 			Dim sTable as String

@@ -406,7 +406,7 @@ Function ListOfDocumentFonts( StyleType As String ) As Array
 		oStyle = oParagraphStyles(i)
 		Dim j As Integer
 		Dim flag As Boolean : flag = False
-		For j=0 To UBound(aArray())
+		For j = 0 To UBound(aArray())
 			If aArray(j) = oStyle.charFontName Then
 				flag = True
 				Exit For
@@ -423,6 +423,41 @@ Function ListOfDocumentFonts( StyleType As String ) As Array
 	Next i
 	bubble_sort(aArray())
 	ListOfDocumentFonts = aArray()
+End Function
+
+&apos; список всех шрифтов, используемых в системе. Sort = True - сортированный список
+Function ListSystemFonts( Sort As Boolean ) As Array
+	Dim oToolkit			As Object	: oToolkit			= CreateUnoService(&quot;com.sun.star.awt.Toolkit&quot;)
+	Dim oDevice				As Variant	: oDevice			= oToolkit.createScreenCompatibleDevice(0, 0)
+	Dim oFontDescriptors	As Variant	: oFontDescriptors	= oDevice.FontDescriptors
+	Dim oFontDescriptor		As Object
+	Dim aFontArray()		As String
+	Dim iIndex				As Integer
+	For iIndex = LBound(oFontDescriptors) To UBound(oFontDescriptors)
+		oFontDescriptor = oFontDescriptors(iIndex)
+		Dim j As Integer
+		Dim flag As Boolean : flag = False
+		For j = 0 To UBound(aFontArray())
+			If aFontArray(j) = oFontDescriptor.Name Then
+				flag = True
+				Exit For
+			End If
+		Next j
+		If UBound(aFontArray()) = -1 Then
+			AddNewItemToArray1( aFontArray(), oFontDescriptor.Name )
+			flag = False
+		Else
+			If flag = False Then
+				AddNewItemToArray1( aFontArray(), oFontDescriptor.Name )
+			End If
+		End If
+	Next iIndex
+	If Sort Then
+		If Not IsEmpty(aFontArray()) Then
+			bubble_sort( aFontArray() )
+		End If
+	End If
+	ListSystemFonts = aFontArray()
 End Function
 
 &apos; ===========================================================
@@ -557,6 +592,8 @@ Function ReadDlgSettings( sFileName As String, oDlg, nX As Integer, nY As Intege
 							oCtrl.Text = sSetting(1)
 						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot;		Then
 							oCtrl.Text = sSetting(1)
+						ElseIf oCtrl.getImplementationName() = &quot;stardiv.Toolkit.UnoNumericFieldControl&quot; Then
+							oCtrl.Text = sSetting(1)
 						End If
 					End If
 				End If
@@ -584,7 +621,7 @@ Sub SaveSettings( sSettingsFilename As String, oDlg As Object )
 	
 	Dim ctrl As Object, i As Integer
 	ctrl = oDlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
+	For i = LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
 			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
@@ -595,6 +632,8 @@ Sub SaveSettings( sSettingsFilename As String, oDlg As Object )
 			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Text &amp; chr(10))
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
 			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoNumericFieldControl&quot; Then
+			oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.Value &amp; chr(10))
 		End If
 	Next i
 	oTOS.writeString(&quot;X=&quot; &amp; oDlg.PosSize.X &amp; chr(10))
@@ -619,6 +658,8 @@ Sub SetSettingsToControlls( sCurrentLine As String, oDlg )
 	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
 		oLB = oDlg.getControl(sSetting(0))
 		oLB.SelectItemPos(sSetting(1), True)
+	ElseIf oDlg.GetControl(sSetting(0)).getImplementationName() = &quot;stardiv.Toolkit.UnoNumericFieldControl&quot; Then
+		oDlg.GetControl(sSetting(0)).Text = sSetting(1)
 	End If
 	&apos;Exit Sub
 	&apos;ErrorHandler: &apos; идем дальше
@@ -1628,24 +1669,6 @@ Sub swap( aArray() As String, nPos1 As Integer, nPos2 As Integer )
 	aArray(nPos2) = sTemp
 End Sub
 
-&apos; пузырьковая сортировка
-Function bubble_sort( aArray() As String )
-	Dim nSize As Integer : nSize = Ubound(aArray())
-	If nSize &lt;= 1 Then Exit Function
-	Dim i As Integer, j As Integer
-	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
-	&apos; наибольший автоматически оказывается в правильной позиции. 
-	For i=0 To nSize-1
-		j=nSize-1
-		Do
-			If (aArray(j-1) &gt; aArray(j)) Then
-				swap(aArray, j-1, j)
-			End If
-		j = j-1
-		Loop While (j&gt;i)
-	Next i
-End Function
-
 &apos; перемена местами двух итемов в массиве
 Sub swap_int( aArray() As Integer, nPos1 As Integer, nPos2 As Integer )
 	If UBound( aArray() )=-1 Then Exit Sub
@@ -1656,26 +1679,71 @@ Sub swap_int( aArray() As Integer, nPos1 As Integer, nPos2 As Integer )
 End Sub
 
 &apos; пузырьковая сортировка
+Function bubble_sort( aArray() As String )
+	Dim nSize As Integer : nSize = Ubound(aArray())
+	If nSize &lt;= 1 Then Exit Function
+	Dim i As Integer, j As Integer
+	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
+	&apos; наибольший автоматически оказывается в правильной позиции. 
+	For i = 0 To nSize - 1
+		j = nSize - 1
+		Do
+			If (aArray(j - 1) &gt; aArray(j)) Then
+				swap(aArray, j - 1, j)
+			End If
+		j = j - 1
+		Loop While (j &gt; i)
+	Next i
+End Function
+
+&apos; пузырьковая сортировка
 Function bubble_sort_int( aArray() As Integer )
 	Dim nSize As Integer : nSize = Ubound(aArray())
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Integer, j As Integer
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
 	&apos; наибольший автоматически оказывается в правильной позиции. 
-	For i=0 To nSize-1
-		j=nSize-1
+	For i = 0 To nSize - 1
+		j = nSize - 1
 		Do
-			If (aArray(j-1) &gt; aArray(j)) Then
-				swap_int(aArray, j-1, j)
+			If (aArray(j - 1) &gt; aArray(j)) Then
+				swap_int(aArray, j - 1, j)
 			End If
-		j = j-1
-		Loop While (j&gt;i)
+		j = j - 1
+		Loop While (j &gt; i)
 	Next i
 End Function
 
 &apos; ====================================================================================
 &apos; 							Работа с системой
 &apos; ====================================================================================
+&apos; True, если это LibreOffice. False - если OpenOffice
+Function isLibreOffice() As Boolean
+	isLibreOffice = False
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.loadLibrary(&quot;Tools&quot;)
+	End If
+	Dim s As String : s = getProductName()
+	If InStr( s, &quot;LibreOffice&quot; ) = 1 Then
+		isLibreOffice = True
+	End If
+End Function
+
+&apos; возвращает название с версией Офиса
+Function getOfficeName() As String
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.loadLibrary(&quot;Tools&quot;)
+	End If
+	getOfficeName = getProductName()
+End Function
+
+&apos; Возвращает версию офиса без точек одним числом (например, 430, а не 4.3.0)
+Function getOfficeVersion() As String
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.loadLibrary(&quot;Tools&quot;)
+	End If
+	getOfficeVersion = getSolarVersion()
+End Function
 
 &apos; Версия OOo
 Function OOoWriterVersion() As String
@@ -2431,12 +2499,85 @@ Sub _ClearStyleToBase_(BaseStyle As String)
 	SetSymbolStyle( GetLocaDefaultStyleName() )
 End Sub
 
+&apos; =======================================================================================================
+&apos; 										Форматирование документа 
+&apos; =======================================================================================================
+&apos; Установка размера полей бумаги
+&apos; поля задаются в см. типа Double (например 1.5)
+Sub setMargins( ByRef FromLeft As Double, ByRef FromRight As Double, ByRef FromTop As Double, ByRef FromBottom As Double )
+	Dim oDoc			As Object : oDoc			= ThisComponent
+	Dim oTextCurs		As Object : oTextCurs		= oDoc.getText().CreateTextCursor()
+	Dim sPageStyleName	As String : sPageStyleName	= oTextCurs.PageStyleName
+	Dim oPageStyles		As Object : oPageStyles		= oDoc.getStyleFamilies().getByName( &quot;PageStyles&quot; )
+	Dim oStyle			As Object : oStyle			= oPageStyles.getByName( sPageStyleName )
+
+	oStyle.LeftMargin	= FromLeft		* 1000
+	oStyle.RightMargin	= FromRight		* 1000
+	oStyle.TopMargin	= FromTop		* 1000
+	oStyle.BottomMargin	= FromBottom	* 1000
+End Sub
+
+&apos; Установка формата бумаги
+&apos; PaperFormat задается из значений: A3, A4, A5, A6, Letter
+Sub setPageFormat( ByRef PaperFormat As String )
+	Dim oDoc			As Object : oDoc			= ThisComponent
+	Dim oTextCurs		As Object : oTextCurs		= oDoc.getText().CreateTextCursor()
+	Dim sPageStyleName	As String : sPageStyleName	= oTextCurs.PageStyleName
+	Dim oPageStyles		As Object : oPageStyles		= oDoc.getStyleFamilies().getByName( &quot;PageStyles&quot; )
+	Dim oStyle			As Object : oStyle			= oPageStyles.getByName( sPageStyleName )
+
+	If PaperFormat = &quot;A3&quot; Then
+		oStyle.Width = 29700
+		oStyle.Height = 42000
+	ElseIf PaperFormat = &quot;A4&quot; Then
+		oStyle.Width = 21000
+		oStyle.Height = 29700
+	ElseIf PaperFormat = &quot;A5&quot; Then
+		oStyle.Width = 14800
+		oStyle.Height = 21000
+	ElseIf PaperFormat = &quot;A6&quot; Then
+		oStyle.Width = 10500
+		oStyle.Height = 14800
+	ElseIf PaperFormat = &quot;Letter&quot; Then
+		oStyle.Width = 21590
+		oStyle.Height = 27940
+	Else
+		&apos; по-умолчанию - A4
+		oStyle.Width = 21000
+		oStyle.Height = 29700
+	End If
+End Sub
+
+&apos; ориентация страницы
+&apos; Landscape = True - альбомная ориентация. Landscape = False - портретная
+Sub setPageOrientation( Landscape As Boolean )
+	Dim oDoc			As Object : oDoc			= ThisComponent
+	Dim oTextCurs		As Object : oTextCurs		= oDoc.getText().CreateTextCursor()
+	Dim sPageStyleName	As String : sPageStyleName	= oTextCurs.PageStyleName
+	Dim oPageStyles		As Object : oPageStyles		= oDoc.StyleFamilies.getByName( &quot;PageStyles&quot; )
+	Dim oStyle			As Object : oStyle			= oPageStyles.getByName( sPageStyleName )
+
+	Dim TempWidth	: TempWidth		= oStyle.Width 
+	Dim TempHeight	: TempHeight	= oStyle.Height
+	
+	If Landscape Then
+		&apos; нужна альбомная ориентация
+		oStyle.IsLandscape = True
+		oStyle.Width	= TempHeight
+		oStyle.Height	= TempWidth
+	Else
+		&apos; нужна портретная ориентация
+		oStyle.IsLandscape = False
+		oStyle.Width	= TempWidth
+		oStyle.Height	= TempHeight
+	End If
+End Sub
 
 &apos; ====================================================================================
 &apos; 									Полезные заготовки
 &apos; ====================================================================================
 &apos; парсер текстовой врезки
-Sub TextFrameParser( ByRef oTextFrame As Object )
+Sub _TextFrameParser( ByRef oTextFrame As Object )
 	If oTextFrame.supportsService(&quot;com.sun.star.text.TextFrame&quot;) Then
 		Dim oObjEnum As Object, oObj As Object
 		oObjEnum = oTextFrame.createEnumeration()
@@ -2452,7 +2593,7 @@ Sub TextFrameParser( ByRef oTextFrame As Object )
 End Sub
 
 &apos; перебор текста по абзацам
-Sub TextParser( Optional ByRef oText As Object)
+Sub _TextParser( Optional ByRef oText As Object)
 	Dim oText As Variant : oText = ThisComponent.Text
 	Dim oCursor As Variant : oCursor = oText.CreateTextCursor()
 	oCursor.GoToStart(False)

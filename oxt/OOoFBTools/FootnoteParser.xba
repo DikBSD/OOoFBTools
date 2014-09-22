@@ -155,7 +155,18 @@ End Function
 Function MakeTextArray( sStr As String, oFootnoteCursor As Object, sBookMark As String, asFNPart() As String )
 	Dim sTemp() As String
 	&apos; парсер стилей сносок
-	Dim sType		As String : sType = FootnoteStyleParser( sTemp(), oFootnoteCursor.ParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+	Dim sType		As String
+	&apos;В LO поломано восприятие локализованных стилец Цитата
+	If isLibreOffice() Then
+		Dim ParaStyle As String : ParaStyle = oFootnoteCursor.ParaStyleName
+		If ParaStyle = GetLocaCiteStyleName() Then
+			ParaStyle = &quot;Quotations&quot;
+		End If
+		sType = FootnoteStyleParser( sTemp(), ParaStyle, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+	Else &apos; для OpenOffice
+		sType = FootnoteStyleParser( sTemp(), oFootnoteCursor.ParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+	End If
+	
 	Dim sNoteText	As String : sNoteText = sTemp( UBound( sTemp() )
 	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType( oFootnoteCursor ) )
 

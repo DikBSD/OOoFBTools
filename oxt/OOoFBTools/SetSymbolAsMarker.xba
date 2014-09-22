@@ -71,13 +71,13 @@ Sub SetSymbolAsMarkerDlgOkClick()
 										sSSAMD.sMessageTitle, oCurs() ) Then Exit Sub
 	Dim i As Integer
 	For i = LBound( oCurs() ) To UBound( oCurs() )
-		&apos; вставка символа • как маркера в начало абзацев
+		&apos; вставка выбранного символа, как маркера в начало абзацев
 		SymbolAsMarkerToPara( oDoc, oCurs(i, 0), oCurs(i, 1), bOnlyMarkers )
 	Next i
 	MsgBox sSSAMD.sEndWork, 64, sSSAMD.sMessageTitle
 End Sub
 
-&apos; вставка символа • как маркера в начало абзацев
+&apos; вставка выбранного символа, как маркера в начало абзацев
 Sub SymbolAsMarkerToPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef oRCurs As Object, bOnlyMarkers As Boolean )
 	&apos; bOnlyMarkers = True:	вставка символа • как маркера только для абзацев с маркерами
 	&apos; bOnlyMarkers = False:	вставка символа • как маркера для любых абзацев (и с маркерами, и без них)
@@ -91,7 +91,7 @@ Sub SymbolAsMarkerToPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef oR
 	Do While oCursorL.Text.compareRegionEnds( oCursorL, oCursorR ) &gt; 0
 		oPar = oCursorL.createEnumeration().nextElement()
 		If bOnlyMarkers Then
-			&apos; вставка символа • как маркера только для абзацев с маркерами
+			&apos; вставка выбранного символа, как маркера только для абзацев с маркерами
 			If oPar.NumberingIsNumber = True Then
 				&apos; убираем нумерацию списка для этого абзаца. если она есть
 				oPar.NumberingIsNumber = False
@@ -99,7 +99,7 @@ Sub SymbolAsMarkerToPara( ByRef oDoc As Object, ByRef oLCurs As Object, ByRef oR
 				SetSymbolAsMarkerWorker( oDoc, oViewCursor, oPar )
 			End If
 		Else
-			&apos; вставка символа • как маркера для любых абзацев (и с маркерами, и без них)
+			&apos; вставка выбранного символа, как маркера для любых абзацев (и с маркерами, и без них)
 			If oPar.NumberingIsNumber = True Then
 				&apos; убираем нумерацию списка для этого абзаца. если она есть
 				oPar.NumberingIsNumber = False
@@ -130,8 +130,6 @@ Sub SetSymbolAsMarkerWorker( ByRef oDoc As Object, ByRef oViewCursor As Object, 
 		ElseIf Mid( sPara, 1, 1 ) = &quot; &quot; Then
 			&apos; убираем 1 начальный пробел
 			_UnoDelete()
-		ElseIf Mid( sPara, 1, 1 ) &lt;&gt; &quot; &quot; And Mid( sPara, 2, 1 ) = &quot; &quot; Then
-			_UnoDelete() : _UnoDelete()
 		End If
 	ElseIf Len( sPara ) = 1 Then 
 		If sPara = &quot; &quot; Then

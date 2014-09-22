@@ -148,7 +148,17 @@ Sub DocumentParser()
 			If oSect.NumberingIsNumber = True AND LCase( oSect.NumberingStyleName ) &lt;&gt; &quot;outline&quot; Then
 				sPara = MakeNumberingNumberPara( oPar, sPara )
 			End If
-			StyleParser( oPar.ParaStyleName, sPara )
+			
+			&apos;В LO поломано восприятие локализованных стилец Цитата
+			If isLibreOffice() Then
+				Dim ParaStyle As String : ParaStyle = oPar.ParaStyleName
+				If ParaStyle = GetLocaCiteStyleName() Then
+					ParaStyle = &quot;Quotations&quot;
+				End If
+				StyleParser( ParaStyle, sPara )
+			Else &apos; для OpenOffice
+				StyleParser( oPar.ParaStyleName, sPara )
+			End If
 		End If
 	Loop
 End Sub
@@ -159,7 +169,7 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
 			AddBodyArray(&quot;&quot;, sParaStyleName, False)
-		ElseIf sParaStyleName = sStyleCite Then
+		ElseIf sParaStyleName = GetLocaCiteStyleName() Or sParaStyleName = sStyleCite Then
 			&apos; для пустых строк в цитатах
 			AddBodyArray(&quot;&quot;, sParaStyleName, False)
 		ElseIf sParaStyleName = sStyleAnnotation Then
@@ -194,7 +204,7 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 				sParaStyleName = sStyleEpigraph Or sParaStyleName = sStyleEpigraphAuthor Or _
 				sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
 				sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
-				sParaStyleName = sStyleSubTitle Then
+				sParaStyleName = sStyleSubTitle Or sParaStyleName = GetLocaCiteStyleName() Then
 					AddBodyArray( sPara, sParaStyleName, False )
 		ElseIf IsLevel( sParaStyleName ) Then
 				AddBodyArray( sPara, sParaStyleName, True )

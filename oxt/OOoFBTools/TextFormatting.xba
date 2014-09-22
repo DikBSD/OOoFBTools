@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextFormatting" script:language="StarBasic">&apos;======================================================================================================================
+&apos; 							модуль автоматического форматирования текста документа
+&apos;======================================================================================================================
+
+Option Explicit
+
+Public oTextFormattingDlg As Object
+Private Const sConstTextFormatSettings As String = &quot;textformat.txt&quot; &apos; файл настроек
+
+Sub TextFormattingStart()
+	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+	End If
+	oTextFormattingDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.TextFormattingDlg )
+	
+	&apos; инициализация диалога
+	InitTextFormattingDlg()
+	
+	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
+	oProgressBar.start( sTFD.sInit, 5 )
+	oProgressBar.setValue( 1 )
+
+	Dim aPaperFormatList() As String : aPaperFormatList() = Array( &quot;A3&quot;, &quot;A4&quot;, &quot;A5&quot;, &quot;A6&quot;, &quot;Letter&quot; )
+	With oTextFormattingDlg
+		.Model.PaperFormatListBox.StringItemList = aPaperFormatList()
+		.getControl( &quot;PaperFormatListBox&quot; ).SelectItemPos(1, True)
+		.Model.LeftMarginNumericField.ValueStep			= 0.5
+		.Model.RightMarginNumericField.ValueStep		= 0.5
+		.Model.TopMarginNumericField.ValueStep			= 0.5
+		.Model.BottomMarginNumericField.ValueStep		= 0.5
+		.Model.BeforeTextNumericField.ValueStep			= 0.5
+		.Model.AfterTextNumericField.ValueStep			= 0.5
+		.Model.FirstLineNumericField.ValueStep			= 0.5
+		.Model.BeforeParagraphNumericField.ValueStep	= 0.5
+		.Model.AfterParagraphNumericField.ValueStep		= 0.5
+		.Model.FontListBox.StringItemList = ListSystemFonts( True )
+		.getControl( &quot;FontListBox&quot; ).SelectItemPos(0, True)
+		.getControl( &quot;FontSizeListBox&quot; ).SelectItemPos(7, True)
+	End With
+	oProgressBar.setValue( 2 )
+	
+	&apos; считаем положение диалога из файла настроек
+	Dim nX As Integer, nY As Integer
+	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstTextFormatSettings, oTextFormattingDlg, nX, nY )
+	oTextFormattingDlg.setPosSize( nX, nY, 183, 341, com.sun.star.awt.PosSize.POS )
+	oProgressBar.setValue( 3 )
+	
+	&apos; доступность всех контролов при загрузке настроек формы
+	SetControlsEnabled()
+	oProgressBar.setValue( 4 )
+	
+	&apos; доступность кнопки старта удаления объектов из документа
+	CheckBoxesCheck()
+	oProgressBar.setValue( 5 )
+	oProgressBar.End
+	
+	oTextFormattingDlg.execute()
+End Sub
+
+&apos; доступность кнопки старта форматирования документа
+Sub ApplyEnabled()
+	With oTextFormattingDlg.getModel()
+		&apos; помечен ли хоть один CheckBox?
+		If isOneCheckBoxeCheched( oTextFormattingDlg ) Then
+			.FormatCommandButton.Enabled = True
+		Else
+			.FormatCommandButton.Enabled = False
+		End If
+	End With
+End Sub
+
+Sub CheckBoxesCheck()
+	&apos; доступность кнопки старта форматирования документа
+	ApplyEnabled()
+End Sub
+
+Sub PaperFormatCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .PaperFormatCheckBox.State
+		.PaperFormatListBox.Enabled = isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub OrientationCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .OrientationCheckBox.State
+		.BookOptionButton.Enabled		= isCheck
+		.LandscapeOptionButton.Enabled	= isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub MarginsCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .MarginsCheckBox.State
+		.LeftMarginNumericField.Enabled		= isCheck
+		.RightMarginNumericField.Enabled	= isCheck
+		.TopMarginNumericField.Enabled		= isCheck
+		.BottomMarginNumericField.Enabled	= isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub IndentCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .IndentCheckBox.State
+		.BeforeTextNumericField.Enabled		= isCheck
+		.AfterTextNumericField.Enabled		= isCheck
+		.FirstLineNumericField.Enabled		= isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub IntervalCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .IntervalCheckBox.State
+		.BeforeParagraphNumericField.Enabled	= isCheck
+		.AfterParagraphNumericField.Enabled		= isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub LineSpacingCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .LineSpacingCheckBox.State
+		.LineSpacing1OptionButton.Enabled		= isCheck
+		.LineSpacing15OptionButton.Enabled		= isCheck
+		.LineSpacing2OptionButton.Enabled		= isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub ParagraphAdjustCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .ParagraphAdjustCheckBox.State
+		.LeftOptionButton.Enabled		= isCheck
+		.RightOptionButton.Enabled		= isCheck
+		.CenterOptionButton.Enabled		= isCheck
+		.BlockOptionButton.Enabled		= isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub RemoveMarkerColorCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub BlackTextFontCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub EmbedGraphicsIntoDocumentCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub FontCheckBoxCheck()
+	With oTextFormattingDlg.getModel
+		.FontListBox.Enabled = .FontCheckBox.State
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub FontSizeCheckBoxCheck()
+	With oTextFormattingDlg.getModel
+		.FontSizeListBox.Enabled = .FontSizeCheckBox.State
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub UnBoldCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub UnItalicCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub UnUnderlineCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+&apos; доступность всех контролов при загрузке настроек формы
+Sub SetControlsEnabled()
+	PaperFormatCheckBoxCheck()
+	OrientationCheckBoxCheck()
+	MarginsCheckBoxCheck()
+	IndentCheckBoxCheck()
+	IntervalCheckBoxCheck()
+	LineSpacingCheckBoxCheck()
+	ParagraphAdjustCheckBoxCheck()
+	FontCheckBoxCheck()
+	FontSizeCheckBoxCheck()
+	RemoveMarkerColorCheckBoxCheck()
+	BlackTextFontCheckBoxCheck()
+	UnBoldCheckBoxCheck()
+	UnItalicCheckBoxCheck()
+	UnUnderlineCheckBoxCheck()
+	
+	EmbedGraphicsIntoDocumentCheckBoxCheck()
+End Sub
+
+&apos; ========================================================================================================================
+&apos; запуск форматирования текста
+Sub FormatDocument()
+	&apos; записываем настройки диалога
+	SaveSettings( getOOoFBToolsSettingsDir() &amp; sConstTextFormatSettings, oTextFormattingDlg )
+	
+	Dim oProgress	As Object
+	oProgress = oTextFormattingDlg.getControl(&quot;ProgressBar&quot;)
+	oProgress.setRange(0, 5)
+	
+	With oTextFormattingDlg
+		&apos; Установка формата бумаги
+		If .getModel().PaperFormatCheckBox.State = 1 Then
+			setPageFormat( .getControl(&quot;PaperFormatListBox&quot;).SelectedItem )
+		End If
+		oProgress.setValue( 1 )
+		
+		&apos; ориентация страницы. Landscape = True - альбомная ориентация. Landscape = False - портретная
+		If .getModel().OrientationCheckBox.State = 1 Then
+			Dim orient As Boolean
+			If .getModel().BookOptionButton.State = 1 Then
+				orient = False
+			Else
+				orient = True
+			End If
+			setPageOrientation( orient )
+		End If
+		oProgress.setValue( 2 )
+		
+		&apos; Установка размера полей бумаги. Поля задаются в см. типа Double (например 1.5)
+		If .getModel().MarginsCheckBox.State = 1 Then
+			setMargins( .getModel().LeftMarginNumericField.Value, .getModel().RightMarginNumericField.Value, _
+						.getModel().TopMarginNumericField.Value, .getModel().BottomMarginNumericField.Value )
+		End If
+		oProgress.setValue( 3 )
+		
+		&apos; встраивание всей графики-ссылок в документ (файлы картинок находятся на жестком диске)
+		If .getModel().EmbedGraphicsIntoDocumentCheckBox.State = 1 Then
+			embeddingAllGraphicLinksToDoc()&apos; ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+		End If
+		oProgress.setValue( 4 )
+		
+		&apos; форматирование всех абзацев по заданным параметрам
+		formatAllParagrahps()
+		oProgress.setValue( 5 )
+		
+		MsgBox sTFD.sEnd, 64, sTFD.sTitle
+		.endExecute()
+	End With
+
+End Sub
+
+&apos; форматирование всех абзацев по заданным параметрам
+Sub formatAllParagrahps()
+	Dim oDoc			As Object	: oDoc				= ThisComponent
+	Dim oText			As Variant	: oText				= oDoc.getText()
+	Dim oTextCursor		As Variant	: oTextCursor		= oText.CreateTextCursor()
+	Dim oProp			As Object	: oProp				= CreateUnoStruct(&quot;com.sun.star.style.LineSpacing&quot;)
+	oProp.Mode = 0   &apos;com.sun.star.style.LineSpacingMode.FIX
+	Dim ParagraphAdjust
+
+	With oTextFormattingDlg.getModel()
+		If .LineSpacingCheckBox.State = 1 Then
+			If .LineSpacing1OptionButton.State = 1 Then
+				oProp.Height = 100 &apos; одинарный
+			ElseIf .LineSpacing15OptionButton.State = 1 Then
+				oProp.Height = 150 &apos; полуторный
+			Else
+				oProp.Height = 200 &apos; двойной
+			End If
+		End If
+		
+		If .ParagraphAdjustCheckBox.State = 1 Then
+			If .LeftOptionButton.State = 1 Then
+				ParagraphAdjust = com.sun.star.style.ParagraphAdjust.LEFT
+			ElseIf .RightOptionButton.State = 1 Then
+				ParagraphAdjust = com.sun.star.style.ParagraphAdjust.RIGHT
+			ElseIf .CenterOptionButton.State = 1 Then
+				ParagraphAdjust = com.sun.star.style.ParagraphAdjust.CENTER
+			Else
+				ParagraphAdjust = com.sun.star.style.ParagraphAdjust.BLOCK
+			End If
+		End If
+		
+		Dim oViewCursor 	As Object : oViewCursor		= oDoc.currentcontroller.getViewCursor()
+		Dim oAllDocCursor	As Object : oAllDocCursor	= oText.createTextCursorByRange( oViewCursor.getStart() )
+		oAllDocCursor.gotoStart( False )
+		oAllDocCursor.gotoEnd( True )
+		
+		&apos; шрифт
+		If .FontCheckBox.State = 1 Then
+			oAllDocCursor.CharFontName = oTextFormattingDlg.getControl(&quot;FontListBox&quot;).SelectedItem
+		End If
+	
+		&apos; размер шрифта
+		If .FontSizeCheckBox.State = 1 Then
+			oAllDocCursor.CharHeight = oTextFormattingDlg.getControl(&quot;FontSizeListBox&quot;).SelectedItem
+		End If
+		
+		&apos; выравнивание абзаца
+		If .ParagraphAdjustCheckBox.State = 1 Then
+			oAllDocCursor.ParaAdjust = ParagraphAdjust
+		End If
+		
+		&apos; отступы абзацев
+		If oTextFormattingDlg.getModel().IndentCheckBox.State = 1 Then
+			oAllDocCursor.ParaLeftMargin		= .BeforeTextNumericField.Value	* 1000 &apos; перед текстом
+			oAllDocCursor.ParaRightMargin		= .AfterTextNumericField.Value	* 1000 &apos; после текста
+			oAllDocCursor.ParaFirstLineIndent	= .FirstLineNumericField.Value	* 1000 &apos; первая строка
+		End If
+		
+		&apos; Интервал
+		If .IntervalCheckBox.State = 1 Then
+			oAllDocCursor.ParaTopMargin = .BeforeParagraphNumericField.Value	* 1000 &apos; перед абзацем
+			oAllDocCursor.ParaBottomMargin = .AfterParagraphNumericField.Value	* 1000 &apos; после абзаца
+		End If
+		
+		&apos; межстрочный интервал
+		If .LineSpacingCheckBox.State = 1 Then
+			oAllDocCursor.setPropertyValue(&quot;ParaLineSpacing&quot;, oProp)
+		End If
+	
+		&apos; убрать цвет маркера
+		If .RemoveMarkerColorCheckBox.State = 1 Then
+			oAllDocCursor.CharBackColor = RGB (255, 255, 255)
+			oAllDocCursor.CharHighlight = RGB (255, 255, 255)
+		End If
+		
+		&apos; черный цвет шрифта текста
+		If .BlackTextFontCheckBox.State = 1 Then
+			oAllDocCursor.CharColor = RGB (0, 0, 0)
+		End If
+		
+		&apos; Убрать полужирное выделение в тексте
+		If .UnBoldCheckBox.State = 1 Then
+			oAllDocCursor.CharWeight = com.sun.star.awt.FontWeight.NORMAL
+		End If
+		
+		&apos; Убрать курсивное выделение в тексте
+		If .UnItalicCheckBox.State = 1 Then
+			oAllDocCursor.CharPosture = com.sun.star.awt.FontSlant.NONE
+		End If
+		
+		&apos; Убрать подчеркивания в тексте
+		If .UnUnderlineCheckBox.State = 1 Then
+			oAllDocCursor.CharUnderline = com.sun.star.awt.FontUnderline.NONE
+		End If
+	End With
+End Sub
+
+&apos; =============================================================================================
+&apos; 					локализация инструмента
+&apos; =============================================================================================
+&apos; для хранения сообщений для диалога форматирования всего документа
+Type tTextFormattingDlgData
+	sInit	As String
+	sTitle	As String
+	sEnd	As String
+End Type
+
+Private sTFD As tTextFormattingDlgData
+
+&apos; инициализация сообщений диалога форматирования всего документа в зависимости от локали
+Sub InitTextFormattingDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sTFD
+			.sInit	= &quot;Инициализация:&quot;
+			.sTitle	= &quot;Форматирование документа&quot;
+			.sEnd	= .sTitle &amp; &quot; &quot; &amp; &quot;завершено.&quot;
+		End With
+	Else
+		With sTFD
+			.sInit	= &quot;Initialization:&quot;
+			.sTitle	= &quot;Document formatting&quot;
+			.sEnd	= .sTitle &amp; &quot; &quot; &amp; &quot;is completed.&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога Валидатора в зависимости от локали
+Sub InitTextFormattingDlg()
+	&apos; инициализация сообщений диалога форматирования всего документа в зависимости от локали
+	InitTextFormattingDlgMessage()
+	
+	With oTextFormattingDlg.getModel()
+		.Title = sTFD.sTitle
+	End With
+	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oTextFormattingDlg.getModel()
+			.FormatCommandButton.Label = &quot;Форматировать&quot;
+			.CancelCommandButton.Label = &quot;Отмена&quot;
+
+			.PageFrameControl.Label			= &quot;Страница&quot;
+			.PaperFormatCheckBox.Label		= &quot;Формат бумаги&quot;
+			.OrientationCheckBox.Label		= &quot;Ориентация:&quot;
+			.BookOptionButton.Label			= &quot;Книжная&quot;
+			.LandscapeOptionButton.Label	= &quot;Альбомная&quot;
+			
+			.MarginsCheckBox.Label		= &quot;Поля&quot;
+			.LeftMarginLabel.Label		= &quot;Слева:&quot;
+			.RightMarginLabel.Label		= &quot;Справа:&quot;
+			.TopMarginLabel.Label		= &quot;Сверху:&quot;
+			.BottomMarginLabel.Label	= &quot;Снизу:&quot;
+
+			.ParagraphIndentsSpacingFrameControl.Label = &quot;Отступы и интервалы абзаца&quot;
+			.IndentCheckBox.Label		= &quot;Отступ&quot;
+			.BeforeTextLabel.Label		= &quot;Перед текстом:&quot;
+			.AfterTextLabel.Label		= &quot;После текста:&quot;
+			.FirstLineLabel.Label		= &quot;Первая строка:&quot;
+			.IntervalCheckBox.Label		= &quot;Интервал&quot;
+			.BeforeParagraphLabel.Label = &quot;Перед абзацем:&quot;
+			.AfterParagraphLabel.Label	= &quot;После абзаца:&quot;
+
+			.LineSpacingCheckBox.Label			= &quot;Межстрочный интервал:&quot;
+			.LineSpacing1OptionButton.Label		= &quot;Одинарный&quot;
+			.LineSpacing15OptionButton.Label	= &quot;Полуторный&quot;
+			.LineSpacing2OptionButton.Label		= &quot;Двойной&quot;
+
+			.ParagraphAdjustCheckBox.Label				= &quot;Выравнивание всех абзацев:&quot;
+			.LeftOptionButton.Label						= &quot;По левому краю&quot;
+			.RightOptionButton.Label					= &quot;По правому краю&quot;
+			.CenterOptionButton.Label					= &quot;По центру&quot;
+			.BlockOptionButton.Label					= &quot;По ширине&quot;
+
+			.FontCheckBox.Label							= &quot;Шрифт&quot;
+			.FontSizeCheckBox.Label						= &quot;Размер шрифта&quot;
+			.BlackTextFontCheckBox.Label				= &quot;Черный цвет шрифта для всего текста&quot;
+			.RemoveMarkerColorCheckBox.Label			= &quot;Убрать цвет маркера&quot;
+			.UnBoldCheckBox.Label						= &quot;Убрать полужирное выделение в тексте&quot;
+			.UnItalicCheckBox.Label						= &quot;Убрать курсивное выделение в тексте&quot;
+			.UnUnderlineCheckBox.Label					= &quot;Убрать подчеркивания в тексте&quot;
+			
+			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Встроить всю графику-ссылки в документ&quot;
+		End With
+	Else
+		With oTextFormattingDlg.getModel()
+			.FormatCommandButton.Label = &quot;Format&quot;
+			.CancelCommandButton.Label = &quot;Cancel&quot;
+
+			.PageFrameControl.Label			= &quot;Page&quot;
+			.PaperFormatCheckBox.Label		= &quot;Paper size&quot;
+			.OrientationCheckBox.Label		= &quot;Orientation:&quot;
+			.BookOptionButton.Label			= &quot;Book&quot;
+			.LandscapeOptionButton.Label	= &quot;Landscape&quot;
+			
+			.MarginsCheckBox.Label		= &quot;Margins&quot;
+			.LeftMarginLabel.Label		= &quot;Left:&quot;
+			.RightMarginLabel.Label		= &quot;Right:&quot;
+			.TopMarginLabel.Label		= &quot;Top:&quot;
+			.BottomMarginLabel.Label	= &quot;Bottom:&quot;
+
+			.ParagraphIndentsSpacingFrameControl.Label = &quot;Paragraph Indents and Intervals&quot;
+			.IndentCheckBox.Label		= &quot;Indent&quot;
+			.BeforeTextLabel.Label		= &quot;Before Text:&quot;
+			.AfterTextLabel.Label		= &quot;After Text:&quot;
+			.FirstLineLabel.Label		= &quot;First Line:&quot;
+			.IntervalCheckBox.Label		= &quot;Interval&quot;
+			.BeforeParagraphLabel.Label = &quot;Before Paragraph:&quot;
+			.AfterParagraphLabel.Label	= &quot;After Paragraph:&quot;
+
+			.LineSpacingCheckBox.Label			= &quot;Line Spacing:&quot;
+			.LineSpacing1OptionButton.Label		= &quot;Single (1)&quot;
+			.LineSpacing15OptionButton.Label	= &quot;Half (1.5)&quot;
+			.LineSpacing2OptionButton.Label		= &quot;Dual (2)&quot;
+
+			.ParagraphAdjustCheckBox.Label				= &quot;Alignment of all paragraphs:&quot;
+			.LeftOptionButton.Label						= &quot;Left&quot;
+			.RightOptionButton.Label					= &quot;Right&quot;
+			.CenterOptionButton.Label					= &quot;Ceneter&quot;
+			.BlockOptionButton.Label					= &quot;Block&quot;
+
+			.FontCheckBox.Label							= &quot;Font&quot;
+			.FontSizeCheckBox.Label						= &quot;Font Size&quot;
+			.BlackTextFontCheckBox.Label				= &quot;Set black Font Color for all text&quot;
+			.RemoveMarkerColorCheckBox.Label			= &quot;Remove marker color&quot;
+			.UnBoldCheckBox.Label						= &quot;Remove bold from the text&quot;
+			.UnItalicCheckBox.Label						= &quot;Remove italic from the text&quot;
+			.UnUnderlineCheckBox.Label					= &quot;Remove underline from the text&quot;
+			
+			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Embed all graphics-links in the document&quot;
+		End With
+	End If
+End Sub
+
+</script:module>
