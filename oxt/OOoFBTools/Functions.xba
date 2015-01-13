@@ -139,7 +139,7 @@ Function GraphicObjectShapeCount() As Long
 End Function
 
 &apos; встраивание всей графики-ссылок в документ (файлы картинок находятся на жестком диске)
-Sub EmbeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+Sub embeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
 	Dim oDoc			As Object	: oDoc			= ThisComponent
 	Dim DrawPageCount	As Long		: DrawPageCount	= oDoc.getDrawPage().getCount()
 	
@@ -163,7 +163,7 @@ Sub EmbeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional P
 	For l = 0 To UBound( oGraphics() )
 		If FileExists( oGraphics(l).GraphicUrl ) Then
 			oText = oGraphics(l).getAnchor().getText()
-			EmbeddingGraphicLinkToDoc( oDoc, oGraphics(l) )
+			embeddingGraphicLinkToDoc( oDoc, oGraphics(l) )
 			oText.removeTextContent( oGraphics(l) )
 		End if
 		If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
@@ -173,7 +173,7 @@ Sub EmbeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional P
 End Sub
 
 &apos; встраивание графики-ссылки oGraphic в документ oDoc
-Sub EmbeddingGraphicLinkToDoc ( oDoc, oGraphic )
+Sub embeddingGraphicLinkToDoc ( oDoc, oGraphic )
 	Dim oProvider		As Object : oProvider		= createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)
 	Dim oShape			As Object : oShape			= oDoc.createInstance(&quot;com.sun.star.drawing.GraphicObjectShape&quot;)
 	Dim oGraphicObject	As Object : oGraphicObject	= oDoc.createInstance(&quot;com.sun.star.text.GraphicObject&quot;)
@@ -194,6 +194,82 @@ Sub EmbeddingGraphicLinkToDoc ( oDoc, oGraphic )
 	oDoc.getDrawPage().remove(oShape)
 End Sub
 
+&apos; изменение привязки для всей графики в документе
+Sub changeAnchorForAllGraphics( iAnchor As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+	Dim oDoc		As Object	: oDoc		= ThisComponent
+	Dim oGraphics	As Object	: oGraphics	= oDoc.getGraphicObjects()
+	Dim oThisGraphic As Object, i As Integer
+
+	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
+	End If
+
+    For i = 0 To oGraphics.getCount() - 1
+    	oThisGraphic = oGraphics.GetByIndex(i)
+		oThisGraphic.AnchorType  = iAnchor
+		If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+			oProgressBar.setValue(l)
+		End If
+	Next i
+End Sub
+
+&apos; изменение обтекания для всей графики в документе
+Sub wrapImageForAllGraphics( wrapImage As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+	Dim oDoc		As Object	: oDoc		= ThisComponent
+	Dim oGraphics	As Object	: oGraphics = oDoc.getGraphicObjects()
+	Dim oThisGraphic As Object, i As Integer
+
+	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
+	End If
+
+    For i = 0 To oGraphics.getCount() - 1
+    	oThisGraphic = oGraphics.GetByIndex(i)
+		oThisGraphic.TextWrap = wrapImage
+		&apos;oThisGraphic.Surround = wrapImage
+		If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+			oProgressBar.setValue(l)
+		End If
+	Next i
+End Sub
+
+&apos; изменение горизонтального выравнивания графики в документе
+Sub HorizontalAllignImageForAllGraphics( haImage As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+	Dim oDoc		As Object	: oDoc		= ThisComponent
+	Dim oGraphics	As Object	: oGraphics = oDoc.getGraphicObjects()
+	Dim oThisGraphic As Object, i As Integer
+
+	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
+	End If
+
+    For i = 0 To oGraphics.getCount() - 1
+    	oThisGraphic = oGraphics.GetByIndex(i)
+		oThisGraphic.HoriOrient = haImage
+		If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+			oProgressBar.setValue(l)
+		End If
+	Next i
+End Sub
+
+&apos; изменение вертикального выравнивания графики в документе
+Sub VerticalAllignImageForAllGraphics( vaImage As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+	Dim oDoc		As Object	: oDoc		= ThisComponent
+	Dim oGraphics	As Object	: oGraphics = oDoc.getGraphicObjects()
+	Dim oThisGraphic As Object, i As Integer
+
+	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
+	End If
+
+    For i = 0 To oGraphics.getCount() - 1
+    	oThisGraphic = oGraphics.GetByIndex(i)
+		oThisGraphic.VertOrient = vaImage
+		If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+			oProgressBar.setValue(l)
+		End If
+	Next i
+End Sub
 &apos; ====================================================================
 &apos;						 Работа с датой и временем
 &apos; ====================================================================
@@ -1974,6 +2050,26 @@ Sub _UnoResetCellProtection()
 	oDispatcher.executeDispatch(oDoc, &quot;.uno:UnsetCellsReadOnly&quot;, &quot;&quot;, 0, Array())
 End Sub
 
+&apos; масштабирование символов по ширине
+sub setCharacterWidthScalingFactor( value As Integer )
+	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
+	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;CharacterWidthScalingFactor&quot;
+	args1(0).Value = value &apos; 100 - 100%
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:CharacterWidthScalingFactor&quot;, &quot;&quot;, 0, args1() )
+End Sub
+
+&apos; интервал для символов (стандарт, разрядка или уплотнение)
+Sub setCharSpacing( value As Integer )
+	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
+	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Spacing&quot;
+	args1(0).Value = value &apos; 0 - стандартный интервал
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:Spacing&quot;, &quot;&quot;, 0, args1() )
+End Sub
+
 &apos; ====================================================================================
 &apos; 						Функции по работе с закладками
 &apos; ====================================================================================
@@ -2484,19 +2580,19 @@ End Sub
 
 &apos;/////////////////////////////////////// Очистка всех стилей в абзаце//////////////////////////////////////
 &apos; очистка всех стилей в заданной видимой курсором области текста
-Sub _ClearStyleToBase_(BaseStyle As String)
+Sub ClearStyleToBase()
+	Dim BaseStyle As String : BaseStyle = GetLocaDefaultStyleName() &apos; название стиля &quot;Базовый&quot; в зависимости от локали
 	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
 	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
 	Dim args2(1) As New com.sun.star.beans.PropertyValue
 	args2(0).Name = &quot;Template&quot;
-	&apos; название стиля &quot;Базовый&quot; в зависимости от локали
 	args2(0).Value = BaseStyle
 	args2(1).Name = &quot;Family&quot;
 	args2(1).Value = 2
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
 	&apos; форматирование символа заданным стилем
-	SetSymbolStyle( GetLocaDefaultStyleName() )
+	SetSymbolStyle( BaseStyle )
 End Sub
 
 &apos; =======================================================================================================
@@ -2593,9 +2689,15 @@ Sub _TextFrameParser( ByRef oTextFrame As Object )
 End Sub
 
 &apos; перебор текста по абзацам
-Sub _TextParser( Optional ByRef oText As Object)
-	Dim oText As Variant : oText = ThisComponent.Text
-	Dim oCursor As Variant : oCursor = oText.CreateTextCursor()
+Sub _TextParser( Optional ByRef oText As Object )
+	Dim vText As Variant
+	If NOT IsMissing(oText) Then
+		vText = oText
+	Else
+		vText = ThisComponent.Text
+	End If
+
+	Dim oCursor As Variant : oCursor = vText.CreateTextCursor()
 	oCursor.GoToStart(False)
 	Do
 		If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do

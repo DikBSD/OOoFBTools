@@ -23,6 +23,11 @@ Sub TextFormattingStart()
 	oProgressBar.setValue( 1 )
 
 	Dim aPaperFormatList() As String : aPaperFormatList() = Array( &quot;A3&quot;, &quot;A4&quot;, &quot;A5&quot;, &quot;A6&quot;, &quot;Letter&quot; )
+	Dim sAnchorsList() As String : sAnchorsList() = Array( sTFD.sToParagraph, sTFD.sAsSymbol, sTFD.sToPage, sTFD.sToSymbol )  &apos; виды привязки картинки
+	Dim sWrapList() As String : sWrapList() = Array( sTFD.sNoWrap, sTFD.sFrontWrap, sTFD.sPageWrap, sTFD.sOptimalWrap )  &apos; виды обтекания картинки
+	Dim sHAList() As String : sHAList() = Array( sTFD.sHAligLeft, sTFD.sHAligCenter, sTFD.sHAligRight )  &apos; виды горизонтального выравнивания картинок
+	Dim sVAList() As String : sVAList() = Array( sTFD.sVAligTop, sTFD.sVAligCenter, sTFD.sVAligBottom )  &apos; виды вертикального выравнивания картинок
+	
 	With oTextFormattingDlg
 		.Model.PaperFormatListBox.StringItemList = aPaperFormatList()
 		.getControl( &quot;PaperFormatListBox&quot; ).SelectItemPos(1, True)
@@ -38,6 +43,15 @@ Sub TextFormattingStart()
 		.Model.FontListBox.StringItemList = ListSystemFonts( True )
 		.getControl( &quot;FontListBox&quot; ).SelectItemPos(0, True)
 		.getControl( &quot;FontSizeListBox&quot; ).SelectItemPos(7, True)
+		
+		.Model.AnchorListBox.StringItemList = sAnchorsList()
+		.getControl( &quot;AnchorListBox&quot; ).SelectItemPos(3, True)
+		.Model.WrapImageListBox.StringItemList = sWrapList()
+		.getControl( &quot;WrapImageListBox&quot; ).SelectItemPos(0, True)
+		.Model.VerticalPositionListBox.StringItemList = sVAList()
+		.getControl( &quot;VerticalPositionListBox&quot; ).SelectItemPos(1, True)
+		.Model.HorizontalPositionListBox.StringItemList = sHAList()
+		.getControl( &quot;HorizontalPositionListBox&quot; ).SelectItemPos(0, True)
 	End With
 	oProgressBar.setValue( 2 )
 	
@@ -168,11 +182,6 @@ Sub BlackTextFontCheckBoxCheck()
 	CheckBoxesCheck()
 End Sub
 
-Sub EmbedGraphicsIntoDocumentCheckBoxCheck()
-	&apos; доступность кнопки старта форматирования документа
-	CheckBoxesCheck()
-End Sub
-
 Sub FontCheckBoxCheck()
 	With oTextFormattingDlg.getModel
 		.FontListBox.Enabled = .FontCheckBox.State
@@ -204,6 +213,52 @@ Sub UnUnderlineCheckBoxCheck()
 	CheckBoxesCheck()
 End Sub
 
+&apos; графика
+Sub EmbedGraphicsIntoDocumentCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub ChangeAnchorImagesCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .ChangeAnchorImagesCheckBox.State
+		.AnchorListBox.Enabled = isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub WrapImageCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .WrapImageCheckBox.State
+		.WrapImageListBox.Enabled = isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub HorizontalOrientationCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .HorizontalOrientationCheckBox.State
+		.HorizontalPositionListBox.Enabled = isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
+Sub VerticalOrientationCheckBoxCheck()
+	Dim isCheck As Boolean
+	With oTextFormattingDlg.getModel()
+		isCheck = .VerticalOrientationCheckBox.State
+		.VerticalPositionListBox.Enabled = isCheck
+	End With
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
 &apos; доступность всех контролов при загрузке настроек формы
 Sub SetControlsEnabled()
 	PaperFormatCheckBoxCheck()
@@ -221,7 +276,12 @@ Sub SetControlsEnabled()
 	UnItalicCheckBoxCheck()
 	UnUnderlineCheckBoxCheck()
 	
+	&apos; для графики
 	EmbedGraphicsIntoDocumentCheckBoxCheck()
+	ChangeAnchorImagesCheckBoxCheck()
+	WrapImageCheckBoxCheck()
+	HorizontalOrientationCheckBoxCheck()
+	VerticalOrientationCheckBoxCheck()
 End Sub
 
 &apos; ========================================================================================================================
@@ -232,7 +292,7 @@ Sub FormatDocument()
 	
 	Dim oProgress	As Object
 	oProgress = oTextFormattingDlg.getControl(&quot;ProgressBar&quot;)
-	oProgress.setRange(0, 5)
+	oProgress.setRange(0, 9)
 	
 	With oTextFormattingDlg
 		&apos; Установка формата бумаги
@@ -266,9 +326,36 @@ Sub FormatDocument()
 		End If
 		oProgress.setValue( 4 )
 		
+		
+		&apos; изменение привязки для всей графики в документе
+		If .getModel().ChangeAnchorImagesCheckBox.State = 1 Or .getModel().ChangeAnchorImagesCheckBox.State = True Then
+			Dim iAnchor As Integer : iAnchor = .getControl( &quot;AnchorListBox&quot; ).SelectedItemPos
+			If iAnchor = 3 Then iAnchor = 4 &apos; &quot;К Символу&quot;
+			changeAnchorForAllGraphics( iAnchor ) &apos;ByRef Optional oProgressBar, ByRef Optional ProgressLabel
+		End If
+		oProgress.setValue( 5 )
+		
+		&apos; изменение обтекания для всей графики в документе
+		If .getModel().WrapImageCheckBox.State = 1 Or .getModel().WrapImageCheckBox.State = True Then
+			wrapImageForAllGraphics( .getControl( &quot;WrapImageListBox&quot; ).SelectedItemPos ) &apos;ByRef Optional oProgressBar, ByRef Optional ProgressLabel
+		End If
+		oProgress.setValue( 6 )
+		
+		&apos; изменение горизонтального выравнивания графики в документе
+		If .getModel().HorizontalOrientationCheckBox.State = 1 Or .getModel().HorizontalOrientationCheckBox.State = True Then
+			HorizontalAllignImageForAllGraphics( 3 - .getControl( &quot;HorizontalPositionListBox&quot; ).SelectedItemPos ) &apos; ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+		End If
+		oProgress.setValue( 7 )
+		
+		&apos; изменение вертикального выравнивания графики в документе
+		If .getModel().VerticalOrientationCheckBox.State = 1 Or .getModel().VerticalOrientationCheckBox.State = True Then
+			VerticalAllignImageForAllGraphics( .getControl( &quot;VerticalPositionListBox&quot; ).SelectedItemPos ) &apos; ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+		End If
+		oProgress.setValue( 8 )
+
 		&apos; форматирование всех абзацев по заданным параметрам
 		formatAllParagrahps()
-		oProgress.setValue( 5 )
+		oProgress.setValue( 9 )
 		
 		MsgBox sTFD.sEnd, 64, sTFD.sTitle
 		.endExecute()
@@ -382,6 +469,21 @@ Type tTextFormattingDlgData
 	sInit	As String
 	sTitle	As String
 	sEnd	As String
+	
+	sToParagraph	As String &apos; &quot;К абзацу&quot;
+	sToSymbol		As String &apos; &quot;К символу&quot;
+	sToPage			As String &apos; &quot;К странице&quot;
+	sAsSymbol		As String &apos; &quot;Как символ&quot;
+	sNoWrap			As String &apos; &quot;Без обтекания&quot;
+	sFrontWrap		As String &apos; &quot;Сквозное&quot;
+	sPageWrap		As String &apos; &quot;Обтекание страницы&quot;
+	sOptimalWrap	As String &apos; &quot;Оптимальное&quot;
+	sHAligLeft		As String &apos; &quot;По левому краю&quot;
+	sHAligCenter	As String &apos; &quot;По центру&quot;
+	sHAligRight		As String &apos; &quot;По правому краю&quot;
+	sVAligTop		As String &apos; &quot;По верхнему краю&quot;
+	sVAligCenter	As String &apos; &quot;По середине&quot;
+	sVAligBottom	As String &apos; &quot;По нижнему краю&quot;
 End Type
 
 Private sTFD As tTextFormattingDlgData
@@ -393,12 +495,44 @@ Sub InitTextFormattingDlgMessage()
 			.sInit	= &quot;Инициализация:&quot;
 			.sTitle	= &quot;Форматирование документа&quot;
 			.sEnd	= .sTitle &amp; &quot; &quot; &amp; &quot;завершено.&quot;
+			
+			.sToParagraph	= &quot;К абзацу&quot;
+			.sToSymbol		= &quot;К символу&quot;
+			.sAsSymbol		= &quot;Как символ&quot;
+			.sToPage		= &quot;К странице&quot;
+			
+			.sNoWrap		= &quot;Без обтекания&quot;
+			.sFrontWrap		= &quot;Сквозное&quot;
+			.sPageWrap		= &quot;Обтекание страницы&quot;
+			.sOptimalWrap	= &quot;Оптимальное&quot;
+			.sHAligLeft		= &quot;По левому краю&quot;
+			.sHAligCenter	= &quot;По центру&quot;
+			.sHAligRight	= &quot;По правому краю&quot;
+			.sVAligTop		= &quot;По верхнему краю&quot;
+			.sVAligCenter	= &quot;По середине&quot;
+			.sVAligBottom	= &quot;По нижнему краю&quot;
 		End With
 	Else
 		With sTFD
 			.sInit	= &quot;Initialization:&quot;
 			.sTitle	= &quot;Document formatting&quot;
 			.sEnd	= .sTitle &amp; &quot; &quot; &amp; &quot;is completed.&quot;
+			
+			.sToParagraph	= &quot;To paragraph&quot;
+			.sToSymbol		= &quot;To character&quot;
+			.sAsSymbol		= &quot;As character&quot;
+			.sToPage		= &quot;To page&quot;
+			
+			.sNoWrap		= &quot;No wrap&quot;
+			.sFrontWrap		= &quot;Front wrap&quot;
+			.sPageWrap		= &quot;Page wrap&quot;
+			.sOptimalWrap	= &quot;Optimal wrap&quot;
+			.sHAligLeft		= &quot;Left&quot;
+			.sHAligCenter	= &quot;Center&quot;
+			.sHAligRight	= &quot;Right&quot;
+			.sVAligTop		= &quot;Top&quot;
+			.sVAligCenter	= &quot;Center&quot;
+			.sVAligBottom	= &quot;Bottom&quot;
 		End With
 	End If
 End Sub
@@ -457,7 +591,16 @@ Sub InitTextFormattingDlg()
 			.UnItalicCheckBox.Label						= &quot;Убрать курсивное выделение в тексте&quot;
 			.UnUnderlineCheckBox.Label					= &quot;Убрать подчеркивания в тексте&quot;
 			
+			.GraphicsFrameControl.Label					= &quot;Графика&quot;
 			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Встроить всю графику-ссылки в документ&quot;
+			.ChangeAnchorImagesCheckBox.Label			= &quot;Изменить привязку всей графики&quot;
+			.WrapImageCheckBox.Label					= &quot;Изменить обтекание всей графики&quot;
+			.AnchorLabel.Label							= &quot;Привязать:&quot;
+			.WrapImageLabel.Label						= &quot;Обтекание:&quot;
+			.HorizontalOrientationCheckBox.Label		= &quot;Горизонтальное выравнивание всей графики&quot;
+			.VerticalOrientationCheckBox.Label			= &quot;Вертикальное выравнивание всей графики&quot;
+			.HorizontalPositionLabel.Label				= &quot;Положение:&quot;
+			.VerticalPositionLabel.Label				= &quot;Положение:&quot;
 		End With
 	Else
 		With oTextFormattingDlg.getModel()
@@ -493,7 +636,7 @@ Sub InitTextFormattingDlg()
 			.ParagraphAdjustCheckBox.Label				= &quot;Alignment of all paragraphs:&quot;
 			.LeftOptionButton.Label						= &quot;Left&quot;
 			.RightOptionButton.Label					= &quot;Right&quot;
-			.CenterOptionButton.Label					= &quot;Ceneter&quot;
+			.CenterOptionButton.Label					= &quot;Center&quot;
 			.BlockOptionButton.Label					= &quot;Block&quot;
 
 			.FontCheckBox.Label							= &quot;Font&quot;
@@ -504,7 +647,16 @@ Sub InitTextFormattingDlg()
 			.UnItalicCheckBox.Label						= &quot;Remove italic from the text&quot;
 			.UnUnderlineCheckBox.Label					= &quot;Remove underline from the text&quot;
 			
-			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Embed all graphics-links in the document&quot;
+			.GraphicsFrameControl.Label					= &quot;Graphics&quot;
+			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Embedding all graphics-links into document&quot;
+			.ChangeAnchorImagesCheckBox.Label			= &quot;Change anchoring of all graphics&quot;
+			.WrapImageCheckBox.Label					= &quot;Change wraping of all graphics&quot;
+			.AnchorLabel.Label							= &quot;Anchor:&quot;
+			.WrapImageLabel.Label						= &quot;Wrap:&quot;
+			.HorizontalOrientationCheckBox.Label		= &quot;Horizontal alignment of all graphics&quot;
+			.VerticalOrientationCheckBox.Label			= &quot;Horizontal alignment of all graphics&quot;
+			.HorizontalPositionLabel.Label				= &quot;Position:&quot;
+			.VerticalPositionLabel.Label				= &quot;Position:&quot;
 		End With
 	End If
 End Sub

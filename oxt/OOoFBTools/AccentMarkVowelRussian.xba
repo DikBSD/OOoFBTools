@@ -3,10 +3,6 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="AccentMarkVowelRussian" script:language="StarBasic">&apos;======================================================================================================================
 &apos; 				модуль расстановки ударений над русскими гласными буквами по признаку - ударному символу в тексте
 &apos;======================================================================================================================
-
-Option Explicit
-
-&apos;***************************************************************************
 &apos; Структура поискового запроса
 Type FindReplaceAccentMarkRule
 	SearchStr As String
@@ -19,7 +15,7 @@ Private Const sConstAccentMarkDlgSettings	As String = &quot;AccentMarkDlgSetting
 Public Const _fb2_AccentMark	As String = &quot;_fb2_AccentMark&quot; &apos; если задано True, но есть ударные гласные - нужна кодировка utf-8
 Public oAccentMarkDlg			As Object
 
-&apos;***************************************************************************
+&apos;======================================================================================================================
 &apos; запуск диалога расстановки ударений
 Sub AccentMarkDlgExec()
 	&apos; Создание формы
@@ -43,7 +39,7 @@ Sub AccentMarkDlgExec()
 	oAccentMarkDlg.execute()
 End Sub
 
-&apos;***************************************************************************
+&apos;======================================================================================================================
 &apos; нажатие кнопки Ok
 Sub StartAccentMarkToU0769()
 	With oAccentMarkDlg
@@ -66,7 +62,7 @@ Sub StartAccentMarkToU0769()
 	ApostrofToU0769()
 End Sub
 
-&apos;***************************************************************************
+&apos;======================================================================================================================
 &apos; доступность поля tfOther
 Sub SetEnableOtherField()
 	With oAccentMarkDlg
@@ -77,7 +73,8 @@ Sub SetEnableOtherField()
 		End If
 	End With
 End Sub
-&apos;***************************************************************************
+
+&apos;======================================================================================================================
 &apos; замена символа признака ударения справа от русской гласной на U0769 - Ударная гласная
 Sub ApostrofToU0769()
 	Dim oDoc			As Object : oDoc			= ThisComponent
@@ -123,7 +120,7 @@ Sub ApostrofToU0769()
 	oProgressBar.end
 End Sub
 
-&apos;***************************************************************************
+&apos;======================================================================================================================
 &apos; заполнение массива поиска и замен
 Private Sub SetAccentMarkRuleArrayRule( ByRef amrArray() As FindReplaceAccentMarkRule, MarkSymbol As String )
 	ReDim Preserve amrArray(19) As FindReplaceRule
@@ -227,7 +224,69 @@ Private Sub SetAccentMarkRuleArrayRule( ByRef amrArray() As FindReplaceAccentMar
 		.SearchStr = &quot;ё&quot; &amp; MarkSymbol
 		.ReplaceStr = &quot;ё́&quot;
 	End With
+End Sub
+
+&apos;======================================================================================================================
+&apos; 				локализация работы с расстановкой ударения над русскими гласными буквами
+&apos;======================================================================================================================
+&apos; для хранения сообщений
+Type tAccentMarkVowelRussianData
+	sTitleName		As String &apos; Замена символа на знак ударения для гласных букв
+	sTextCorrecting	As String &apos; Расстановка ударений
+	sEndWork		As String &apos; Расстановка ударений для гласных букв завершена!
+	sTotal			As String &apos; Проставлено ударений:
+	sNoMarkFound	As String &apos; В тексте не найдено ни одного символа-признака ударения! Ни одно ударение не было проставлено.
+End Type
+
+Public sAMVRD As tAccentMarkVowelRussianData
+
+&apos; инициализация сообщений работы с расстановкой ударения над русскими гласными буквами
+Sub InitAccentMarkVowelRussianMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sAMVRD
+			.sTitleName			= &quot;Замена символа на знак ударения для гласных букв&quot;
+			.sTextCorrecting	= &quot;Расстановка ударений&quot;
+			.sEndWork			= &quot;Расстановка ударений для гласных букв завершена!&quot;
+			.sTotal				= &quot;Проставлено ударений:&quot;
+			.sNoMarkFound		= &quot;В тексте не найдено ни одного символа-признака ударения!&quot; &amp; _
+									chr(10) &amp; &quot;Ни одно ударение не было проставлено.&quot;
+		End With
+	Else
+		With sAMVRD
+			.sTitleName			= &quot;Replace character with accent mark for vowels&quot;
+			.sTextCorrecting	= &quot;Placement of accent marks&quot;
+			.sEndWork			= &quot;Placement of accent marks for vowels is complete!&quot;
+			.sTotal				= &quot;Placement of accents:&quot;
+			.sNoMarkFound		= &quot;No character indicating accent was found in the text!&quot; &amp; _
+									chr(10) &amp; &quot;No accent mark was placed.&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога расстановки ударения над русскими гласными буквами
+Sub	InitAccentMarkDlg()
+	&apos; инициализация сообщений работы с расстановкой ударения над русскими гласными буквами
+	InitAccentMarkVowelRussianMessage()
 	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oAccentMarkDlg.getModel
+			.Title = sAMVRD.sTitleName
+			.lblAccentMark.Label	= &quot;Символ признака ударения в тексте:&quot;
+			.optBtnApostrof.Label	= &quot;Апостроф ( &apos; )&quot;
+			.optBtnGrave.Label		= &quot;Ударение ( ` )&quot;
+			.optBtnOther.Label		= &quot;Другое:&quot;
+			.cmdBtnOk.Label			= &quot;Ok&quot;
+		End With
+	Else
+		With oAccentMarkDlg.getModel
+			.Title = sAMVRD.sTitleName
+			.lblAccentMark.Label	= &quot;Character indicating accent in the text:&quot;
+			.optBtnApostrof.Label	= &quot;Apostrophef ( &apos; )&quot;
+			.optBtnGrave.Label		= &quot;Grave accent ( ` )&quot;
+			.optBtnOther.Label		= &quot;Other:&quot;
+			.cmdBtnOk.Label			= &quot;Ok&quot;
+		End With
+	End If
 End Sub
 
 </script:module>

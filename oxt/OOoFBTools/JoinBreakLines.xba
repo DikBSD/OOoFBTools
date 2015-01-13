@@ -466,4 +466,105 @@ Sub JoinLines( oLCurs, oRCurs, oDoc, oProgressBar, l )
 	Loop
 End Sub
 
+
+&apos; =============================================================================================
+&apos; 			локализация диалога Склейки разорванных строк абзаца
+&apos; =============================================================================================
+
+&apos; для хранения сообщений для диалога Склейки
+Type tJoinBreakLinesDlgData
+	sMessageTitle		As String &apos; Склейка разорванных строк абзаца
+	sJoinLines			As String &apos; Склейка строк в параграф
+	sFrontEndProcessing	As String &apos; Удаление мягких переносов
+	sCarryingProcessing	As String &apos; Обработка разрыва переносов
+	sPostProcessing		As String &apos; Пост-обработка
+	sEndWork			As String &apos; Склейка разорванных строк абзацев документа завершена!
+End Type
+
+Public sJBLD As tJoinBreakLinesDlgData
+
+&apos; =============================================================================================
+&apos; инициализация сообщений диалога Склейки разорванных строк абзаца в зависимости от локали
+Sub InitJoinBreakLinesDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sJBLD
+			.sMessageTitle			= &quot;Склейка разорванных строк абзаца&quot;
+			.sJoinLines				= &quot;Склейка строк в абзац&quot;
+			.sFrontEndProcessing	= &quot;Предварительная обработка текста&quot;
+			.sCarryingProcessing	= &quot;Обработка разрыва переносов&quot;
+			.sPostProcessing		= &quot;Пост-обработка&quot;
+			.sEndWork				= &quot;Склейка разорванных строк абзацев документа завершена!&quot;
+		End With
+	Else
+		With sJBLD
+			.sMessageTitle			= &quot;Join broken lines of a paragraph&quot;
+			.sJoinLines				= &quot;Join lines to one paragraph&quot;
+			.sFrontEndProcessing	= &quot;Text preprocessing&quot;
+			.sCarryingProcessing	= &quot;Process broken hyphenation&quot;
+			.sPostProcessing		= &quot;Postprocessing&quot;
+			.sEndWork				= &quot;Joining broken lines in the paragraphs of the document complete!&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация формы диалога Склейки разорванных строк абзац
+Sub InitJoinBreakLinesDlg()
+	&apos; инициализация сообщений диалога Склейки разорванных строк абзаца в зависимости от локали
+	InitJoinBreakLinesDlgMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oJoinBreakLinesDlg.getModel
+			.Title 									= &quot;Склейка разорванных строк абзаца&quot;
+			.lblNewParaIdent.Label					= &quot;Идентификатор нового абзаца:&quot;
+			.obtBreakLinesInParaStartSpace.Label	= &quot;Пробелы в начале абзаца&quot;
+			.obtBreakLinesInParaStartSpace.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; каждого нового абзаца - 1 или несколько стартовых пробелов&quot;
+			.obtBreakLinesInParaBetweenIndent.Label	= &quot;Отступ в начале абзаца (Красная строка)&quot;
+			.obtBreakLinesInParaBetweenIndent.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; каждого нового абзаца - отступ в начале абзаца (Красная строка)&quot;
+			.obtBreakLinesInParaEndSymbols.Label	= &quot;Символы .!?…”»&quot;&quot;:; в конце абзаца&quot;
+			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;&quot;&quot;Определитель&quot;&quot; завершения абзаца - один из знаков окончания предложения и знак абзаца ¶&quot;
+			.obtBreakLinesInFPara.Label				= &quot;&quot;&quot;Пустой&quot;&quot; абзац или одиночный разрыв строки&quot;
+			.obtBreakLinesInSentence.Label			= &quot;Разрыв предложений в абзаце на строчных буквах, цифрах, знаках препинания и скобках&quot;
+			
+			.lblWordBreak.Label						= &quot;Обработка разрывов дефисных слов и переносов:&quot;
+			.obtnDefisWordDelOnlyPara.Label			= &quot;Удаление только разрыва абзаца(¶) И строки(BR); перенос (-) не удаляется&quot;
+			.obtnDefisWordDeAll.Label				= &quot;Удаление И разрыва переноса(-) И разрыва абзаца(¶) И разрыва строки(BR)&quot;
+			
+			.lblPostProcessing.Label				= &quot;Пост-обработка:&quot;
+			.cboxStartSpaceDelete.Label				= &quot;Удалить все простые пробелы в начале абзаца&quot;
+			.cboxStartNoBreakSpaceDel.Label			= &quot;Удалить все неразрывные пробелы в начале абзаца&quot;
+			.cboxStartTabDel.Label					= &quot;Удалить все табуляции в начале абзаца&quot;
+			.cboxDelSpace.Label						= &quot;Заменить множество пробелов между словами на 1 пробел&quot;
+			
+			.cmdbtnOk.Label			= &quot;Склеить&quot;
+			.cmdbtnNo.Label			= &quot;Отмена&quot;
+		End With
+	Else
+		With oJoinBreakLinesDlg.getModel
+			.Title 									= &quot;Join broken lines of a paragraph&quot;
+			.lblNewParaIdent.Label					= &quot;Start a new paragraph when the following is detected:&quot;
+			.obtBreakLinesInParaStartSpace.Label	= &quot;Spaces at the beginning of the paragraph&quot;
+			.obtBreakLinesInParaStartSpace.HelpText	= &quot;A new paragraph starts when 1 or more spaces at the beginning are detected&quot;
+			.obtBreakLinesInParaBetweenIndent.Label	= &quot;Indented paragraph.&quot;
+			.obtBreakLinesInParaBetweenIndent.HelpText	= &quot;A new paragraph starts when indentation is detected&quot;
+			.obtBreakLinesInParaEndSymbols.Label	= &quot;Characters of .!?...&quot;&quot;&quot;&quot;:; at the end of the paragraph&quot;
+			.obtBreakLinesInParaEndSymbols.HelpText	= &quot;A paragraph ends when one of the characters ending a sentence plus a paragraph marker is determined¶&quot;
+			.obtBreakLinesInFPara.Label				= &quot;Empty paragraph or single line break&quot;
+			.obtBreakLinesInSentence.Label			= &quot;Sentences in paragraphs split on lowercase letters, numbers, punctuation marks, quotation marks and brackets.&quot;
+			
+			.lblWordBreak.Label						= &quot;Processing broken hyphenated words:&quot;
+			.obtnDefisWordDelOnlyPara.Label			= &quot;Remove only paragraph break (¶) AND line break (BR); hyphen (-) is not removed&quot;
+			.obtnDefisWordDeAll.Label				= &quot;Remove BOTH hyphen (-), AND paragraph break (¶), AND line break (BR)&quot;
+			
+			.lblPostProcessing.Label				= &quot;Postprocessing:&quot;
+			.cboxStartSpaceDelete.Label				= &quot;Remove all conventional spaces at the beginning of the paragraph&quot;
+			.cboxStartNoBreakSpaceDel.Label			= &quot;Remove all non-breaking spaces at the beginning of the paragraph&quot;
+			.cboxStartTabDel.Label					= &quot;Remove all tabs at the beginning of the paragraph&quot;
+			.cboxDelSpace.Label						= &quot;Replace multiple spaces between words with one space&quot;
+			
+			.cmdbtnOk.Label			= &quot;Join&quot;
+			.cmdbtnNo.Label			= &quot;Cancel&quot;
+		End With
+	End If
+End Sub
+
 </script:module>

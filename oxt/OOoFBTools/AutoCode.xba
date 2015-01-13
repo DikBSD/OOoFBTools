@@ -128,7 +128,12 @@ Sub AutoCode()
 	End With
 	
 	Dim oProgressBar : oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	LoadFB2StylesToDoc() &apos; Загрузка шаблона fb2 стилей конвертора
+	&apos; Создание fb2 &quot;code&quot; стилей для активного документа
+	&apos; стиль абзаца code
+	MakeParagraphStyle( &quot;code&quot;, CodeStyle() )
+	&apos; символьный стиль code
+	MakeCharacterStyle( &quot;code&quot;, CodeCharacterStyle() )
+		
 	oProgressBar.start( sACD.sProgress &amp; &quot;:&quot;, ProgressMaxIter )
 	oProgressBar.setValue(1)
 	With oACDlg
@@ -235,6 +240,7 @@ Sub AutoParagraphCode( SearchParaStyle As Boolean, SearchParaFont As Boolean )
 	Do While Enum1.hasMoreElements()
 		TextElement = Enum1.nextElement()
 		If TextElement.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+		&apos;	xray TextElement
 			With TextElement
 				IsSearchParaStyle = False : IsSearchParaFont = False
 				If SearchParaStyle = True Then

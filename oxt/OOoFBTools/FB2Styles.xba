@@ -116,6 +116,10 @@ Type StylePropertyType
 	ParaBackColor_R As Integer
 	ParaBackColor_G As Integer
 	ParaBackColor_B As Integer
+	&apos; цвет фона символов
+	CharBackColor_R As Integer
+	CharBackColor_G As Integer
+	CharBackColor_B As Integer
 	&apos; цвет подчеркивания стиля
 	CharUnderlineHasColor As Boolean &apos; True, False
 	CharUnderlineColor_R As Integer
@@ -159,8 +163,8 @@ End Sub
 Sub FB2StylesDlgStart()
 	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
 	
-	&apos; Загрузить шаблон fb2 стилей в документ, если они еще не были загружены
-	LoadFB2StylesToDoc()
+	&apos; Создать fb2 стили для активного документа, если они не были созданы
+	MakeFB2StylesToDoc()
 
 	GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
 	oFB2StylesDlg = LoadDialog( &quot;OOoFBTools&quot;, &quot;FB2StylesDlg&quot; )
@@ -196,18 +200,18 @@ End Sub
 
 &apos; ***********************************************************************************************
 &apos; Загрузить шаблон fb2 стилей конвертора
-Function LoadFB2StylesToDoc() As Boolean
-	LoadFB2StylesToDoc = False
+Function MakeFB2StylesToDoc() As Boolean
+	MakeFB2StylesToDoc = False
 	Dim oDoc				As Object : oDoc				= ThisComponent
 	Dim UserDefProperties	As Object : UserDefProperties	= oDoc.DocumentProperties.getUserDefinedProperties()
 
-	&apos; инициализация сообщений Загрузки Шаблона fb2-стилей в зависимости от локали
-	InitLoadFB2StylesToDocMessage()
+	&apos; инициализация сообщений Создания fb2-стилей в зависимости от локали
+	InitMakeFB2StylesToDocMessage()
 		
 	&apos; загружаем стили в документ, если свойство документа _fb2_FB2StylesIsLoaded не задано
 	If GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; Then
 	    Dim oProgressBar As Object : oProgressBar = oDoc.CurrentController.StatusIndicator
-		oProgressBar.start( sLSTD.sProgressTitle, 18 )
+		oProgressBar.start( sLSTD.sProgressTitle, 20 )
 		oProgressBar.setValue(0)
 	    
 	    &apos; получение структуры со стилями в зависимости от локали
@@ -224,67 +228,75 @@ Function LoadFB2StylesToDoc() As Boolean
 		oProgressBar.setValue(1)
 
 	    &apos; Книга - название
-		MakeStyle( fb2Style.BookTitle, BookTitleStyle() )
+		MakeParagraphStyle( fb2Style.BookTitle, BookTitleStyle() )
 		oProgressBar.setValue(2)
 		&apos; Книга - Аннотация
-		MakeStyle( fb2Style.BookAnnotation, BookAnnotationStyle() )
+		MakeParagraphStyle( fb2Style.BookAnnotation, BookAnnotationStyle() )
 		oProgressBar.setValue(3)
 		
 		&apos; Аннотация
-		MakeStyle( fb2Style.Annotation, AnnotationStyle() )
+		MakeParagraphStyle( fb2Style.Annotation, AnnotationStyle() )
 		oProgressBar.setValue(4)
 		&apos; Аннотация - Подзаголовок
-		MakeStyle( fb2Style.AnnotationSubTitle, AnnotationSubtitleStyle() )
+		MakeParagraphStyle( fb2Style.AnnotationSubTitle, AnnotationSubtitleStyle() )
 		oProgressBar.setValue(5)
 		
 		&apos; Цитата - Подзаголовок
-		MakeStyle( fb2Style.CiteSubTitle, CiteSubtitleStyle() )
+		MakeParagraphStyle( fb2Style.CiteSubTitle, CiteSubtitleStyle() )
 		oProgressBar.setValue(6)
 		&apos; Цитата
 		&apos; добавление локализованного стиля Цитата, если его нет (баг LO - не воспринимает локализованные стили Цитата)
-	    If isLibreOffice() Then CreateStyle( fb2Style.Cite )
+	    If isLibreOffice() Then CreateParagraphStyle( fb2Style.Cite )
 		If oParaStyles.hasByName( fb2Style.Cite ) Then
 			oStyle = oParaStyles.getByName( fb2Style.Cite )
 			setPropertyForStyle( oStyle, CiteStyle() )
 		End If
 		oProgressBar.setValue(7)
 		&apos; Цитата - Автор
-		MakeStyle( fb2Style.CiteAuthor, CiteAuthorStyle() )
+		MakeParagraphStyle( fb2Style.CiteAuthor, CiteAuthorStyle() )
 		oProgressBar.setValue(8)
 		
 		&apos; Эпиграф
-		MakeStyle( fb2Style.Epigraph, EpigraphStyle() )
+		MakeParagraphStyle( fb2Style.Epigraph, EpigraphStyle() )
 		oProgressBar.setValue(9)
 		&apos; Эпиграф - Автор
-		MakeStyle( fb2Style.EpigraphAuthor, EpigraphAuthorStyle() )
+		MakeParagraphStyle( fb2Style.EpigraphAuthor, EpigraphAuthorStyle() )
 		oProgressBar.setValue(10)
 		
 		&apos; Стих - Название
-		MakeStyle( fb2Style.PoemTitle, PoemTitleStyle() )
+		MakeParagraphStyle( fb2Style.PoemTitle, PoemTitleStyle() )
 		oProgressBar.setValue(11)
 		&apos; Стих - Подзаголовок
-		MakeStyle( fb2Style.PoemSubTitle, PoemSubtitleStyle() )
+		MakeParagraphStyle( fb2Style.PoemSubTitle, PoemSubtitleStyle() )
 		oProgressBar.setValue(12)
 		&apos; Стих
-		MakeStyle( fb2Style.Poem, PoemStyle() )
+		MakeParagraphStyle( fb2Style.Poem, PoemStyle() )
 		oProgressBar.setValue(13)
 		&apos; Стих - Автор
-		MakeStyle( fb2Style.PoemAuthor, PoemAuthorStyle() )
+		MakeParagraphStyle( fb2Style.PoemAuthor, PoemAuthorStyle() )
 		oProgressBar.setValue(14)
 		&apos; Стих - Дата
-		MakeStyle( fb2Style.PoemDate, PoemDateStyle() )
+		MakeParagraphStyle( fb2Style.PoemDate, PoemDateStyle() )
 		oProgressBar.setValue(15)
 
 		&apos; Подзаголовок
-		MakeStyle( fb2Style.SubTitle, SubtitleStyle() )
+		MakeParagraphStyle( fb2Style.SubTitle, SubtitleStyle() )
 		oProgressBar.setValue(16)
 		
 		&apos; Заголовки 1 ... 10
 		Dim i As Integer : i = 1
 		For i = 1 To 10
-			MakeStyle( GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; i, HeadingStyle( i ) )
+			MakeParagraphStyle( GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; i, HeadingStyle( i ) )
 		Next i
 		oProgressBar.setValue(17)
+		
+		&apos; стиль абзаца code
+		MakeParagraphStyle( &quot;code&quot;, CodeStyle() )
+		oProgressBar.setValue(18)
+		
+		&apos; символьный стиль code
+		MakeCharacterStyle( &quot;code&quot;, CodeCharacterStyle() )
+		oProgressBar.setValue(19)
 		
     	&apos; добавляем свойство документа _fb2_FB2StylesIsLoaded, если его нет
 		If GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; Then
@@ -293,10 +305,10 @@ Function LoadFB2StylesToDoc() As Boolean
 			&apos; задаем признак изменения документа
 			oDoc.setModified(True)
 		End If
-		oProgressBar.setValue(18)
+		oProgressBar.setValue(20)
 		oProgressBar.End
 
-    	LoadFB2StylesToDoc = True
+    	MakeFB2StylesToDoc = True
     End If
 End Function
 
@@ -412,7 +424,7 @@ Sub SetStyleIfOneOrNoneSelect( ByRef oViewCursor As Object, ByRef TempBookMarkNa
 	
 	If ClearBeforeFB2 = 1 Then
 		&apos; очистка всех стилей в заданной видимой курсором области текста
-		_ClearStyleToBase_( GetLocaDefaultStyleName() )	
+		ClearStyleToBase()	
 	End If
 	
 	&apos; задаем новый стиль, если Style не равна &quot;&quot;
@@ -498,7 +510,7 @@ Public sLSTD As tLoadFB2StylesToDoData
 &apos; инициализация панели fb2 стилей в зависимости от локали
 Sub InitFB2StylesDlg()
 	&apos; инициализация сообщений панели fb2 стилей в зависимости от локали
-	InitLoadFB2StylesToDocMessage()
+	InitMakeFB2StylesToDocMessage()
 	
 	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
 		With oFB2StylesDlg.getModel
@@ -537,7 +549,7 @@ End Sub
 
 &apos; ***********************************************************************************************
 &apos; инициализация сообщений панели fb2 стилей в зависимости от локали
-Sub InitLoadFB2StylesToDocMessage()
+Sub InitMakeFB2StylesToDocMessage()
 	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
 		With sLSTD
 			.sProgressTitle	= &quot;Создание стилей:&quot;
@@ -1047,7 +1059,7 @@ Function GetLocaDefaultStyleName() As String
 	ElseIf sOOoLocal = &quot;pl&quot; Then	&apos; Польский
 		GetLocaDefaultStyleName = &quot;Domyślnie&quot;
 	Else							&apos; все остальные
-		GetLocaDefaultStyleName = &quot;Default&quot;
+		GetLocaDefaultStyleName = &quot;Default Style&quot;
 	End If
 End Function	
 
@@ -1115,6 +1127,8 @@ Sub setFb2StylesStandart()
 		.addItem( fb2.Level8, .getItemCount() )
 		.addItem( fb2.Level9, .getItemCount() )
 		.addItem( fb2.Level10, .getItemCount() )
+		&apos; code - стиль для листингов программ и моноширинного текста
+		.addItem( &quot;code&quot;, .getItemCount() )
 	End With
 End Sub
 
@@ -1159,6 +1173,8 @@ Sub setFb2LocalStylesToListBox()
 		&apos; Эпиграф
 		.addItem( fb2.Epigraph, .getItemCount() )
 		.addItem( fb2.EpigraphAuthor, .getItemCount() )
+		&apos; code - стиль для листингов программ и моноширинного текста
+		.addItem( &quot;code&quot;, .getItemCount() )
 	End With
 End Sub
 
@@ -1615,8 +1631,8 @@ End Sub
 &apos; ============================================================================================================
 &apos; 										Создание fb2-стилей
 &apos; ============================================================================================================
-&apos; создание стиля
-Sub CreateStyle( ByRef LocalStyle As String )
+&apos; создание стиля абзаца
+Sub CreateParagraphStyle( ByRef LocalStyle As String )
 	Dim oDoc			As Object	: oDoc			= ThisComponent
 	Dim oFamilies		As Object	: oFamilies 	= oDoc.StyleFamilies
 	Dim oStyle			As Object	: oStyle		= oDoc.createInstance(&quot;com.sun.star.style.ParagraphStyle&quot;)
@@ -1626,14 +1642,14 @@ Sub CreateStyle( ByRef LocalStyle As String )
 	End If
 End Sub
 
-&apos; создание стиля с заданными свойствами
-Sub MakeStyle( ByRef LocalStyle As String, ByRef DefStyleProperty As StylePropertyType )
+&apos; создание стиля абзаца с заданными свойствами
+Sub MakeParagraphStyle( ByRef LocalStyle As String, ByRef DefStyleProperty As StylePropertyType )
 	Dim oDoc			As Object	: oDoc			= ThisComponent
 	Dim oFamilies		As Object	: oFamilies 	= oDoc.StyleFamilies
 	Dim oStyle			As Object	: oStyle		= oDoc.createInstance(&quot;com.sun.star.style.ParagraphStyle&quot;)
 	Dim oParaStyles		As Object	: oParaStyles	= oFamilies.getByName(&quot;ParagraphStyles&quot;)
 	If Not oParaStyles.hasByName( LocalStyle ) Then
-		CreateStyle( LocalStyle, DefStyleProperty )
+		CreateParagraphStyle( LocalStyle, DefStyleProperty )
 	End If
 	If oParaStyles.hasByName( LocalStyle ) Then
 		oStyle = oParaStyles.getByName( LocalStyle )
@@ -1641,35 +1657,72 @@ Sub MakeStyle( ByRef LocalStyle As String, ByRef DefStyleProperty As StyleProper
 	End If
 End Sub
 
-&apos; задание стилю oStyle свойств
-Sub setPropertyForStyle( ByRef oStyle As Object, ByRef DefStyleProperty As StylePropertyType )
-	If oStyle.supportsService( &quot;com.sun.star.style.ParagraphProperties&quot; ) Then
-		oStyle.OutlineLevel = DefStyleProperty.OutlineLevel
-		&apos; отступы и красная строка
-		oStyle.ParaFirstLineIndent	= 1000 * DefStyleProperty.ParaFirstLineIndent
-		oStyle.ParaLeftMargin		= 1000 * DefStyleProperty.ParaLeftMargin
-		oStyle.ParaRightMargin		= 1000 * DefStyleProperty.ParaRightMargin
-		oStyle.ParaTopMargin		= 1000 * DefStyleProperty.ParaTopMargin
-		oStyle.ParaBottomMargin		= 1000 * DefStyleProperty.ParaBottomMargin
-		
-		Dim oProp As Object	: oProp	= CreateUnoStruct(&quot;com.sun.star.style.LineSpacing&quot;)
-		oProp.Mode		= 0
-		oProp.Height	= DefStyleProperty.ParaLineSpacing
-		oStyle.setPropertyValue(&quot;ParaLineSpacing&quot;, oProp)
-		
-		oStyle.ParaAdjust		= DefStyleProperty.ParaAdjust
-		oStyle.CharFontName		= DefStyleProperty.CharFontName
-		oStyle.CharHeight		= DefStyleProperty.CharHeight
-		oStyle.CharWeight		= DefStyleProperty.CharWeight
-		oStyle.CharPosture		= DefStyleProperty.CharPosture
-		oStyle.CharUnderline	= DefStyleProperty.CharUnderline
-		
-		oStyle.CharColor		= RGB ( DefStyleProperty.CharColor_R, DefStyleProperty.CharColor_G, DefStyleProperty.CharColor_B )
-		oStyle.ParaBackColor	= RGB ( DefStyleProperty.ParaBackColor_R, DefStyleProperty.ParaBackColor_G, DefStyleProperty.ParaBackColor_B )
-		oStyle.CharUnderlineHasColor = DefStyleProperty.CharUnderlineHasColor
-		oStyle.CharUnderlineColor = RGB ( DefStyleProperty.CharUnderlineColor_R, DefStyleProperty.CharUnderlineColor_G, DefStyleProperty.CharUnderlineColor_B )
-		oStyle.FollowStyle	= GetLocaDefaultStyleName()
+&apos; создание символьного стиля
+Sub CreateCharacterStyle( ByRef LocalStyle As String )
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim oFamilies		As Object	: oFamilies 	= oDoc.StyleFamilies
+	Dim oStyle			As Object	: oStyle		= oDoc.createInstance(&quot;com.sun.star.style.CharacterStyle&quot;)
+	Dim oCharStyles		As Object	: oCharStyles	= oFamilies.getByName(&quot;CharacterStyles&quot;)
+	If Not oCharStyles.hasByName( LocalStyle ) Then
+		oCharStyles.insertByName( LocalStyle, oStyle )
 	End If
+End Sub
+
+&apos; создание символьного стиля с заданными свойствами
+Sub MakeCharacterStyle( ByRef LocalStyle As String, ByRef DefStyleProperty As StylePropertyType )
+	Dim oDoc			As Object	: oDoc			= ThisComponent
+	Dim oFamilies		As Object	: oFamilies 	= oDoc.StyleFamilies
+	Dim oStyle			As Object	: oStyle		= oDoc.createInstance(&quot;com.sun.star.style.CharacterStyle&quot;)
+	Dim oCharStyles		As Object	: oCharStyles	= oFamilies.getByName(&quot;CharacterStyles&quot;)
+	If Not oCharStyles.hasByName( LocalStyle ) Then
+		CreateCharacterStyle( LocalStyle, DefStyleProperty )
+	End If
+	If oCharStyles.hasByName( LocalStyle ) Then
+		oStyle = oCharStyles.getByName( LocalStyle )
+		setPropertyForStyle( oStyle, DefStyleProperty )
+	End If
+End Sub
+
+&apos; задание свойств стилю oStyle (абзац и/или символ)
+Sub setPropertyForStyle( ByRef oStyle As Object, ByRef DefStyleProperty As StylePropertyType )
+	With oStyle
+		If .supportsService( &quot;com.sun.star.style.ParagraphProperties&quot; ) Then
+			.OutlineLevel = DefStyleProperty.OutlineLevel
+			&apos; отступы и красная строка
+			.ParaFirstLineIndent	= 1000 * DefStyleProperty.ParaFirstLineIndent
+			.ParaLeftMargin			= 1000 * DefStyleProperty.ParaLeftMargin
+			.ParaRightMargin		= 1000 * DefStyleProperty.ParaRightMargin
+			.ParaTopMargin			= 1000 * DefStyleProperty.ParaTopMargin
+			.ParaBottomMargin		= 1000 * DefStyleProperty.ParaBottomMargin
+			
+			Dim oProp As Object	: oProp	= CreateUnoStruct(&quot;com.sun.star.style.LineSpacing&quot;)
+			oProp.Mode		= 0
+			oProp.Height	= DefStyleProperty.ParaLineSpacing
+			.setPropertyValue(&quot;ParaLineSpacing&quot;, oProp)
+			
+			.ParaAdjust		= DefStyleProperty.ParaAdjust
+			.ParaBackColor	= RGB ( DefStyleProperty.ParaBackColor_R, DefStyleProperty.ParaBackColor_G, DefStyleProperty.ParaBackColor_B )
+			.FollowStyle	= GetLocaDefaultStyleName()
+		End If
+		
+		If .supportsService( &quot;com.sun.star.style.CharacterProperties&quot; ) Then
+			.CharBackColor	= RGB ( DefStyleProperty.CharBackColor_R, DefStyleProperty.CharBackColor_G, DefStyleProperty.CharBackColor_B )
+		End If
+		
+		If .supportsService( &quot;com.sun.star.style.ParagraphProperties&quot; ) Or _
+			.supportsService( &quot;com.sun.star.style.CharacterProperties&quot; ) Then
+
+			.CharFontName	= DefStyleProperty.CharFontName
+			.CharHeight		= DefStyleProperty.CharHeight
+			.CharWeight		= DefStyleProperty.CharWeight
+			.CharPosture	= DefStyleProperty.CharPosture
+			.CharUnderline	= DefStyleProperty.CharUnderline
+		
+			.CharColor		= RGB ( DefStyleProperty.CharColor_R, DefStyleProperty.CharColor_G, DefStyleProperty.CharColor_B )
+			.CharUnderlineHasColor = DefStyleProperty.CharUnderlineHasColor
+			.CharUnderlineColor = RGB ( DefStyleProperty.CharUnderlineColor_R, DefStyleProperty.CharUnderlineColor_G, DefStyleProperty.CharUnderlineColor_B )
+		End If
+	End With
 End Sub
 
 &apos; ===================================================================================================
@@ -1703,6 +1756,10 @@ Function StandardStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1735,6 +1792,10 @@ Function SubtitleStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1777,6 +1838,10 @@ Function HeadingStyle( Level As Integer ) As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1809,6 +1874,10 @@ Function BookTitleStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1841,6 +1910,10 @@ Function BookAnnotationStyle() As StylePropertyType
 	style.ParaBackColor_R = 230
 	style.ParaBackColor_G = 230
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 230
+	style.CharBackColor_G = 230
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1873,6 +1946,10 @@ Function AnnotationStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1905,6 +1982,10 @@ Function AnnotationSubtitleStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1937,6 +2018,10 @@ Function CiteSubtitleStyle() As StylePropertyType
 	style.ParaBackColor_R = 243
 	style.ParaBackColor_G = 243
 	style.ParaBackColor_B = 243
+	&apos; цвет фона символов
+	style.CharBackColor_R = 243
+	style.CharBackColor_G = 243
+	style.CharBackColor_B = 243
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -1969,6 +2054,10 @@ Function CiteStyle() As StylePropertyType
 	style.ParaBackColor_R = 243
 	style.ParaBackColor_G = 243
 	style.ParaBackColor_B = 243
+	&apos; цвет фона символов
+	style.CharBackColor_R = 243
+	style.CharBackColor_G = 243
+	style.CharBackColor_B = 243
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2001,6 +2090,10 @@ Function CiteAuthorStyle() As StylePropertyType
 	style.ParaBackColor_R = 243
 	style.ParaBackColor_G = 243
 	style.ParaBackColor_B = 243
+	&apos; цвет фона символов
+	style.CharBackColor_R = 243
+	style.CharBackColor_G = 243
+	style.CharBackColor_B = 243
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2033,6 +2126,10 @@ Function EpigraphStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2065,6 +2162,10 @@ Function EpigraphAuthorStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2097,6 +2198,10 @@ Function PoemTitleStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2129,6 +2234,10 @@ Function PoemSubtitleStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2161,6 +2270,10 @@ Function PoemStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2193,6 +2306,10 @@ Function PoemAuthorStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
@@ -2225,12 +2342,76 @@ Function PoemDateStyle() As StylePropertyType
 	style.ParaBackColor_R = 255
 	style.ParaBackColor_G = 255
 	style.ParaBackColor_B = 255
+	&apos; цвет фона символов
+	style.CharBackColor_R = 255
+	style.CharBackColor_G = 255
+	style.CharBackColor_B = 255
 	&apos; цвет подчеркивания стиля
 	style.CharUnderlineHasColor = False
 	style.CharUnderlineColor_R = 0
 	style.CharUnderlineColor_G = 0
 	style.CharUnderlineColor_B = 0
 	PoemDateStyle = style
+End Function
+
+&apos; стиль абзаца для code
+Function CodeStyle() As StylePropertyType
+	Dim style As StylePropertyType
+	style.OutlineLevel			= 0
+	style.ParaFirstLineIndent	= 0.0
+	style.ParaLeftMargin		= 1.0
+	style.ParaRightMargin		= 1.0
+	style.ParaTopMargin			= 0.0
+	style.ParaBottomMargin		= 0.0
+	style.ParaLineSpacing		= 100 &apos; одинарный
+	style.ParaAdjust	= com.sun.star.style.ParagraphAdjust.LEFT
+	style.CharFontName	= &quot;Courier New&quot;
+	style.CharHeight	= 10
+	style.CharWeight	= com.sun.star.awt.FontWeight.NORMAL
+	style.CharPosture	= com.sun.star.awt.FontSlant.NONE
+	style.CharUnderline = com.sun.star.awt.FontUnderline.NONE
+	&apos; цвет символов стиля
+	style.CharColor_R = 255
+	style.CharColor_G = 216
+	style.CharColor_B = 0
+	&apos; цвет фона абзаца
+	style.ParaBackColor_R = 0
+	style.ParaBackColor_G = 0
+	style.ParaBackColor_B = 0
+	&apos; цвет фона символов
+	style.CharBackColor_R = 0
+	style.CharBackColor_G = 0
+	style.CharBackColor_B = 0
+	&apos; цвет подчеркивания стиля
+	style.CharUnderlineHasColor = False
+	style.CharUnderlineColor_R = 0
+	style.CharUnderlineColor_G = 0
+	style.CharUnderlineColor_B = 0
+	CodeStyle = style
+End Function
+
+&apos; символьный стиль для code
+Function CodeCharacterStyle() As StylePropertyType
+	Dim style As StylePropertyType
+	style.CharFontName	= &quot;Courier New&quot;
+	style.CharHeight	= 10
+	style.CharWeight	= com.sun.star.awt.FontWeight.NORMAL
+	style.CharPosture	= com.sun.star.awt.FontSlant.NONE
+	style.CharUnderline = com.sun.star.awt.FontUnderline.NONE
+	&apos; цвет символов стиля
+	style.CharColor_R = 255
+	style.CharColor_G = 216
+	style.CharColor_B = 0
+	&apos; цвет фона символов
+	style.CharBackColor_R = 0
+	style.CharBackColor_G = 0
+	style.CharBackColor_B = 0
+	&apos; цвет подчеркивания стиля
+	style.CharUnderlineHasColor = False
+	style.CharUnderlineColor_R = 0
+	style.CharUnderlineColor_G = 0
+	style.CharUnderlineColor_B = 0
+	CodeCharacterStyle = style
 End Function
 
 </script:module>

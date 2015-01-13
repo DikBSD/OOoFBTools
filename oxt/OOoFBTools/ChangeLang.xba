@@ -117,6 +117,36 @@ Function TransCode( ByRef oLCurs() As Object, ByRef asLineChars() As String ) As
     &apos;oLCurs.gotoRange( oCursorL, False )
 End Function
 
-&apos;/////////////////////////////////////////////////////////////////////
+
+&apos; ===========================================================================================
+&apos; 		локализация изменения языка символов с русского на английский и обратно
+&apos; ===========================================================================================
+&apos; для хранения сообщений модуля локализации изменения языка символов с русского на английский и обратно
+Type tChangeLangData
+	sMessTitle			As String &apos; Изменение языка символов
+	sSelectText			As String &apos; Пожалуйста, выделите нужный фрагмент документа.
+	sNotSelectedText	As String &apos; Можно выделять только текст (в документе, врезхках, таблицах и сносках)!
+End Type
+
+Public sCLD As tChangeLangData
+
+&apos; ===========================================================================================
+&apos; инициализация сообщений модуля локализации изменения языка символов с русского на английский и обратно
+Sub InitChangeLangMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sCLD
+			.sMessTitle			= &quot;Изменение языка символов&quot;
+			.sSelectText		= &quot;Пожалуйста, выделите нужный фрагмент(ы) документа.&quot;
+			.sNotSelectedText	= &quot;Можно выделять только текст (в документе, врезках, таблицах и сносках)!&quot;
+		End With
+	Else
+		With sCLD
+			.sMessTitle			= &quot;Change character language&quot;
+			.sSelectText		= &quot;Please, select the required document part(s).&quot;
+			.sNotSelectedText	= &quot;Only text can be selected (in document, text boxes, tables and footnotes/endnotes)!&quot;
+		End With
+	End If
+End Sub
+
 
 </script:module>
