@@ -207,19 +207,24 @@ Function MakeFB2StylesToDoc() As Boolean
 
 	&apos; инициализация сообщений Создания fb2-стилей в зависимости от локали
 	InitMakeFB2StylesToDocMessage()
-		
+	
+	
+	&apos; получение структуры со стилями в зависимости от локали
+	Dim fb2Style			As FB2StylesType	: fb2Style		= GetLocaFB2Styles()
+	Dim oFamilies			As Object			: oFamilies 	= oDoc.StyleFamilies
+	Dim oParaStyles			As Object			: oParaStyles	= oFamilies.getByName(&quot;ParagraphStyles&quot;)
+	
 	&apos; загружаем стили в документ, если свойство документа _fb2_FB2StylesIsLoaded не задано
-	If GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; Then
+	If ( GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; OR ( Not oParaStyles.hasByName( fb2Style.Cite ) ) )  Then
+	    &apos; Проверка OR ( Not oParaStyles.hasByName( fb2Style.Cite ) ) нужна для случая, когда панель fb2 стилей
+	    &apos; запускается на документах, которые уже форматировались fb2 стилями на старых версиях OooFBTools,
+	    &apos; в которых стили не создавались, а грузились из файла стилей (В таком случае на LO стиль Цитата отсутствует и не создается).
+	    &apos; Теперь стиль Цитата создается и для таких документов.
 	    Dim oProgressBar As Object : oProgressBar = oDoc.CurrentController.StatusIndicator
 		oProgressBar.start( sLSTD.sProgressTitle, 20 )
 		oProgressBar.setValue(0)
-	    
-	    &apos; получение структуры со стилями в зависимости от локали
-		Dim fb2Style			As FB2StylesType	: fb2Style		= GetLocaFB2Styles()
-		Dim oFamilies			As Object			: oFamilies 	= oDoc.StyleFamilies
-		Dim oParaStyles			As Object			: oParaStyles	= oFamilies.getByName(&quot;ParagraphStyles&quot;)
-		Dim oStyle				As Object
 		
+		Dim oStyle As Object
 	    &apos; Standard (Базовый)
 		If oParaStyles.hasByName( GetLocaDefaultStyleName() ) Then
 			oStyle = oParaStyles.getByName( GetLocaDefaultStyleName() )

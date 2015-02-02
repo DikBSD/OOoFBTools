@@ -45,7 +45,7 @@ Function LoadDocFromUrl( sUrl As String ) As Object
 End Function
 
 &apos; ======================================================================================================================
-&apos;						 							Работа графикой
+&apos;						 							Работа с графикой
 &apos; ======================================================================================================================
 &apos; OLE, диаграммы, формулы...
 Function isTextEmbeddedObject( ByRef oGraphic As Object ) As Boolean
@@ -457,6 +457,136 @@ Function ListOfDocumentStyles( StyleType As String ) As Array
 	ListOfDocumentStyles = aArray()
 End Function
 
+&apos; поиск текста заданного стиля
+Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
+	Dim sResult As String
+	Dim oStr As Object, oEnum As Object
+	Dim oDesc As Object, iCount As Integer
+	oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchStyles = true
+		.setSearchString(sStyle)
+	End With
+	oEnum = ThisComponent.findAll(oDesc)
+	If oEnum.getCount = 0 Then 
+		GetTextOfStyle = &quot;&quot;
+		Exit Function
+	End If
+	For iCount = 0 To oEnum.getCount() - 1
+		oStr = oEnum.getByIndex(iCount)
+		If bMerge Then
+			sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
+		Else
+			sResult = sResult &amp; chr(10) &amp; oStr.getString()
+		End If
+	Next iCount
+	If bMerge Then
+		sResult = Mid(sResult, 1, Len(sResult)-1)
+	Else
+		sResult = Mid(sResult, 2, Len(sResult)-1)
+	End If
+	GetTextOfStyle = sResult
+End Function
+
+&apos; есть ли в тексте абзац со стилем sStyle
+Function IsStyleExists( sStyle As String ) As Boolean
+	Dim oDesc As Object, oEnum As Object
+	oDesc = ThisComponent.createSearchDescriptor()
+	With oDesc
+		.SearchStyles = true
+		.setSearchString(sStyle)
+	End With
+	oEnum = ThisComponent.findAll(oDesc)
+	If oEnum.getCount = 0 Then 
+		IsStyleExists = False
+	Else
+		IsStyleExists = True
+	End If
+End Function
+
+&apos; форматирование абзаца заданным стилем
+Sub SetParaStyle(Style As String)
+	Dim document   As Object : document		= ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(1) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Template&quot;
+	args1(0).Value = Style
+	args1(1).Name = &quot;Family&quot;
+	args1(1).Value = 2
+	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+&apos; форматирование символа заданным стилем
+Sub SetSymbolStyle(Style As String)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(1) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Template&quot;
+	args1(0).Value = Style
+	args1(1).Name = &quot;Family&quot;
+	args1(1).Value = 1
+	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
+End Sub
+
+&apos;  очистка всех стилей для выделенного символа
+Sub ClearSymbolFormat()
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	
+	Dim args1(2) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Underline.LineStyle&quot;
+	args1(0).Value = 0
+	args1(1).Name = &quot;Underline.HasColor&quot;
+	args1(1).Value = False
+	args1(2).Name = &quot;Underline.Color&quot;
+	args1(2).Value = -1
+	dispatcher.executeDispatch(document, &quot;.uno:Underline&quot;, &quot;&quot;, 0, args1())
+
+	Dim args2(0) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Italic&quot;
+	args2(0).Value = False
+	dispatcher.executeDispatch(document, &quot;.uno:Italic&quot;, &quot;&quot;, 0, args2())
+
+	Dim args3(0) As New com.sun.star.beans.PropertyValue
+	args3(0).Name = &quot;Bold&quot;
+	args3(0).Value = False
+	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args3())
+	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+&apos;  очистка всех цветов для выделенного символа
+Sub ClearFont_Back_BackgroundColor()
+	Dim document   As Object : document = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;FontColor&quot;
+	args1(0).Value = -1
+	dispatcher.executeDispatch(document, &quot;.uno:FontColor&quot;, &quot;&quot;, 0, args1())
+	dispatcher.executeDispatch(document, &quot;.uno:BackColor&quot;, &quot;&quot;, 0, Array())
+	
+	Dim args3(0) As New com.sun.star.beans.PropertyValue
+	args3(0).Name = &quot;BackgroundColor&quot;
+	args3(0).Value = -1
+	dispatcher.executeDispatch(document, &quot;.uno:BackgroundColor&quot;, &quot;&quot;, 0, args3())
+End Sub
+
+&apos;/////////////////////////////////////// Очистка всех стилей в абзаце//////////////////////////////////////
+&apos; очистка всех стилей в заданной видимой курсором области текста
+Sub ClearStyleToBase()
+	Dim BaseStyle As String : BaseStyle = GetLocaDefaultStyleName() &apos; название стиля &quot;Базовый&quot; в зависимости от локали
+	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
+	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
+	Dim args2(1) As New com.sun.star.beans.PropertyValue
+	args2(0).Name = &quot;Template&quot;
+	args2(0).Value = BaseStyle
+	args2(1).Name = &quot;Family&quot;
+	args2(1).Value = 2
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
+	&apos; форматирование символа заданным стилем
+	SetSymbolStyle( BaseStyle )
+End Sub
+
 &apos;========================================================================
 &apos;				Работа со шрифтами документа
 &apos;========================================================================
@@ -605,7 +735,6 @@ Sub ReadFileInArray( aArray() As String, sFile As String )
 	End If
 End Sub
 
-&apos; ===============================================================================================
 &apos; Читаем настройки и задаем координаты X,Y форме
 Function ReadXYFormPos( sFileName As String, nX As Integer, nY As Integer ) As Boolean
 	On Error Resume Next
@@ -2051,7 +2180,7 @@ Sub _UnoResetCellProtection()
 End Sub
 
 &apos; масштабирование символов по ширине
-sub setCharacterWidthScalingFactor( value As Integer )
+sub _UnoSetCharacterWidthScalingFactor( value As Integer )
 	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
 	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(0) As New com.sun.star.beans.PropertyValue
@@ -2061,7 +2190,7 @@ sub setCharacterWidthScalingFactor( value As Integer )
 End Sub
 
 &apos; интервал для символов (стандарт, разрядка или уплотнение)
-Sub setCharSpacing( value As Integer )
+Sub _UnoSetCharSpacing( value As Integer )
 	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
 	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(0) As New com.sun.star.beans.PropertyValue
@@ -2070,6 +2199,12 @@ Sub setCharSpacing( value As Integer )
 	oDispatcher.executeDispatch( oDoc, &quot;.uno:Spacing&quot;, &quot;&quot;, 0, args1() )
 End Sub
 
+&apos; выделение всего документа
+Sub _UnoSelectAllDocument()
+	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
+	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	oDispatcher.executeDispatch( oDoc, &quot;.uno:SelectAll&quot;, &quot;&quot;, 0, Array() )
+End Sub
 &apos; ====================================================================================
 &apos; 						Функции по работе с закладками
 &apos; ====================================================================================
@@ -2461,139 +2596,6 @@ Function ExtendViewCursorToStartEndParaOfSelections( ByRef oViewCursor As Object
 		End If
 	End If
 End Function
-
-&apos; =======================================================================================================
-&apos; 										Работа со стилями 
-&apos; =======================================================================================================
-&apos; поиск текста заданного стиля
-Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
-	Dim sResult As String
-	Dim oStr As Object, oEnum As Object
-	Dim oDesc As Object, iCount As Integer
-	oDesc = ThisComponent.createSearchDescriptor()
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyle)
-	End With
-	oEnum = ThisComponent.findAll(oDesc)
-	If oEnum.getCount = 0 Then 
-		GetTextOfStyle = &quot;&quot;
-		Exit Function
-	End If
-	For iCount = 0 To oEnum.getCount() - 1
-		oStr = oEnum.getByIndex(iCount)
-		If bMerge Then
-			sResult = sResult &amp; oStr.getString() &amp; &quot; &quot;
-		Else
-			sResult = sResult &amp; chr(10) &amp; oStr.getString()
-		End If
-	Next iCount
-	If bMerge Then
-		sResult = Mid(sResult, 1, Len(sResult)-1)
-	Else
-		sResult = Mid(sResult, 2, Len(sResult)-1)
-	End If
-	GetTextOfStyle = sResult
-End Function
-
-&apos; есть ли в тексте абзац со стилем sStyle
-Function IsStyleExists( sStyle As String ) As Boolean
-	Dim oDesc As Object, oEnum As Object
-	oDesc = ThisComponent.createSearchDescriptor()
-	With oDesc
-		.SearchStyles = true
-		.setSearchString(sStyle)
-	End With
-	oEnum = ThisComponent.findAll(oDesc)
-	If oEnum.getCount = 0 Then 
-		IsStyleExists = False
-	Else
-		IsStyleExists = True
-	End If
-End Function
-
-&apos; форматирование абзаца заданным стилем
-Sub SetParaStyle(Style As String)
-	Dim document   As Object : document		= ThisComponent.CurrentController.Frame
-	Dim dispatcher As Object : dispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(1) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;Template&quot;
-	args1(0).Value = Style
-	args1(1).Name = &quot;Family&quot;
-	args1(1).Value = 2
-	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
-End Sub
-
-&apos; форматирование символа заданным стилем
-Sub SetSymbolStyle(Style As String)
-	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
-	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(1) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;Template&quot;
-	args1(0).Value = Style
-	args1(1).Name = &quot;Family&quot;
-	args1(1).Value = 1
-	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
-End Sub
-
-&apos;  очистка всех стилей для выделенного символа
-Sub ClearSymbolFormat()
-	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
-	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	
-	Dim args1(2) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;Underline.LineStyle&quot;
-	args1(0).Value = 0
-	args1(1).Name = &quot;Underline.HasColor&quot;
-	args1(1).Value = False
-	args1(2).Name = &quot;Underline.Color&quot;
-	args1(2).Value = -1
-	dispatcher.executeDispatch(document, &quot;.uno:Underline&quot;, &quot;&quot;, 0, args1())
-
-	Dim args2(0) As New com.sun.star.beans.PropertyValue
-	args2(0).Name = &quot;Italic&quot;
-	args2(0).Value = False
-	dispatcher.executeDispatch(document, &quot;.uno:Italic&quot;, &quot;&quot;, 0, args2())
-
-	Dim args3(0) As New com.sun.star.beans.PropertyValue
-	args3(0).Name = &quot;Bold&quot;
-	args3(0).Value = False
-	dispatcher.executeDispatch(document, &quot;.uno:Bold&quot;, &quot;&quot;, 0, args3())
-	dispatcher.executeDispatch(document, &quot;.uno:SuperScript&quot;, &quot;&quot;, 0, Array())
-End Sub
-
-&apos;  очистка всех цветов для выделенного символа
-Sub ClearFont_Back_BackgroundColor()
-	Dim document   As Object : document = ThisComponent.CurrentController.Frame
-	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(0) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;FontColor&quot;
-	args1(0).Value = -1
-	dispatcher.executeDispatch(document, &quot;.uno:FontColor&quot;, &quot;&quot;, 0, args1())
-	dispatcher.executeDispatch(document, &quot;.uno:BackColor&quot;, &quot;&quot;, 0, Array())
-	
-	Dim args3(0) As New com.sun.star.beans.PropertyValue
-	args3(0).Name = &quot;BackgroundColor&quot;
-	args3(0).Value = -1
-	dispatcher.executeDispatch(document, &quot;.uno:BackgroundColor&quot;, &quot;&quot;, 0, args3())
-End Sub
-
-&apos;/////////////////////////////////////// Очистка всех стилей в абзаце//////////////////////////////////////
-&apos; очистка всех стилей в заданной видимой курсором области текста
-Sub ClearStyleToBase()
-	Dim BaseStyle As String : BaseStyle = GetLocaDefaultStyleName() &apos; название стиля &quot;Базовый&quot; в зависимости от локали
-	Dim oDoc As Object : oDoc = ThisComponent.CurrentController.Frame
-	Dim oDispatcher As Object : oDispatcher = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
-	oDispatcher.executeDispatch( oDoc, &quot;.uno:ResetAttributes&quot;, &quot;&quot;, 0, Array() )
-	Dim args2(1) As New com.sun.star.beans.PropertyValue
-	args2(0).Name = &quot;Template&quot;
-	args2(0).Value = BaseStyle
-	args2(1).Name = &quot;Family&quot;
-	args2(1).Value = 2
-	oDispatcher.executeDispatch( oDoc, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args2() )
-	&apos; форматирование символа заданным стилем
-	SetSymbolStyle( BaseStyle )
-End Sub
 
 &apos; =======================================================================================================
 &apos; 										Форматирование документа 

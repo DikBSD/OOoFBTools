@@ -172,6 +172,16 @@ Sub ParagraphAdjustCheckBoxCheck()
 	CheckBoxesCheck()
 End Sub
 
+Sub CharacterWidthScalingFactorCheckBoxCheck()
+	&apos; 100% масштаб символов по ширине
+	CheckBoxesCheck()
+End Sub
+
+Sub CharSpacingCheckBoxCheck()
+	&apos; Убрать разрядку
+	CheckBoxesCheck()
+End Sub
+
 Sub RemoveMarkerColorCheckBoxCheck()
 	&apos; доступность кнопки старта форматирования документа
 	CheckBoxesCheck()
@@ -275,6 +285,8 @@ Sub SetControlsEnabled()
 	UnBoldCheckBoxCheck()
 	UnItalicCheckBoxCheck()
 	UnUnderlineCheckBoxCheck()
+	CharacterWidthScalingFactorCheckBoxCheck()
+	CharSpacingCheckBoxCheck()
 	
 	&apos; для графики
 	EmbedGraphicsIntoDocumentCheckBoxCheck()
@@ -368,6 +380,8 @@ Sub formatAllParagrahps()
 	Dim oDoc			As Object	: oDoc				= ThisComponent
 	Dim oText			As Variant	: oText				= oDoc.getText()
 	Dim oTextCursor		As Variant	: oTextCursor		= oText.CreateTextCursor()
+	Dim oViewCursor 	As Object	: oViewCursor		= oDoc.currentcontroller.getViewCursor()
+	Dim oAllDocCursor	As Object	: oAllDocCursor		= oText.createTextCursorByRange( oViewCursor.getStart() )
 	Dim oProp			As Object	: oProp				= CreateUnoStruct(&quot;com.sun.star.style.LineSpacing&quot;)
 	oProp.Mode = 0   &apos;com.sun.star.style.LineSpacingMode.FIX
 	Dim ParagraphAdjust
@@ -395,8 +409,6 @@ Sub formatAllParagrahps()
 			End If
 		End If
 		
-		Dim oViewCursor 	As Object : oViewCursor		= oDoc.currentcontroller.getViewCursor()
-		Dim oAllDocCursor	As Object : oAllDocCursor	= oText.createTextCursorByRange( oViewCursor.getStart() )
 		oAllDocCursor.gotoStart( False )
 		oAllDocCursor.gotoEnd( True )
 		
@@ -437,6 +449,27 @@ Sub formatAllParagrahps()
 		If .RemoveMarkerColorCheckBox.State = 1 Then
 			oAllDocCursor.CharBackColor = RGB (255, 255, 255)
 			oAllDocCursor.CharHighlight = RGB (255, 255, 255)
+		End If
+		
+		Dim TempBookmark As String : TempBookmark = &quot;_Temp_SaveCursor_&quot;
+		&apos; 100% масштаб символов по ширине
+		If .CharacterWidthScalingFactorCheckBox.State = 1 Then
+			_UnoInsertBookmark( TempBookmark )
+			_UnoSelectAllDocument()
+			&apos; масштабирование символов по ширине
+			_UnoSetCharacterWidthScalingFactor( 100 )
+			goToViewCursorToBookMark( oViewCursor, TempBookmark, True )
+			_UnoDeleteBookMark( TempBookmark )
+		End If
+		
+		&apos; Убрать разрядку
+		If .CharSpacingCheckBox.State = 1 Then
+			_UnoInsertBookmark( TempBookmark )
+			_UnoSelectAllDocument()
+			&apos; интервал для символов (убрать разрядку)
+			_UnoSetCharSpacing( 0 )
+			goToViewCursorToBookMark( oViewCursor, TempBookmark, True )
+			_UnoDeleteBookMark( TempBookmark )
 		End If
 		
 		&apos; черный цвет шрифта текста
@@ -590,6 +623,8 @@ Sub InitTextFormattingDlg()
 			.UnBoldCheckBox.Label						= &quot;Убрать полужирное выделение в тексте&quot;
 			.UnItalicCheckBox.Label						= &quot;Убрать курсивное выделение в тексте&quot;
 			.UnUnderlineCheckBox.Label					= &quot;Убрать подчеркивания в тексте&quot;
+			.CharacterWidthScalingFactorCheckBox.Label	= &quot;100% масштаб символов по ширине&quot;
+			.CharSpacingCheckBox.Label					= &quot;Убрать разрядку&quot;
 			
 			.GraphicsFrameControl.Label					= &quot;Графика&quot;
 			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Встроить всю графику-ссылки в документ&quot;
@@ -646,6 +681,8 @@ Sub InitTextFormattingDlg()
 			.UnBoldCheckBox.Label						= &quot;Remove bold from the text&quot;
 			.UnItalicCheckBox.Label						= &quot;Remove italic from the text&quot;
 			.UnUnderlineCheckBox.Label					= &quot;Remove underline from the text&quot;
+			.CharacterWidthScalingFactorCheckBox.Label	= &quot;100% scale character width&quot;
+			.CharSpacingCheckBox.Label					= &quot;Remove discharge&quot;
 			
 			.GraphicsFrameControl.Label					= &quot;Graphics&quot;
 			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Embedding all graphics-links into document&quot;
