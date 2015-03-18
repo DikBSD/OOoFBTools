@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FootnoteParser" script:language="StarBasic">REM  *****  BASIC  *****
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FootnoteParser" script:language="StarBasic">&apos;====================================================================================================
+&apos; 										модуль парсера сносок
+&apos;====================================================================================================
 Option Explicit
 
-&apos; /////////////// парсер сносок /////////////////////////////
+Private	vFootnoteText() As Variant	&apos; массив текста всех сносок по абзацам с их &quot;аттрибутами&quot;
+Private	vEndnoteText()  As Variant	&apos; массив текста всех концевых сносок по абзацам с их &quot;аттрибутами&quot;
+Private sPreviousStyle	As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк в тексте одной и той же сносок
+Private bFENoteSeparately	As Boolean &apos; True - вывод сносок и концевых в разные блоки
+Public	sFNLinksTo()	As String	&apos; массив ссылок КУДА и их ID теста сносок
+
+&apos; основной парсер текста сносок
 Function FootEndNoteParser( oSect As Object ) As String
-	Dim bIsFootNote As Boolean : bIsFootNote = False &apos; флаг - сноска (True) или концевая сноска (False)
-	Dim sNote 		As String : sNote = &quot;&quot;
+	Dim bIsFootNote As Boolean	: bIsFootNote = False &apos; флаг - сноска (True) или концевая сноска (False)
+	Dim sNote 		As String	: sNote = &quot;&quot;
+	Dim lCurrentPara As Long : lCurrentPara = -1 &apos; текущий абзац текста сноски
 	
 	&apos; форматирование текста сноски по стилям
 	Dim oFootnoteCursor As Object : oFootnoteCursor = oSect.Footnote.createTextCursor()
@@ -37,9 +46,9 @@ Function FootEndNoteParser( oSect As Object ) As String
 	
 	Dim oEnumF As Object, oSecEnumF As Object, oTextF As Object, oTextPortionF As Object
 	Dim sFNTH		As String
-	Dim sParagFN	As String : sParagFN = &quot;&quot;
+	Dim sParagFN	As String : sParagFN	= &quot;&quot;
+	Dim sBookMark	As String : sBookMark	= &quot;&quot;
 
-	Dim sBookMark : sBookMark = &quot;&quot;
 	Dim asFNPart()		As String	&apos; временный массив для хранения всех данных одного абзаца текста сноски
 	Dim vTextArray()	As Variant	&apos; временный массив для хранения всех строк одного абзаца текста сноски
 	
@@ -50,6 +59,7 @@ Function FootEndNoteParser( oSect As Object ) As String
 		oFootnoteCursor.gotoEndOfParagraph(True)
 		oEnumF = oFootnoteCursor.createEnumeration()
 		While oEnumF.hasMoreElements()
+			lCurrentPara = lCurrentPara + 1
 			sParagFN	= &quot;&quot;
 			oTextF		= oEnumF.nextElement()
 			oSecEnumF	= oTextF.createEnumeration()
@@ -91,7 +101,26 @@ Function FootEndNoteParser( oSect As Object ) As String
 				ElseIf oTextPortionF.TextPortionType = &quot;Bookmark&quot; Then
 					&apos; закладки
 					If bDocLinks = True Then
-						sBookMark = oTextPortionF.Bookmark.getName()
+						Dim TextPortionBookmark As String : TextPortionBookmark = oTextPortionF.Bookmark.getName()
+						If sBookmark &lt;&gt; &quot;&quot; Then
+							If InStr( sBookmark, TextPortionBookmark ) = 0 Then
+								&apos; не заносим дважды одну и ту же закладку...
+								sBookmark = sBookmark &amp; &quot;?&quot; &amp; TextPortionBookmark
+							End If
+						Else
+							sBookmark = TextPortionBookmark
+						End If
+						
+						&apos; сохраняем позицию ОТКУДА ссылка и ее ID
+						If UBound(sFNLinksTo()) = -1 Then
+							AddNewItemToArray2IS( sFNLinksTo(), lCurrentPara + 1, TextPortionBookmark )
+						Else
+							&apos; не заносим дважды одну и ту же закладку...
+							If sFNLinksTo( UBound(sFNLinksTo()), 1 ) &lt;&gt; TextPortionBookmark Then
+								AddNewItemToArray2IS( sFNLinksTo(), lCurrentPara + 1, TextPortionBookmark )
+							End If
+						End If
+						
 					End If
 				End If
 				&apos;///////////////////////////////////////////////////////////
@@ -99,7 +128,6 @@ Function FootEndNoteParser( oSect As Object ) As String
 				&apos;Надо ввести проверку!!!
 				sParagFN = sParagFN &amp; InLineAllParser( oTextPortionF )
 			Wend
-		
 			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
 			sParagFN = DelBreakLineInString( sParagFN )
 
@@ -110,17 +138,18 @@ Function FootEndNoteParser( oSect As Object ) As String
 			End If
 			
 			If InStr(sParagFN,  &quot;__fn__OOo_graphics__&quot; ) = 0 Then
-				asFNPart() = MakeTextArray( sParagFN, oFootnoteCursor, sBookMark, asFNPart() )
+				MakeTextArray( asFNPart(), sParagFN, oFootnoteCursor, sBookMark )
 			Else
 				Dim i As Integer, sStr As String : sStr = &quot;&quot;
 				Dim aStr() As String : aStr() = Split( sParagFN, &quot;__fn__OOo_graphics__&quot; )
-				For i=0 To UBound( aStr() )
+				For i = 0 To UBound( aStr() )
 					If aStr(i) &lt;&gt; &quot;&quot; Then
-						asFNPart() = MakeTextArray( aStr(i), oFootnoteCursor, sBookMark, asFNPart() )
+						MakeTextArray( asFNPart(), aStr(i), oFootnoteCursor, sBookMark )
 					End If
 				Next i
 			End If
 		Wend
+		sBookmark = &quot;&quot;
 	Loop While oFootnoteCursor.gotoNextParagraph( False )
 	
 	Dim n As Integer : n = Ubound(vTextArray()) + 1
@@ -142,106 +171,39 @@ Function FootEndNoteParser( oSect As Object ) As String
 	FootEndNoteParser = sNote
 End Function
 
-&apos;/////////////////////////////////////////////////////////////////////////////////////////////////////////////+
-Function FNType( oFootnoteCursor As Object ) As String
-	FNType = &quot;FootNote&quot;
-	If LCase( oFootnoteCursor.ParaStyleName ) = &quot;endnote&quot; _
-		Or LCase( oFootnoteCursor.PageStyleName ) = &quot;endnote&quot; _
-		Or LCase( oFootnoteCursor.CharStyleName ) = &quot;endnote symbol&quot; Then
-		FNType = &quot;EndNote&quot;
-	End If
-End Function
-
-Function MakeTextArray( sStr As String, oFootnoteCursor As Object, sBookMark As String, asFNPart() As String )
-	Dim sTemp() As String
+Sub MakeTextArray( asFNPart() As String, sStr As String, oFootnoteCursor As Object, sBookMark As String )
 	&apos; парсер стилей сносок
-	Dim sType		As String
-	&apos;В LO поломано восприятие локализованных стилец Цитата
+	Dim sFNType As String : sFNType = FNType( oFootnoteCursor )
+	&apos;В LO поломано восприятие локализованных стилей Цитата
 	If isLibreOffice() Then
 		Dim ParaStyle As String : ParaStyle = oFootnoteCursor.ParaStyleName
 		If ParaStyle = GetLocaCiteStyleName() Then
 			ParaStyle = &quot;Quotations&quot;
 		End If
-		sType = FootnoteStyleParser( sTemp(), ParaStyle, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+		FootnoteStyleParser( asFNPart(), ParaStyle, sStr, sBookMark, sFNType ) &apos; тип абзаца - стих, абзац, цитата...
 	Else &apos; для OpenOffice
-		sType = FootnoteStyleParser( sTemp(), oFootnoteCursor.ParaStyleName, sStr ) &apos; тип абзаца - стих, абзац, цитата...
+		FootnoteStyleParser( asFNPart(), oFootnoteCursor.ParaStyleName, sStr, sBookMark, sFNType ) &apos; тип абзаца - стих, абзац, цитата...
 	End If
-	
-	Dim sNoteText	As String : sNoteText = sTemp( UBound( sTemp() )
-	AddNewItemToArray4( asFNPart(), sNoteText, sType, sBookMark, FNType( oFootnoteCursor ) )
+End Sub
 
-	MakeTextArray = asFNPart()
-End Function
-
-Function AddBodyArray( sPara As String, sTextType As String, bLevel As Boolean )
-	&apos; для уровней - проверка на несколько строк
-	If bLevel = False Then 
-		AddNewItemToArray2( sBodyParagraphs(), sPara, sTextType )
-	Else
-		If sTextType &lt;&gt; sPrevStyle Then &apos; Разные уровни
-			AddNewItemToArray2( sBodyParagraphs(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sTextType )
-		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
-			Dim sText As String
-			sText = sBodyParagraphs(UBound(sBodyParagraphs),0)
-			sBodyParagraphs(UBound(sBodyParagraphs),0) = sText &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-		End If
-	End If
-	oProgressBar.setValue( Ubound(sBodyParagraphs(), 1) + 1 ) &apos; Статусбар
-End Function
-
-Function AddBookAnnotation(sPara As String)
-	&apos; Собираем всю &quot;отформатированную&quot; Аннотацию на Книгу
-	Dim l As Long : l = Ubound(sBookAnnotation()) + 1
-	ReDim Preserve sBookAnnotation(l)
-	sBookAnnotation(l) = sPara
-	oProgressBar.setValue(UBound(sBodyParagraphs()),0 &amp; UBound(sBookAnnotation())
-End Function
-
-Function AddNotesArray(sTextArray() As String, sTextType As String, sPara As String, bLevel As Boolean)
-	&apos; для уровней - проверка на несколько строк
-	If bLevel = False Then 
-		AddNewItemToArray1( sTextArray(), sPara )
-	Else
-		If sTextType &lt;&gt; sNotesPrevStyle Then &apos; Разные уровни
-			AddNewItemToArray1( sTextArray(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; )
-		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
-			&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
-			DelEndType(sTextArray)
-			sTextArray(UBound(sTextArray)) = sTextArray(UBound(sTextArray)) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-		End If
-	End If
-End Function
-
-Function DelEndType(sTextArray As String)
-	&apos; удаляем в конце строки последнего элемента массива символ  тип абзаца
-	Dim sTempArray() As String, i As Integer, sResult As String
-	sTempArray = Split(sTextArray(UBound(sTextArray)), chr(10))
-	sResult = &quot;&quot;
-	For i=LBound(sTempArray) To UBound(sTempArray)-1
-		sResult = sResult &amp; sTempArray(i)
-	Next i
-	sTextArray(UBound(sTextArray)) = sResult
-End Function
-
-Function FootnoteStyleParser(sTextArray() As String, sParaStyleName As String, sPara As String) As String
+Sub FootnoteStyleParser( asFNPart() As String, sParaStyleName As String, sPara As String, sBookMark As String, FNType As String )
 	&apos; перебор по стилям
-	Dim sParaType As String : sParaType = sParaStyleName
+	Dim sParaStyle As String : sParaStyle = sParaStyleName
 	If sPara = &quot;&quot; Then
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+			AddNewItemToArray4( asFNPart(), &quot;&quot;, sParaStyle, sBookMark, FNType )
 		ElseIf sParaStyleName = sStyleCite Then
 			&apos; для пустых строк в цитатах
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+			AddNewItemToArray4( asFNPart(), &quot;&quot;, sParaStyle, sBookMark, FNType )
 		ElseIf sParaStyleName = sStyleAnnotation Then
 			&apos; для пустых строк в аннотациях
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+			AddNewItemToArray4( asFNPart(), &quot;&quot;, sParaStyle, sBookMark, FNType )
 		ElseIf sParaStyleName = sStyleEpigraph Then
-			&apos; для пустых строк в эпиграфах
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
+			AddNewItemToArray4( asFNPart(), &quot;&quot;, sParaStyle, sBookMark, FNType )
 		Else
-			AddNotesArray(sTextArray, sParaStyleName, &quot;&quot;, False)
-			sParaType = &quot;&quot;
+			AddNewItemToArray4( asFNPart(), &quot;&quot;, sParaStyle, sBookMark, FNType )
+			sParaStyle = &quot;&quot;
 		End If
 	Else
 		If sParaStyleName = sStylePoemTitle Or sParaStyleName = sStylePoemSubTitle Or sParaStyleName = sStylePoem Or _
@@ -250,19 +212,40 @@ Function FootnoteStyleParser(sTextArray() As String, sParaStyleName As String, s
 			sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
 			sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
 			sParaStyleName = sStyleSubTitle Then
-			AddNotesArray(sTextArray, sParaStyleName, sPara, False)
-		ElseIf sParaStyleName = sStyleLevel1 Or sParaStyleName = sStyleLevel2 Or sParaStyleName = sStyleLevel3 Or _
-				sParaStyleName = sStyleLevel4 Or sParaStyleName = sStyleLevel5 Or sParaStyleName = sStyleLevel6 Or _
-				sParaStyleName = sStyleLevel7 Or sParaStyleName = sStyleLevel8 Or sParaStyleName = sStyleLevel9 Or _
-				sParaStyleName = sStyleLevel10 Then
-			AddNotesArray(sTextArray, sParaStyleName, sPara, True)
-		Else	&apos; что-то другое или просто параграф
-			AddNotesArray(sTextArray, &quot;Para&quot;, sPara, False)
-			sParaType = &quot;Para&quot;
+			AddNewItemToArray4( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
+		ElseIf IsLevel( sParaStyleName ) Then
+			AddNotesArray( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
+		Else &apos; что-то другое или просто параграф
+			sParaStyle = &quot;Para&quot;
+			AddNewItemToArray4( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
 		End If
 	End If
-	sNotesPrevStyle = sParaStyleName
-	FootnoteStyleParser = sParaType
+	sPreviousStyle = sParaStyleName
+End Sub
+
+Function AddNotesArray( asFNPart() As String, sPara As String, sParaStyle As String, sBookMark As String, FNType As String )
+	&apos; для уровней - проверка на несколько строк
+	If sParaStyle &lt;&gt; sPreviousStyle Then &apos; Разные уровни
+		AddNewItemToArray4( asFNPart(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sParaStyle, sBookMark, FNType )
+	Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
+		if UBound( asFNPart() ) &gt; -1 Then
+			Dim LastItem As Long : LastItem = UBound( asFNPart() )
+			asFNPart( LastItem, 0 ) = asFNPart( LastItem, 0 ) &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			asFNPart( LastItem, 2 ) = asFNPart( LastItem, 2 ) &amp; &quot;|&quot; &amp; sBookMark
+		Else
+			AddNewItemToArray4( asFNPart(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sParaStyle, sBookMark, FNType )
+		End If
+	End If
+End Function
+
+&apos;определение типа сноски - FootNote или EndNote
+Function FNType( oFootnoteCursor As Object ) As String
+	FNType = &quot;FootNote&quot;
+	If LCase( oFootnoteCursor.ParaStyleName ) = &quot;endnote&quot; _
+		Or LCase( oFootnoteCursor.PageStyleName ) = &quot;endnote&quot; _
+		Or LCase( oFootnoteCursor.CharStyleName ) = &quot;endnote symbol&quot; Then
+		FNType = &quot;EndNote&quot;
+	End If
 End Function
 
 </script:module>

@@ -1541,14 +1541,26 @@ End Sub
 Sub Code()
 	ClearBold()
 	ClearItalic()
-	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
-	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim oDoc				As Object : oDoc  				= ThisComponent
+	Dim oCurrentController	As Object : oCurrentController  = ThisComponent.CurrentController.Frame
+	Dim oDispatcher			As Object : oDispatcher			= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(1) As New com.sun.star.beans.PropertyValue
 	args1(0).Name = &quot;Template&quot;
 	args1(0).Value = &quot;code&quot;
 	args1(1).Name = &quot;Family&quot;
 	args1(1).Value = 1
-	dispatcher.executeDispatch(document, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1())
+	oDispatcher.executeDispatch( oCurrentController, &quot;.uno:StyleApply&quot;, &quot;&quot;, 0, args1() )
+
+	Dim oSels		As Object	: oSels		= oDoc.getCurrentSelection() &apos; все выделения в тексте
+	Dim lSelCount	As Integer	: lSelCount = oSels.getCount() &apos; число выделенных областей текста
+	If lSelCount &gt; 0 Then
+		Dim i As Integer
+		For i = 0 To lSelCount - 1
+			&apos; замена множественных простых пробелов и стартовых одиночных неразрывные во всех местах выделенного текста
+			ReplaceBlanksTabsToBlankOrTabsInCodeWorker( oSels.getByIndex(i), oDoc )	
+		Next i
+	End If
+
 	&apos; делаем активным текущий документ
 	ActiveDocument()
 End Sub

@@ -148,7 +148,7 @@ Sub TextFrameTableParser( oCont As Object )
 	Dim i As Integer
 	If nMaxCollCount &gt; 0 Then
 		&apos; вставляем colspan
-		For i=0 To UBound( TableRows() )
+		For i = 0 To UBound( TableRows() )
 			If Not TableRows(i).isTable Then
 				TableRows(i).str = InsertColspanForInCutRow( TableRows(i).str, nMaxCollCount )
 			End If
@@ -157,12 +157,12 @@ Sub TextFrameTableParser( oCont As Object )
 	
 	&apos; формируем строку таблицы
 	sTable = &quot;&quot;
-	For i=0 To UBound( TableRows() )
+	For i = 0 To UBound( TableRows() )
 		sTable = sTable &amp; TableRows(i).str
 	Next i
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
 	
-	AddBodyArray( sTable, &quot;Table&quot;, False )
+	AddNewItemToArray3( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot; )
 End Sub
 
 &apos; парсер текстовой врезки как цитаты
@@ -194,7 +194,7 @@ Sub TextFrameCiteParser( oCont As Object )
 	Loop
 	&apos; обработка начала и конца строки
 	sCite = MakeStartEndOfText( sCite )
-	AddBodyArray( sCite, &quot;Cite&quot;, False )
+	AddNewItemToArray3( sBodyParagraphs(), sCite, &quot;Cite&quot;, &quot;&quot; )
 End Sub
 
 &apos; парсер текстовой врезки как текста
@@ -227,7 +227,7 @@ Sub TextFrameTextParser( oCont As Object )
 	
 	&apos; обработка начала и конца строки
 	sText = MakeStartEndOfText( sText )
-	AddBodyArray( sText, &quot;Para&quot;, False )
+	AddNewItemToArray3( sBodyParagraphs(), sText, &quot;Para&quot;, &quot;&quot; )
 End Sub
 
 &apos; ===============================================================================================
@@ -235,22 +235,23 @@ End Sub
 Sub TextFrameStructParser( oCont As Object )
 	Dim oParEnum As Object, oPar As Object
 	Dim sFormatPara As String
+	Dim sBookmark As String : sBookmark = &quot;&quot;
 
 	oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			sFormatPara = GraphicsFootEndNoteTextFrameParser( oPar )
-		
-			&apos;В LO поломано восприятие локализованных стилец Цитата
+			&apos;TODO обработку закладок
+			&apos;В LO поломано восприятие локализованных стилей Цитата
 			If isLibreOffice() Then
 				Dim ParaStyle As String : ParaStyle = oPar.ParaStyleName
 				If ParaStyle = GetLocaCiteStyleName() Then
 					ParaStyle = &quot;Quotations&quot;
 				End If
-				StyleParser( ParaStyle, sFormatPara )
+				StyleParser( ParaStyle, sFormatPara, sBookmark )
 			Else &apos; для OpenOffice
-				StyleParser( oPar.ParaStyleName, sFormatPara )
+				StyleParser( oPar.ParaStyleName, sFormatPara, sBookmark )
 			End If
 
 		ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
@@ -258,8 +259,9 @@ Sub TextFrameStructParser( oCont As Object )
 			Dim sTable as String
 			sTable = OOo23TextTableParserForTextInCut( oPar )
 			&apos;sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
-			AddBodyArray( sTable, &quot;Table&quot;, False )
+			AddNewItemToArray3( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot; )
 		End If
+		sBookmark = &quot;&quot;
 	Loop
 End Sub
 

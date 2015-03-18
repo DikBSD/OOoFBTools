@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">REM  *****  BASIC  *****
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Parser" script:language="StarBasic">&apos;======================================================================================================================
+&apos; 							модуль основного парсинга теста документа
+&apos;======================================================================================================================
 Option Explicit
 
 Public Covers()		As String	&apos; массив, хранящий кодированные картинки-обложки
@@ -8,7 +10,6 @@ Public Images()		As String	&apos; массив, хранящий кодиров�
 
 &apos; оформление сносок
 Private bFENoteCommon	 	As Boolean
-Private bFENoteSeparately	As Boolean
 Private sFootnoteLeft		As String
 Private sFootnoteRight		As String
 Private bFootnoteSpace		As Boolean
@@ -21,14 +22,12 @@ Private sENTitle	As String
 
 Private lBATIndex		As Long 	&apos; Указатель на индекс ячейки массива sBodyParagraphs, хранящей стиль Book Author или Book Title
 
-Private	vFootnoteText() As Variant	&apos; массив текста всех сносок по абзацам с их &quot;аттрибутами&quot;
-Private	vEndnoteText()  As Variant	&apos; массив текста всех концевых сносок по абзацам с их &quot;аттрибутами&quot;
 Private iFootnoteCount	As Integer	&apos; счетчик сносок
 Private iEndnoteCount	As Integer	&apos; счетчик концевых сносок
 Private iImgCurrent		As Integer	&apos; для формирования номера картинки
 Private sPrevStyle		As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
-Private sNotesPrevStyle As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк в тексте сносок
 Private sPara			As String	&apos; отформатированный текст параграфа
+Public	sLinksTo()		As String &apos; массив ссылок КУДА и их ID основного текста
 
 &apos; парсер всего документа
 Sub DocumentParser()
@@ -42,6 +41,7 @@ Sub DocumentParser()
 	Dim oCEnum		As Object &apos;Перебирает содержимое, такое как графические объекты
 	Dim oContent	As Object &apos;Перебираемое содержимое
 
+	Dim sBookmark As String : sBookmark = &quot;&quot;
 	lBATIndex = -1 &apos; пока нет ни Автора Книги, ни Названия Книги
 			
 	&apos; Перебрать параграфы. Таблицы перебираются одновременно с параграфами
@@ -117,10 +117,10 @@ Sub DocumentParser()
 					
 				ElseIf LCase( oSect.TextPortionType ) = &quot;footnote&quot; Then
 					&apos; парсер сносок
-					sPara = sPara &amp; FootEndNoteParser(oSect)
+					sPara = sPara &amp; FootEndNoteParser( oSect )
 				ElseIf LCase( oSect.TextPortionType ) = &quot;endnote&quot; Then
 					&apos; парсер концевых сносок
-					sPara = sPara &amp; FootEndNoteParser(oSect)
+					sPara = sPara &amp; FootEndNoteParser( oSect )
 				ElseIf LCase( oSect.TextPortionType ) = &quot;textfield&quot; Then
 					&apos; текстовые поля
 					If bTextField = True Then
@@ -129,15 +129,26 @@ Sub DocumentParser()
 				ElseIf LCase( oSect.TextPortionType ) = &quot;bookmark&quot; Then
 					&apos; закладки
 					If bDocLinks = True Then
-						&apos; сохраняем позицию ОТКУДА ссылка и ее ID
-						&apos; не заносим дважды одну и ту же закладку...
-						If UBound(sLinksTo) = -1 Then
-							AddNewItemToArray2IS( sLinksTo(), UBound(sBodyParagraphs) + 1, oSect.Bookmark.getName() )
+						Dim SectBookmark As String : SectBookmark = oSect.Bookmark.getName()
+						If sBookmark &lt;&gt; &quot;&quot; Then
+							If InStr( sBookmark, SectBookmark ) = 0 Then
+								&apos; не заносим дважды одну и ту же закладку...
+								sBookmark = sBookmark &amp; &quot;?&quot; &amp; SectBookmark
+							End If
 						Else
-							If sLinksTo( UBound(sLinksTo), 1 ) &lt;&gt; oSect.Bookmark.getName() Then
-								AddNewItemToArray2IS( sLinksTo, UBound(sBodyParagraphs) + 1, oSect.Bookmark.getName() )
+							sBookmark = SectBookmark
+						End If
+						
+						&apos; сохраняем позицию ОТКУДА ссылка и ее ID
+						If UBound(sLinksTo()) = -1 Then
+							AddNewItemToArray2IS( sLinksTo(), UBound(sBodyParagraphs()) + 1, SectBookmark )
+						Else
+							&apos; не заносим дважды одну и ту же закладку...
+							If sLinksTo( UBound(sLinksTo()), 1 ) &lt;&gt; SectBookmark Then
+								AddNewItemToArray2IS( sLinksTo(), UBound(sBodyParagraphs()) + 1, SectBookmark )
 							End If
 						End If
+
 					End If
 				&apos;Else
 				&apos;	MsgBox &quot;Что-то другое : &quot; &amp; oSect.TextPortionType
@@ -149,53 +160,54 @@ Sub DocumentParser()
 				sPara = MakeNumberingNumberPara( oPar, sPara )
 			End If
 			
-			&apos;В LO поломано восприятие локализованных стилец Цитата
+			&apos;В LO поломано восприятие локализованных стилей Цитата
 			If isLibreOffice() Then
 				Dim ParaStyle As String : ParaStyle = oPar.ParaStyleName
 				If ParaStyle = GetLocaCiteStyleName() Then
 					ParaStyle = &quot;Quotations&quot;
 				End If
-				StyleParser( ParaStyle, sPara )
+				StyleParser( ParaStyle, sPara, sBookmark )
 			Else &apos; для OpenOffice
-				StyleParser( oPar.ParaStyleName, sPara )
+				StyleParser( oPar.ParaStyleName, sPara, sBookmark )
 			End If
+			sBookmark = &quot;&quot;
 		End If
 	Loop
 End Sub
 
-Sub StyleParser(sParaStyleName As String, sPara As String)
+Sub StyleParser( sParaStyleName As String, sPara As String, sBookmark As String )
 	&apos; перебор по стилям
 	If sPara = &quot;&quot; Then
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
-			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = GetLocaCiteStyleName() Or sParaStyleName = sStyleCite Then
 			&apos; для пустых строк в цитатах
-			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = sStyleAnnotation Then
 			&apos; для пустых строк в аннотациях
-			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = sStyleEpigraph Then
 			&apos; для пустых строк в эпиграфах
-			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = sStyleEpigraphAuthor Then
 			&apos; для пустых строк Автора Эпиграфа
-			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = sStyleCiteAuthor Then
 			&apos; для пустых строк Автора Цитат
-			AddBodyArray(&quot;&quot;, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( &quot;&quot; )
 		Else
 			If IsLevel( sParaStyleName ) Then
-				AddBodyArray( sPara, sParaStyleName, True )
+				AddLevelToBodyArray( sPara, sParaStyleName, sBookmark )
 			Else
-				AddBodyArray(&quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, False)
+				AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, sBookmark )
 			End If
 		End If
 	Else
 		If sParaStyleName = sStyleBookTitle Then
-			AddBodyArray(sPara, sParaStyleName, False)
+			AddNewItemToArray3( sBodyParagraphs(), sPara, sParaStyleName, sBookmark )
 			If lBATIndex = -1 Then
 				lBATIndex = UBound( sBodyParagraphs() )
 			End If
@@ -205,67 +217,17 @@ Sub StyleParser(sParaStyleName As String, sPara As String)
 				sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
 				sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
 				sParaStyleName = sStyleSubTitle Or sParaStyleName = GetLocaCiteStyleName() Then
-					AddBodyArray( sPara, sParaStyleName, False )
+					AddNewItemToArray3( sBodyParagraphs(), sPara, sParaStyleName, sBookmark )
 		ElseIf IsLevel( sParaStyleName ) Then
-				AddBodyArray( sPara, sParaStyleName, True )
+				AddLevelToBodyArray( sPara, sParaStyleName, sBookmark )
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( sPara )
 		Else &apos; что-то другое или просто параграф
-			AddBodyArray( sPara, &quot;Para&quot;, False )
+			AddNewItemToArray3( sBodyParagraphs(), sPara, &quot;Para&quot;, sBookmark )
 		End If
 	End If
 	sPrevStyle = sParaStyleName
 End Sub
-
-&apos; переадресация закладки, если в одном абзаце вставлено несколько закладок
-Function RelinkBookMark( ByRef BookMarkName As String ) As String
-	RelinkBookMark = BookMarkName
-	
-	Dim newBookMarkName As String : newBookMarkName = BookMarkName
-	If UBound( sLinksTo() )	&gt; -1 Then
-		&apos; по названию закладки находим номер &quot;ее&quot; абзаца
-		Dim bmNPara As Long : bmNPara = -1	&apos; номер абзаца для обрабатываемой закладки
-		Dim bmIndex As Long : bmIndex = 0	&apos; индекс массива для обрабатываемой закладки
-		Dim l As Long
-		For l = 0 To UBound( sLinksTo() )
-&apos;			If BookMarkName = Mid( sLinksTo(l,1), 2 ) Then
-			If BookMarkName = sLinksTo(l,1) Then
-				bmNPara = sLinksTo(l,0)
-				bmIndex = l
-				Exit For
-			End If
-		Next l
-		
-		&apos; есть ли такая закладка в массиве закладок?
-		Dim isWorkingBookMark As Boolean : isWorkingBookMark = False
-		For l = LBound( sLinksTo() ) To UBound( sLinksTo() )
-			If BookMarkName = sLinksTo(l,1) Then
-				isWorkingBookMark = True
-				Exit For
-			End If
-		Next l
-		
-		&apos; только для закладок, на которые ссылаются гиперссылки
-		If isWorkingBookMark Then
-			&apos; формируем закладки по группе (по одному и тому же номеру &quot;их&quot; абзаца - bmNPara)
-			Dim bmLIndex As Long : bmLIndex = bmIndex
-			If bmIndex = 0 Then &apos; bmIndex = 0 (первый элемент массива)
-				bmLIndex = 0
-			ElseIf bmIndex &gt; 0 Then
-				For l = bmIndex - 1 To 0 Step -1
-					If sLinksTo(l,0) &lt; bmNPara Then &apos; уже другая группа закладок
-						bmLIndex = l+1
-						Exit For
-					ElseIf sLinksTo(l,0) = bmNPara Then
-						bmLIndex = 0
-					End If
-				Next l
-			End If
-			newBookMarkName = sLinksTo(bmLIndex,1)
-		End If
-	End If
-	RelinkBookMark = newBookMarkName
-End Function
 
 &apos; перебор по всем in-line стилям
 Function InLineAllParser(oSect As Object) As String
@@ -294,7 +256,7 @@ Function InLineAllParser(oSect As Object) As String
 			s = CorrectPara( oSect.HyperLinkURL )
 		Else			&apos; закладка
 			s = Mid(oSect.HyperLinkURL, 2)
-			s = &quot;#&quot; &amp; CorrectBMLink( RelinkBookMark( s ) ) &apos; RelinkBookMark - переадресация закладки, если в одном абзаце вставлено несколько закладок
+			s = &quot;#&quot; &amp; CorrectBMLink( s )
 		End If
 		sLexem = &quot;&lt;a l:href=&quot;&quot;&quot; &amp; s &amp; &quot;&quot;&quot;&gt;&quot; &amp; sLexem &amp; &quot;&lt;/a&gt;&quot;
 	End If
@@ -347,7 +309,20 @@ Function InLineAllParser(oSect As Object) As String
 		sLexem = &quot;&lt;strikethrough&gt;&lt;/strikethrough&gt;&quot; Then
 		sLexem = &quot;&quot;
 	End If
-	InLineAllParser = sLSpace + sLexem + sRSpace
+	InLineAllParser = sLSpace &amp; sLexem &amp; sRSpace
 End Function
+
+Function AddLevelToBodyArray( sPara As String, sParaStyle As String, sBookmark As String )
+	&apos; для уровней - проверка на несколько строк
+	If sParaStyle &lt;&gt; sPrevStyle Then &apos; Разные уровни
+		AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sParaStyle, sBookmark )
+	Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
+		Dim LastItem As Long : LastItem = UBound( sBodyParagraphs() )
+		sBodyParagraphs( LastItem, 0 ) = sBodyParagraphs( LastItem, 0 ) &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+		sBodyParagraphs( LastItem, 2 ) = sBodyParagraphs( LastItem, 2 ) &amp; &quot;|&quot; &amp; sBookMark
+	End If
+	oProgressBar.setValue( Ubound(sBodyParagraphs(), 1) + 1 )
+End Function
+
 
 </script:module>

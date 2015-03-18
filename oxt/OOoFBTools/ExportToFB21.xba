@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">REM  *****  BASIC  *****
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExportToFB21" script:language="StarBasic">
+&apos; ===========================================================================================================================
+&apos; 											модуль формирования элементов fb2 структуры
+&apos; ===========================================================================================================================
 Option Explicit
 
 Public Const sConvertorName						As String = &quot;ExportToFB2.1&quot;						&apos; название конвертера
@@ -11,13 +14,14 @@ Public oProgressBar		As Object
 
 Public sCurDocFile			As String &apos; обрабатываемый документ
 Public oTextOutputStream	As Object
-Public sBookAnnotation()	As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
 Public sBodyParagraphs()	As String &apos; массив хранит &quot;обработанные&quot; абзацы Книги
-Public sLinksTo()			As String &apos; массив ссылок КУДА и их ID
 
 Public lCurrentElement As Long &apos; номер текущего элемента структуры - для создания текста документа
 
-Public sIDFNPrev As String &apos; хранит имя закладки-ID
+Public bELForStartAnnot As Boolean
+Public asFNPars() As String &apos; массив абзацев сноски с ее &quot;аттрибутами&quot; (для печати)
+
+Public sBookAnnotation() As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
 
 &apos; ===========================================================================================================================
 &apos; 												Работа контролов и формы Конвертера
@@ -34,6 +38,17 @@ End Function
 Sub ExportToFB21DlgExec()
 	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
 	InitExportToFB21DlgMessage()
+	
+	&apos; Задаем настройки в переменные по умолчанию
+	SetDefaultSettingsToVars()
+	&apos; считываем настройки из файла в переменные
+	LoadSettingsToVars()
+		
+	&apos; Предварительная обработка текста: удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе (текст, Врезки, таблицы)
+	If bNotUsedBookmarks Then
+		&apos; Предварительная обработка текста: удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе (текст, Врезки, таблицы)
+		DeleteNotUsedBookmarksInDocument()
+	End If
 	
 	&apos; основные проверки
 	Dim oDoc As Object : oDoc = ThisComponent
@@ -181,24 +196,37 @@ Sub ExportDoc()
 	Dim oProgress As Object
 	Dim oProgressLabel As Object
 	oProgress = oExportToFB21Dlg.getControl(&quot;exportProgressBar&quot;)
-	oProgress.setRange(0, 6)
+	If bFENoteSeparately = True Then
+		oProgress.setRange(0, 7)
+	Else
+		oProgress.setRange(0, 6)
+	End If
 	oProgress.setValue(0)
 	oProgressLabel = oExportToFB21Dlg.getControl(&quot;exportLabel&quot;)
-	oProgressLabel.Text = &quot;1. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCovers &amp; &quot; ...&quot; &amp; chr(10)
+	oProgressLabel.Text = &quot;1. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCovers &amp; &quot; … &quot;
 	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
+	Dim CoverCount As Integer : CoverCount = -1
 	If IsStyleExists( sStyleBookTitle ) And ( oDoc.getGraphicObjects().Count &gt; 0 Or oDoc.getDrawPage().Count &gt; 0) Then
-		MakeCoverParser()
+		CoverCount = MakeCoverParser()
+	End If
+	If CoverCount = -1 Then
+		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressNotFound &amp; &quot;.&quot; &amp; chr(10)
+	Else
+		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; CoverCount+1 &amp; &quot;.&quot; &amp; chr(10)
 	End If
 	oProgress.setValue(1)
-	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;2. &quot; &amp; sETFB2DD.sFB2ExportProgressBarAnalysis &amp; &quot; ...&quot; &amp; chr(10)
+	
+	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;2. &quot; &amp; sETFB2DD.sFB2ExportProgressBarAnalysis &amp; &quot; … &quot;
 	
 &apos;	oExportToFB21Dlg.endExecute()
 	
 	&apos; запускаем парсинг всего текста
 	DocumentParser()
+	oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressDone &amp; chr(10)
+	
 	oProgress.setValue(2)
-	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;3. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCreate &amp; &quot;...&quot; &amp; chr(10)
+	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;3. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCreate &amp; &quot; … &quot; &amp; chr(10)
 	
 	&apos; ================== Создание fb2 файла ===========================
 	Dim oFileAccess As Object : oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
@@ -229,25 +257,64 @@ Sub ExportDoc()
 	oProgress.setValue(4)
 	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
 	
-	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;4. &quot; &amp; sETFB2DD.sFB2ExportProgressBarFootnote &amp; &quot;...&quot; &amp; chr(10)
-	If UBound( vFootnoteText() ) &lt;&gt; -1 Or UBound( vEndnoteText() ) &lt;&gt; -1 Then
+	&apos; сохранение сносок
+	If bFENoteSeparately = True Then &apos; в разные блоки
+		&apos; сохранение блока сносок (примечания)
+		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;4. &quot; &amp; sETFB2DD.sFB2ExportProgressBarFootnote &amp; &quot; … &quot;
 		Dim imaxProgress As Integer
 		If UBound( vFootnoteText() ) &lt;&gt; -1 Then imaxProgress = UBound( vFootnoteText() )
-		If UBound( vEndnoteText() ) &lt;&gt; -1 Then imaxProgress = imaxProgress + UBound( vEndnoteText() )
 		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarFootnote, imaxProgress )
 		oProgressBar.setValue(0)
-		SaveNotes()
+		If SaveNotes( True ) &gt; 0 Then
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; UBound( vFootnoteText() )+1 &amp; &quot;.&quot;
+		Else
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressNotFound &amp; &quot;.&quot;
+		End If
+		oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
+		oProgress.setValue(5)
+	
+		&apos; сохранение блока концевых сносок (комментарии)
+		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;5. &quot; &amp; sETFB2DD.sFB2ExportProgressBarEndnote &amp; &quot; … &quot;
+		If UBound( vEndnoteText() ) &lt;&gt; -1 Then imaxProgress = UBound( vEndnoteText() )
+		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarEndnote, imaxProgress )
+		oProgressBar.setValue(0)
+		If SaveNotes( False ) &gt; 0 Then
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; UBound( vEndnoteText() )+1 &amp; &quot;.&quot;
+		Else
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressNotFound &amp; &quot;.&quot;
+		End If
+		oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
+	Else
+		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;4. &quot; &amp; sETFB2DD.sFB2ExportProgressBarFootEndnote &amp; &quot; … &quot;
+		If SaveNotesToComonBlock() &gt; 0 Then
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; UBound( vFootnoteText() )+1 &amp; &quot;.&quot; &amp; chr(10)
+		Else
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressNotFound &amp; &quot;.&quot; &amp; chr(10)
+		End If
 	End If
-	oProgress.setValue(5)
-	oProgressLabel.Text = oProgressLabel.Text &amp; &quot;5. &quot; &amp; sETFB2DD.sFB2ExportProgressBarGraphics &amp; &quot;...&quot; &amp; chr(10)
 	
 	&apos; печатаем коды картинок, если они есть
+	If bFENoteSeparately = True Then
+		oProgress.setValue(6)
+		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;6. &quot; &amp; sETFB2DD.sFB2ExportProgressBarGraphics &amp; &quot; … &quot;
+	Else
+		oProgress.setValue(5)
+		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;5. &quot; &amp; sETFB2DD.sFB2ExportProgressBarGraphics &amp; &quot; … &quot;
+	End if
 	If UBound(Images()) &lt;&gt; -1 Then
 		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound(Images() )
 		oProgressBar.setValue(0)
 		SaveImages()
+		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; UBound( Images() )+1 &amp; &quot;.&quot; &amp; chr(10)
+	Else
+		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressNotFound &amp; &quot;.&quot; &amp; chr(10)
 	End If
-	oProgress.setValue(6)
+	If bFENoteSeparately = True Then
+		oProgress.setValue(7)
+	Else
+		oProgress.setValue(6)
+	End If
+	oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
 	oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportEnd &amp; chr(10)
 	
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
@@ -472,15 +539,14 @@ End Sub
 &apos; 												Функции экспорта
 &apos; ===========================================================================================================================
 Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
-	If bSuperfluous = True Then
-		Dim count As Integer : count = 0
-		&apos; до тех пор, пока не останется ни одной &quot;пустышки&quot;.
-		Do
-			count = RemoveSuperfluous(sStr)
-			count = count + RemoveSuperfluousLR(sStr)
-			count = count + ClearStyleSpace(sStr)
-		Loop While count &gt; 0
-	End If
+	Dim count As Integer : count = 0
+	&apos; до тех пор, пока не останется ни одной &quot;пустышки&quot;.
+	Do
+		count = RemoveSuperfluous(sStr)
+		count = count + RemoveSuperfluousLR(sStr)
+		count = count + ClearStyleSpace(sStr)
+	Loop While count &gt; 0
+
 	If bCHR10 = True Then
 		oTextOutputStream.writeString(sStr &amp; chr(10))
 	Else
@@ -488,17 +554,18 @@ Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
 	End If
 End Function
 
-Function MakeBookTitle As String
+Function MakeBookTitle() As String
 	&apos; формируем заглавие книги
 	If lBATIndex &gt; -1 Then
 		lCurrentElement = lBATIndex &apos; если есть автор или название книги, то все, что &quot;выше&quot; - игнорируем - служебная зона
-		Dim sBT As String, l As Long, sID As String, sBookTag As String
+		Dim sBT As String, l As Long, sBookTag As String
 		sBT = &quot;&lt;title&gt;&quot; &amp; chr(10)
-		For l = lCurrentElement To UBound(sBodyParagraphs)
+		For l = lCurrentElement To UBound( sBodyParagraphs() )
 			If sBodyParagraphs(l,1) = sStyleBookTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID, True) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					Dim sID As String : sID = FindBookmarkForID(l, True)
+					If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 						sBookTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						sBookTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -517,7 +584,7 @@ Function MakeBookTitle As String
 End Function
 
 Function MakePoemTitle(sArray As String, bBody As Boolean) As String
-	Dim l As Long, sID As String, sPTag As String
+	Dim l As Long, sPTag As String, sID As String
 	Dim sPoemTitle As String
 	sPoemTitle = &quot;&quot;
 	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
@@ -528,9 +595,10 @@ Function MakePoemTitle(sArray As String, bBody As Boolean) As String
 			If sArray(l,1) = sStylePoemTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sID = FindBookmarkForID(l, bBody)
+					If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 						sPTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
-						nCount = nCount+1 &apos;счетчик закладок
+						nCount = nCount + 1 &apos;счетчик закладок
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						If nCount = 0 Then &apos; чтобы не &quot;затереть&quot; закладки вышестоящих заголовков
 							sPTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -541,7 +609,7 @@ Function MakePoemTitle(sArray As String, bBody As Boolean) As String
 				End If
 				If nCountTag = 0 Then &apos; чтобы не добавлять и другие теги &lt;p id=&gt;
 					sPoemTitle = sPoemTitle &amp; sPTag
-					nCountTag = nCountTag+1 &apos;счетчик закладок
+					nCountTag = nCountTag + 1 &apos;счетчик закладок
 				End If
 				sPoemTitle = sPoemTitle &amp; sArray(l,0) &amp;  &quot; &quot;
 				oProgressBar.setValue(l) &apos; Статусбар
@@ -556,7 +624,8 @@ Function MakePoemTitle(sArray As String, bBody As Boolean) As String
 			If sArray(l,1) = sStylePoemTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sID = FindBookmarkForID(l, bBody)
+					If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 						sPTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						sPTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -642,7 +711,7 @@ Function SwitchSubTitleStanza(sArray As String, bBody As Boolean) As String
 End Function
 
 Function MakeStanza(sArray As String, bBody As Boolean) As String
-	Dim l As Long, sID As String, sStanza As String, nC As Integer
+	Dim l As Long, sStanza As String, nC As Integer
 	sStanza =  &quot;&quot;
 	nC = 0 &apos; счетчик строк поэмы
 	For l = lCurrentElement To UBound(sArray)
@@ -659,7 +728,8 @@ Function MakeStanza(sArray As String, bBody As Boolean) As String
 					End If
 				End If
 				If bDocLinks = True Then &apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					Dim sID As String : sID = FindBookmarkForID(l, bBody)
+					If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 						sStanza = sStanza &amp; &quot;&lt;v &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						sStanza = sStanza &amp; &quot;&lt;v&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/v&gt;&quot; &amp; chr(10)
@@ -669,7 +739,7 @@ Function MakeStanza(sArray As String, bBody As Boolean) As String
 				End If
 				&apos; смотрим следующий элемент
 				If l &lt; UBound(sArray) Then
-					If sArray(l+1,1) &lt;&gt; sStylePoem Then &apos; не стих - закрываем stanza
+					If sArray(l + 1,1) &lt;&gt; sStylePoem Then &apos; не стих - закрываем stanza
 						sStanza = sStanza &amp; &quot;&lt;/stanza&gt;&quot; &amp; chr(10)
 					End If
 				End If
@@ -711,7 +781,8 @@ Function MakePoemAuthor(sArray As String, bBody As Boolean) As String
 				If sArray(l,1) = sStylePoemAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sID = FindBookmarkForID(l, bBody)
+						If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 							sAPTag = &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 							nCount = nCount+1 &apos;счетчик закладок
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -739,7 +810,8 @@ Function MakePoemAuthor(sArray As String, bBody As Boolean) As String
 				If sArray(l,1) = sStylePoemAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sID = FindBookmarkForID(l, bBody)
+						If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 							sPoem = sPoem &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 							sPoem = sPoem &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
@@ -774,14 +846,15 @@ Function MakePoemDate(sArray As String) As String
 End Function
 
 Function MakeEpigraph(sArray As String, sStyle_Epigraph, sStyle_EpigraphAuthor, bBody As Boolean) As String
-	Dim sEpig As String, l As Long, sID As String
+	Dim sEpig As String, l As Long
 	sEpig = &quot;&quot;
 	For l = lCurrentElement To UBound(sArray)
 		If sArray(l,1) = sStyle_Epigraph AND sArray(l,0) &lt;&gt; &quot;&quot; Then
 			&apos; Просто абзацы цитаты или пустая строка
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+				Dim sID As String : sID = FindBookmarkForID(l, bBody)
+				If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 					sEpig = sEpig &amp; &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 					sEpig = sEpig &amp; &quot;&lt;p&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
@@ -833,7 +906,8 @@ Function MakeEpigraphAuthor(sArray As String, sStyle_EpigraphAuthor As String, b
 				If sArray(l,1) = sStyle_EpigraphAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sID = FindBookmarkForID(l, bBody)
+						If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 							sAETag = &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 							nCount = nCount+1 &apos;счетчик закладок
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -861,7 +935,8 @@ Function MakeEpigraphAuthor(sArray As String, sStyle_EpigraphAuthor As String, b
 				If sArray(l,1) = sStyle_EpigraphAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sID = FindBookmarkForID(l, bBody)
+						If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 							sEpig = sEpig &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 							sEpig = sEpig &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
@@ -881,13 +956,14 @@ Function MakeEpigraphAuthor(sArray As String, sStyle_EpigraphAuthor As String, b
 End Function
 
 Function MakeAnnotation(sArray As String, bBody As Boolean) As String
-	Dim sAnnot As String, l As Long, sID As String, sAnnotTag As String
+	Dim sAnnot As String, l As Long, sAnnotTag As String
 	sAnnot = &quot;&lt;annotation&gt;&quot; &amp; chr(10)
 	For l = lCurrentElement To UBound(sArray)
 		If sArray(l,1) = sStyleAnnotation AND sArray(l,0) &lt;&gt; &quot;&quot; Then
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+				Dim  sID As String : sID = FindBookmarkForID(l, bBody)
+				If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 					sAnnotTag = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 					sAnnotTag = &quot;&lt;p&gt;&quot; &apos; нет ни одной закладки
@@ -934,14 +1010,15 @@ Function MakeAnnotation(sArray As String, bBody As Boolean) As String
 End Function
 
 Function MakeCite(sArray As String, bBody As Boolean) As String
-	Dim sCite As String, l As Long, sID As String
+	Dim sCite As String, l As Long
 	sCite = &quot;&quot;
 	For l = lCurrentElement To UBound(sArray)
 		&apos; Просто абзацы цитаты или пустая строка
 		If sArray(l,1) = sStyleCite AND sArray(l,0) &lt;&gt; &quot;&quot; Then
 			If bDocLinks = True Then
 				&apos; обработка ссылок внутри документа
-				If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+				Dim sID As String : sID = FindBookmarkForID(l, bBody)
+				If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 					sCite = sCite &amp; &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 					sCite = sCite &amp; &quot;&lt;p&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
@@ -997,7 +1074,8 @@ Function MakeCiteAuthor(sArray As String, bBody As Boolean) As String
 				If sArray(l,1) = sStyleCiteAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sID = FindBookmarkForID(l, bBody)
+						If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 							sACTag = &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 							nCount = nCount+1 &apos;счетчик закладок
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -1025,7 +1103,8 @@ Function MakeCiteAuthor(sArray As String, bBody As Boolean) As String
 				If sArray(l,1) = sStyleCiteAuthor Then
 					If bDocLinks = True Then
 						&apos; обработка ссылок внутри документа
-						If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+						sID = FindBookmarkForID(l, bBody)
+						If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 							sCite = sCite &amp; &quot;&lt;text-author &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
 						Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 							sCite = sCite &amp; &quot;&lt;text-author&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/text-author&gt;&quot; &amp; chr(10)
@@ -1053,7 +1132,8 @@ Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTit
 			If sArray(l,1) = sStyle_SubTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sID = FindBookmarkForID(l, bBody)
+					If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 						sSubTag = &quot;&lt;subtitle &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot;
 						nCount = nCount+1 &apos;счетчик закладок
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
@@ -1078,7 +1158,8 @@ Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTit
 			If sArray(l,1) = sStyle_SubTitle Then
 				If bDocLinks = True Then
 					&apos; обработка ссылок внутри документа
-					If FindIndexForID(l, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
+					sID = FindBookmarkForID(l, bBody)
+					If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 						sSubtitle = sSubtitle &amp; &quot;&lt;subtitle &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/subtitle&gt;&quot; &amp; chr(10)
 					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 						sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/subtitle&gt;&quot; &amp; chr(10)
@@ -1086,7 +1167,7 @@ Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTit
 				Else
 					sSubtitle = sSubtitle &amp; &quot;&lt;subtitle&gt;&quot; &amp; sArray(l,0) &amp; &quot;&lt;/subtitle&gt;&quot; &amp; chr(10)
 				End If
-				oProgressBar.setValue(l) &apos; Статусбар
+				oProgressBar.setValue(l)
 			Else Exit For
 			End If
 		Next l
@@ -1095,56 +1176,88 @@ Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTit
 	MakeSubtitle = sSubtitle
 End Function
 
-Function MakeSection(sArray As String, sLevel As String, bBody As Boolean) As String
-	Dim sSect As String, sSectTag As String
+Function MakeSection( sArray() As String, bBody As Boolean ) As String
+	Dim sSectionTag As String : sSectionTag = &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
+	Dim pItem As String : pItem = sArray( lCurrentElement, 0 )
+	
+	&apos; задание id для тэгов &lt;p&gt; в секциях, если на них установлены закладки...
+	Dim sSection As String, sID As String
 	If bDocLinks = True Then
 		&apos; обработка ссылок внутри документа
-		Dim sID As String
-		If FindIndexForID(lCurrentElement, sID, bBody) &lt;&gt; -1 Then &apos; нашли закладку (ссылку) для текущего элемента
-			sSectTag = &quot;&lt;section &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
-		Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-			sSectTag = &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
+		sID = FindBookmarkForID(lCurrentElement, bBody)
+		If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
+			If InStr( pItem, &quot;&lt;p&gt;&quot; ) = 1 Then
+				pItem = MakeParaWithID( sArray(), lCurrentElement, sID )
+			Else
+				pItem = &quot;&lt;p id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; pItem &amp; &quot;&lt;/p&gt;&quot;
+			End If
+		Else
+			If InStr( pItem, &quot;&lt;p&gt;&quot; ) &lt;&gt; 1 Then
+				pItem = &quot;&lt;p&gt;&quot; &amp; pItem &amp; &quot;&lt;/p&gt;&quot;
+			End If
 		End If
-	Else
-		sSectTag = &quot;&lt;section&gt;&quot; &amp; chr(10) &amp; &quot;&lt;title&gt;&quot; &amp; chr(10)
 	End If
-	sSect = sSectTag &amp; sArray(lCurrentElement,0) &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot;
-	oProgressBar.setValue(lCurrentElement) &apos; Статусбар
-	lCurrentElement = lCurrentElement+1
-	MakeSection = sSect
+	
+	sSection = sSectionTag &amp; pItem &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot;
+
+	oProgressBar.setValue( lCurrentElement )
+	lCurrentElement = lCurrentElement + 1
+	MakeSection = sSection
 End Function
 
-&apos; поиск номера(индекса) абзаца из массива sLinksTo() для основного текста,
-&apos; соответствующему текущему элементу из sParaStyleName (если такое соответствие есть) для сносок - из массива asFNPars()
-&apos; bBody = True - основная часть книги. bBody = False - сноска
-Function FindIndexForID( lCurElement As Long, sID As String, bBody As Boolean ) As Long
-	FindIndexForID = -1
-	If bBody = True Then
-		&apos; для основной части книги
-		Dim l As Long
-		For l=0 To UBound( sLinksTo() )
-			If sLinksTo(l,0) = lCurElement Then
-				FindIndexForID = sLinksTo(l,0)
-				sID = CorrectBMLink( sLinksTo(l,1) )
-				Exit For
+&apos; вставка ID, если они есть, для тэгов &lt;p&gt; в строке, объединенной chr(10)
+&apos; требуется для собранных воедино абзацев Заголовков одного уровня
+&apos; lCurrentElement - текущий объединенный абзац для обработки
+&apos; sID - строка объединенных названий закладок
+Function MakeParaWithID( sArray() As String, lCurrentElement As Long, sID As String ) As String
+	Dim sPara		As String : sPara	= sArray( lCurrentElement, 0 )
+	Dim aParas()	As String : aParas	= Split( sPara, chr(10) )
+	Dim aIDs()		As String : aIDs	= Split( sID, &quot;|&quot; )
+	Dim i as Integer
+	For i = LBound( aIDs() ) To UBound( aIDs() )
+		If aIDs(i) &lt;&gt; &quot;&quot; Then
+			Dim sID As String : sID = aIDs(i)
+			If sID &lt;&gt; &quot;&quot; Then
+				aParas(i) = &quot;&lt;p id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid( aParas(i), 4 )
 			End If
-		Next l
-	Else
-		&apos; для сносок
-		If asFNPars(lCurElement,2) &lt;&gt; &quot;&quot;  Then
+		End If
+	Next i
+	MakeParaWithID = Join( aParas(), chr(10) )
+End Function
+
+&apos; поиск названия закладки для текущего lCurElement элемента
+&apos; если в абзаце несколько закладок - возвращаем первую, а также все после &quot;|&quot; (для собранных абзацев в один - для Заголовков)
+&apos; для основного текста - из массива sBodyParagraphs(),
+&apos; для сносок - из массива asFNPars()
+&apos; bBody = True - основная часть книги; bBody = False - сноска
+Function FindBookmarkForID( lCurElement As Long, bBody As Boolean ) As String
+	Dim sID As String : sID = &quot;&quot;
+	If bBody = True Then &apos; для основной части книги
+		sID = sBodyParagraphs( lCurElement, 2 )
+	Else &apos; для сносок
+		If asFNPars( lCurElement, 2 ) &lt;&gt; &quot;&quot;  Then
 			sID = CorrectBMLink( asFNPars(lCurElement, 2) )
-			If sIDFNPrev &lt;&gt; &quot;&quot; Then
-				If sID = sIDFNPrev Then
-					sID = &quot;&quot; &apos; зашита от дублирования ID по одинаковому имени закладки (текст сноски состоит из нескольких абзацев)
-					FindIndexForID = -1
-				Else
-					sIDFNPrev = sID
-					FindIndexForID = 0
-				End If
-			Else
-				sIDFNPrev = sID
-				FindIndexForID = 0
-			End If
+		End If
+	End If
+	FindBookmarkForID = _FindBookmarkForID( sID )
+End Function
+
+Function _FindBookmarkForID( sID As String ) As String
+	_FindBookmarkForID = &quot;&quot;
+	If sID &lt;&gt; &quot;&quot; Then
+		Dim indQ As Integer : indQ = InStr( sID, &quot;?&quot; )
+		Dim indR As Integer : indR = InStr( sID, &quot;|&quot; )
+		If indQ &lt;&gt; 0 AND indR &lt;&gt; 0 Then &apos; есть несколько закладок в одном абзаце и сборка абзацев с закладками
+			sID = Mid( sID, 1, indQ-1 ) &amp; Mid( sID, indR )
+			_FindBookmarkForID = CorrectBMLink( sID )
+		ElseIf indQ = 0 AND indR = 0 Then &apos; нет несколько закладок в одном абзаце и нет сборки абзацев с закладками
+			_FindBookmarkForID = CorrectBMLink( sID )
+		ElseIf indQ &lt;&gt; 0 AND indR = 0 Then &apos; есть несколько закладок в одном абзаце и нет сборки абзацев с закладками
+			sID = Mid( sID, 1, indQ-1 )
+			_FindBookmarkForID = CorrectBMLink( sID )
+		Else &apos; нет несколько закладок в одном абзаце и есть сборка абзацев с закладками (indQ = 0 AND indR &lt;&gt; 0)
+			sID = Mid( sID, 1, indQ-1 )
+			_FindBookmarkForID = CorrectBMLink( sID )
 		End If
 	End If
 End Function
@@ -1166,7 +1279,7 @@ Function IndexOfBookTitle( sArray() As String ) As Long
 	IndexOfBookTitle = -1
 	Dim i As Long
 	For i = 0 To UBound( sArray() )
-		If sArray(i,1) = sStyleBookTitle Then
+		If sArray(i, 1) = sStyleBookTitle Then
 			IndexOfBookTitle = i
 			Exit Function
 		End If
@@ -1180,7 +1293,7 @@ Function IndexOf1Section( sArray() As String, lStartIndex As Long ) As Long
 	
 	Dim i As Long
 	For i = lStartIndex To UBound( sArray() )
-		If IsLevel( sArray(i,1) ) = True Then
+		If IsLevel( sArray(i, 1) ) = True Then
 			IndexOf1Section = i
 			Exit Function
 		End If
@@ -1192,7 +1305,7 @@ Function IndexOfEndSection( sArray() As String ) As Long
 	IndexOfEndSection = -1
 	Dim i As Long
 	For i = UBound( sArray() ) To 0 Step -1 
-		If  IsLevel(sArray(i,1)) = True Then
+		If  IsLevel(sArray(i, 1)) = True Then
 			IndexOfEndSection = i
 			Exit Function
 		End If
@@ -1207,8 +1320,8 @@ Function GetIndexOfNextLevel( sArray() As String, lIndexOfCurrentLevel As Long )
 		GetIndexOfNextLevel = lIndexOfCurrentLevel
 		Exit Function
 	End If
-	For i = lIndexOfCurrentLevel+1 To UBound(sArray)
-		sInput = sArray(i,1)
+	For i = lIndexOfCurrentLevel + 1 To UBound(sArray)
+		sInput = sArray(i, 1)
 		If IsLevel(sInput) = True Then
 			GetIndexOfNextLevel = i
 			Exit For
@@ -1224,8 +1337,8 @@ Function GetIndexOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long )
 		GetIndexOfPrevLevel = lIndexOfCurrentLevel
 		Exit Function
 	End If
-	For i = lIndexOfCurrentLevel-1 To 0 Step -1
-		sInput = sArray( i,1 )
+	For i = lIndexOfCurrentLevel - 1 To 0 Step -1
+		sInput = sArray( i, 1 )
 		If  IsLevel( sInput ) = True Then
 			GetIndexOfPrevLevel = i
 			Exit For
@@ -1255,7 +1368,7 @@ Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrent
 		IsAdjacentCurrentLevelsOfNextLevel = 5
 		Exit Function
 	Else &apos; следующий Уровень есть
-		nStep = GetLevelNumber( sArray( lIndexOfCurrentLevel,1 ) ) - GetLevelNumber( sArray( lIndexOfNextLevel,1 )
+		nStep = GetLevelNumber( sArray( lIndexOfCurrentLevel, 1 ) ) - GetLevelNumber( sArray( lIndexOfNextLevel,1 )
 	End If
 	
 	If nStep = 0 Then &apos; текущий и следующий уровни - одного ранга, шаг = 0 (напр. 3 и 3)
@@ -1335,6 +1448,1053 @@ Function GetLevelNumber(Level As String) As Integer
 End Function
 
 &apos; ///////////////////////////////////////////////////////////////
+
+&apos;==================================================================================================================
+&apos; 						формирование разделов &lt;body&gt; fb2 файла
+&apos;==================================================================================================================
+
+Function IsAECP( sStyle As String ) As Boolean
+	&apos; Если sStyle - это Эпиграф, Цитата или Поэма - то возвращается True, иначе - False
+	Select Case sStyle
+			Case sStylePoem
+				IsAECP = True
+			Case sStylePoemTitle
+				IsAECP = True
+			Case sStylePoemSubTitle
+				IsAECP = True
+			Case sStylePoemAuthor
+				IsAECP = True
+			Case sStylePoemDate
+				IsAECP = True
+			Case sStyleCite
+				IsAECP = True
+			Case sStyleCiteSubTitle
+				IsAECP = True
+			Case sStyleCiteAuthor
+				IsAECP = True
+			Case sStyleEpigraph
+				IsAECP = True
+			Case sStyleEpigraphAuthor
+				IsAECP = True
+			Case sStyleAnnotationSubTitle
+				IsAECP = True
+			Case Else
+				IsAECP = False
+	End Select
+End Function
+
+Sub SaveBody()
+	If  IsLevel( sBodyParagraphs( UBound( sBodyParagraphs ), 1) ) = True OR _
+		IsAECP( sBodyParagraphs( UBound( sBodyParagraphs ), 1) ) = True Then
+		&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - 
+		&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поэма, Цитата
+	 	&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
+	 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
+		AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, &quot;&quot; )
+	End If
+
+	lCurrentElement = 0
+	oTextOutputStream.writeString( MakeBookTitle )
+	
+	MakeBody( sBodyParagraphs(), True )
+End Sub
+
+Function Save1OpenSectionForCandidate( sArray() As String, lCurrentElement As Long, bTextSmSection As Boolean )
+	Save1OpenSectionForCandidate = False
+	&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt; для уровней, вида 1,текст,2; 1,текст,5
+	If IsCandidateToSections( sArray(), lCurrentElement ) Then
+		&apos; возможные кандидаты на обрамление &lt;sections&gt;...&lt;/sections&gt; для уровней, вида 1,текст,2; 1,текст,5
+		If bTextSmSection = False Then
+			oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+			bTextSmSection = True
+			Save1OpenSectionForCandidate = True
+		End If
+	End If
+End Function
+
+&apos; печать заданного числа открывающих &lt;section&gt;
+Sub SaveNOpenSections( N As Integer )
+	If N &gt; 0 Then
+		Dim i As Integer
+		For i = 0 To N - 1
+			oTextOutputStream.writeString( &quot;&lt;section&gt;&quot; &amp; chr(10) )
+		Next i
+	End If
+End Sub
+
+Function IsCandidateToSections( sArray() As String, lCurrentElement As Long )
+	&apos; возможные кандидаты на обрамление &lt;sections&gt;...&lt;/sections&gt; для уровней, вида 1,текст,2; 1,текст,5
+	IsCandidateToSections = False
+	Dim sElement As String : sElement = sArray(lCurrentElement,1)
+	If sElement=&quot;Para&quot; _
+		OR sElement = sStylePoem Or sElement = sStylePoemTitle Or sElement = sStylePoemSubTitle Or sElement = sStylePoemAuthor _
+		OR sElement = sStyleCite Or sElement = sStyleCiteSubTitle Or sElement = sStyleCiteAuthor _
+		OR sElement = sStyleSubTitle OR sElement = &quot;Image&quot; OR sElement = &quot;Table&quot; OR sElement = &quot;&quot; _
+		 Then
+			IsCandidateToSections = True
+	End If
+End Function
+
+&apos; экспорт сносок и концевых сносок в разные блоки
+Function SaveNotes( IsFootNotes As Boolean ) As Long
+	SaveNotes = 0
+	lCurrentElement = 0
+	Dim oFootNotes	: oFootNotes	= ThisComponent.getFootnotes()
+	Dim oEndNotes	: oEndNotes		= ThisComponent.getEndnotes()
+	Dim lCount		As Long
+	Dim vaFNPara()	As Variant
+	
+	If IsFootNotes Then
+		&apos; сноски
+		If oFootNotes.getCount() &gt; 0 Then
+			&apos; сохраняем сноски
+			oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+			oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+			For lCount = 0 To UBound( vFootnoteText() )
+				vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+				If vaFNPara(0,3) = &quot;FootNote&quot; Then SaveNote( &quot;n&quot;, vaFNPara(), lCount )
+			Next lCount
+			oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		&apos; концевые сноски
+		If oEndNotes.getCount() &gt; 0 Then
+			&apos; сохраняем концевые сноски
+			oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;comments&quot;&quot;&gt;&quot; &amp; chr(10))
+			oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sENTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+			For lCount = 0 To UBound(vEndnoteText())
+				vaFNPara() = vEndnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+				If vaFNPara(0,3) = &quot;EndNote&quot; Then SaveNote( &quot;c&quot;, vaFNPara(), lCount )
+			Next lCount
+			oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+		End If
+	End If
+	SaveNotes = lCount
+End Function
+
+&apos; экспорт сносок и концевых сносок в общий блок
+Function SaveNotesToComonBlock() As Long
+	SaveNotesToComonBlock = 0
+	lCurrentElement = 0
+	Dim lCount		As Long
+	Dim vaFNPara()	As Variant
+
+	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+	For lCount = 0 To UBound(vFootnoteText())
+		vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+		SaveNote( &quot;n&quot;, vaFNPara(), lCount )
+	Next lCount
+	SaveNotesToComonBlock = lCount
+	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))	
+End Function
+
+Sub SaveNote( idSymbol As String, ByRef vaFNPara() As Variant, lCount As Long )
+	Dim sNote As String, sType As String, sBookMark As String, sFNType As String
+	oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;&quot; &amp; idSymbol &amp; &quot;&quot; &amp; lCount + 1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
+&apos;	oTextOutputStream.writeString(&quot;&lt;section id=&quot;&quot;n&quot; &amp; lCount + 1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; lCount + 1 &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+	&apos; по всем абзацам каждой сноски
+	Redim asFNPars() As String
+	Dim lParaCount As Long
+	For lParaCount = 0 To UBound( vaFNPara() )
+		sNote		= vaFNPara( lParaCount, 0 )
+		sType		= vaFNPara( lParaCount, 1 )
+		sBookMark	= vaFNPara( lParaCount, 2 )
+		sFNType		= vaFNPara( lParaCount, 3 )
+		AddNewItemToArray4( asFNPars(), sNote, sType, sBookMark, sFNType )
+	Next lParaCount
+	lCurrentElement = 0
+	&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац - Уровень, Эпиграф, Поэма, Цитата (в нарушение схемы)
+	&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
+ 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
+	AddNewItemToArray4( asFNPars(), &quot;&quot;, &quot;end-fn&quot;, &quot;&quot;, &quot;&quot;) &apos; иначе тип последней строки сноски определяется неверно
+	MakeBody( asFNPars(), False )
+
+	oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+	oProgressBar.setValue(lCount)
+End Sub
+
+&apos; печатаем коды картинок
+Function SaveImages() As Integer
+	If( UBound( Images() ) &gt;= 0 ) Then
+		Dim i As Integer, j As Integer
+		j = 0
+		For i = 0 To UBound( Images() )
+			Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; i &amp; &quot;.txt&quot;
+			If FileExists( sMimeFile ) Then
+				&apos; для jpg-файлов приводим mime-тип к правильному значению
+				Dim sExt As String : sExt = Images(i)
+				Dim sFileExt As String : sFileExt = Images(i)
+				sFileExt = Images(i)
+				If LCase(sExt) = &quot;jpg&quot; Then
+					sFileExt = &quot;jpeg&quot;
+				End If
+
+				&apos; считываем код картинки из файла		
+				Dim sLine As String
+				Dim oSFA As Object, oFS As Object, oTIS As Object
+				oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+				oFS = oSFA.openFileRead ( ConvertToURL ( sMimeFile ) )
+				oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+				oTIS.setInputStream (oFS)
+				If Not IsFileEmpty( sMimeFile ) Then
+					&apos; открываем тэг
+					oTextOutputStream.writeString( &quot;&lt;binary id=&quot;&quot;img_&quot; &amp; i &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; content-type=&quot;&quot;image/&quot; &amp; sFileExt &amp; &quot;&quot;&quot;&gt;&quot; &amp; chr(10) )
+					Do While ( NOT oTIS.isEOF() )
+						sLine = oTIS.readLine()
+						If sLine &lt;&gt; chr(10) Then
+							If sLine &lt;&gt; &quot;&quot; Then
+								oTextOutputStream.writeString( sLine &amp; chr(10) )
+							End If
+						End If
+					Loop
+					oTIS.closeInput()
+					&apos; закрываем тэг
+					oTextOutputStream.writeString( &quot;&lt;/binary&gt;&quot; &amp; chr(10) )
+					j = j + 1
+				End If
+			End If
+			oProgressBar.setValue(i)
+		Next i
+	End If
+	SaveImages = j
+End Function
+
+Function IsNeededELForAnnot( sArray() As String, ByVal lCurrentElement As Long ) As Boolean
+	&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности
+	Dim l As Long, lPointer As Long
+	lPointer = lCurrentElement
+	For l=0 To UBound(sArray())
+		If sArray(lPointer, 1) &lt;&gt; sStyleAnnotation Then
+			If sArray( lPointer, 1 ) = &quot;&quot; Then &apos; пустая строка после стартовой аннотации уже есть
+				If bDelEL = True Then &apos; не удаляем пустую строку, даже при включенной опции удаления
+					IsNeededELForAnnot = True				
+				Else
+					IsNeededELForAnnot = False
+				End If
+				Exit Function
+			ElseIf IsLevel( sArray(lPointer, 1) ) = True Then
+				IsNeededELForAnnot = True
+				Exit Function
+			Else
+				IsNeededELForAnnot = False
+				Exit Function
+			End If
+		End If
+		lPointer = lPointer+1
+	Next l
+	IsNeededELForAnnot = False
+End Function
+
+&apos; переадресация гиперссылки (&lt;a l:href=), если в одном абзаце вставлено несколько закладок
+Sub RelinkHREF( sArray() As String, lCurrentIter As Long, IsBody As Boolean )
+	Dim sOldHREF As String, sNewHREF As String, lIter As Long
+	Dim a() As String : a() = Split( sArray( lCurrentIter, 0 ), &quot;&lt;/a&gt;&quot; )
+	For lIter = LBound( a() ) To UBound( a() )
+		Dim str As String : str = a( lIter )
+		Dim index As Long : index = InStr( str, &quot;type=&quot;&quot;note&quot;&quot;&quot; )
+		If index = 0 Then &apos; только для гиперссылок (ссылки на сноски не обрабатываем)
+			Dim sTagA	As String	: sTagA		= &quot;&lt;a l:href=&quot;
+			Dim indTagA	As Integer	: indTagA	= InStr( str, sTagA )
+			If indTagA &lt;&gt; 0 Then
+				Dim sStart		As String : sStart		= Mid( str, 1, indTagA + Len( sTagA ) + 1 )
+				Dim sMiddleTemp	As String : sMiddleTemp	= Mid( str, Len( sStart ) + 1 )
+				Dim sEnd		As String : sEnd		= Mid( sMiddleTemp, InStr( sMiddleTemp, &quot;&gt;&quot; ) + 1 )
+				sOldHREF = Mid( sMiddleTemp, 1, InStr( sMiddleTemp, &quot;&gt;&quot; ) - 2 )
+				sNewHREF = RelinkBookMark( sOldHREF, IsBody )
+				a( lIter ) = sStart &amp; sNewHREF &amp; &quot;&quot;&quot;&gt;&quot; &amp; sEnd
+			End If
+		End If
+	Next lIter
+	sArray( lCurrentIter, 0 ) = Join( a(), &quot;&lt;/a&gt;&quot; )
+End Sub
+
+&apos; переадресация гиперссылки, если в одном абзаце вставлено несколько закладок
+Function RelinkBookMark( ByRef BookMarkName As String, IsBody As Boolean ) As String
+	RelinkBookMark = BookMarkName
+	
+	If IsBody Then
+		RelinkBookMark = _RelinkBookMark( sLinksTo(), BookMarkName )
+	Else
+		RelinkBookMark = _RelinkBookMark( sFNLinksTo(), BookMarkName )
+	End If
+End Function
+
+&apos; переадресация гиперссылки, если в одном абзаце вставлено несколько закладок
+Function _RelinkBookMark( ByRef aArray() As String, ByRef BookMarkName As String ) As String
+	_RelinkBookMark = BookMarkName
+	
+	Dim newBookMarkName As String : newBookMarkName = BookMarkName
+	If UBound( aArray() )	&gt; -1 Then
+		&apos; по названию закладки находим номер &quot;ее&quot; абзаца
+		Dim bmNPara As Long : bmNPara = -1	&apos; номер абзаца для обрабатываемой закладки
+		Dim bmIndex As Long : bmIndex = 0	&apos; индекс массива для обрабатываемой закладки
+		Dim l As Long
+		For l = 0 To UBound( aArray() )
+&apos;			If BookMarkName = Mid( aArray(l,1), 2 ) Then
+			If BookMarkName = aArray(l, 1) Then
+				bmNPara = aArray(l, 0)
+				bmIndex = l
+				Exit For
+			End If
+		Next l
+		
+		&apos; есть ли такая закладка в массиве закладок?
+		Dim IsWorkingBookMark As Boolean : IsWorkingBookMark = False
+		For l = LBound( aArray() ) To UBound( aArray() )
+			If BookMarkName = aArray(l, 1) Then
+				IsWorkingBookMark = True
+				Exit For
+			End If
+		Next l
+		
+		&apos; только для закладок, на которые ссылаются гиперссылки
+		If IsWorkingBookMark Then
+			&apos; формируем закладки по группе (по одному и тому же номеру &quot;их&quot; абзаца - bmNPara)
+			Dim bmLIndex As Long : bmLIndex = bmIndex
+			If bmIndex = 0 Then &apos; bmIndex = 0 (первый элемент массива)
+				bmLIndex = 0
+			ElseIf bmIndex &gt; 0 Then
+				For l = bmIndex - 1 To 0 Step -1
+					If aArray(l,0) &lt; bmNPara Then &apos; уже другая группа закладок
+						bmLIndex = l + 1
+						Exit For
+					ElseIf aArray(l, 0) = bmNPara Then
+						bmLIndex = 0
+					End If
+				Next l
+			End If
+			newBookMarkName = aArray(bmLIndex, 1)
+		End If
+	End If
+	_RelinkBookMark = newBookMarkName
+End Function
+
+Sub MakeBody( sArray() As String, IsBody As Boolean )
+	&apos; 1. Печать абзацев, находящихся до 1-й секции (если они есть)
+	&apos; Проверка на наличие Annotation, Cite, Poem Title, Poem, Para, &quot;&quot; (&lt;empty-line&gt;).
+	&apos; Если есть, то до них ставим &lt;section&gt;, а перед 1-й секцией &lt;/section&gt;. Epigraph - без &lt;section&gt;...&lt;/section&gt;
+	Dim lParaCount			As Long		: lParaCount			= UBound( sArray() )
+	Dim lIndexOfBookTitle	As Long		: lIndexOfBookTitle		= IndexOfBookTitle( sArray() )
+	&apos; ищем 1-й Заголовой любого Уровня только тот, который после Названия Книги!!!
+	Dim lIndexOf1Section	As Long
+	If lIndexOfBookTitle &lt;&gt; -1 Then &apos; если в тексте нет стиля Book Title
+		lIndexOf1Section = IndexOf1Section( sArray(), lIndexOfBookTitle )
+	Else							&apos; если стиль Book Title в тексте есть
+		lIndexOf1Section = IndexOf1Section( sArray(), 0 )
+	End If
+	Dim lIndexOfEndSection	As Long		: lIndexOfEndSection	= IndexOfEndSection( sArray() )
+	Dim bText				As Boolean	: bText					= False
+	Dim bTextSmSection		As Boolean	: bTextSmSection		= False
+	
+	If lIndexOf1Section = -1 Then &apos; нет ни одной секции
+		While sArray( lCurrentElement, 1 ) = sStyleEpigraph
+			&apos; Если 1-е элементы - епиграф, то его не берем в &lt;section&gt;, хотя если взять - документ все равно валидный будет
+			SaveElements( sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody )
+			If IsBody Then oProgressBar.setValue(lCurrentElement)
+&apos;			If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
+		Wend
+		&apos; Все остальные элементы обрамляем &lt;section&gt;
+		If IsBody = True Then &apos; только для body книги (не для сносок - лишняя секция)
+			oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+		End If
+		While lCurrentElement &lt;= UBound(sArray)
+			SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+			If IsBody Then oProgressBar.setValue(lCurrentElement)
+		Wend
+		If IsBody = True Then &apos; только для body книги (не для сносок - лишняя секция)
+			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		End If
+	Else &apos;секции есть
+		If lIndexOf1Section &gt; 0 Then &apos; что-то есть - записываем до 1-й секции
+			While lCurrentElement &lt; lIndexOf1Section
+				If sArray(lCurrentElement, 1) = &quot;Para&quot; OR _
+					sArray(lCurrentElement, 1) = sStylePoemTitle OR sArray(lCurrentElement, 1) = sStylePoem OR sArray(lCurrentElement, 1) = sStylePoemSubTitle OR _
+					sArray(lCurrentElement, 1) = sStyleCiteSubTitle OR sArray(lCurrentElement, 1) = sStyleCite OR _
+					sArray(lCurrentElement, 1) = sStyleSubTitle OR sArray(lCurrentElement, 1) = &quot;&quot; OR _
+					sArray(lCurrentElement, 1) = &quot;Image&quot; OR sArray(lCurrentElement, 1) = &quot;Table&quot; OR _
+					sArray(lCurrentElement, 1) = sStyleAnnotation Then
+					If bText = False Then
+						oTextOutputStream.writeString(&quot;&lt;section&gt;&quot; &amp; chr(10))
+						bText = True
+						&apos; &quot;защита&quot; - если после аннотации идет сразу Уровень, то вставляем между ними пустую строку для валидности
+						If sArray(lCurrentElement, 1) = sStyleAnnotation Then
+							bELForStartAnnot = IsNeededELForAnnot( sArray(), lCurrentElement )
+						End If
+					End If
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+					If IsBody Then oProgressBar.setValue(lCurrentElement)
+				Else &apos; это явно эпиграф
+					If bText = True Then
+						oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+						bText = False
+					Else &apos; епиграф самый первый, как и должен 
+						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+					End If
+					If IsBody Then oProgressBar.setValue(lCurrentElement)
+				End If
+				If bText = True AND lCurrentElement = lIndexOf1Section Then
+					oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+				End If
+			Wend
+		End If
+
+		&apos; 2. Печать всех блоков секций, начиная от 1-й
+		If lIndexOf1Section &lt;&gt; -1 Then &apos; секция есть
+			&apos; 2.1 Печать блока секции для 1-го Заголовка (Уровня)
+			Dim nH1Index As Integer : nH1Index = lCurrentElement
+			Dim nH2Index As Integer : nH2Index = GetIndexOfNextLevel(sArray, lCurrentElement)
+			Dim nH1Level As Integer : nH1Level = GetLevelNumber( sArray(nH1Index,1) )
+			Dim nH2Level As Integer
+			If nH2Index = -1 Then
+				nH2Level = 0
+			Else
+				nH2Level = GetLevelNumber( sArray(nH2Index, 1) )
+			End If
+			
+			Dim nOpenSections : nOpenSections = nH1Level &apos; число открывающих &lt;section&gt;
+			
+			If nH2Level &lt;&gt; 0 Then &apos; если есть 2-й Заголовок
+				If nH1Level &lt; nH2Level Then
+					&apos; Уровень 1-го Заголовка &lt; Уровня 2-го (например: 1 и 2; 1 и 3; 2 и 4)
+					SaveNOpenSections( nOpenSections - 1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody) &apos; печатаем Заголовок
+					&apos; есть ли текст между этими Заголовками?
+					If IsTextBetween2Levels( sArray(), nH1Index, nH2Index ) = True Then
+						&apos; между ними есть текст - печатаем этот текст
+						While lCurrentElement &lt; nH2Index
+							&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt; для уровней, вида 1,текст,2; 1,текст,5, если кандидаты есть
+							Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+							SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+						Wend
+						&apos; закрываем секцию для кандидатов, если они есть
+						If bTextSmSection = True Then SaveCloseSection(1)
+					End If
+					Dim nStep : nStep = nH2Level - nH1Level &apos; шаг между Уровнями 2-х первых Заголовков
+					SaveNOpenSections( nStep - 1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				ElseIf nH1Level &gt; nH2Level Then
+					&apos; Уровень 1-го Заголовка &gt; Уровня 2-го (например: 2 и 1; 6 и 2)
+					SaveNOpenSections( nOpenSections - 1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody) &apos; печатаем Заголовок
+					&apos; есть ли текст между этими Заголовками?
+					If IsTextBetween2Levels( sArray(), nH1Index, nH2Index ) = False Then
+						&apos; между ними нет текста - печатаем пустую строку
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10)) &apos; иначе - не валидность
+					Else
+						&apos; между ними есть текст - печатаем этот текст
+						While lCurrentElement &lt; nH2Index
+							SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+						Wend
+					End If
+					SaveCloseSection( nOpenSections ) &apos; закрываем &lt;/section&gt;
+					&apos; для 2-го Заголовка печатаем недостающие открывающие &lt;section&gt;
+					SaveNOpenSections( nH2Level - 1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				Else
+					&apos; Уровень 1-го Заголовка = Уровню 2-го (например: 3 и 3; 1 и 1)
+					SaveNOpenSections( nOpenSections - 1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+					SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody) &apos; печатаем Заголовок
+					&apos; есть ли текст между этими Заголовками?
+					If IsTextBetween2Levels( sArray(), nH1Index, nH2Index ) = True Then
+						While lCurrentElement &lt; nH2Index
+							SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+						Wend
+					End If
+					SaveCloseSection( 1 ) &apos; закрываем &lt;/section&gt;
+				End If
+			Else
+				&apos; в книге только 1 Заголовок
+				SaveNOpenSections( nOpenSections - 1 ) &apos; печать заданного числа открывающих &lt;section&gt;
+				SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody) &apos; печатаем Заголовок
+				If IsTextBetween2Levels( sArray(), nH1Index, lParaCount ) = False Then
+					&apos; между 1-м Заголовком и последним абзацем нет текста - печатаем пустую строку
+					oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10)) &apos; иначе - не валидность
+				Else
+					Do
+						SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+					Loop While ( lCurrentElement &lt;= lParaCount )
+				End If
+				SaveCloseSection( nH1Level ) &apos; закрываем &lt;/section&gt;
+				If IsBody Then oProgressBar.setValue(lCurrentElement)
+				Exit Sub
+			End If
+			If IsBody Then oProgressBar.setValue(lCurrentElement)
+			
+			&apos; 2.2 Печать остальных блоков секций, начиная от 2-й
+			Dim lIndexOfCurrentLevel As Long, lIndexOfNextLevel As Long
+			Dim nCurrentLevel As Integer, nNextLevel As Integer			
+			While lCurrentElement &lt;= lParaCount &apos; по индексам
+				lIndexOfCurrentLevel	= lCurrentElement &apos; индекс текущего уровня
+				lIndexOfNextLevel		= GetIndexOfNextLevel( sArray(), lCurrentElement ) &apos; индекс следующего уровня
+				nCurrentLevel			= GetLevelNumber( sArray(lIndexOfCurrentLevel, 1) )
+				If lIndexOfNextLevel = -1 Then
+					nNextLevel = lIndexOfEndSection
+				Else
+					nNextLevel = GetLevelNumber( sArray(lIndexOfNextLevel, 1) )
+				End If
+				If lIndexOfNextLevel = -1 Then lIndexOfNextLevel = lParaCount + 1
+				bTextSmSection = False &apos; для вставки &lt;section&gt; после &lt;title&gt; уровня
+				While lCurrentElement &lt; lIndexOfNextLevel
+					&apos; печатаем все абзацы между секциями (саму следующую секцию не включаем)
+					&apos; печатаем Заголовок
+					SaveElements(sArray, sArray( lIndexOfCurrentLevel, 1), sArray(lIndexOfCurrentLevel, 0), IsBody )
+					Dim NN As Integer : NN = IsAdjacentCurrentLevelsOfNextLevel( sArray(), lIndexOfCurrentLevel )
+					&apos; NN: знак (+ или -) показывает переход вправо с большего на меньший (напр: 5 и 2) уровень (-) или с меньшего на больший (напр: 1 и 2) уровень (+)
+					&apos; 10 - если lIndexOfCurrentLevel вышел за правую границу массива (все уже обработали)
+					&apos;  5 - нет следующего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - последний Заголовок)
+					&apos;  0 - текущий и следующий уровни - одного ранга, шаг = 0 (напр. 3 и 3)
+					&apos;  1 - текущий и следующий уровни - смежные, шаг = -1 (напр. 1 и 2)
+					&apos; -1 - текущий и следующий уровни - смежные, шаг = 1 (напр. 2 и 1)
+					&apos;  2 - текущий и следующий уровни - не смежные, шаг &lt; -1 (напр. 1 и 4 - шаг=-3)
+					&apos; -2 - текущий и следующий уровни - не смежные, шаг &gt; 1 (напр. 4 и 1 - шаг=3)
+					If NN = 5 Then	&apos; нет следующего уровня, есть только текущий, который и является последним Заголовком
+						&apos; печатем текст (элементы структуры) до конца книги
+						If IsTextBetween2Levels( sArray(), lIndexOfCurrentLevel, lIndexOfNextLevel ) = False Then
+							&apos; между ними нет текста - печатаем пустую строку
+							oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10)) &apos; иначе - не валидность
+						Else
+							&apos; между ними есть текст - печатаем этот текст
+							While lCurrentElement &lt; lIndexOfNextLevel
+								SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+							Wend
+						End If
+						SaveCloseSection( nCurrentLevel ) &apos; закрываем &lt;/section&gt;
+					Else &apos; следующий уровень есть
+						&apos; Какое направление: с меньшего на больший (1,2) или с большнго на меньший (3,1), или это - уровни одного ранга?
+						If NN = 0 Then
+							&apos; текущий Заголовок и следующий - уровни одного ранга (1 и 1; 5 и 5)
+							&apos; есть ли текст между этими Заголовками одного ранга?
+							If IsTextBetween2Levels( sArray(), lIndexOfCurrentLevel, lIndexOfNextLevel ) = True Then
+								While lCurrentElement &lt; lIndexOfNextLevel
+									SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+								Wend
+							End If
+							SaveCloseSection( 1 ) &apos; закрываем &lt;/section&gt;
+						ElseIf NN &gt; 0 Then	&apos; направление с меньшего к большему (1 и 2; 2 и 5)
+							&apos; смежные ли эти уровни?
+							If NN = 1 Then 	&apos; смежные
+								&apos; есть ли текст между ними?
+								If IsTextBetween2Levels( sArray(), lIndexOfCurrentLevel, lIndexOfNextLevel ) = False Then
+									&apos; между смежными уровнями текста нет (1,2) - чисто смежные уровни
+									&apos; печать заданного числа открывающих &lt;section&gt; для Следующего Заголовка
+									SaveNOpenSections( (nNextLevel - nCurrentLevel) - 1 )
+								Else &apos; текст между смежными уровнями есть (1-text-2)
+									While lCurrentElement &lt; lIndexOfNextLevel
+										&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt; для уровней, вида 1,текст,2; 1,текст,5, если кандидаты есть
+										Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+										SaveElements( sArray(), sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody )
+									Wend
+									&apos; закрываем секцию для кандидатов, если они есть
+									If bTextSmSection = True Then SaveCloseSection(1)
+									&apos; печать заданного числа открывающих &lt;section&gt; для Следующего Заголовка
+									SaveNOpenSections( (nNextLevel - nCurrentLevel) - 1 )
+								End If
+							Else &apos; не смежные, NN = 2
+								&apos; есть ли текст между ними?
+								If IsTextBetween2Levels( sArray(), lIndexOfCurrentLevel, lIndexOfNextLevel ) = False Then
+									&apos; между не смежными уровнями текста нет (1,4)
+									SaveNOpenSections( (nNextLevel - nCurrentLevel) - 1 ) &apos; печать заданного числа открывающих &lt;section&gt; для Следующего Заголовка
+								Else &apos; текст между не смежными уровнями есть (1-text-3)
+									While lCurrentElement &lt; lIndexOfNextLevel
+										&apos; печать 1 открывающей секции для кандидатов в обрамление &lt;section&gt;...&lt;/section&gt; для уровней, вида 1,текст,2; 1,текст,5, если кандидаты есть
+										Save1OpenSectionForCandidate( sArray(), lCurrentElement, bTextSmSection )
+										SaveElements( sArray(), sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody )
+									Wend
+									&apos; закрываем секцию для кандидатов, если они есть
+									If bTextSmSection = True Then SaveCloseSection(1)
+									&apos; печать заданного числа открывающих &lt;section&gt; для Следующего Заголовка
+									SaveNOpenSections( (nNextLevel - nCurrentLevel) - 1 )
+								End If
+							End If
+						Else &apos; направление с большего к меньшему (2 и 1; 5 и 3) - NN &lt; 0
+							&apos; есть ли текст между этими Заголовками?
+							If IsTextBetween2Levels( sArray(), lIndexOfCurrentLevel, lIndexOfNextLevel ) = False Then
+								&apos; между ними нет текста - печатаем пустую строку
+								oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10)) &apos; иначе - не валидность
+							Else
+								&apos; между ними есть текст - печатаем этот текст
+								While lCurrentElement &lt; lIndexOfNextLevel
+									SaveElements(sArray, sArray(lCurrentElement, 1), sArray(lCurrentElement, 0), IsBody)
+								Wend
+							End If
+							SaveCloseSection( (nCurrentLevel - nNextLevel) + 1 ) &apos; закрываем &lt;/section&gt;
+						End If
+					End If
+					If IsBody Then oProgressBar.setValue(lCurrentElement)
+				Wend
+			Wend
+		End If
+	End If
+End Sub
+
+&apos; Пояснения к алгоритму:
+&apos; для уровней одного ранга (1,1; 3,3) ничего обрамлять секциями между этими уровнями не надо.
+&apos; ТОЛЬКО Аннотация и (или) ТОЛЬКО Эпиграф - если они одни между уровнями одного ранга (по отдельности),
+&apos; то после них обязательно ставил пустую строку!!!
+Sub SaveElements( sArray() As String, sParaStyleName As String, sPara As String, IsBody As Boolean )
+	&apos; переадресация гиперссылки (&lt;a l:href=), если в одном абзаце вставлено несколько закладок
+	RelinkHREF( sArray(), lCurrentElement, IsBody )
+	
+	&apos; перебор по стилям
+	Dim sStr As String, bFB2Clear As Boolean
+	Select Case sParaStyleName
+		Case sStylePoemTitle
+			sStr = MakePoem(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStylePoemSubTitle
+			sStr = MakePoem(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStylePoem
+			sStr = MakePoem(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleEpigraph
+			sStr = MakeEpigraph(sArray(), sStyleEpigraph, sStyleEpigraphAuthor, IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleCite
+			sStr = MakeCite(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleCiteSubTitle
+			sStr = MakeCite(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleCiteAuthor
+			&apos; если после текста стоит Автор Цитаты (без самой цитаты) - обычно - в конце Введения книги
+			sStr = MakeCiteAuthor(sArray(), IsBody)
+			If sStr &lt;&gt; &quot;&quot; Then sStr = &quot;&lt;cite&gt;&quot; + sStr + &quot;&lt;/cite&gt;&quot;
+			SaveFBCorrectText(sStr, True)
+		Case sStyleAnnotation
+			sStr = MakeAnnotation(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleAnnotationSubTitle
+			sStr = MakeAnnotation(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleSubTitle
+			sStr = MakeSubTitle(sArray(), sStyleSubTitle, bMergeSubTitle, IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel1
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel2
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel3
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel4
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel5
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel6
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel7
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel8
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel9
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+		Case sStyleLevel10
+			sStr = MakeSection(sArray(), IsBody)
+			SaveFBCorrectText(sStr, True)
+
+		Case &quot;&quot; &apos; &lt;empty-line/&gt;
+			If bDelEL = False Then
+				If bDocLinks = True Then
+					&apos; обработка ссылок внутри документа
+					Dim sIDEL As String : sIDEL = FindBookmarkForID( lCurrentElement, IsBody )
+					If sIDEL &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
+						oTextOutputStream.writeString( &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sIDEL &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) )
+					Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+						oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+					End If
+				Else
+					oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+				End If
+			Else
+				If lCurrentElement &gt; 0 And lCurrentElement &lt; UBound( sArray() ) Then
+					If IsLevel( sArray(lCurrentElement-1,1) ) And IsLevel( sArray( lCurrentElement + 1, 1 ) ) Then
+						If sArray( lCurrentElement - 1, 1 ) = sArray( lCurrentElement + 1, 1 ) Then
+							&apos; обработка смежных уровней одного ранга - если между ними только пустая строка, то ее не удаляем - иначе - невалидность fb2-файла.
+							oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+						Else
+							&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
+							Dim sLevels(9) As String
+							Dim i As Integer, nPrev As Integer, nNext As Integer
+							sLevels = Array(sStyleLevel1, sStyleLevel2, sStyleLevel3, sStyleLevel4, sStyleLevel5, _
+											sStyleLevel6, sStyleLevel7, sStyleLevel8, sStyleLevel9, sStyleLevel10)
+							For i = LBound( sLevels ) To UBound( sLevels )
+								If sArray(lCurrentElement - 1, 1) = sLevels(i) Then
+									nPrev = i
+								End If
+								If sArray(lCurrentElement + 1, 1) = sLevels(i) Then
+									nNext = i
+								End If
+							Next i
+							If nPrev = nNext+1 Then
+								&apos; пустая строка между уровнями с большего на меньший ранг - оставляем
+								oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+							End If
+						End If
+					ElseIf sArray(lCurrentElement - 1, 1) = &quot;Table&quot; And sArray(lCurrentElement + 1, 1) = &quot;Table&quot; Then
+						&apos; не убираем пустую строку между 2-мя таблицами - в читалке сливаются иначе...
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				Else
+					If sArray(lCurrentElement, 1) = &quot;&quot; Then
+						&apos; Защита от &quot;вылетания&quot; конвертора, на случай, если последний абзац -
+						&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поема, Цитата
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				End If
+			End If
+			lCurrentElement = lCurrentElement + 1
+		Case &quot;Table&quot;
+			sStr = sPara
+			SaveFBCorrectText(sStr, True)
+			lCurrentElement = lCurrentElement + 1
+		Case &quot;Image&quot;
+			oTextOutputStream.writeString( sPara &amp; chr(10) )
+			Dim IndexOfPrevLevel : IndexOfPrevLevel = GetIndexOfPrevLevel( sArray(), lCurrentElement )
+			Dim IndexOfNextLevel : IndexOfNextLevel = GetIndexOfNextLevel( sArray(), lCurrentElement )
+			If IndexOfNextLevel - IndexOfPrevLevel = 2 Then
+				oTextOutputStream.writeString( &quot;&lt;empty-line/&gt;&quot; &amp; chr(10) )
+			End If
+			lCurrentElement = lCurrentElement + 1
+		Case &quot;end-fn&quot; &apos; только для сносок - последний &quot;ненужный&quot; элемент массива
+			If IsBody = False Then &apos; еще раз убедимся, что это - сноска
+				If lCurrentElement &lt;= UBound( sArray() ) Then &apos; чтобы &quot;не вылетить&quot; за границу индекса, на всякий случай
+					If IsLevel( sArray( lCurrentElement - 1, 1 ) ) = True Or _
+						sArray( lCurrentElement - 1, 1 ) = sStyleAnnotation Or _
+						sArray( lCurrentElement - 1, 1 ) = sStyleAnnotationSubTitle Or _
+						sArray( lCurrentElement - 1, 1 ) = sStyleEpigraph Or _
+						sArray( lCurrentElement - 1, 1 ) = sStyleEpigraphAuthor Then
+						&apos; Только для Уровней, Аннотации и Эпиграфа оставляем пустую строку
+						oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+					End If
+				End If
+			End If
+			lCurrentElement = lCurrentElement + 1
+		Case Else &apos; что-то другое или просто параграф - записываем как параграф
+			If bDocLinks = True Then
+				&apos; обработка ссылок внутри документа
+				Dim sID As String : sID = FindBookmarkForID(lCurrentElement, IsBody)
+				If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
+					sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
+					sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				End If
+			Else
+				sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+			End If
+			SaveFBCorrectText(sStr, False)
+			lCurrentElement = lCurrentElement + 1
+	End Select
+End Sub
+
+&apos; есть ли текст между 2-мя Заголовками?
+Function IsTextBetween2Levels( sArray(), nCurrentLevelIndex As Integer, nNextLevelIndex As Integer ) As Boolean
+	&apos; Возвращает: False - если текста нет; True - если текст есть
+	IsTextBetween2Levels = False
+	Dim nIter As Integer
+	For nIter = nCurrentLevelIndex To nNextLevelIndex
+		If Not IsLevel( sArray( nIter,1 ) ) Then
+			IsTextBetween2Levels = True : Exit Function
+		End If
+	Next nIter
+End Function
+
+Function SaveCloseSection(nCount As Integer) As Long
+	Dim i As Integer
+	If nCount &gt; 0 Then
+		For i = 0 To nCount-1
+			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
+		Next i
+	End If
+End Function
+
+
+&apos;================================================================================================================
+&apos; 						сохранение описания книги - секции Description
+&apos;================================================================================================================
+
+Function AddBookAnnotation( sPara As String )
+	&apos; Собираем всю &quot;отформатированную&quot; Аннотацию на Книгу
+	Dim l As Long : l = Ubound( sBookAnnotation() ) + 1
+	ReDim Preserve sBookAnnotation(l)
+	sBookAnnotation(l) = sPara
+	oProgressBar.setValue( UBound( sBodyParagraphs() ), 0 &amp; UBound( sBookAnnotation() )
+End Function
+
+&apos;***************************************************************************
+Sub SaveDescription( sFB2Encoding As String )
+	oTextOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;&quot; &amp; sFB2Encoding &amp; &quot;&quot;&quot; ?&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;FictionBook xmlns=&quot;&quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot; xmlns:l=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot;&gt;&quot;&amp;chr(10))
+	oTextOutputStream.writeString(&quot;&lt;description&gt;&quot; &amp; chr(10))
+	
+	oTextOutputStream.writeString(&quot;&lt;title-info&gt;&quot; &amp; chr(10))
+	
+	Dim i As Integer, aTemp() As String
+	&apos; для Жанров Книги
+	Dim sGenreArray() As Variant : sGenreArray() = GetUserPropertyArray(_fb2_ti_GenreCM)
+	If UBound( sGenreArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sGenreArray() )
+			aTemp() = SplitStringToArray( sGenreArray(i).Value )
+			Dim sGenreMatch As String : sGenreMatch = Trim( aTemp(1) ) : sGenreMatch = Mid( sGenreMatch, 1, Len( sGenreMatch ) - 1 )
+			If sGenreMatch = &quot;0&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;genre&gt;&quot; &amp; GetGenreCode( aTemp(0) ) &amp; &quot;&lt;/genre&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;genre match=&quot;&quot;&quot; &amp; sGenreMatch &amp; &quot;&quot;&quot;&gt;&quot; &amp; GetGenreCode( aTemp(0) ) &amp; &quot;&lt;/genre&gt;&quot; &amp; chr(10))
+			End If
+		Next i
+	End If
+	
+	&apos; для Авторов Книги
+	Dim sBookAuthorArray() As Variant : sBookAuthorArray() = GetUserPropertyArray(_fb2_ti_BookAuthor)
+	If UBound( sBookAuthorArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sBookAuthorArray() )
+			aTemp() = SplitStringToArray( sBookAuthorArray(i).Value )
+			SaveAuthor( Trim( aTemp(0) ), Trim( aTemp(1) ), Trim( aTemp(2) ), Trim( aTemp(3) ), Trim( aTemp(4) ), Trim( aTemp(5) ) )
+		Next i
+	Else
+		SaveEmptyAuthor()
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; CorrectPara( GetBookTitleFromProperty() ) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
+	
+	If UBound(sBookAnnotation()) &lt;&gt; -1 Then
+		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10)
+		For i = 0 To UBound(sBookAnnotation())
+			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sBookAnnotation(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+		Next i
+		oTextOutputStream.writeString(&quot;&lt;/annotation&gt;&quot; &amp; chr(10)
+	End If
+	
+	Dim Keywords As String : Keywords = GetKeywordsFromProperty()
+	If Keywords &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;keywords&gt;&quot; &amp; CorrectPara( Keywords ) &amp; &quot;&lt;/keywords&gt;&quot; &amp; chr(10))
+	
+	&apos; дата написания книги
+	Dim BookDateValue	As String : BookDateValue	= GetBookDateFromProperty()
+	Dim BookDateText	As String : BookDateText	= GetBookDateTextFromProperty()
+	If BookDateValue &lt;&gt; &quot;&quot; Then
+		If BookDateText &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; BookDateValue &amp; &quot;&quot;&quot;&gt;&quot; &amp; BookDateText &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		Else
+			oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; BookDateValue &amp; &quot;&quot;&quot;&gt;&quot; &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		End If
+	Else
+		If BookDateText &lt;&gt; &quot;&quot; Then
+			oTextOutputStream.writeString(&quot;&lt;date&gt;&quot; &amp; BookDateText &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+		End If
+	End If
+	
+	&apos; обложки
+	Dim s As String
+	If UBound( Covers() ) &gt;= 0 Then
+		s = &quot;&lt;coverpage&gt;&quot; &amp; chr(10)
+		For i=0 To UBound( Covers() )
+			s = s &amp; Covers(i) &amp; chr(10)
+		Next i
+		s = s &amp; &quot;&lt;/coverpage&gt;&quot; &amp; chr(10)
+		oTextOutputStream.writeString( s )
+	End If
+	
+	&apos; Язык Книги
+	Dim Lang	As String : Lang	= GetLangFromProperty()
+	Dim SrcLang	As String : SrcLang	= GetSrcLangFromProperty()
+	oTextOutputStream.writeString(&quot;&lt;lang&gt;&quot; &amp; Mid( Lang, InStr( Lang, &quot;(&quot; )+1, 2 ) &amp; &quot;&lt;/lang&gt;&quot; &amp; chr(10))
+	If SrcLang &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;src-lang&gt;&quot; &amp; Mid( SrcLang, InStr( SrcLang, &quot;(&quot; )+1, 2 ) &amp; &quot;&lt;/src-lang&gt;&quot; &amp; chr(10))
+	
+	&apos; переводчики Книги
+	Dim sTranslatorArray() As Variant : sTranslatorArray() = GetUserPropertyArray(_fb2_ti_Translator)
+	If UBound( sTranslatorArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sTranslatorArray() )
+			aTemp() = SplitStringToArray( sTranslatorArray(i).Value )
+			SaveTranslator( Trim( aTemp(0) ), Trim( aTemp(1) ), Trim( aTemp(2) ), Trim( aTemp(3) ), Trim( aTemp(4) ), Trim( aTemp(5) ) )
+		Next i
+	End If
+	
+	&apos; серии Книги
+	Dim sSequenceArray() As Variant : sSequenceArray() = GetUserPropertyArray(_fb2_ti_Sequence)
+	If UBound( sSequenceArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sSequenceArray() )
+			aTemp() = SplitStringToArray( sSequenceArray(i).Value )
+			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) )
+			If Trim( Trim( aTemp(1) ) ) &lt;&gt; &quot;&quot; Then
+				s = s &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(1) ) )
+			End If
+			s = s &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
+			oTextOutputStream.writeString( s )
+		Next i
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;/title-info&gt;&quot; &amp; chr(10))
+
+	oTextOutputStream.writeString(&quot;&lt;document-info&gt;&quot; &amp; chr(10))
+	&apos; Авторы fb2-файла
+	Dim sFB2AuthorArray() As Variant : sFB2AuthorArray() = GetUserPropertyArray(_fb2_di_FB2Author)
+	If UBound( sFB2AuthorArray() ) &lt;&gt; -1 Then
+		For i = 0 To UBound( sFB2AuthorArray() )
+			aTemp() = SplitStringToArray( sFB2AuthorArray(i).Value )
+			SaveAuthor( Trim( aTemp(0) ), Trim( aTemp(1) ), Trim( aTemp(2) ), Trim( aTemp(3) ), Trim( aTemp(4) ), Trim( aTemp(5) ) )
+		Next i
+	Else
+		SaveEmptyAuthor()
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;program-used&gt;&quot; &amp; &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot; &quot; &amp; &quot;(ExportToFB21)&quot; &amp; &quot;&lt;/program-used&gt;&quot; &amp; chr(10))
+	
+	&apos; дата создания fb2-книги
+	Dim FB2Date As String : FB2Date = Year(Now) &amp; &quot;-&quot; &amp; Format(Month(Now), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(Now), &quot;00&quot;)
+	oTextOutputStream.writeString(&quot;&lt;date value=&quot;&quot;&quot; &amp; FB2Date &amp; &quot;&quot;&quot;&gt;&quot; &amp; Date &amp; &quot;&lt;/date&gt;&quot; &amp; chr(10))
+	
+	Dim SrcUrl As String : SrcUrl = GetSrcUrlFromProperty()
+	If SrcUrl &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;src-url&gt;&quot; &amp; CorrectPara( SrcUrl ) &amp; &quot;&lt;/src-url&gt;&quot; &amp; chr(10))
+
+	Dim OCR As String : OCR = GetOCRFromProperty()
+	If OCR &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;src-ocr&gt;&quot; &amp; CorrectPara( OCR ) &amp; &quot;&lt;/src-ocr&gt;&quot; &amp; chr(10))
+	
+	oTextOutputStream.writeString(&quot;&lt;id&gt;&quot; &amp; CorrectPara( GetIDFromProperty() ) &amp; &quot;&lt;/id&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;version&gt;&quot; &amp; CorrectPara( GetVersionFromProperty() ) &amp; &quot;&lt;/version&gt;&quot; &amp; chr(10))
+	
+	&apos;история
+	Dim History As String : History = GetHistoryFromProperty()
+	If History &lt;&gt; &quot;&quot; Then
+		Dim sHistory() As String : sHistory = Split(History, chr(10))
+		oTextOutputStream.writeString(&quot;&lt;history&gt;&quot; &amp; chr(10))
+		For i = 0 To UBound(sHistory())
+			Dim sH As String : sH = sHistory(i)
+			If sH = &quot;&quot; Then
+				oTextOutputStream.writeString(&quot;&lt;empty-line/&gt;&quot; &amp; chr(10))
+			Else
+				oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; CorrectPara( sH ) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
+			End If
+		Next i
+		oTextOutputStream.writeString(&quot;&lt;/history&gt;&quot; &amp; chr(10))
+	End If
+
+	oTextOutputStream.writeString(&quot;&lt;/document-info&gt;&quot; &amp; chr(10))
+	SavePublisher()
+	SaveCustomInfo()
+	oTextOutputStream.writeString(&quot;&lt;/description&gt;&quot;&amp;chr(10))
+
+End Sub
+
+&apos;***************************************************************************
+Sub SaveAuthor(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String) 
+	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;first-name&gt;&quot; &amp; CorrectPara( Str1 ) &amp; &quot;&lt;/first-name&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;middle-name&gt;&quot; &amp; CorrectPara( Str2 ) &amp; &quot;&lt;/middle-name&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;last-name&gt;&quot; &amp; CorrectPara( Str3 ) &amp; &quot;&lt;/last-name&gt;&quot;&amp; chr(10))
+	If Str4 &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;nickname&gt;&quot; &amp; CorrectPara( Str4 ) &amp; &quot;&lt;/nickname&gt;&quot; &amp; chr(10))
+	End IF
+	If Str6 &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;home-page&gt;&quot; &amp; CorrectPara( Str6 ) &amp; &quot;&lt;/home-page&gt;&quot; &amp; chr(10))
+	End If
+	If Str5 &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;email&gt;&quot; &amp; CorrectPara( Str5 ) &amp; &quot;&lt;/email&gt;&quot; &amp; chr(10))
+	End If
+	oTextOutputStream.writeString(&quot;&lt;/author&gt;&quot;&amp; chr(10))
+End Sub
+
+&apos;***************************************************************************
+Sub SaveTranslator(Str1 As String, Str2 As String, Str3 As String, Str4 As String, Str5 As String, Str6 As String)
+	If Str1 = &quot;&quot; AND Str2 = &quot;&quot; AND Str3 = &quot;&quot; AND Str4 = &quot;&quot; AND Str5 = &quot;&quot; AND Str6 = &quot;&quot; Then
+		Exit Sub
+	End If
+	oTextOutputStream.writeString(&quot;&lt;translator&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;first-name&gt;&quot; &amp; CorrectPara( Str1 ) &amp; &quot;&lt;/first-name&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;middle-name&gt;&quot; &amp; CorrectPara( Str2 ) &amp; &quot;&lt;/middle-name&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;last-name&gt;&quot; &amp; CorrectPara( Str3 ) &amp; &quot;&lt;/last-name&gt;&quot;&amp; chr(10))
+	If Str4 &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;nickname&gt;&quot; &amp; CorrectPara( Str4 ) &amp; &quot;&lt;/nickname&gt;&quot; &amp; chr(10))
+	End IF
+	If Str6 &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;home-page&gt;&quot; &amp; CorrectPara( Str6 ) &amp; &quot;&lt;/home-page&gt;&quot; &amp; chr(10))
+	End If
+	If Str5 &lt;&gt; &quot;&quot; Then
+		oTextOutputStream.writeString(&quot;&lt;email&gt;&quot; &amp; CorrectPara( Str5 ) &amp; &quot;&lt;/email&gt;&quot; &amp; chr(10))
+	End If
+	oTextOutputStream.writeString(&quot;&lt;/translator&gt;&quot;&amp; chr(10))
+End Sub
+
+&apos;***************************************************************************
+Sub SavePublisher()
+	Dim PubBookName	As String : PubBookName = GetPubBookNameFromProperty()
+	Dim Publisher	As String : Publisher	= GetPublisherFromProperty()
+	Dim City		As String : City		= GetCityFromProperty()
+	Dim Year		As String : Year		= GetYearFromProperty()
+	Dim ISBN		As String : ISBN		= GetISBNFromProperty()
+	Dim sSequenceArray()		As Variant : sSequenceArray()		= GetUserPropertyArray(_fb2_pi_Sequence)
+	If PubBookName = &quot;&quot; AND Publisher = &quot;&quot; AND Year = &quot;&quot; AND City = &quot;&quot; AND ISBN = &quot;&quot; AND UBound( sSequenceArray() ) = -1 Then
+		Exit Sub
+	End If
+	
+	oTextOutputStream.writeString(&quot;&lt;publish-info&gt;&quot; &amp; chr(10))
+	If PubBookName &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;book-name&gt;&quot; &amp; CorrectPara( PubBookName ) &amp; &quot;&lt;/book-name&gt;&quot; &amp; chr(10))
+	If Publisher &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;publisher&gt;&quot; &amp; CorrectPara( Publisher ) &amp; &quot;&lt;/publisher&gt;&quot; &amp; chr(10))
+	If City &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;city&gt;&quot; &amp; CorrectPara( City ) &amp; &quot;&lt;/city&gt;&quot; &amp; chr(10))
+	If Year &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;year&gt;&quot; &amp; CorrectPara( Year ) &amp; &quot;&lt;/year&gt;&quot; &amp; chr(10))
+	If ISBN &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; CorrectPara( ISBN ) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
+	If UBound( sSequenceArray() ) &lt;&gt; -1 Then
+		Dim i As Integer, s As String, aTemp() As String
+		For i = 0 To UBound( sSequenceArray() )
+			aTemp() = SplitStringToArray( sSequenceArray(i).Value )
+			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) )
+			If Trim( Trim( aTemp(1) ) ) &lt;&gt; &quot;&quot; Then
+				s = s &amp; &quot;&quot;&quot; number=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(1) ) )
+			End If
+			s = s &amp; &quot;&quot;&quot;/&gt;&quot; &amp; chr(10)
+			oTextOutputStream.writeString( s )
+		Next i
+	End If
+	oTextOutputStream.writeString(&quot;&lt;/publish-info&gt;&quot; &amp; chr(10))
+End Sub
+
+&apos;***************************************************************************
+Sub SaveCustomInfo()
+	Dim sCustomInfoArray() As Variant : sCustomInfoArray() = GetUserPropertyArray(_fb2_ci_CustomInfo)
+	If UBound( sCustomInfoArray() ) &lt;&gt; -1 Then
+		Dim i As Integer, aTemp() As String
+		For i = 0 To UBound( sCustomInfoArray() )
+			aTemp() = SplitStringToArray( sCustomInfoArray(i).Value )
+			oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara( Trim( aTemp(1) ) ) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
+		Next i
+	End If
+End Sub
+
+&apos;***************************************************************************
+Sub SaveEmptyAuthor()
+	&apos; если автора нет, то записываем только пустые обязательные тэги для валидности книги
+	oTextOutputStream.writeString(&quot;&lt;author&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;first-name/&gt;&quot; &amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;last-name/&gt;&quot;&amp; chr(10))
+	oTextOutputStream.writeString(&quot;&lt;/author&gt;&quot;&amp; chr(10))
+End Sub
+
+Function SplitStringToArray( Str As String ) As Array
+	SplitStringToArray = Split( Str, &quot;|&quot; )
+End Function
+
+&apos; получение кода Жанра из строки: Название (кода)
+Function GetGenreCode( ByRef GenreString As String ) As String
+	If Trim( GenreString ) = &quot;&quot; Then
+		GetGenreCode = &quot;&quot;
+		Exit Function
+	ElseIf InStr( GenreString, &quot;(&quot; ) = 0 Then
+		GetGenreCode = &quot;?&quot;
+		Exit Function
+	End If
+	Dim sGenre	As String	: sGenre	= Trim( GenreString )
+	Dim nFrom	As Integer	: nFrom		= InStr(sGenre, &quot; (&quot;) + Len(&quot; (&quot;)
+	Dim nTo		As Integer	: nTo		= InStr(sGenre, &quot;)&quot;)
+	GetGenreCode = Trim( Mid( sGenre, nFrom, nTo - nFrom )  )
+End Function
 
 
 </script:module>

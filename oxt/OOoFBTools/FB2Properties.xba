@@ -1077,14 +1077,29 @@ End Function
 &apos;***************************************************************************
 &apos; проверка вводимой УДК Custom Info на наличие в Списке добавленных Custom Info
 &apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
-Function IsNewUDCCustomInfo() As String
-	IsNewUDCCustomInfo = &quot;&quot;
+Function IsNewUDCEnCustomInfo() As String
+	IsNewUDCEnCustomInfo = &quot;&quot;
 	With oFB2PropertiesDlg
 		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
 		Dim UDCCustomInfoDataString As String
-		UDCCustomInfoDataString = Make2ColDataString( &quot;udc&quot;, Trim(.Model.pubUDCTextField.Text) )
+		UDCCustomInfoDataString = Make2ColDataString( &quot;UDC&quot;, Trim(.Model.pubUDCTextField.Text) )
 		If IsExsistStringInArray(oListOfCustomInfos.Items, UDCCustomInfoDataString) = -1 Then
-			IsNewUDCCustomInfo = UDCCustomInfoDataString
+			IsNewUDCEnCustomInfo = UDCCustomInfoDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимой УДК Custom Info на наличие в Списке добавленных Custom Info
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
+Function IsNewUDCRuCustomInfo() As String
+	IsNewUDCRuCustomInfo = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim UDCCustomInfoDataString As String
+		UDCCustomInfoDataString = Make2ColDataString( &quot;УДК&quot;, Trim(.Model.pubUDCTextField.Text) )
+		If IsExsistStringInArray(oListOfCustomInfos.Items, UDCCustomInfoDataString) = -1 Then
+			IsNewUDCRuCustomInfo = UDCCustomInfoDataString
 		End If
 	End With
 End Function
@@ -1095,7 +1110,11 @@ Sub _UDCCustomInfoAdd()
 	With oFB2PropertiesDlg
 		&apos; проверка вводимой Custom Info UDC на наличие в Списке добавленных Custom Info
 		Dim oListOfCustomInfos		As Object : oListOfCustomInfos		= .getControl(&quot;lbCustomInfos&quot;)
-		Dim UDCCustomInfoDataString	As String : UDCCustomInfoDataString	= IsNewUDCCustomInfo()
+		Dim UDCCustomInfoDataString	As String : UDCCustomInfoDataString	= IsNewUDCEnCustomInfo()
+		If UDCCustomInfoDataString &lt;&gt; &quot;&quot; Then
+			oListOfCustomInfos.addItem( UDCCustomInfoDataString, oListOfCustomInfos.getItemCount() )
+		End If
+		UDCCustomInfoDataString	= IsNewUDCRuCustomInfo()
 		If UDCCustomInfoDataString &lt;&gt; &quot;&quot; Then
 			oListOfCustomInfos.addItem( UDCCustomInfoDataString, oListOfCustomInfos.getItemCount() )
 		End If
@@ -1122,7 +1141,7 @@ Function IsNewBBCCustomInfo() As String
 	With oFB2PropertiesDlg
 		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
 		Dim BBCCustomInfoDataString As String
-		BBCCustomInfoDataString = Make2ColDataString( &quot;bbc&quot;, Trim(.Model.pubBBCTextField.Text) )
+		BBCCustomInfoDataString = Make2ColDataString( &quot;ББК&quot;, Trim(.Model.pubBBCTextField.Text) )
 		If IsExsistStringInArray(oListOfCustomInfos.Items, BBCCustomInfoDataString) = -1 Then
 			IsNewBBCCustomInfo = BBCCustomInfoDataString
 		End If
@@ -1157,14 +1176,29 @@ End Function
 &apos;***************************************************************************
 &apos; проверка вводимого Авторского знака Custom Info на наличие в Списке добавленных Custom Info
 &apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
-Function IsNewAuthorSignCustomInfo() As String
-	IsNewAuthorSignCustomInfo = &quot;&quot;
+Function IsNewAuthorSignEnCustomInfo() As String
+	IsNewAuthorSignEnCustomInfo = &quot;&quot;
 	With oFB2PropertiesDlg
 		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
 		Dim AuthorSignCustomInfoDataString As String
-		AuthorSignCustomInfoDataString = Make2ColDataString( &quot;author_sign&quot;, Trim(.Model.pubAuthorSignTextField.Text) )
+		AuthorSignCustomInfoDataString = Make2ColDataString( &quot;Authors_sign&quot;, Trim(.Model.pubAuthorSignTextField.Text) )
 		If IsExsistStringInArray(oListOfCustomInfos.Items, AuthorSignCustomInfoDataString) = -1 Then
-			IsNewAuthorSignCustomInfo = AuthorSignCustomInfoDataString
+			IsNewAuthorSignEnCustomInfo = AuthorSignCustomInfoDataString
+		End If
+	End With
+End Function
+
+&apos;***************************************************************************
+&apos; проверка вводимого Авторского знака Custom Info на наличие в Списке добавленных Custom Info
+&apos; если вводимых данных нет в Списке, возвращает Строку &quot;Type | Value&quot;. Иначе - &quot;&quot;
+Function IsNewAuthorSignRuCustomInfo() As String
+	IsNewAuthorSignRuCustomInfo = &quot;&quot;
+	With oFB2PropertiesDlg
+		Dim oListOfCustomInfos As Object : oListOfCustomInfos = .getControl(&quot;lbCustomInfos&quot;)
+		Dim AuthorSignCustomInfoDataString As String
+		AuthorSignCustomInfoDataString = Make2ColDataString( &quot;Авторский_знак&quot;, Trim(.Model.pubAuthorSignTextField.Text) )
+		If IsExsistStringInArray(oListOfCustomInfos.Items, AuthorSignCustomInfoDataString) = -1 Then
+			IsNewAuthorSignRuCustomInfo = AuthorSignCustomInfoDataString
 		End If
 	End With
 End Function
@@ -1175,7 +1209,11 @@ Sub _AuthorSignCustomInfoAdd()
 	With oFB2PropertiesDlg
 		&apos; проверка вводимой Custom Info AuthorSign на наличие в Списке добавленных Custom Info
 		Dim oListOfCustomInfos		As Object : oListOfCustomInfos	= .getControl(&quot;lbCustomInfos&quot;)
-		Dim AuthorSignCustomInfoDataString	As String : AuthorSignCustomInfoDataString	= IsNewAuthorSignCustomInfo()
+		Dim AuthorSignCustomInfoDataString	As String : AuthorSignCustomInfoDataString	= IsNewAuthorSignEnCustomInfo()
+		If AuthorSignCustomInfoDataString &lt;&gt; &quot;&quot; Then
+			oListOfCustomInfos.addItem( AuthorSignCustomInfoDataString, oListOfCustomInfos.getItemCount() )
+		End If
+		AuthorSignCustomInfoDataString	= IsNewAuthorSignRuCustomInfo()
 		If AuthorSignCustomInfoDataString &lt;&gt; &quot;&quot; Then
 			oListOfCustomInfos.addItem( AuthorSignCustomInfoDataString, oListOfCustomInfos.getItemCount() )
 		End If
@@ -1532,21 +1570,34 @@ Sub GetFB2PropertiesFromDoc( ByRef oProgressBar, ByRef Iter As Integer )
 		If UBound( oListOfCustomInfos.Items ) &gt; 0 Then
 			itemsCount = UBound( oListOfCustomInfos.getItems() )
 			For i = LBound( oListOfCustomInfos.getItems() ) To itemsCount
+				Dim aUDC() As String, aAS() As String
 				Dim Item As String : Item = oListOfCustomInfos.Items(i)
-				If InStr( Item, &quot;udc | &quot; ) = 1 Then
-					Dim aUDC() As String : aUDC() = Split( Item, &quot; | &quot; )
+				If InStr( Item, &quot;UDC | &quot; ) = 1 Then
+					aUDC() = Split( Item, &quot; | &quot; )
 					.pubUDCTextField.Text = Trim( aUDC(1) )
 					oListOfCustomInfos.removeItems( i, 1 )
 					itemsCount = UBound( oListOfCustomInfos.getItems() )
 					i = i - 1
-				ElseIf InStr( Item, &quot;bbc | &quot; ) = 1 Then
+				ElseIf InStr( Item, &quot;УДК | &quot; ) = 1 Then
+					aUDC() = Split( Item, &quot; | &quot; )
+					.pubUDCTextField.Text = Trim( aUDC(1) )
+					oListOfCustomInfos.removeItems( i, 1 )
+					itemsCount = UBound( oListOfCustomInfos.getItems() )
+					i = i - 1
+				ElseIf InStr( Item, &quot;ББК | &quot; ) = 1 Then
 					Dim aBBC() As String : aBBC() = Split( Item, &quot; | &quot; )
 					.pubBBCTextField.Text = Trim( aBBC(1) )
 					oListOfCustomInfos.removeItems( i, 1 )
 					itemsCount = UBound( oListOfCustomInfos.getItems() )
 					i = i - 1
-				ElseIf InStr( Item, &quot;author_sign | &quot; ) = 1 Then
-					Dim aAS() As String : aAS() = Split( Item, &quot; | &quot; )
+				ElseIf InStr( Item, &quot;Авторский_знак | &quot; ) = 1 Then
+					aAS() = Split( Item, &quot; | &quot; )
+					.pubAuthorSignTextField.Text = Trim( aAS(1) )
+					oListOfCustomInfos.removeItems( i, 1 )
+					itemsCount = UBound( oListOfCustomInfos.getItems() )
+					i = i - 1
+				ElseIf InStr( Item, &quot;Authors_sign | &quot; ) = 1 Then
+					aAS() = Split( Item, &quot; | &quot; )
 					.pubAuthorSignTextField.Text = Trim( aAS(1) )
 					oListOfCustomInfos.removeItems( i, 1 )
 					itemsCount = UBound( oListOfCustomInfos.getItems() )

@@ -21,7 +21,8 @@ End Type
 &apos; 									Графика
 &apos; ===========================================================================
 &apos; парсер обложек книги
-Sub MakeCoverParser()
+Function MakeCoverParser() As Integer
+	MakeCoverParser = 0
 	nCoverNumber = -1		&apos; Счетчик картинок ДО Обложек
 	
 	Dim oParEnum As Object 	&apos;Счетчик, используемый для перебора параграфов
@@ -71,13 +72,14 @@ Sub MakeCoverParser()
 					Loop
 				End If
 			Loop
+			MakeCoverParser = nCoverNumber
 			&apos; Теперь - если стиль абзаца - Название Книги, то выход - дальше обложек быть не может
 			If oPar.ParaStyleName = sStyleBookTitle Then
-				Exit Sub
+				Exit Function
 			End If
 		End If
 	Loop
-End Sub
+End Function
 
 &apos; добавляем данные об очередной картинке-обложке в массив
 Sub MakeCoverTag( oPar As Object, oContent As Object )
@@ -104,7 +106,7 @@ Sub MakeGraphic( oPara As Object, oContent As Object, bIsText As Boolean, sParag
 	
 	If bIsText Then &apos; Только для основного текста документа (не для таблиц и Врезок)
 		&apos; создание тэгов картинок
-		If bIsFootnote=True Then
+		If bIsFootnote = True Then
 			If oContent.AnchorType = 1 Then
 				sParagraph = sParagraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 			Else
@@ -118,10 +120,10 @@ Sub MakeGraphic( oPara As Object, oContent As Object, bIsText As Boolean, sParag
 				If oPara.ParaStyleName = sStyle_BookAnnotation Then
 					sParagraph = sParagraph &amp; &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;
 				Else
-					If bSaveImageTitle=True Then
-						AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+					If bSaveImageTitle = True Then
+						AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot; title=&quot;&quot;&quot; &amp; oContent.getName() &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, &quot;&quot; )
 					Else
-						AddBodyArray(&quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, False)
+						AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;image l:href=&quot;&quot;#img_&quot; &amp; iImgCurrent &amp; &quot;.&quot; &amp; sExt &amp; &quot;&quot;&quot;/&gt;&quot;, &quot;Image&quot;, &quot;&quot; )
 					End If
 				End If
 			End If

@@ -327,3 +327,28 @@ OOoFBTools-2.32
 			b) New option setting 100% character scale width.
 		2. In new LO 4.4.0, the Text formatting tool stopped working. Fixed.
 		3. In new LO 4.4.0, the Delete objects tool stopped working. Fixed.
+
+OOoFBTools-2.33
+	A. Converter:
+		1. Fixed bug: If there is only an image between headings, this results in an invalid fb2 file. Now, an empty paragraph is inserted after it.
+		2. Fixed bug: In footnote/endnote text, only headings are present (in violation of the scheme). Protection for such cases is implemented.
+		3. Fixed bug: In certain cases, the algorithm of generation of links from different paragraphs to different parts of the same paragraph failed. The algorithm has been rewritten from scratch. 
+		4. Improved export of footnotes/endnotes with links.
+		5. The export dialog, when displaying the converter progress, now displays the result for each step. I. e., the number of exported covers, footnotes/endnotes, etc. is displayed.  (RFE: https://sourceforge.net/p/fbtools/bugs/17/)
+		6. Fb2 styles panel
+			a) For the code style, new features added. Now, when the style code is applied to program listings, all multiple conventional spaces within simple text, as well as all single and multiple starting spaces are replaced by non-breaking spaces.
+		7. Converter settings:
+			a) Removed the option of Process empty tags (</x><x>, <x></x>, </x> <x> and <x> </ x>). (removal of tag pairs such as <strong/></strong>, </strong><strong>, <strong/> </strong>, </strong> <strong>, etc. in the generated fb2 file). Now, such tag pairs are always removed from the resulting fb2 file.
+			b) NEW option: The group of Text preprocessing, the option of Remove unused bookmarks (nothing refers to them) in the entire document. By default, the option is off. This option is intended to remove all bookmarks that are not linked to from the document. Otherwise, in the resulting fb2 file such bookmarks will be converted to the attributes of tags id <p> / F?. Because nothing links to them in the text, those attributes will be redundant.
+			If this option is enabled in the settings, after text pretreatment the document is automatically saved and reloaded. The dialog appears for export to the fb2 format.
+		8. Fb2 properties editor:
+			a) Tags of the book description for UDC, copyright now have attributes in both English and in Russian (RFE https://sourceforge.net/p/fbtools/enchancements/4/)
+	B. Text Correction Tools:
+		1. Automatic markup for program listings tool:
+			a) Changed algorithm. Now, when analyzing the text and marking up program listings not only multiple spaces within the program listings, but also single starting spaces are converted to non-breaking spaces.
+		2. Text Yofication tool:
+			a) The word database is amdended with “всё-таки” (bug https://sourceforge.net/p/fbtools/bugs/16/).
+		3. Delete all objects in document tool:
+			a) Fixed bug: Now bookmarks not linked to are removed FROM ALL objects such as text, tables, frames, footnotes and endnotes.
+
+			

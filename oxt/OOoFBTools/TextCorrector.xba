@@ -812,7 +812,7 @@ Sub TextCorrectorDlgOk()
 &apos;			MsgBox &quot;Не найдено ни одной векторной линии&quot;, 176, &quot;Удаление LineShape из документа&quot;
 &apos;		End If
 	End If
-
+	
 	&apos; ===========================================================================================================
 	&apos; замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус
 	&apos; ===========================================================================================================
@@ -972,9 +972,7 @@ Sub TextCorrectorDlgOk()
 	&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
 	If bWordDefisPara = True Then
 		&apos; Удаление мягких переносов, иначе результат будет неверен
-		If bDelMP = False Then
-			DeleteMPer( oDoc, oReplace )
-		End If
+		DeleteMPer( oDoc, oReplace )
 		&apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов в тексте, таблицах, сносках и врезках)
 		JoinWordDefisParaInAllTexts( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar, nCur )
 	End If
@@ -2227,11 +2225,11 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, bDefisWord
 	Dim s As String		: s = vL.GetString()
 	&apos; определяем тип символа переноса
 	Dim sPer As String	: sPer = &quot;-&quot;
-	If InStr(s,&quot;-&quot; ) &gt; 0 Then
+	If InStr (s, &quot;-&quot; ) &gt; 0 Then
 		sPer = &quot;-&quot;
-	ElseIf InStr(s,chr(8211) ) &gt; 0 Then
+	ElseIf InStr( s, chr(8211) ) &gt; 0 Then
 		sPer = chr(8211)
-	ElseIf InStr(s,chr(8209) ) &gt; 0 Then
+	ElseIf InStr( s, chr(8209) ) &gt; 0 Then
 		sPer = chr(8209)
 	End If
 	

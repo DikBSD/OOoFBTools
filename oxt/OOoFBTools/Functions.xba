@@ -2234,16 +2234,15 @@ Function FindNotUsedBookmarksInDocument()
 	Dim sNotUseBookMarksArray()	As String &apos; массив всех неиспользуемых закладок в документе
 
 	sAllBookMarksArray() = getAllBookmarksName()
-	
 	&apos; поиск по тексту
-	_FindNotUsedBookmarksInText( oDoc, sAllBookMarksArray(), sUseBookMarksArray(), sNotUseBookMarksArray() )
+	_FindNotUsedBookmarksInText( oDoc, sAllBookMarksArray(), sUseBookMarksArray())
 	
 	&apos; поиск по Текстовым врезкам
 	Dim oTextFrames() As Object : oTextFrames = oDoc.getTextFrames()
 	Dim count As Integer : count = oTextFrames.getCount()
 	Dim i As Integer
 	For i = 0 To count - 1
-		_FindNotUsedBookmarksInText( oTextFrames.getByIndex(i), sAllBookMarksArray(), sUseBookMarksArray(), sNotUseBookMarksArray() )
+		_FindNotUsedBookmarksInText( oTextFrames.getByIndex(i), sAllBookMarksArray(), sUseBookMarksArray() )
 	Next i
 	
 	&apos; поиск по таблицам
@@ -2255,15 +2254,32 @@ Function FindNotUsedBookmarksInDocument()
 		Dim j As Integer
 		count = UBound( oCellNames() )
 		For j = 0 To count
-			_FindNotUsedBookmarksInText( oTable.getCellByName( oCellNames(j) ), sAllBookMarksArray(), sUseBookMarksArray(), sNotUseBookMarksArray() )
+			_FindNotUsedBookmarksInText( oTable.getCellByName( oCellNames(j) ), sAllBookMarksArray(), sUseBookMarksArray() )
 		Next j
 	Next i
+	
+	&apos; все закладки, на которые есть ссылки в сносках
+	Dim oFootnotes()  As Object : oFootnotes = oDoc.getFootnotes()
+	count = oFootnotes.getCount()
+	For i = 0 To count - 1
+		_FindNotUsedBookmarksInText( oFootnotes.getByIndex(i), sAllBookMarksArray(), sUseBookMarksArray() )
+	Next i
+	
+	&apos; все закладки, на которые есть ссылки в концевых сносках
+	Dim oEndnotes()  As Object : oEndnotes = oDoc.getEndnotes()
+	count = oEndnotes.getCount()
+	For i = 0 To count - 1
+		_FindNotUsedBookmarksInText( oEndnotes.getByIndex(i), sAllBookMarksArray(), sUseBookMarksArray() )
+	Next i
+	
+	&apos; определение неиспользуемых закладок в документе
+	sNotUseBookMarksArray() = getNotUseBookmarksName( sAllBookMarksArray(), sUseBookMarksArray() )
+	
 	FindNotUsedBookmarksInDocument() = sNotUseBookMarksArray()
 End Function
 
 &apos; поиск неиспользуемых закладок (на них ничто не ссылается) в текстовых объектах (текст, врезки, ячейки таблиц)
-Sub _FindNotUsedBookmarksInText( oTextObject As Object, sAllBookMarksArray() As String, _
-								ByRef sUseBookMarksArray() As String, ByRef sNotUseBookMarksArray() As String )
+Sub _FindNotUsedBookmarksInText( ByRef oTextObject As Object, sAllBookMarksArray() As String, ByRef sUseBookMarksArray() As String )
 	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar		As Object &apos;Перебираемый параграф
 	Dim oSectEnum	As Object &apos;Счетчик, используемый для перебора текстовых разделов
@@ -2280,16 +2296,29 @@ Sub _FindNotUsedBookmarksInText( oTextObject As Object, sAllBookMarksArray() As 
 				If LCase( oSect.TextPortionType ) = &quot;text&quot; Then
 					Dim BookMarkName As String : BookMarkName = getUseBookmarkname( oSect )
 					If BookMarkName &lt;&gt; &quot;&quot; Then
-						AddNewItemToArray1( sUseBookMarksArray(), BookMarkName )
+						&apos; не заносим одну и ту же закладку в список
+						If Not ifBookmarkExist( sUseBookMarksArray(), BookMarkName ) Then
+							AddNewItemToArray1( sUseBookMarksArray(), BookMarkName )
+						End If
 					End If
 				End If
 			Loop
 		End If
 	Loop
-	
-	&apos; определение неиспользуемых закладок в документе
-	sNotUseBookMarksArray() = getNotUseBookmarksName( sAllBookMarksArray(), sUseBookMarksArray() )
 End Sub
+
+&apos; есть ли заданная закладка в массиве
+Function ifBookmarkExist( sUseBookMarksArray() As String, BookMarkName As String ) As Boolean
+	ifBookmarkExist = False
+	
+	Dim i As Long
+	For i = 0  To UBound( sUseBookMarksArray() )
+		If BookMarkName = sUseBookMarksArray(i) Then
+			ifBookmarkExist = True
+			Exit Function
+		End If
+	Next i
+End Function
 
 &apos; список используемых закладок в текстовой врезке
 Sub getUseBookmerkFromTextFrame( ByRef sUseBookMarksArray() As String )
@@ -2546,7 +2575,7 @@ Function CreateSelectedTextIterator( ByRef oDoc As Object, sPrompt As String, sM
 		End If
 	Else
 		Dim oSels		As Object	: oSels		= oDoc.getCurrentSelection() &apos; все выделения текста
-		Dim lSelCount	As Long		: lSelCount = oSels.getCount() &apos;число выделенной области текста
+		Dim lSelCount	As Long		: lSelCount = oSels.getCount() &apos;число выделенных областей текста
 		oCurs = DimArray( lSelCount - 1, 1 )
 		Dim l As Long
 		For l = 0 To lSelCount - 1

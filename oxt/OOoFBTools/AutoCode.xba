@@ -310,7 +310,7 @@ Function IsListingCharFont( byRef Font As String, byRef sArray() As String ) As 
 	IsListingCharFont = bResult
 End Function
 
-&apos; замена множественных простых пробелов на такое же число неразрывные во всех местах обрабатываемого текста
+&apos; замена множественных простых пробелов и одиночные стартовые на неразрывные во всех местах обрабатываемого текста
 Sub ReplaceBlanksTabsToBlankOrTabsInCodeWorker( TextElement As Object, oDoc As Object )
 	If IsNull( TextElement ) Then Exit Sub
 	Dim oCursorL As Object : oCursorL = TextElement.Start.getText().createTextCursorByRange( TextElement.Start )
@@ -319,7 +319,7 @@ Sub ReplaceBlanksTabsToBlankOrTabsInCodeWorker( TextElement As Object, oDoc As O
 	&apos; ищем заданное
 	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
 	With vSearch
-		.SearchString				= &quot;\x20{2,}&quot; &apos; простые пробелы
+		.SearchString				= &quot;\x20{2,}|^\x20{1,}&quot; &apos; множественные простые пробелы и одиночные стартовые простые пробелы
 		.SearchRegularExpression	= True
 	End With
 
