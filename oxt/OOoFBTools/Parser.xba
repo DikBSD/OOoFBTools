@@ -5,8 +5,10 @@
 &apos;======================================================================================================================
 Option Explicit
 
-Public Covers()		As String	&apos; массив, хранящий кодированные картинки-обложки
-Public Images()		As String	&apos; массив, хранящий кодированные картинки с тегами &lt;binary&gt;
+Public Covers()			As String	&apos; массив, хранящий кодированные картинки-обложки
+Public Images()			As String	&apos; массив, хранящий кодированные картинки с тегами &lt;binary&gt;
+Public sLinksTo()		As String	&apos; массив ссылок КУДА и их ID основного текста
+Public lAnalyzeProgress As Long		&apos; счетчик итерации прогресса анализа документа
 
 &apos; оформление сносок
 Private bFENoteCommon	 	As Boolean
@@ -27,12 +29,12 @@ Private iEndnoteCount	As Integer	&apos; счетчик концевых снос
 Private iImgCurrent		As Integer	&apos; для формирования номера картинки
 Private sPrevStyle		As String	&apos; название предыдущего стиля - для формирования Уровней из нескольких строк
 Private sPara			As String	&apos; отформатированный текст параграфа
-Public	sLinksTo()		As String &apos; массив ссылок КУДА и их ID основного текста
 
 &apos; парсер всего документа
 Sub DocumentParser()
 	iFootnoteCount = 0
 	iEndnoteCount = 0
+	lAnalyzeProgress = 0
 	
 	Dim oParEnum	As Object &apos;Счетчик, используемый для перебора параграфов
 	Dim oPar		As Object &apos;Перебираемый параграф
@@ -180,34 +182,34 @@ Sub StyleParser( sParaStyleName As String, sPara As String, sBookmark As String 
 	If sPara = &quot;&quot; Then
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
-			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark, False )
 		ElseIf sParaStyleName = GetLocaCiteStyleName() Or sParaStyleName = sStyleCite Then
 			&apos; для пустых строк в цитатах
-			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark, False )
 		ElseIf sParaStyleName = sStyleAnnotation Then
 			&apos; для пустых строк в аннотациях
-			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark, False )
 		ElseIf sParaStyleName = sStyleEpigraph Then
 			&apos; для пустых строк в эпиграфах
-			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark, False )
 		ElseIf sParaStyleName = sStyleEpigraphAuthor Then
 			&apos; для пустых строк Автора Эпиграфа
-			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark, False )
 		ElseIf sParaStyleName = sStyleCiteAuthor Then
 			&apos; для пустых строк Автора Цитат
-			AddNewItemToArray3( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&quot;, sParaStyleName, sBookmark, False )
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( &quot;&quot; )
 		Else
 			If IsLevel( sParaStyleName ) Then
-				AddLevelToBodyArray( sPara, sParaStyleName, sBookmark )
+				AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaStyleName, sBookmark, True )
 			Else
-				AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, sBookmark )
+				AddLevelToBodyArray( sBodyParagraphs(), &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, sBookmark, False )
 			End If
 		End If
 	Else
 		If sParaStyleName = sStyleBookTitle Then
-			AddNewItemToArray3( sBodyParagraphs(), sPara, sParaStyleName, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaStyleName, sBookmark, False )
 			If lBATIndex = -1 Then
 				lBATIndex = UBound( sBodyParagraphs() )
 			End If
@@ -217,15 +219,19 @@ Sub StyleParser( sParaStyleName As String, sPara As String, sBookmark As String 
 				sParaStyleName = sStyleCite Or sParaStyleName = sStyleCiteSubTitle Or sParaStyleName = sStyleCiteAuthor Or _
 				sParaStyleName = sStyleAnnotation Or sParaStyleName = sStyleAnnotationSubTitle Or _
 				sParaStyleName = sStyleSubTitle Or sParaStyleName = GetLocaCiteStyleName() Then
-					AddNewItemToArray3( sBodyParagraphs(), sPara, sParaStyleName, sBookmark )
+					AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaStyleName, sBookmark, False )
 		ElseIf IsLevel( sParaStyleName ) Then
-				AddLevelToBodyArray( sPara, sParaStyleName, sBookmark )
+				AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaStyleName, sBookmark, True )
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( sPara )
 		Else &apos; что-то другое или просто параграф
-			AddNewItemToArray3( sBodyParagraphs(), sPara, &quot;Para&quot;, sBookmark )
+			AddLevelToBodyArray( sBodyParagraphs(), sPara, &quot;Para&quot;, sBookmark, False )
 		End If
 	End If
+
+	lAnalyzeProgress = lAnalyzeProgress + 1
+	oProgressBar.setValue( lAnalyzeProgress )
+
 	sPrevStyle = sParaStyleName
 End Sub
 
@@ -240,6 +246,11 @@ Function InLineAllParser(oSect As Object) As String
 		sLexem = oSect.getString()
 	End If
 	
+	&apos; игнорируем символы &lt; chr(32) (в docx файлах эти символы делают полученый fb2 невалидным)
+	If Len( oSect.getString() ) &lt;= 1 And oSect.getString() &lt; chr(32) Then
+		sLexem = &quot;&quot;
+	End If
+
 	&apos; вынос начальных и завершающих пробелов лексемы, если они есть, за тэги форматирования
 	sStr = Trim( sLexem )
 	If Len( sLexem ) &gt; Len( sStr ) Then &apos; изначальная лексема содержала пробелы в начале и(или) в конце
@@ -312,16 +323,22 @@ Function InLineAllParser(oSect As Object) As String
 	InLineAllParser = sLSpace &amp; sLexem &amp; sRSpace
 End Function
 
-Function AddLevelToBodyArray( sPara As String, sParaStyle As String, sBookmark As String )
-	&apos; для уровней - проверка на несколько строк
-	If sParaStyle &lt;&gt; sPrevStyle Then &apos; Разные уровни
-		AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sParaStyle, sBookmark )
-	Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
-		Dim LastItem As Long : LastItem = UBound( sBodyParagraphs() )
-		sBodyParagraphs( LastItem, 0 ) = sBodyParagraphs( LastItem, 0 ) &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
-		sBodyParagraphs( LastItem, 2 ) = sBodyParagraphs( LastItem, 2 ) &amp; &quot;|&quot; &amp; sBookMark
+&apos; добавление данных в массив sBodyParagraphs()
+Function AddLevelToBodyArray( ByRef sBodyParagraphs() As String, sPara As String, sParaStyle As String, sBookmark As String, bLevel As Boolean )
+	If bLevel = False Then
+		AddNewItemToArray3( sBodyParagraphs(), sPara, sParaStyle, sBookmark )
+	Else
+		&apos; для уровней - проверка на несколько строк
+		If sParaStyle &lt;&gt; sPrevStyle Then &apos; Разные уровни
+			AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sParaStyle, sBookmark )
+		Else &apos; Одинаковые уровни - несколько строк - собираем их в один элемент
+			Dim LastItem As Long : LastItem = UBound( sBodyParagraphs() )
+			sBodyParagraphs( LastItem, 0 ) = sBodyParagraphs( LastItem, 0 ) &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;
+			sBodyParagraphs( LastItem, 2 ) = sBodyParagraphs( LastItem, 2 ) &amp; &quot;|&quot; &amp; sBookMark
+		End If
 	End If
-	oProgressBar.setValue( Ubound(sBodyParagraphs(), 1) + 1 )
+	lAnalyzeProgress = lAnalyzeProgress + 1
+	oProgressBar.setValue( lAnalyzeProgress )
 End Function
 
 

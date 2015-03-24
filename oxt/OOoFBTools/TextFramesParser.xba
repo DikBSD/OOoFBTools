@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="InCutParser" script:language="StarBasic">REM  *****  BASIC  *****
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextFramesParser" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
 &apos; ==============================================================================================
@@ -143,6 +143,9 @@ Sub TextFrameTableParser( oCont As Object )
 			sTI = ReplaceInString( sTI, chr(10) &amp; &quot;&lt;/table&gt;&quot;, &quot;&quot;, False )
 			AddNewItemTotTableRowsInCutArray( TableRows(), sTI &amp; chr(10), True )
 		End If
+		
+		lAnalyzeProgress = lAnalyzeProgress + 1
+		oProgressBar.setValue( lAnalyzeProgress )
 	Loop
 	
 	Dim i As Integer
@@ -162,7 +165,7 @@ Sub TextFrameTableParser( oCont As Object )
 	Next i
 	sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
 	
-	AddNewItemToArray3( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot; )
+	AddLevelToBodyArray( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot;, False )
 End Sub
 
 &apos; парсер текстовой врезки как цитаты
@@ -191,10 +194,13 @@ Sub TextFrameCiteParser( oCont As Object )
 			&apos; парсер таблицы
 			sCite = sCite &amp; OOo23TextTableParserForTextInCut( oPar ) &amp; chr(10)
 		End If
+		
+		lAnalyzeProgress = lAnalyzeProgress + 1
+		oProgressBar.setValue( lAnalyzeProgress )
 	Loop
 	&apos; обработка начала и конца строки
 	sCite = MakeStartEndOfText( sCite )
-	AddNewItemToArray3( sBodyParagraphs(), sCite, &quot;Cite&quot;, &quot;&quot; )
+	AddLevelToBodyArray( sBodyParagraphs(), sCite, &quot;Cite&quot;, &quot;&quot;, False )
 End Sub
 
 &apos; парсер текстовой врезки как текста
@@ -223,11 +229,14 @@ Sub TextFrameTextParser( oCont As Object )
 			&apos; парсер таблицы
 			sText = sText &amp; OOo23TextTableParserForTextInCut( oPar ) &amp; chr(10)
 		End If
+		
+		lAnalyzeProgress = lAnalyzeProgress + 1
+		oProgressBar.setValue( lAnalyzeProgress )
 	Loop
 	
 	&apos; обработка начала и конца строки
 	sText = MakeStartEndOfText( sText )
-	AddNewItemToArray3( sBodyParagraphs(), sText, &quot;Para&quot;, &quot;&quot; )
+	AddLevelToBodyArray( sBodyParagraphs(), sText, &quot;Para&quot;, &quot;&quot;, False )
 End Sub
 
 &apos; ===============================================================================================
@@ -259,9 +268,12 @@ Sub TextFrameStructParser( oCont As Object )
 			Dim sTable as String
 			sTable = OOo23TextTableParserForTextInCut( oPar )
 			&apos;sTable = &quot;&lt;table&gt;&quot; &amp; chr(10) &amp; sTable &amp; &quot;&lt;/table&gt;&quot;
-			AddNewItemToArray3( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot; )
+			AddLevelToBodyArray( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot;, False )
 		End If
 		sBookmark = &quot;&quot;
+		
+		lAnalyzeProgress = lAnalyzeProgress + 1
+		oProgressBar.setValue( lAnalyzeProgress )
 	Loop
 End Sub
 

@@ -190,7 +190,8 @@ Sub ExportDoc()
 	End If
 	
 	Dim oDoc As Object : oDoc = ThisComponent
-	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
+&apos;	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
+	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount )
 	oProgressBar.setValue( 0 )
 	
 	Dim oProgress As Object
@@ -1490,7 +1491,7 @@ Sub SaveBody()
 		&apos; Уровень (в нарушение схемы), Эпиграф (в нарушение схемы), Поэма, Цитата
 	 	&apos; значительно упрощаются функции создания сложных Поэм, Цитата и т.д. -
 	 	&apos; Убирается масса проверок на верхний граничный индекс - увеличивается быстродействие конвертора!
-		AddNewItemToArray3( sBodyParagraphs(), &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, &quot;&quot; )
+		AddLevelToBodyArray( sBodyParagraphs(), &quot;&lt;empty-line/&gt;&quot;, &quot;&quot;, &quot;&quot;, False )
 	End If
 
 	lCurrentElement = 0
@@ -1576,17 +1577,19 @@ End Function
 Function SaveNotesToComonBlock() As Long
 	SaveNotesToComonBlock = 0
 	lCurrentElement = 0
-	Dim lCount		As Long
-	Dim vaFNPara()	As Variant
+	Dim lCount As Long : lCount = 0
+	If UBound( vFootnoteText() ) &gt; 0 Then
+		Dim vaFNPara()	As Variant
 
-	oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
-	oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
-	For lCount = 0 To UBound(vFootnoteText())
-		vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
-		SaveNote( &quot;n&quot;, vaFNPara(), lCount )
-	Next lCount
+		oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
+		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
+		For lCount = 0 To UBound( vFootnoteText() )
+			vaFNPara() = vFootnoteText( lCount ) : vaFNPara() = vaFNPara(0)
+			SaveNote( &quot;n&quot;, vaFNPara(), lCount )
+		Next lCount
+		oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))
+	End If
 	SaveNotesToComonBlock = lCount
-	oTextOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; chr(10))	
 End Function
 
 Sub SaveNote( idSymbol As String, ByRef vaFNPara() As Variant, lCount As Long )

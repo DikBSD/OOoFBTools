@@ -39,7 +39,7 @@ Sub OOo23TextTableParser( oTable As Object )
 		sTable = MakeComplexTable(nHeaderRowCount, oTable, CellNames)
 	End If
 	sPrevStyle = &quot;Table&quot;
-	AddNewItemToArray3( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot; )
+	AddLevelToBodyArray( sBodyParagraphs(), sTable, &quot;Table&quot;, &quot;&quot;, False )
 End Sub
 
 &apos; форматирование стилями каждого абзаца ячейки oCell
@@ -161,6 +161,9 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 				sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
 			End If
 		End If
+		
+		lAnalyzeProgress = lAnalyzeProgress + 1
+		oProgressBar.setValue( lAnalyzeProgress )
 	Loop
 ErrHndlr:
 	sRes = Mid( sRes, 1, Len(sRes)-1 )

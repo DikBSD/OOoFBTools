@@ -882,6 +882,10 @@ Sub TextCorrectorDlgOk()
 	If bTCStartNoBreakSpaceDelete = True Then
 		DelStartNoBreakSpace( oDoc, oReplace )
 	End If
+	&apos; Удаляем все стартовые ПРОСТЫЕ пробелы (для случая, когда сначала идут неразрывные, а потом - простые пробелы)
+	If bTCDelStartSpace = True Then
+		DelStartSpace( oDoc, oReplace )
+	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	&apos; Удаляем все стартовые табуляции
@@ -1812,7 +1816,7 @@ Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 		sReplaceStr = Space(nReplaceCount)
 	Else
 		Dim i As Integer
-		For i=0 To nReplaceCount-1
+		For i = 0 To nReplaceCount - 1
 			sReplaceStr = sReplaceStr + &quot;\t&quot;
 		Next i
 	End If

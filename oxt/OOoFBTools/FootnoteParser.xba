@@ -130,6 +130,8 @@ Function FootEndNoteParser( oSect As Object ) As String
 			Wend
 			&apos; Обработка текста сноски - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается в некоторых случаях при форматной строке невалидным
 			sParagFN = DelBreakLineInString( sParagFN )
+			lAnalyzeProgress = lAnalyzeProgress + 1
+			oProgressBar.setValue( lAnalyzeProgress )
 
 			&apos; маркеры и нумерация в сносках
 			If oTextF.NumberingIsNumber = True Then &apos; нумерованные списки
@@ -223,7 +225,7 @@ Sub FootnoteStyleParser( asFNPart() As String, sParaStyleName As String, sPara A
 	sPreviousStyle = sParaStyleName
 End Sub
 
-Function AddNotesArray( asFNPart() As String, sPara As String, sParaStyle As String, sBookMark As String, FNType As String )
+Function AddNotesArray( ByRef asFNPart() As String, sPara As String, sParaStyle As String, sBookMark As String, FNType As String )
 	&apos; для уровней - проверка на несколько строк
 	If sParaStyle &lt;&gt; sPreviousStyle Then &apos; Разные уровни
 		AddNewItemToArray4( asFNPart(), &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot;, sParaStyle, sBookMark, FNType )
