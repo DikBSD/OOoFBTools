@@ -1221,6 +1221,7 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 	&apos; Между слов
 	With oReplace
 		.SearchString = &quot;\&gt;[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;][:space:]+\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
+&apos;		.SearchString = &quot;\&gt;[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][:space:]+\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1233,6 +1234,12 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 	&apos; .SearchString = &quot;([а-яА-ЯёЁ])\&gt; *- {1,}\&lt;([а-яА-ЯёЁ])&quot;
 	&apos; .ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
+	
+	With oReplace
+	 .SearchString = &quot;([а-яА-ЯёЁ])\&gt;[:space:]*[&quot; &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][:space:]+\&lt;([а-яА-ЯёЁ])&quot;
+	 .ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
 		
 	&apos; После знаков препинания
 	With oReplace
