@@ -3,6 +3,10 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="TextCorrector" script:language="StarBasic">&apos;======================================================================================================================
 &apos; 							модуль автоматической обработки документа: Корректор Текста
 &apos;======================================================================================================================
+&apos;8722 минус (матем.знак) \x2212
+&apos;8212 длинное тире \x2014
+&apos;8211 короткое тире \x2013
+&apos;8209 неразрывный дефис \x2011
 
 Option Explicit
 
@@ -52,7 +56,6 @@ Private bNoBreakDefis	As Boolean
 
 Private bKav 	As Boolean
 Private bPoints As Boolean
-Private bC		As Boolean
 
 Private bDeleteAllLineShape		As Boolean
 Private bRemoveSpaceInBracket	As Boolean
@@ -61,6 +64,19 @@ Private bRemoveSpaceInQuote		As Boolean
 Private bInsertNoBreakBlankToFIO		As Boolean
 Private bInsertNoBreakBlankToShortening	As Boolean
 Private bInsertNoBreakBlankToDate		As Boolean
+Private bInsertSpaceBetweenNumLetter	As Boolean
+
+Private bC					As Boolean &apos;Заменить (c) на ©, (r) на ® и (TM) на ™
+Private bCRTMParNum			As Boolean &apos;Обработать пробелы вокруг ©, ®, ™, №, §
+Private bGrad				As Boolean &apos;Обработать °C
+Private bPercent			As Boolean &apos;Обработать %
+Private bPlusMinus			As Boolean &apos;Заменить +/- или +- знаком ±
+Private bParNomer			As Boolean &apos;Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
+Private bReductions			As Boolean &apos;Обработать сокращения единиц веса, емкости, длины, количества...
+Private bReductionsAddress	As Boolean &apos;Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+Private bReductionsDoc		As Boolean &apos;Обработать сокращения в документах (табл., рис., гл. ...)
+Private bEndOfNumerals		As Boolean &apos;Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+Private bWordNumeralEndings	As Boolean &apos;Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 
 Private bReplaceMarkerDashToSymbol		As Boolean &apos; замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус. Актуально для художственной литературы
 Private bDirectSpeech					As Boolean &apos; Заменить дефисы и минусы в прямой речи на тире
@@ -143,16 +159,27 @@ Sub SaveCorrectorSettings()
 		bInsertNoBreakBlankToFIO =	.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State
 		bInsertNoBreakBlankToShortening = .GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State
 		bInsertNoBreakBlankToDate = .GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State
+		bInsertSpaceBetweenNumLetter = .GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State
 		bDefis = 					.GetControl(&quot;cboxHyphen&quot;).State
 		bNoBreakDefis = 			.GetControl(&quot;obSimpleHyphen&quot;).State
 		bKav = 						.GetControl(&quot;cboxKav&quot;).State
 		bPoints = 					.GetControl(&quot;cboxPoints&quot;).State
 		bC = 						.GetControl(&quot;cboxC&quot;).State
+		bCRTMParNum = 				.GetControl(&quot;cboxCRTMParNum&quot;).State
 		bDelMP = 					.GetControl(&quot;cboxMP&quot;).State
 		bDelPB = 					.GetControl(&quot;cboDelPB&quot;).State
 		bDeleteAllLineShape = 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State
 		bReplaceMarkerDashToSymbol = .GetControl(&quot;cboxMarkerDashToSymbol&quot;).State
 		bDirectSpeech =				.GetControl(&quot;checkBoxDirectSpeech&quot;).State
+		bGrad =						.GetControl(&quot;cboxGrad&quot;).State
+		bPercent =					.GetControl(&quot;cboxPercent&quot;).State
+		bPlusMinus =				.GetControl(&quot;cboxPlusMinus&quot;).State
+		bParNomer =					.GetControl(&quot;cboxParNomer&quot;).State
+		bReductions =				.GetControl(&quot;cBoxReductions&quot;).State
+		bReductionsAddress =		.GetControl(&quot;cBoxReductionsAddress&quot;).State
+		bReductionsDoc =			.GetControl(&quot;cBoxReductionsDoc&quot;).State
+		bEndOfNumerals =			.GetControl(&quot;cBoxEndOfNumerals&quot;).State
+		bWordNumeralEndings =		.GetControl(&quot;cboxWordNumeralEndings&quot;).State
 	End With
 End Sub
 
@@ -254,7 +281,9 @@ Sub ChangeOptionsGroup(o)
 End Sub
 &apos;***************************************************************************
 
-&apos; ////////////////////////////////////// Задание профиля книг (вид литературы) ////////////////
+&apos; =============================================================================================
+&apos; 				Задание профиля книг (вид литературы)
+&apos; =============================================================================================
 &apos; Установка настроек по умолчанию в контролы
 Sub SetCorrectorSettingDefault()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
@@ -277,9 +306,8 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 		
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -310,15 +338,32 @@ Sub SetCorrectorSettingDefault()
 		.GetControl(&quot;cboxKav&quot;).State = 0	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
+		
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Документы
+&apos; =============================================================================================
+&apos; 									Документы
+&apos; =============================================================================================
 Sub SetDocumentType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -340,9 +385,8 @@ Sub SetDocumentType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -373,15 +417,31 @@ Sub SetDocumentType()
 		.GetControl(&quot;cboxKav&quot;).State = 1	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Художественная литература
+&apos; =============================================================================================
+&apos; 								Художественная литература
+&apos; =============================================================================================
 Sub SetFictionType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -403,9 +463,8 @@ Sub SetFictionType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 0	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -436,15 +495,31 @@ Sub SetFictionType()
 		.GetControl(&quot;cboxKav&quot;).State = 1	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 1 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 1
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 0	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Документалистика / Публицистика
+&apos; =============================================================================================
+&apos; 								Документалистика / Публицистика
+&apos; =============================================================================================
 Sub SetPublicismType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -466,9 +541,8 @@ Sub SetPublicismType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -499,15 +573,31 @@ Sub SetPublicismType()
 		.GetControl(&quot;cboxKav&quot;).State = 0	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 1 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Научная литература
+&apos; =============================================================================================
+&apos; 							Научная литература
+&apos; =============================================================================================
 Sub SetScientificType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -529,9 +619,8 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -562,15 +651,31 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxKav&quot;).State = 0	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Техническая, Компьтерная литература
+&apos; =============================================================================================
+&apos; 						Техническая, Компьтерная литература
+&apos; =============================================================================================
 Sub SetTechnicType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -592,9 +697,8 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -625,15 +729,31 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxKav&quot;).State = 0	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 1		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 0 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Книги по программированию
+&apos; =============================================================================================
+&apos; 							Книги по программированию
+&apos; =============================================================================================
 Sub SetProgrammingType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -655,9 +775,8 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -688,15 +807,31 @@ Sub SetProgrammingType()
 		.GetControl(&quot;cboxKav&quot;).State = 0	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 1 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 0	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 0	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; Религиозная литература
+&apos; =============================================================================================
+&apos; 							Религиозная литература
+&apos; =============================================================================================
 Sub SetReligionType()
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 	With oTextCorrectorDlg
@@ -718,9 +853,8 @@ Sub SetReligionType()
 		.GetControl(&quot;cboxInsertSpaceBSymAndMDH&quot;).State = 1		&apos; вставить пробел между кавычкой и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
-		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
-		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -751,16 +885,31 @@ Sub SetReligionType()
 		.GetControl(&quot;cboxKav&quot;).State = 0	&apos; замена кавычек лапок на елочки
 		.GetControl(&quot;cboxPoints&quot;).State = 1	&apos; многоточия
 		.GetControl(&quot;cboxC&quot;).State = 0		&apos; торговые знаки
+		.GetControl(&quot;cboxCRTMParNum&quot;).State = 1	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
 		.GetControl(&quot;cboDeleteAllLineShape&quot;).State = 1 &apos; удаление из текста всех векторных линий
+		.GetControl(&quot;cboxGrad&quot;).State = 1	&apos; Обработать °C
+		.GetControl(&quot;cboxPercent&quot;).State = 1	&apos; Обработать %
+		.GetControl(&quot;cboxPlusMinus&quot;).State = 1	&apos; Заменить +/- или +- знаком ±
+		.GetControl(&quot;cboxParNomer&quot;).State = 1	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
 		
 		&apos;замена маркеров тире, дефиса и минуса в прямой речи (начало абзаца) на соответствующие тире, дефис или минус.
 		.GetControl(&quot;cboxMarkerDashToSymbol&quot;).State = 0
+		
+		&apos; Обработка сокращений слов, единиц  веса, емкости, длины...
+		.GetControl(&quot;cboxInsertNoBreakBlankToFIO&quot;).State = 1	&apos; вставить неразрывные пробелы между Фамилией и инициалами
+		.GetControl(&quot;cboxInsertNoBreakBlankToShortening&quot;).State = 1	&apos; вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е.
+		.GetControl(&quot;cBoxReductions&quot;).State = 1	&apos; Обработать сокращения единиц веса, емкости, длины, количества...
+		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
+		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
 
-&apos; //////////////////////////////////////////////////////////////////////////////////
-&apos; запуск корректировки
+&apos; =======================================================================================================
+&apos; 								запуск корректировки
+&apos; =======================================================================================================
 Sub TextCorrectorDlgOk()
 	Dim sCorrectorName As String : sCorrectorName = sTCD.sTextCorrecting
 	&apos; Если есть опции для чистки, то - работаем
@@ -842,7 +991,7 @@ Sub TextCorrectorDlgOk()
 	End If
 
 	nCur = 0
-	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 29 )
+	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 38 )
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
@@ -970,6 +1119,13 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
+	&apos; Вставка пробела между русским словом и цифрой (30машин, на25)
+	If bInsertSpaceBetweenNumLetter = True Then
+		InsertSpaceBetweenNumLetter( oDoc, oReplace )
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
 	&apos; ===========================================================================================================
 	&apos; 										Работа с абзацами и разрывами
 	&apos; ===========================================================================================================
@@ -990,6 +1146,13 @@ Sub TextCorrectorDlgOk()
 	nCur = nCur+1
 	
 	&apos; Обрабатываем пустые абзацы ¶
+	&apos; Удаляем табуляции, простые и неразрывные пробелы, если в абзаце больше ничего нет
+	With oReplace
+		.SearchString = &quot;^[\x20|\x09|\xA0]+$&quot;
+		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
 	If bWorkEmptyPar = True Then
 		&apos; удаляем все пробелы в пустых абзацах
 		With oReplace
@@ -1028,6 +1191,8 @@ Sub TextCorrectorDlgOk()
 	&apos; Заменить дефис или минус, используемый между слов вместо тире на тире
 	If bHyphenToDashBetweenWords = True Then
 		HyphenToDashBetweenWords( oDoc, oReplace )
+		&apos; обработка аттрибутов тире, пробелов вокруг него, и первого символа после него на предмет курсива и полужирного
+		DashAttributeWorking()
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1054,6 +1219,122 @@ Sub TextCorrectorDlgOk()
 	nCur = nCur+1
 
 	&apos; ===========================================================================================================
+	&apos; 							Обработка сокращений слов, единиц веса, емкости, длины...
+	&apos; ===========================================================================================================
+	&apos;Обработать сокращения единиц веса, емкости, длины, количества...
+	If bReductions = True Then
+		&apos;Вставка неразрывного пробела после цифры перед сокращением веса
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*(мкг|мг|кар|г|кг|ц|т)([,.:;!?|\x20|\x09|\xA0]+)&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*(мкг|мг|кар|г|кг|ц|т)[:space:]+([,.:;!?])&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		
+		&apos;Вставка неразрывного пробела после цифры перед сокращением длины
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*(ам|фм|пм|нм|мк|мкм|мм|см|дм|м|км)([,.:;!?|\x20|\x09|\xA0]+)&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*(ам|фм|пм|нм|мк|мкм|мм|см|дм|м|км)[:space:]+([,.:;!?])&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		
+		&apos;Вставка неразрывного пробела перед сокращением после цифры: 66экз. ==&gt; 66 экз., 200   млрд. ==&gt; 200 млрд.
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*(экз|шт|тыс|млн|млрд)([,.:;!?|\x20|\x09|\xA0]+)&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*(экз|шт|тыс|млн|млрд)[:space:]+([,.:;!?])&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		
+		&apos;Вставка неразрывного пробела перед сокращением после числительных: Восемь   шт. ==&gt; Восемь шт.
+		With oReplace
+			.SearchString = &quot;([а-яА-ЯёЁ])[:space:]{1,}(экз\.|шт\.|тыс\.|млн\.|млрд\.)([,.:;!?|\x20|\x09|\xA0]+)&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]{1,}(экз\.|шт\.|тыс\.|млн\.|млрд\.)[:space:]+([,.:;!?])&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos;Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
+	If bReductionsAddress = True Then
+		&apos;Вставка неразрывного пробела после сокращения в адресе
+		With oReplace
+			.SearchString = &quot;([:space:]+)(г\.|пос\.|село|дер\.|пл\.|ул\.|пер\.|дом|д\.|корп\.|кв\.|офис|оф\.|каф\.|ауд\.)[:space:]*([0-9]|[A-ZА-ЯЁ])&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos;Обработать сокращения в документах (табл., рис., гл. ...)
+	If bReductionsDoc = True Then
+		&apos;Вставка неразрывного пробела после сокращения в документе
+		With oReplace
+			.SearchString = &quot;([:space:]+)(гл\.|стр\.|рис\.|илл\.|табл\.)[:space:]*([:alnum:])&quot;
+			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos;Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
+	If bEndOfNumerals = True Then
+		&apos;Вставка неразрывного дефиса в окончаниях числительных
+		With oReplace
+			.SearchString = &quot;([:digit:]+)[:space:]*[-&quot; &amp; chr(8212) &amp; chr(8211) &amp; &quot;]{1}[:space:]*(й|е|ю|я|м|х|го|му|ть|ые|ых|ым|ные|ных|ным|ному|ому)&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		&apos;Замена минуса, тире или дефиса в окончаниях числительных на неразрывный дефис
+		With oReplace
+			.SearchString = &quot;([:digit:])[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8212) &amp; chr(8211) &amp; &quot;]{1}[:space:]*(й|е|ю|я|м|х|го|му|ть|ые|ых|ым|ные|ных|ным|ному|ому)&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos;Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
+	If bWordNumeralEndings = True Then
+		&apos; арабские цифры
+		With oReplace
+			.SearchString = &quot;([:alpha:]{2,})\x20*[-]{1}\x20*([0-9])&quot; &apos;не обрабатываем тире, чтобы не испортить ситуации, типа &quot;это — 60...&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		&apos; римские цифры
+		With oReplace
+			.SearchString = &quot;([:alpha:]{2,})\x20*[-|—]{1}\x20*([IVXClLMD])&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(8209) &amp; &quot;$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; ===========================================================================================================
 	&apos; 													Разное
 	&apos; ===========================================================================================================
 	&apos; Заменить кавычки  &quot; &quot; и “ ” на  « »
@@ -1066,18 +1347,91 @@ Sub TextCorrectorDlgOk()
 	&apos; Замена на (c) (r) (TM)
 	If bC = True Then
 		With oReplace
-			.SearchString = &quot;\( *[C|c|С|с]{1} *\)&quot;
+			.SearchString = &quot;\(\x20*[C|c|С|с]{1}\x20*\)&quot;
 			.ReplaceString = &quot;©&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;\( *[R|r]{1} *\)&quot;
+			.SearchString = &quot;\(\x20*[R|r]{1}\x20*\)&quot;
 			.ReplaceString = &quot;®&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;\( *[TtТт]{1}[MmМм]{1} *\)&quot;
+			.SearchString = &quot;\(\x20*[TtТт]{1}[MmМм]{1}\x20*\)&quot;
 			.ReplaceString = &quot;™&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Обработать пробелы вокруг ©, ®, ™, №, §
+	If bCRTMParNum = True Then
+		&apos;Вставка неразрывного пробела перед знаками ™ и ®.
+		With oReplace
+			.SearchString = &quot;([:alnum:])\x20*(™|®)&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		&apos;Вставка неразрывного пробела после знаков §, № и ©.
+		With oReplace
+			.SearchString = &quot;(§|№|©)\x20*([:alnum:])&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Обработать °C, сокращения единиц веса, емкости, длины...
+	If bGrad = True Then
+		&apos;Обработка °C
+		With oReplace
+			.SearchString = &quot;([:digit:]{1,})[\x20|\x09|\xA0]+°&quot;
+			.ReplaceString = &quot;$1°&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:digit:]{1,})[\x20|\xA0|\x09]*°\x20*[С|C]&quot;
+			.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;°C&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Обработать %
+	If bPercent = True Then
+		With oReplace
+			.SearchString = &quot;([:digit:]{1,})[\x20|\x09|\xA0]*%&quot;
+			.ReplaceString = &quot;$1%&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:digit:]{1,})[\x20|\xA0|\x09]*%[\x20|\xA0]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][\x20|\xA0|\x09]*(в|ю|ов|тов|ую|ную|ных|ной)&quot;
+			.ReplaceString = &quot;$1%&quot; &amp; chr(8209) &amp; &quot;$2&quot; &apos; неразрывнывй дефис
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Заменить символы +/- или +- перед числом знаком ±
+	If bPlusMinus = True Then
+		With oReplace
+			.SearchString = &quot;(\+/-|\+-)[:space:]*([:digit:]+)&quot;
+			.ReplaceString = &quot;±$2&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+	End If
+	oProgressBar.setValue(nCur)
+	nCur = nCur+1
+	
+	&apos; Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№
+	If bParNomer = True Then
+		With oReplace
+			.SearchString = &quot;(§) +(§)|(№) +(№)&quot;
+			.ReplaceString = &quot;$1$2&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 	End If
@@ -1099,15 +1453,9 @@ Sub DeleteMPer( oDoc, oReplace )
 	Dim b As Boolean
 	b = oReplace.SearchRegularExpression
 	With oReplace
-		.SearchString = &quot;­&quot;&apos; В LO4 поломан поиск мягких переносов в регул. выражениях
-		.ReplaceString = &quot;&quot;
 		.SearchRegularExpression = False
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;\x00AD&quot;
+		.SearchString = &quot;­&quot; &apos; В LO4 и AOO сломан поиск мягких переносов в регул. выражениях
 		.ReplaceString = &quot;&quot;
-		.SearchRegularExpression = True
 	End With
 	oDoc.ReplaceAll(oReplace)
 	oReplace.SearchRegularExpression = b
@@ -1115,22 +1463,23 @@ End Sub
 
 &apos; замена разрыва строки на
 Sub BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
+	oReplace.SearchRegularExpression = True
 	If bDel = True Then
 		&apos; Удаляем разрыв строки
 		With oReplace
-			.SearchString = chr(10)
+			.SearchString = &quot;\n&quot;
 			.ReplaceString = &quot;&quot;
 		End With
 	ElseIf bPar = True Then
 		&apos; Заменяем разрыв строки на абзац
 		With oReplace
-			.SearchString = chr(10)
+			.SearchString = &quot;\n&quot;
 			.ReplaceString = &quot;\n&quot;
 		End With
 	ElseIf bSpace = True Then
 		&apos; Заменяем разрыв строки на 1 пробел
 		With oReplace
-			.SearchString = chr(10)
+			.SearchString = &quot;\n&quot;
 			.ReplaceString = &quot; &quot;
 		End With
 	End If
@@ -1140,6 +1489,7 @@ End Sub
 &apos; Удаляем все множественные пустые абзацы
 Sub DelEmptyPar( oDoc, oReplace )
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;^$&quot;
 		.ReplaceString = &quot;&quot;
 	End With
@@ -1152,16 +1502,19 @@ End Sub
 &apos; Заменить двойной минус двойной дефис (--) на тире
 Sub Replace2HyphenToDash( oDoc, oReplace )
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;[:space:]{1,}(-|&quot; &amp; chr(8722) &amp; chr(8211) &amp; &quot;|&quot; &amp; chr(8209) &amp; &quot;){2}[:space:]{1,}&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}[:space:]*([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}[:space:]*([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
@@ -1169,12 +1522,14 @@ Sub Replace2HyphenToDash( oDoc, oReplace )
 		
 	&apos; для русских слов обработку &quot; --пример&quot;, но не &quot; --i&quot;
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,}([а-яА-ЯёЁ])&quot;
 		.ReplaceString	= &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	&apos; для русских слов обработку &quot;пример-- &quot;, но не &quot;i-- &quot;
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;([а-яА-ЯёЁ])[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{2,} *&quot;
 		.ReplaceString	= &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;
 	End With
@@ -1185,31 +1540,37 @@ End Sub
 Sub ReplaceMinusHyphenForDirectSpeechToDash()
 	&apos; Прямая речь: Заменить минус или дефис в начале абзаца на тире 
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁa-zA-Z])&quot;
 		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([а-яА-ЯёЁa-zA-Z])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([&quot;&quot;“„«])&quot;
 		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([&quot;&quot;“„«])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; $1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;(\n)[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([\.\.\.|…])&quot;
 		.ReplaceString	= &quot;\n&quot; &amp; chr(8212) &amp; &quot; …&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString	= &quot;^[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}[:space:]*([\.\.\.|…])&quot;
 		.ReplaceString	= chr(8212) &amp; &quot; …&quot;
 	End With
@@ -1218,38 +1579,46 @@ End Sub
 
 &apos; Заменить дефис или минус, используемый между слов вместо тире, на тире
 Sub HyphenToDashBetweenWords( oDoc, oReplace )
+	&apos; только для русских слов:
 	&apos; Между слов
 	With oReplace
-		.SearchString = &quot;\&gt;[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;][:space:]+\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
-&apos;		.SearchString = &quot;\&gt;[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][:space:]+\&lt;&quot; &apos;&quot;\&gt; - \&lt;&quot;
-		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; &quot; &apos;&quot; — &quot;
+		.SearchRegularExpression = True
+		.SearchString = &quot;([а-яА-ЯёЁ]{2,})[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;][:space:]+([а-яА-ЯёЁ]{2,})&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
-	&apos; только для русских слов:
 	With oReplace
-	 .SearchString = &quot;([а-яА-ЯёЁ])\&gt;[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;][:space:]+\&lt;([а-яА-ЯёЁ])&quot;
-	 .ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
+		.SearchRegularExpression = True
+		.SearchString = &quot;([а-яА-ЯёЁ])[:space:]*[&quot; &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][:space:]+([а-яА-ЯёЁ])&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
-	&apos; .SearchString = &quot;([а-яА-ЯёЁ])\&gt; *- {1,}\&lt;([а-яА-ЯёЁ])&quot;
-	&apos; .ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
+
+	&apos; между цифрами и словами: 60 - достаточно... это - 60...
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;([а-яА-ЯёЁ]{2,})[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;][:space:]+([:digit:])&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;([:digit:])[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;][:space:]+([а-яА-ЯёЁ]{2,})&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
 	
-	With oReplace
-	 .SearchString = &quot;([а-яА-ЯёЁ])\&gt;[:space:]*[&quot; &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][:space:]+\&lt;([а-яА-ЯёЁ])&quot;
-	 .ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot; &apos;&quot; — &quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-		
 	&apos; После знаков препинания
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;([\.,:;\!\?…])[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*&quot; 	&apos;&quot;\.-&quot;
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;. — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
-	
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;[:space:]+(&apos;)[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]&quot;
 		.ReplaceString = &quot; $1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot; &apos; — &quot;
 	End With
@@ -1257,6 +1626,7 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 	
 	&apos; кавычки и тире
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;([»&quot;&quot;”])[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*([«&quot;&quot;“„])&quot;	&apos;&quot;» - «&quot;
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;» — «&quot;
 	End With
@@ -1268,22 +1638,26 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 &apos;	End With
 &apos;	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;»[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*\&lt;&quot;	&apos;&quot;» - \&lt;&quot;
 		.ReplaceString = &quot;» &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;&quot;&quot;[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*\&lt;&quot;	&apos;&quot;» - \&lt;&quot;
 		.ReplaceString = &quot;&quot;&quot; &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;”[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*\&lt;&quot;	&apos;&quot;» - \&lt;&quot;
 		.ReplaceString = &quot;” &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;» — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;\&gt;[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*([«&quot;&quot;“„])&quot;	&apos;&quot;\&gt; - «&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — «&quot;
 	End With
@@ -1291,13 +1665,23 @@ Sub HyphenToDashBetweenWords( oDoc, oReplace )
 	
 	&apos; скобки и тире
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;([\]\)\}])[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*&quot;	&apos;&quot;)- &quot;
 		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; &quot;	&apos;&quot;) — &quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
+		.SearchRegularExpression = True
 		.SearchString = &quot;[:space:]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*([\[\(\{])&quot;	&apos;&quot;-(&quot;
 		.ReplaceString = &quot; &quot; &amp; chr(8212) &amp; &quot; $1&quot;	&apos;&quot; — (&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; &quot;слово - тире и слипшееся слово&quot; (вот он —пример)
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;([:alpha:]+)[:space:]+[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8212) &amp; chr(8209) &amp; &quot;][:space:]*([а-яА-ЯёЁ])&quot;
+		.ReplaceString = &quot;$1 &quot; &amp; chr(8212) &amp; &quot; $2&quot;	&apos;&quot;вот он — пример&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
@@ -1339,7 +1723,7 @@ Sub ReplaceMinusToDefis( oDoc, oReplace )
 &apos;	oDoc.ReplaceAll(oReplace)
 End Sub
 
-&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб, 1900-е, и т.д.)
+&apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб, и т.д.)
 Sub ReplaceMinusToDash( oDoc, oReplace )
 	Dim SearchCaseSensitive As Boolean : SearchCaseSensitive = False &apos; запоминаем опцию регистра поиска, чтобы потом ее восстановить
 	&apos; Между 2-х слов с Большой буквы: Париж-Берлин
@@ -1370,19 +1754,24 @@ Sub ReplaceMinusToDash( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 	
 	oReplace.SearchCaseSensitive = SearchCaseSensitive
-	
-	&apos; 1900-е, и т.д
-	With oReplace
-		.SearchString = &quot;([:digit:])[-&quot; &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:alpha:])&quot;
-		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; короткое тире
-	End With
-	oDoc.ReplaceAll(oReplace)
 
 	&apos; Обработка слов вида: Да-а-а, Э-э-э
 	With oReplace
-		SearchCaseSensitive = .SearchCaseSensitive
 		.SearchString = &quot;([:alpha:]{1,})[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:alpha:]{1,})&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:alpha:]{1,})&quot;
 		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &amp; chr(8211) &amp; &quot;$3&quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; Обработка фраз, типа &quot;водо- и воздуховод&quot;
+	With oReplace
+		.SearchString = &quot;([а-яА-ЯёЁ]{3,})[-—]{1}[:space:]+и[:space:]+&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot; и &quot; &apos; короткое тире
+	End With
+	oDoc.ReplaceAll(oReplace)
+	&apos; Обработка фраз, типа &quot;энерго-, водо- и теплообеспечение&quot;
+	With oReplace
+		.SearchString = &quot;([а-яА-ЯёЁ])[-—]{1},[:space:]+([а-яА-ЯёЁ])&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;, $2&quot; &apos; короткое тире
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
@@ -1541,12 +1930,12 @@ End Sub
 Sub	RemoveSpaceInQuote( oDoc, oReplace )
 	With oReplace
 &apos;		.SearchString = &quot;([\&gt;“\&quot;&quot;«])\x20+|\x20+([”\&quot;&quot;»\&lt;])&quot;
-		.SearchString = &quot;(\&gt;«)[:space:]+&quot; &apos; &quot;([\&gt;„«])\x20+&quot;
+		.SearchString = &quot;(\&gt;«)[:space:]+&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;[:space:]+(»\&lt;)&quot; &apos; &quot;\x20+([“»\&lt;])&quot;
+		.SearchString = &quot;[:space:]+(»\&lt;)&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1557,7 +1946,8 @@ Sub RemoveSpaceBeforePunct( oDoc, oReplace )
 	With oReplace
 		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]+([.,:;!?…])&quot;
 		&apos;.ReplaceString = &quot;$1$2&quot;
-		.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[:space:]{1,}([.,!?…])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
+		&apos;.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[:space:]{1,}([.,!?:;])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
+		.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[\x09|\x20]{1,}([.,!?:;])([\x09|\x20|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
 		.ReplaceString = &quot;$1$2$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1566,6 +1956,19 @@ End Sub
 &apos; Вставляем пробел после знака препинания
 Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 	&apos; (.) обрабатываем только для русских букв и БОЛЬШИХ английских, чтобы &quot;не портились&quot; листинги кода, скрипты и интернет-адреса
+	&apos; вставка пробела после цифры, знака препинания (кроме точки) и буквой
+	With oReplace
+		.SearchString = &quot;([:digit:]+)[:space:]*([,;!?])([а-яА-ЯёЁa-zA-Z])&quot;
+		.ReplaceString = &quot;$1$2 $3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	&apos; вставка пробела после цифры, точки и русской буквой
+	With oReplace
+		.SearchString = &quot;([:digit:]+)[:space:]*([\.])([а-яА-ЯёЁ])&quot;
+		.ReplaceString = &quot;$1$2 $3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+
 &apos;	With oReplace
 &apos;		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
 &apos;		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z]|[а-яА-ЯёЁa-zA-Z\)}\]”\&quot;&quot;»])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]*)([,:;!?])([а-яА-ЯёЁa-zA-Z])&quot;
@@ -1582,6 +1985,7 @@ Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
+	
 &apos;	With oReplace
 &apos;		.SearchCaseSensitive = True
 &apos;		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])([\.])([а-яА-ЯёЁA-Z])&quot;
@@ -1589,14 +1993,13 @@ Sub InsertSpaceBPunctAndSymbol( oDoc, oReplace )
 &apos;		.ReplaceString = &quot;$1$2 $3&quot;
 &apos;	End With
 &apos;	oDoc.ReplaceAll(oReplace)
+	oReplace.SearchCaseSensitive = True
 	With oReplace
-		.SearchCaseSensitive = True
 		.SearchString = &quot;([а-яА-ЯёЁ]|[а-яА-ЯёЁ\)}\]”\&quot;&quot;»][:space:]{1,})([\.])([а-яА-ЯёЁ])&quot;
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchCaseSensitive = True
 		.SearchString = &quot;([a-zA-Z]|[a-zA-Z\)}\]”\&quot;&quot;»][:space:]{1,})([\.])([A-Z])&quot;
 		.ReplaceString = &quot;$1$2 $3&quot;
 	End With
@@ -1635,97 +2038,38 @@ Sub InsertNoBreakBlankToFIO( oDoc, oReplace )
 	With oReplace
 		.SearchRegularExpression = True
 		.SearchCaseSensitive = True		&apos; Учитывать регистр при поиске
-		.searchAll=True
+		.SearchAll = True
 	End With
+	
 	&apos; Для русских Фамилий
-	&apos; 1. слово И.О. Фамилия
 	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	&apos; 2. слово Фамилия И.О.
-	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	&apos; 3. С начала абзаца И.О.Фамилия
-	With oReplace
-		.SearchString = &quot;(\n)\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
-		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+		.SearchString = &quot;([А-ЯЁ]\.)\x20*([А-ЯЁ]\.)\x20*([А-ЯЁ][а-яё]+)&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.replaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;^\x20*([А-Я]\.)\x20*([А-Я]\.)\x20*([А-Я]+)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	&apos; 4. С начала абзаца И.О.Фамилия
-	With oReplace
-		.SearchString = &quot;(\n)\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
-		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;^\x20*([А-Я][а-я]+)\x20+([А-Я]\.)\x20*([А-Я]\.)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+		.SearchString = &quot;([А-ЯЁ][а-яё]+)\x20+([А-ЯЁ]\.)\x20*([А-ЯЁ]\.)&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.replaceAll(oReplace)
 	
 	&apos; Для иностранных Фамилий
-	&apos; 1. word N.P. Family
 	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	&apos; 2. word Family N.P.
-	With oReplace
-		.SearchString = &quot;(\&gt;)\x20+([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
-		.ReplaceString =  &quot;$1 $2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	&apos; 3. С начала абзаца N.P.Family
-	With oReplace
-		.SearchString = &quot;(\n)\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
-		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
+		.SearchString = &quot;([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z][a-z]+)&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.replaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;^\x20*([A-Z]\.)\x20*([A-Z]\.)\x20*([A-Z]+)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	&apos; 4. С начала абзаца N.P.Family
-	With oReplace
-		.SearchString = &quot;(\n)\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
-		.ReplaceString =  &quot;\n$2&quot; &amp; chr(160) &amp; &quot;$3&quot; &amp; chr(160) &amp; &quot;$4&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;^\x20*([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-
-	&apos; Обработка Римских цифр и слов перед/после них/ними.
-	With oReplace
-		.SearchString = &quot;([XIVL])\x20+([A-Za-zА-Яа-я]+)&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
-	End With
-	oDoc.replaceAll(oReplace)
-	With oReplace
-		.SearchString = &quot;([A-Za-zА-Яа-я]+)\x20+([XIVL])&quot;
-		.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot;
+		.SearchString = &quot;([A-Z][a-z]+)\x20+([A-Z]\.)\x20*([A-Z]\.)&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.replaceAll(oReplace)
 	
 	&apos; Теперь восстанавливаем значение учета регистра при поиске и замене
-	oReplace.SearchCaseSensitive=bReplCase
+	oReplace.SearchCaseSensitive = bReplCase
 End Sub
 
-&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е. и в датах (19 января ...)
+&apos; Вставить неразрывный пробел в сокращениях т.д., т.п., т.к., т.н., т.ч., т.е. и в датах (19 января ...), перед сокращением после числительных: Восемь   шт. ==&gt; Восемь шт.
 Sub InsertNoBreakBlankToShortening( oDoc, oReplace )
 	&apos; для русского языка
 	With oReplace
@@ -1796,13 +2140,27 @@ End Sub
 &apos; Вставка неразрывного пробела в датах (19 января, January 19 ... )
 Sub InsertNoBreakBlankToDate( oDoc, oReplace )
 	With oReplace
-		.SearchString	= &quot;([0-9])([:space:]+)(январ|феврал|март|апрел|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)&quot;
+		.SearchString	= &quot;([0-9])([:space:]*)(январ|феврал|март|апрел|мая|июн|июл|август|сентябр|октябр|ноябр|декабр)&quot;
 		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
 		.SearchString	= &quot;(january|february|march|april|may|june|july|august|september|october|november|december)([:space:]+)([0-9])&quot;
 		.ReplaceString	= &quot;$1&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub
+
+&apos; Вставка пробела между русским словом и цифрой (30машин, домов25)
+Sub InsertSpaceBetweenNumLetter( oDoc, oReplace )
+	With oReplace
+		.SearchString	= &quot;([0-9]+)([а-яА-ЯёЁ]{2,})&quot;
+		.ReplaceString	= &quot;$1 $2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString	= &quot;([а-яА-ЯёЁ]+)([0-9]+)&quot;
+		.ReplaceString	= &quot;$1 $2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
@@ -1827,28 +2185,66 @@ Sub ReplaceMSpaceTo( oDoc, nReplaceCount, bTCToSpace )
 			sReplaceStr = sReplaceStr + &quot;\t&quot;
 		Next i
 	End If
-	
-	&apos; в условие поиска игнорируем цифры в верхнем или нижнем индексе
-	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name	= &quot;CharAutoEscapement&quot;
-	SrchAttributes(0).Value	= False
-	
+
 	Dim oDesc : oDesc = oDoc.createSearchDescriptor()
+	Dim sTire as String : sTire = &quot;\-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212)
+	Dim SpaceWithNBS As String : SpaceWithNBS = &quot;[\x20\t\xA0]{2,}&quot;
+	Dim SpaceWithoutNBS As String : SpaceWithoutNBS = &quot;[\x20\t]{2,}&quot;
+	Dim LeftSymbols As String : LeftSymbols = &quot;[\.,:;…?\!\)\}\]»&apos;”\&quot;&quot;%=\+&quot;
+	Dim RightSymbols As String : RightSymbols = &quot;[\(\{\[«&apos;“\&quot;&quot;%=\+&quot;
+
 	With oDesc
 		.SearchRegularExpression = True
-		.SetSearchAttributes(SrchAttributes())
-&apos;&apos;		.SearchString = &quot;([:alnum:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alnum:]|[\({\[«&apos;“\&quot;&quot;])&quot;
-&apos;		.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;])[:space:]{2,}([:alpha:]|[\({\[«&apos;“\&quot;&quot;])&quot;
 		If bTCNBDelSpace Then
 			&apos; все пробелы - и простые и неразрывные
-			.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-\+&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[\x20\xA0\t]{2,}([:alpha:]|[({\[«&apos;“\&quot;&quot;\&lt;])&quot;
+			.SearchString = &quot;([:alpha:])&quot; &amp; SpaceWithNBS &amp; &quot;([:alpha:])&quot;
 		Else
 			&apos; только простые пробелы
-			.SearchString = &quot;([:alpha:]|[\.,:;…?\!\)}\]»&apos;”\&quot;&quot;\&gt;%=\-\+&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;])[\x20\t]{2,}([:alpha:]|[({\[«&apos;“\&quot;&quot;\&lt;])&quot;
+			.SearchString = &quot;([:alpha:])&quot; &amp; SpaceWithoutNBS &amp; &quot;([:alpha:])&quot;
 		End if
 		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
+		oDoc.ReplaceAll(oDesc)
 	End With
-	oDoc.ReplaceAll(oDesc)
+	
+	With oDesc
+		.SearchRegularExpression = True
+		If bTCNBDelSpace Then
+			&apos; все пробелы - и простые и неразрывные
+			.SearchString = &quot;([:alpha:])&quot; &amp; SpaceWithNBS &amp; &quot;(&quot; &amp; RightSymbols &amp; sTire &amp; &quot;])&quot;
+		Else
+			&apos; только простые пробелы
+			.SearchString = &quot;([:alpha:])&quot; &amp; SpaceWithoutNBS &amp; &quot;(&quot; &amp; RightSymbols &amp; sTire &amp; &quot;])&quot;
+		End if
+		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
+		oDoc.ReplaceAll(oDesc)
+	End With
+	
+	With oDesc
+		.SearchRegularExpression = True
+		If bTCNBDelSpace Then
+			&apos; все пробелы - и простые и неразрывные
+			.SearchString = &quot;(&quot; &amp; LeftSymbols &amp; sTire &amp; &quot;])&quot; &amp; SpaceWithNBS &amp; &quot;([:alpha:])&quot;
+		Else
+			&apos; только простые пробелы
+			.SearchString = &quot;(&quot; &amp; LeftSymbols &amp; sTire &amp; &quot;])&quot; &amp; SpaceWithoutNBS &amp; &quot;([:alpha:])&quot;
+		End if
+		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
+		oDoc.ReplaceAll(oDesc)
+	End With
+	
+	With oDesc
+		RightSymbols = &quot;[\(\{\[«&apos;“\&quot;&quot;]&quot;
+		.SearchRegularExpression = True
+		If bTCNBDelSpace Then
+			&apos; все пробелы - и простые и неразрывные
+			.SearchString = &quot;(&quot; &amp; LeftSymbols &amp; sTire &amp; &quot;])&quot; &amp; SpaceWithNBS &amp; &quot;(&quot; &amp; RightSymbols &amp; &quot;)&quot;
+		Else
+			&apos; только простые пробелы
+			.SearchString = &quot;(&quot; &amp; LeftSymbols &amp; sTire &amp; &quot;])&quot; &amp; SpaceWithoutNBS &amp; &quot;(&quot; &amp; RightSymbols &amp; &quot;)&quot;
+		End if
+		.ReplaceString = &quot;$1&quot; &amp; sReplaceStr &amp; &quot;$2&quot;
+		oDoc.ReplaceAll(oDesc)
+	End With
 End Sub
 
 &apos; Удаляем все стартовые пробелы
@@ -1859,6 +2255,12 @@ Sub DelStartSpace( oDoc, oReplace )
 		.ReplaceString = &quot;&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;(\n)( {1,})&quot;
+		.ReplaceString = &quot;$1&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
 End Sub
 
 &apos; Удаляем все неразрывные стартовые пробелы
@@ -1867,6 +2269,12 @@ Sub DelStartNoBreakSpace( oDoc, oReplace )
 		.SearchRegularExpression = True
 		.SearchString = &quot;^&quot; &amp; Chr(160) &amp; &quot;{1,}&quot;
 		.ReplaceString = &quot;&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;(\n)&quot; &amp; Chr(160) &amp; &quot;{1,}&quot;
+		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 End Sub
@@ -2447,6 +2855,99 @@ Function DeletePunctMarkInString( byval sString As String ) As String
 	Next i
 End Function
 
+&apos; обработка аттрибутов тире, пробелов вокруг него, и первого символа после него на предмет курсива и полужирного.
+Sub DashAttributeWorking()
+	Dim oDoc		As Object	: oDoc		= ThisComponent
+	Dim vSearch		As Variant	: vSearch	= oDoc.createSearchDescriptor()
+	Dim vFound		As Variant
+
+	With vSearch
+		.SearchRegularExpression = True
+		.ValueSearch = False
+	End With
+	
+	vSearch.SearchString = &quot;[:space:]+—[:space:]+([:alpha:]{1,})&quot;
+	&apos; Ищем тире между слов
+	vFound = oDoc.FindFirst( vSearch )
+	If Not IsNull(vFound) Then 
+		&apos; нашли поисковый запрос
+		Do
+			If Not IsNull(vFound) Then 
+				&apos; поиск и обработка 1-го символа правого слова от тире с пробелом(ами)
+				ItalicBoldWorker( vFound )
+			End If
+			&apos; поиск следущего элемента
+			vFound = oDoc.FindNext( vFound.End, vSearch )
+		Loop Until IsNull( vFound ) &apos; выполняем хотя бы раз пока vFound не пусто
+	End If
+End Sub
+&apos;******************************************************************
+
+&apos; обработка тире и 1-го символа после него.
+Sub ItalicBoldWorker( ByRef vFound As Variant )
+	Dim oCurs	As Object : oCurs = vFound.getText().CreateTextCursorByRange( vFound )
+	&apos; ищем 1-й символа правого слова от тире с пробелом(ами)
+	Dim o1SymCurs As Object : o1SymCurs = vFound.getText().CreateTextCursorByRange( vFound )
+	o1SymCurs.collapseToStart()
+	Dim o2SymCurs As Object : o2SymCurs = vFound.getText().CreateTextCursorByRange( vFound )
+	Dim IsDashFound As Boolean : IsDashFound = False
+	Dim Is1SymFound As Boolean : Is1SymFound = False
+	Dim Is2SymFound As Boolean : Is2SymFound = False
+	Do While o1SymCurs.goRight(1, True) And ( Not o1SymCurs.Text.compareRegionEnds( o1SymCurs, o1SymCurs.End ) &lt;= 0 )
+		Dim symbol As String : symbol = Right( o1SymCurs.getString(), 1 )
+		If Right( o1SymCurs.getString(), 1 ) = &quot;—&quot; Then
+			IsDashFound = True
+			Exit Do
+		End If
+	Loop
+	
+	IF IsDashFound Then
+		Do While o1SymCurs.goRight(1, True) And ( Not o1SymCurs.Text.compareRegionEnds( o1SymCurs, o1SymCurs.End ) &lt;= 0 )
+			If IsLetter( Right( o1SymCurs.getString(), 1 ) ) Then
+				o2SymCurs.gotoRange( o1SymCurs, False )
+				Is1SymFound = True
+				o1SymCurs.collapseToEnd()
+				o1SymCurs.goLeft(1, True)
+				Exit Do
+			End If
+		Loop
+		IF Is1SymFound Then
+			Do While o2SymCurs.goRight(1, True) And ( Not o1SymCurs.Text.compareRegionEnds( o1SymCurs, o1SymCurs.End ) &lt;= 0 )
+				If IsLetter( Right( o2SymCurs.getString(), 1 ) ) Then
+					Is2SymFound = True
+					o2SymCurs.collapseToEnd()
+					o2SymCurs.goLeft(1, True)
+					Exit Do
+				End If
+			Loop
+		End If
+	End If	
+
+	&apos; формирования курсора для обработки	
+	oCurs.gotoRange( oCurs.getStart(), False )
+	oCurs.gotoRange(o1SymCurs.getEnd(), True)
+	
+	&apos; определение атрибутов 1-го и 2-го символа после тире с проблелами
+	Dim Is2Italic	As Boolean : Is2Italic	= False
+	Dim Is2Bold		As Boolean : Is2Bold	= False
+	
+	If o2SymCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then Is2Italic = True
+	If o2SymCurs.CharWeight = com.sun.star.awt.FontWeight.BOLD Then Is2Bold = True
+	
+	If ( Not Is2Italic ) And ( Not Is2Bold ) Then
+		oCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		oCurs.CharWeight = com.sun.star.awt.FontWeight.NORMAL
+	ElseIf Is2Italic And Is2Bold Then
+		o1SymCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+		o1SymCurs.CharWeight = com.sun.star.awt.FontWeight.BOLD
+	ElseIf Is2Bold Then
+		o1SymCurs.CharWeight = com.sun.star.awt.FontWeight.BOLD
+		o1SymCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+	ElseIf Is2Italic Then
+		o1SymCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+		o1SymCurs.CharWeight = com.sun.star.awt.FontWeight.NORMAL
+	End If
+End Sub
 
 &apos; =================================================================================================================================
 &apos; 								локализация диалога и сообщений Корректора текста
@@ -2526,11 +3027,12 @@ Sub InitTextCorrectorDlg()
 			.cboxHyphen.Label						= &quot;Заменить минус, тире на дефис в словах &quot;&quot;кое-что&quot;&quot;, &quot;&quot;куда-то&quot;&quot; и т.д.&quot;
 			.obSimpleHyphen.Label					= &quot;Неразрывный дефис&quot;
 			.obNoBreakHyphen.Label					= &quot;Простой дефис&quot;
-			.cboxMinusToDash.Label					= &quot;Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб, 1900-е и т.д.)&quot;
+			.cboxMinusToDash.Label					= &quot;Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб и т.д.)&quot;
 			.cboxMinusToDashBetweenNumbers.Label	= &quot;Заменить минус, дефис, тире на короткое тире между цифрами&quot;
 			.cboxKav.Label							= &quot;Заменить кавычки  &quot;&quot; &quot;&quot; и “ ” на  « »&quot;
 			.cboxPoints.Label						= &quot;Упорядочить многоточие&quot;
 			.cboxC.Label							= &quot;Заменить (c) на ©, (r) на ® и (TM) на ™&quot;
+			.cboxCRTMParNum.Label					= &quot;Обработать пробелы вокруг ©, ®, ™, №, §&quot;
 			.cboxMP.Label							= &quot;Удалить мягкие переносы&quot;
 			.cboDelPB.Label							= &quot;Удалить разрывы страниц&quot;
 			.cboDeleteAllLineShape.Label			= &quot;Удалить из документа все векторные линии (LineShape)&quot;
@@ -2538,10 +3040,21 @@ Sub InitTextCorrectorDlg()
 			.cboxRemoveSpaceInQuote.Label			= &quot;Удалить пробелы внутри кавычек, например: « слова » -&gt; «слова»&quot;
 			.cboxInsertNoBreakBlankToFIO.Label		= &quot;Вставить неразрывные пробелы между Фамилией и инициалами и наоборот&quot;
 			.cboxInsertNoBreakBlankToShortening.Label	= &quot;Вставить неразрывный пробел в сокращениях (т.д., т.п., т.к., т.н., т.ч. т.е., н.э., до Р.Х. ...)&quot;
-			.cboxInsertNoBreakBlankToDate.Label		= &quot;Вставка неразрывного пробела в датах (19 января ...)&quot;
+			.cboxInsertNoBreakBlankToDate.Label		= &quot;Вставка неразрывного пробела в датах (19 января, 22июня ...)&quot;
+			.cboxInsertSpaceBetweenNumLetter.Label	= &quot;Вставка пробела между русским словом и цифрой (30машин, домов25)&quot;
 			.fcMarkers.Label						= &quot; Нумерованные и маркированные списки &quot;
 			.cboxMarkerDashToSymbol.Label			= &quot;Заменить маркеры Тире и Дефисов в прямой речи на Тире или Дефис&quot;
-			.checkBoxDirectSpeech.Label			= &quot;Заменить дефисы и минусы в прямой речи на тире&quot;
+			.checkBoxDirectSpeech.Label				= &quot;Заменить дефисы и минусы в прямой речи на тире&quot;
+			.cboxGrad.Label							= &quot;Обработать °C&quot;
+			.cboxPercent.Label						= &quot;Обработать %&quot;
+			.cboxPlusMinus.Label					= &quot;Заменить символы +/- или +- перед числом знаком ±&quot;
+			.cboxParNomer.Label						= &quot;Удалить пробелы между знаками параграфа и номера: § § =&gt; §§, № № =&gt; №№&quot;
+			.fcReductions.Label						= &quot;Обработка сокращений слов, единиц веса, емкости, длины...&quot;
+			.cBoxReductions.Label					= &quot;Обработать сокращения единиц веса, емкости, длины, количества...&quot;
+			.cBoxReductionsAddress.Label			= &quot;Обработать сокращения в почтовых адресах (ул., пос., кв. ...)&quot;
+			.cBoxReductionsDoc.Label				= &quot;Обработать сокращения в документах (табл., рис., гл. ...)&quot;
+			.cBoxEndOfNumerals.Label				= &quot;Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)&quot;
+			.cboxWordNumeralEndings.Label			= &quot;Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII&quot;
 			
 			.cmbbtnOk.Label			= &quot;Принять&quot;
 			.cmdbtnNo.Label			= &quot;Отмена&quot;
@@ -2599,6 +3112,7 @@ Sub InitTextCorrectorDlg()
 			.cboxKav.Label							= &quot;Replace quotation marks &quot;&quot; &quot;&quot; and “ ” with « »&quot;
 			.cboxPoints.Label						= &quot;Arrange ellipsis&quot;
 			.cboxC.Label							= &quot;Replace (c) with ©, (r) with ®, and (TM) with ™&quot;
+			.cboxCRTMParNum.Label					= &quot;Process spaces around ©, ®, ™, №, §&quot;
 			.cboxMP.Label							= &quot;Remove soft hyphens&quot;
 			.cboDelPB.Label							= &quot;Remove page breaks&quot;
 			.cboDeleteAllLineShape.Label			= &quot;Remove all vector lines (LineShape) from document &quot;
@@ -2606,10 +3120,21 @@ Sub InitTextCorrectorDlg()
 			.cboxRemoveSpaceInQuote.Label			= &quot;Remove spaces inside quotation marks, for example: « words » → «words»&quot;
 			.cboxInsertNoBreakBlankToFIO.Label		= &quot;Insert non-breaking spaces between family names and initials&quot;
 			.cboxInsertNoBreakBlankToShortening.Label	= &quot;Insert non-breaking space in abbreviations (A.D., B.C., C.E., B.C.E., a.m., p.m., e.g., i.e., etc.)&quot;
-			.cboxInsertNoBreakBlankToDate.Label		 = &quot;Insert non-breaking spaces in dates (19 January …)&quot;
+			.cboxInsertNoBreakBlankToDate.Label		 = &quot;Insert non-breaking spaces in dates (January 19, July15…)&quot;
+			.cboxInsertSpaceBetweenNumLetter.Label	= &quot;Insert spaces between Russian words and numbers (30машин, домов25)&quot;
 			.fcMarkers.Label						= &quot; Numbered and bulleted lists &quot;
 			.cboxMarkerDashToSymbol.Label			= &quot;Replace list bullets made of em and en dashes and hyphens in direct speech with em and en dashes or hyphens&quot;
 			.checkBoxDirectSpeech.Label				= &quot;Replace en dashes and hyphen-minuses in direct speech with em dashes&quot;
+			.cboxGrad.Label							= &quot;Process °C&quot;
+			.cboxPercent.Label						= &quot;Process %&quot;
+			.cboxPlusMinus.Label					= &quot;Replace +/- or +- before a number with ±&quot;
+			.cboxParNomer.Label						= &quot;Remove spaces between symbols of paragraph and number: § § =&gt; §§, № № =&gt; №№&quot;
+			.fcReductions.Label						= &quot;Processing abbreviations, units of weight, volume, length ...&quot;
+			.cBoxReductions.Label					= &quot;Process abbreviations of units of weight, volume, length, quantity...&quot;
+			.cBoxReductionsAddress.Label			= &quot;Process abbreviations in mailing addresses (ул., пос., кв. etc.)&quot;
+			.cBoxReductionsDoc.Label				= &quot;Process documents reduction: (tab., Fig., Ch. …)&quot;
+			.cBoxEndOfNumerals.Label				= &quot;Process endings of numerals (1900-е, 60-ые, 5-ть etc.)&quot;
+			.cboxWordNumeralEndings.Label			= &quot;Process words ending with numerals: Восход-1, Apollo XIII&quot;
 			
 			.cmbbtnOk.Label			= &quot;Apply&quot;
 			.cmdbtnNo.Label			= &quot;Cancel&quot;

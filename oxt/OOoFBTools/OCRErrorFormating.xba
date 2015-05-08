@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="OCRErrorFormating" script:language="StarBasic">&apos;======================================================================================================================
-&apos; 				модуль обработки ошибок OCR форматирования: снятие курсива со знаков препинания, кавычек и скобок
+&apos; 		модуль обработки ошибок OCR форматирования: снятие курсива и/или bold со знаков препинания, кавычек и скобок
 &apos;======================================================================================================================
 
 Option Explicit
@@ -23,7 +23,7 @@ Sub OCRErrorFormatStart()
 	InitOCRErrorFormatingDlg()
 
 	With oOCREF.Model
-		.Height	= 56
+		.Height	= 65
 		.Width	= 219
 	End With
 	
@@ -44,7 +44,8 @@ Sub VerifyCheckOptions()
 	End If
 End Sub
 
-&apos; начало обработки
+&apos;******************************************************************
+&apos; 						начало обработки
 &apos;******************************************************************
 Sub OCRErrorFormatWorking()
 	&apos; записываем настройки диалога
@@ -64,42 +65,50 @@ Sub OCRErrorFormatWorking()
 	Dim aLeftList()		As String
 	Dim aRightList()	As String
 	If oOCREF.getControl( &quot;ChbBrackets&quot; ).State = 1 Then
-		&apos; обработка курсива на скобках в тексте, таблицах, сносках и текстовых врезок (ошибки OCR форматирования
+		&apos; обработка курсива и/или bold на скобках в тексте, таблицах, сносках и текстовых врезок (ошибки OCR форматирования
+		&apos;TODO!!!!!!!!!!
+		&apos; поиск разных видов скобок, и если они есть, то по ним формируем aLeftList() и aRightList()
+		&apos; это - для ускорения обработки!!!!!!!
 		aLeftList()		= Array( &quot;(&quot;, &quot;{&quot;, &quot;[&quot; )
 		aRightList()	= Array( &quot;)&quot;, &quot;}&quot;, &quot;]&quot; )
 		TextNoteTableTextFrameWorker( aLeftList(), aRightList(), oProgressBar )
 	End If
 	
 	If oOCREF.getControl( &quot;ChbQuotation&quot; ).State = 1 Then
-		&apos; обработка курсива на кавычках в тексте, таблицах, сносках и текстовых врезок (ошибки OCR форматирования
+		&apos; обработка курсива и/или bold на кавычках в тексте, таблицах, сносках и текстовых врезок (ошибки OCR форматирования
+		&apos;TODO!!!!!!!!!!
+		&apos; поиск разных видов кавычек, и если они есть, то по ним формируем aLeftList() и aRightList()
+		&apos; это - для ускорения обработки!!!!!!!
 		aLeftList()		= Array( &quot;«&quot; , &quot;“&quot;, &quot;„&quot; )
 		aRightList()	= Array( &quot;»&quot; , &quot;”&quot;, &quot;”&quot; )
 		TextNoteTableTextFrameWorker( aLeftList(), aRightList(), oProgressBar )
 	End If
 	
 	If oOCREF.getControl( &quot;ChbSignPunct&quot; ).State = 1 Then
-		&apos; обработка курсива на знаках препинания в тексте, таблицах, сносках и текстовых врезок (ошибки OCR форматирования)
+		&apos; обработка текста, таблиц, сносок и текстовых врезок: снятие/установка курсива и/или bold со знаков препинания (ошибки OCR форматирования)
 		SignPunctWorker( oProgressBar )
 	End If
 
+	If oOCREF.getControl( &quot;ChbDash&quot; ).State = 1 Then
+		&apos; обработка аттрибутов тире, пробелов вокруг него, и первого символа после него на предмет курсива и полужирного.
+		DashAttributeWorking()
+	End If
+
 	MsgBox sOCREF.sEndMessage, 64, sOCREF.sTitle
-	oProgressBar.end
+	oProgressBar.End
 End Sub
 
 &apos; =========================================================================================================================
 &apos; 						Обработка курсива скобок и/или кавычек в тексте, таблицах, сносках и текстовых врезках
 &apos; =========================================================================================================================
 
-&apos; обработка текста, таблиц, сносок и текстовых врезок: снятие курсива с заданных символов (скобки и кавычки) (ошибки OCR форматирования)
+&apos; обработка текста, таблиц, сносок и текстовых врезок: снятие курсива и/или bold с заданных символов (скобки и кавычки) (ошибки OCR форматирования)
 Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef oProgressBar As Object )
 	Dim oDoc		As Object	: oDoc			= ThisComponent
-	Dim oDocControl	As Object	: oDocControl	= oDoc.getCurrentController()
 	Dim vLSymSearch	As Variant	: vLSymSearch	= oDoc.createSearchDescriptor()
 	Dim vLSymFound	As Variant
 
 	&apos; левый поисковый символ
-	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name = &quot;CharPosture&quot;
 	With vLSymSearch
 		.SearchRegularExpression = False
 		.ValueSearch = False
@@ -108,15 +117,15 @@ Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef o
 	Dim i As Integer
 
 	oProgressBar.setValue( Iter ) : Iter = Iter + 1
-	For i=0 To UBound( aLeftList() )
+	For i = 0 To UBound( aLeftList() )
 		&apos; левый поисковый символ
 		vLSymSearch.SearchString = aLeftList( i )
 		&apos; ищем левый поисковый символ
 		vLSymFound = oDoc.FindFirst( vLSymSearch )
 		If Not IsNull(vLSymFound) Then 
 			Do
-				&apos; поиск и обработка курсива на скобках/кавычках
-				UnItalicBracketWorker( vLSymFound, aLeftList( i ), aRightList( i ) )
+				&apos; поиск и снятие курсива и/или bold со скобок/кавычек
+				UnItalicBoldBracketWorker( vLSymFound, aLeftList( i ), aRightList( i ) )
 				&apos; поиск следущего элемента
 				vLSymFound = oDoc.FindNext( vLSymFound.End, vLSymSearch )
 			Loop Until IsNull( vLSymFound ) &apos; выполняем хотя бы раз пока vLSymFound не пусто
@@ -127,8 +136,8 @@ Sub TextNoteTableTextFrameWorker( ByRef aLeftList(), ByRef aRightList(), ByRef o
 End Sub
 &apos;******************************************************************
 
-&apos; поиск и снятие курсива со скобок/кавычек
-Sub UnItalicBracketWorker( ByRef vLSymFound As Variant, sFindLeftSymbol As String, sFindRightSymbol As String )
+&apos; поиск и снятие курсива и/или bold со скобок/кавычек
+Sub UnItalicBoldBracketWorker( ByRef vLSymFound As Variant, sFindLeftSymbol As String, sFindRightSymbol As String )
 	&apos; нашли левый поисковый символ
 	Dim oLSymCurs	As Object : oLSymCurs = vLSymFound.getText().CreateTextCursorByRange( vLSymFound )
 	oLSymCurs.collapseToEnd()
@@ -203,7 +212,7 @@ Function FindFirstWordLetterAfterRightSymbol( ByRef oRSymCurs As Object ) As Boo
 	Do While oRSymCurs.goRight(1, True)
 		s = Right( oRSymCurs.getString(), 1 )
 		If s &lt;&gt; &quot;&quot; And s &lt;&gt; Chr(32) And s &lt;&gt; Chr(9) And s &lt;&gt; Chr(160) Then
-			If IsLetter( s ) OR IsNumber( s ) OR s = &quot;.&quot; OR s = &quot;!&quot; OR s = &quot;?&quot; Then &apos; нашли 1-й символ после правой скобки
+			If IsLetter( s ) OR IsNumber( s ) OR s = &quot;.&quot; OR s = &quot;!&quot; OR s = &quot;?&quot; Then &apos; нашли 1-й символ после правого поискового символа
 				FindFirstWordLetterAfterRightSymbol = True
 				Exit Function
 			End If
@@ -249,7 +258,7 @@ End Function
 &apos; =========================================================================================================================
 &apos; 						Обработка знаков препинания в тексте, таблицах, сносках и текстовых врезках
 &apos; =========================================================================================================================
-&apos; обработка текста, таблиц, сносок и текстовых врезок: снятие курсива со знаков препинания (ошибки OCR форматирования)
+&apos; обработка текста, таблиц, сносок и текстовых врезок: снятие/установка курсива и/или bold со знаков препинания (ошибки OCR форматирования)
 Sub SignPunctWorker( ByRef oProgressBar As Object )
 	Dim aSignPunctList() As String : aSignPunctList() = Array( &quot;,&quot;, &quot;.&quot;, &quot;:&quot;, &quot;;&quot;, &quot;!&quot;, &quot;?&quot; )
 	Dim oDoc As Object : oDoc = ThisComponent
@@ -257,18 +266,18 @@ Sub SignPunctWorker( ByRef oProgressBar As Object )
 	Dim vSignPunctFound		As Variant
 	Dim i As Integer
 	
-	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
-	SrchAttributes(0).Name = &quot;CharPosture&quot;
+&apos;	Dim SrchAttributes(0) As New com.sun.star.beans.PropertyValue
+&apos;	SrchAttributes(0).Name = &quot;CharPosture&quot;
 	With vSignPunctSearch
 		.SearchRegularExpression = False
-		.SetSearchAttributes( SrchAttributes() )
+&apos;		.SetSearchAttributes( SrchAttributes() )
 		.ValueSearch			 = False
 	End With
 		
 	oProgressBar.setValue( Iter ) : Iter = Iter + 1
 	
 	&apos; удаление курсива для знаков препинания в тексте
-	For i=0 To UBound( aSignPunctList() )
+	For i = 0 To UBound( aSignPunctList() )
 		&apos; знак пунктуации с курсивом
 		vSignPunctSearch.SearchString = aSignPunctList( i )
 
@@ -277,7 +286,7 @@ Sub SignPunctWorker( ByRef oProgressBar As Object )
 		If Not IsNull(vSignPunctFound) Then 
 			Do
 				&apos; поиск и обработка курсива на знаках препинания
-				UnItalicSignPunctuationWorker( vSignPunctFound )
+				UnItalicBoldSignPunctuationWorker( vSignPunctFound, aSignPunctList( i ) )
 				&apos; Поиск следущего элемента
 				vSignPunctFound = oDoc.FindNext( vSignPunctFound.End, vSignPunctSearch )
 			Loop Until IsNull( vSignPunctFound ) &apos; выполняем хотя бы раз пока vSignPunctFound не пусто
@@ -288,34 +297,56 @@ Sub SignPunctWorker( ByRef oProgressBar As Object )
 End Sub
 &apos;******************************************************************
 
-&apos; поиск и снятие курсива с знаков препинания
-Sub UnItalicSignPunctuationWorker( ByRef vLSymFound As Variant )
-	Dim oSignPunctCurs				As Object :	oSignPunctCurs				= vLSymFound.getText().CreateTextCursorByRange( vLSymFound )
-	Dim oStartSentenceLetterCurs	As Object :	oStartSentenceLetterCurs	= oSignPunctCurs.getText().CreateTextCursorByRange( oSignPunctCurs )
+&apos; поиск и снятие курсива и/или bold с знаков препинания
+Sub UnItalicBoldSignPunctuationWorker( ByRef vLSymFound As Variant, WorkSymbol As String )
+	Dim oSignPunctCurs As Object : oSignPunctCurs = vLSymFound.getText().CreateTextCursorByRange( vLSymFound )
 	
-	&apos; ищем первый символ после найденного знака препинания
-	Dim FirstWordLetterAfterSignPunctuation	As Boolean : FirstWordLetterAfterSignPunctuation	= FindFirstWordLetterAfterRightSymbol( oSignPunctCurs )
-	&apos; ищем 1-й символ Начала предложения
-	Dim StartOfSentenceLetter				As Boolean : StartOfSentenceLetter					= oStartSentenceLetterCurs.gotoStartOfSentence( False )
-	oStartSentenceLetterCurs.goRight(1, True)
-
 	&apos; Обработка заданных поисковых символов
-	Dim IsSoSLetterItalic		As Boolean : IsSoSLetterItalic		= False : 
-	Dim IsFirstLetterAsItalic	As Boolean : IsFirstLetterAsItalic	= False
-	Dim oCurs As Object : oCurs = oSignPunctCurs.getText().CreateTextCursorByRange( oSignPunctCurs )
-	oCurs.collapseToEnd() : oCurs.goLeft(1, True)
-	If oCurs.CharPosture					= com.sun.star.awt.FontSlant.ITALIC Then IsFirstLetterAsItalic	= True
-	If oStartSentenceLetterCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC Then IsSoSLetterItalic		= True
-	If Not IsSoSLetterItalic And Not IsFirstLetterAsItalic Then
-		&apos; убираем курсив
-		oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
-	ElseIf IsSoSLetterItalic And Not IsFirstLetterAsItalic Then
-		&apos; первый символ начала предложения - с курсивом, а первый символ после знака препинания - без курсива
-		Dim s As String : s = Right( oCurs.getString(), 1 )
-		If s = &quot;,&quot; Or s = &quot;.&quot; Or s = &quot;;&quot; Or s = &quot;:&quot; Then
+	Dim IsSoSLetterItalic		As Boolean : IsSoSLetterItalic		= False &apos;1-й символ Начала предложения (для символов , : ;)
+	Dim IsSoSLetterBold			As Boolean : IsSoSLetterBold		= False &apos;1-й символ Начала предложения (для символов , : ;)
+	Dim IsStartOfWordItalic		As Boolean : IsStartOfWordItalic	= False &apos;1-й символ слова до найденного знака препинания (для символов . ? !)
+	Dim IsStartOfWordBold		As Boolean : IsStartOfWordBold		= False &apos;1-й символ слова до найденного знака препинания (для символов . ? !)
+		
+	If WorkSymbol = &quot;.&quot; Or WorkSymbol = &quot;!&quot; Or WorkSymbol = &quot;?&quot; Then &apos; . ? !
+		&apos; ищем 1-й символ Начала предложения (для символов . ? !)
+		Dim oStartSentenceLetterCurs As Object : oStartSentenceLetterCurs = oSignPunctCurs.getText().CreateTextCursorByRange( oSignPunctCurs )
+		oStartSentenceLetterCurs.gotoStartOfSentence( False ) : oStartSentenceLetterCurs.goRight(1, True)
+		If oStartSentenceLetterCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC	Then IsSoSLetterItalic	= True
+		If oStartSentenceLetterCurs.CharWeight	= com.sun.star.awt.FontWeight.BOLD	Then IsSoSLetterBold	= True
+	
+		&apos; работа с курсивом: Если начало предложения — не курсив, то и (. ? !) в конце его — тоже должны быть не курсив.
+		If Not IsSoSLetterItalic Then
 			oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
-		ElseIf s = &quot;!&quot; Or s = &quot;?&quot; Then
+		Else
+			oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+		End If
+		
+		&apos; работа с полужирным: Если начало предложения — не bold, то и точка в конце его — тоже должна быть не bold.
+		If Not IsSoSLetterBold Then
+			oSignPunctCurs.CharWeight = com.sun.star.awt.FontWeight.NORMAL
+		Else
+			oSignPunctCurs.CharWeight = com.sun.star.awt.FontWeight.BOLD
+		End If
+	Else &apos;, ; :
+		&apos; ищем 1-й символ после найденного знака препинания (для символов , : ;)
+		Dim oStartOfWordCurs As Object : oStartOfWordCurs = oSignPunctCurs.getText().CreateTextCursorByRange( oSignPunctCurs )
+		oStartOfWordCurs.gotoStartOfWord( False )
+		oStartOfWordCurs.collapseToEnd() : oStartOfWordCurs.goRight(1, True)
+		If oStartOfWordCurs.CharPosture	= com.sun.star.awt.FontSlant.ITALIC	Then IsStartOfWordItalic	= True
+		If oStartOfWordCurs.CharWeight	= com.sun.star.awt.FontWeight.BOLD	Then IsStartOfWordBold		= True
+	
+		&apos; работа с курсивом:
+		If Not IsStartOfWordItalic Then
 			oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.NONE
+		ElseIf IsStartOfWordItalic Then
+			oSignPunctCurs.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+		End If
+		
+		&apos; работа с полужирным:
+		If Not IsStartOfWordBold Then
+			oSignPunctCurs.CharWeight = com.sun.star.awt.FontWeight.NORMAL
+		ElseIf IsStartOfWordBold Then
+			oSignPunctCurs.CharWeight = com.sun.star.awt.FontWeight.BOLD
 		End If
 	End If
 End Sub
@@ -363,6 +394,7 @@ Sub InitOCRErrorFormatingDlg()
 			.ChbBrackets.Label	= &quot;Скобки: (), {}, []&quot;
 			.ChbQuotation.Label	= &quot;Кавычки: «», “”, „”&quot;
 			.ChbSignPunct.Label	= &quot;Знаки препинания&quot;
+			.ChbDash.Label		= &quot;Пробелы вокруг тире, и первый символ после него&quot;
 			.cmdbtnWork.Label	= &quot;Обработать&quot;
 			.cmdbtnCancel.Label	= &quot;Отмена&quot;
 		End With
@@ -371,6 +403,7 @@ Sub InitOCRErrorFormatingDlg()
 			.ChbBrackets.Label	= &quot;Brackets: (), {}, []&quot;
 			.ChbQuotation.Label	= &quot;Quotation marks: «», “”, „”&quot;
 			.ChbSignPunct.Label	= &quot;Punctuation marksn&quot;
+			.ChbDash.Label		= &quot;Spaces around en/em-dash and first character after it&quot;
 			.cmdbtnWork.Label	= &quot;Process&quot;
 			.cmdbtnCancel.Label	= &quot;Cancel&quot;
 		End With

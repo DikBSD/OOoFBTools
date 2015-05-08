@@ -286,10 +286,12 @@ Function IsCirillicLetter( sVal As String ) As Boolean
 	&apos;А-Я, а-я, Ё,ё : 1040-1071, 1072-1103, 1025,1105 &apos; (s&gt;=1040 And s&lt;=1103) Or s=1025 Or s=1105
 	&apos; Кирилица основная : 1024-1171, 1174,1175, 1178-1181, 1186,1187, 1198-1203, 1208-1211, 1240,1241, 1256,1257
 	IsCirillicLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=1024 And s&lt;=1171) Or s=1174 Or s=1175 Or (s&gt;=1178 And s&lt;=1181) Or s=1186 Or s=1187 Or _
-		(s&gt;=1198 And s&lt;=1203) Or (s&gt;=1208 And s&lt;=1211) Or s=1240 Or s=1241 Or s=1256 Or s=1257 Then
-		IsCirillicLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=1024 And s&lt;=1171) Or s=1174 Or s=1175 Or (s&gt;=1178 And s&lt;=1181) Or s=1186 Or s=1187 Or _
+			(s&gt;=1198 And s&lt;=1203) Or (s&gt;=1208 And s&lt;=1211) Or s=1240 Or s=1241 Or s=1256 Or s=1257 Then
+			IsCirillicLetter = True
+		End If
 	End If
 End Function
 
@@ -297,9 +299,11 @@ End Function
 Function IsSmallGeneralCirillicLetter( sVal As String ) As Boolean
 	&apos;а-я,ё : 1072-1103, 1105
 	IsSmallGeneralCirillicLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=1072 And s&lt;=1103) Or s=1105 Then
-		IsSmallGeneralCirillicLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=1072 And s&lt;=1103) Or s=1105 Then
+			IsSmallGeneralCirillicLetter = True
+		End If
 	End If
 End Function
 
@@ -307,9 +311,11 @@ End Function
 Function IsCapitalGeneralCirillicLetter( sVal As String ) As Boolean
 	&apos;А-Я,Ё : 1040-1071, 1025
 	IsCapitalGeneralCirillicLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=1040 And s&lt;=1071) Or s=1025 Then
-		IsCapitalGeneralCirillicLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=1040 And s&lt;=1071) Or s=1025 Then
+			IsCapitalGeneralCirillicLetter = True
+		End If
 	End If
 End Function
 
@@ -321,11 +327,13 @@ Function IsLatinLetter( sVal As String ) As Boolean
 	&apos; Расширенная латиница-B : 399-539, 552,553,601,658
 	&apos; Расширенные латинские дополнения : 7680-7929
 	IsLatinLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=65 And s&lt;=90) Or (s&gt;=97 And s&lt;=122) Or _
-		(s&gt;=256 And s&lt;=383) Or (s&gt;=399 And s&lt;=539) Or s=552 Or s=553 Or s=601 Or s=658 Or _
-		(s&gt;=7680 And s&lt;=7929) Then
-		IsLatinLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=65 And s&lt;=90) Or (s&gt;=97 And s&lt;=122) Or _
+			(s&gt;=256 And s&lt;=383) Or (s&gt;=399 And s&lt;=539) Or s=552 Or s=553 Or s=601 Or s=658 Or _
+			(s&gt;=7680 And s&lt;=7929) Then
+			IsLatinLetter = True
+		End If
 	End If
 End Function
 
@@ -343,9 +351,11 @@ End Function
 Function IsCapitalGeneralLatinLetter( sVal As String ) As Boolean
 	&apos; Основная латиница A-Z : 65-90
 	IsCapitalGeneralLatinLetter = False
-	Dim s : s = Asc(sVal)
-	If s &gt;= 65 And s &lt;= 90 Then
-		IsCapitalGeneralLatinLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If s &gt;= 65 And s &lt;= 90 Then
+			IsCapitalGeneralLatinLetter = True
+		End If
 	End If
 End Function
 
@@ -354,9 +364,11 @@ Function IsGreekLetter( sVal As String ) As Boolean
 	&apos; Греческий основной : 902-974
 	&apos; Греческий расширенный : 7936-8190
 	IsGreekLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=902 And s&lt;=974) Or (s&gt;=7936 And s&lt;=8190) Then
-		IsGreekLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=902 And s&lt;=974) Or (s&gt;=7936 And s&lt;=8190) Then
+			IsGreekLetter = True
+		End If
 	End If
 End Function
 
@@ -365,9 +377,11 @@ Function IsHebrewLetter( sVal As String ) As Boolean
 	&apos; Иврит основной : 1456-1524
 	&apos; Иврит расширенный : 64288-64335
 	IsHebrewLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=1456 And s&lt;=1524) Or (s&gt;=64288 And s&lt;=64335) Then
-		IsHebrewLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=1456 And s&lt;=1524) Or (s&gt;=64288 And s&lt;=64335) Then
+			IsHebrewLetter = True
+		End If
 	End If
 End Function
 
@@ -378,25 +392,27 @@ Function IsArabicLetter( sVal As String ) As Boolean
 	&apos; Арабский декоративный-A : 64336-65010
 	&apos; Арабский декоративный-B : 65152-65276
 	IsArabicLetter = False
-	Dim s : s = Asc(sVal)
-	If (s&gt;=1548 And s&lt;=1621) Or (s&gt;=1632 And s&lt;=1790) Or _
-		(s&gt;=64336 And s&lt;=65010) Or (s&gt;=65152 And s&lt;=65276) Then
-		IsArabicLetter = True
+	If sVal &lt;&gt; &quot;&quot; Then
+		Dim s : s = Asc(sVal)
+		If (s&gt;=1548 And s&lt;=1621) Or (s&gt;=1632 And s&lt;=1790) Or _
+			(s&gt;=64336 And s&lt;=65010) Or (s&gt;=65152 And s&lt;=65276) Then
+			IsArabicLetter = True
+		End If
 	End If
 End Function
 
 &apos; какой язык у символа sVal
 Function GetLang( sVal As String ) As String
 	GetLang = &quot;Unknow&quot;
-	If IsCirillicLetter(sVal)=True Then
+	If IsCirillicLetter(sVal) = True Then
 		GetLang = &quot;Cirillic&quot;
-	ElseIf IsLatinLetter(sVal)=True Then
+	ElseIf IsLatinLetter(sVal) = True Then
 		GetLang = &quot;Latin&quot;
-	ElseIf IsGreekLetter(sVal)=True Then
+	ElseIf IsGreekLetter(sVal) = True Then
 		GetLang = &quot;Greek&quot;
-	ElseIf IsHebrewLetter(sVal)=True Then
+	ElseIf IsHebrewLetter(sVal) = True Then
 		GetLang = &quot;Hebrew&quot;
-	ElseIf IsArabicLetter(sVal)=True Then
+	ElseIf IsArabicLetter(sVal) = True Then
 		GetLang = &quot;Arabic&quot;
 	End If
 End Function
@@ -2052,8 +2068,7 @@ End Function
 
 &apos; Запустить указанный файл
 Sub FileExecute( sFilePath As String )
-	Dim oSSE As Object
-	oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	Dim oSSE As Object : oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
 	oSSE.execute( sFilePath, &quot;&quot;, 0)
 End Sub
 
@@ -2062,43 +2077,50 @@ End Sub
 &apos; ====================================================================================
 Sub _UnoDelete()
 	&apos; удаление выделенного текста
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Delete&quot;, &quot;&quot;, 0, Array())
 End Sub
 
 Sub _UnoCut()
 	&apos; вырезать выделенный текст в буфер
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Cut&quot;, &quot;&quot;, 0, Array())
 end sub
 
 sub _UnoCopy()
 	&apos; копировать выделенный текст в буфер
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Copy&quot;, &quot;&quot;, 0, Array())
 end sub
 
 sub _UnoPaste()
 	&apos; вставить из буфера текст
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Paste&quot;, &quot;&quot;, 0, Array())
 End Sub
 
 Sub _UnoInsertFootnote()
 	&apos; вставить сноску
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:InsertFootnote&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+Sub _UnoInsertEndnote()
+	&apos; вставить концевую сноску
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:InsertEndnote&quot;, &quot;&quot;, 0, Array())
 End Sub
 
 Sub _UnoSwBackspace()
 	&apos; Backspace
-	dim document   as object : document   = ThisComponent.CurrentController.Frame
-	dim dispatcher as object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	Dim document   As Object : document   = ThisComponent.CurrentController.Frame
+	Dim dispatcher As Object : dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:SwBackspace&quot;, &quot;&quot;, 0, Array())
 End Sub
 

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="BuildFootEndNote" script:language="StarBasic">REM  *****  BASIC  *****
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="BuildFootEndNote" script:language="StarBasic">&apos; =========================================================================================
+&apos; 						модуль Генератора сносок и гиперссылок
+&apos; =========================================================================================
 
 Option Explicit
 
@@ -296,7 +298,13 @@ Sub MakeFN( ByRef oDoc As Object, ByRef oViewCursor As Object, ByRef oBookMarks 
 	&apos; очистить стиль символа - на случай верхнего регистра и т.д.
 	ClearSymbolFormat()
 	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
-	_UnoDelete() : _UnoInsertFootnote() : _UnoPaste()
+	_UnoDelete()
+	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFootnote&quot; ).State Then
+		_UnoInsertFootnote()
+	Else
+		_UnoInsertEndnote()
+	End If
+	_UnoPaste()
 	If oBookMarks.hasByName( sConstBookMarkSimple ) Then _UnoDeleteBookMark( sConstBookMarkSimple )
 End Sub
 
@@ -306,7 +314,7 @@ End Sub
 &apos; выделяем номер из строки 
 Function GetNumberFromString( sString As String ) As String
 	Dim i As Integer : Dim sNumber As String : sNumber = &quot;&quot;
-	For i=1 To Len( sString )
+	For i = 1 To Len( sString )
 		Dim sChar As String : sChar = Mid( sString, i, 1 )
 		If IsNumeric( sChar ) Then sNumber = sNumber &amp; sChar
 	Next i
@@ -700,7 +708,13 @@ Sub InsertCurrentFootNote( oViewCursor As Object, sConstBookMarkFNNumber As Stri
 	&apos; очистить стиль символа - на случай верхнего регистра и т.д.
 	ClearSymbolFormat()
 	&apos; удалить выделенный номер примечания, вставить очередную сноску, вставить текст сноски и удаляем последний пустой абзац
-	_UnoDelete() : _UnoInsertFootnote() : _UnoPaste() : 
+	_UnoDelete()
+	If oBuildFootEndNoteDlg.GetControl( &quot;optbtnFootnote&quot; ).State Then
+		_UnoInsertFootnote()
+	Else
+		_UnoInsertEndnote()
+	End If
+	_UnoPaste()
 	If oViewCursor.isAtStartOfLine() Then _UnoSwBackspace()
 	&apos; переводим курсор в зону поиска очередного номера сноски
 	GoToViewCursorToBookMark( oViewCursor, sConstBookMarkFNNumber, True )
