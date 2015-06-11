@@ -620,7 +620,7 @@ Sub SetScientificType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
-		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 0	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -668,7 +668,7 @@ Sub SetScientificType()
 		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
 		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
 		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
-		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 0	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
@@ -698,7 +698,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;cboxInsertSpaceBPunctAndMDH&quot;).State = 1	&apos; вставить пробел между знаком препинания и минусом, тире или дефисом
 		.GetControl(&quot;cboxInsertSpaceBPunctAndSym&quot;).State = 1	&apos; вставить пробел после знака препинания
 		.GetControl(&quot;cboxInsertNoBreakBlankToDate&quot;).State = 1	&apos; вставить неразрывный пробел в датах (19 января ... )
-		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 1	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
+		.GetControl(&quot;cboxInsertSpaceBetweenNumLetter&quot;).State = 0	&apos; вставить пробел между русским словом и цифрой (30машин, на25)
 
 		&apos; Работа с разорванными дефисами и переносами символом ¶ 
 		.GetControl(&quot;cboxWordDefisPara&quot;).State = 1			&apos; Удалить разрывы для дефисов и переносов слов
@@ -746,7 +746,7 @@ Sub SetTechnicType()
 		.GetControl(&quot;cBoxReductionsAddress&quot;).State = 1	&apos; Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
 		.GetControl(&quot;cBoxReductionsDoc&quot;).State = 1		&apos; Обработать сокращения в документах (табл., рис., гл. ...)
 		.GetControl(&quot;cBoxEndOfNumerals&quot;).State = 1		&apos; Обработать окончания числительных (1900-е, 60-ые, 5-ть. ...)
-		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 1	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
+		.GetControl(&quot;cboxWordNumeralEndings&quot;).State = 0	&apos; Обработать слова с окончаниями-числительными: Восход-1, Apollo — XIII
 	End With
 	ControlsEnabled()
 End Sub
@@ -1277,9 +1277,20 @@ Sub TextCorrectorDlgOk()
 	&apos;Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
 	If bReductionsAddress = True Then
 		&apos;Вставка неразрывного пробела после сокращения в адресе
+		&apos; город не обрабатывемс, иначе год (г.) склеивается со словом за ним.
+		&apos;With oReplace
+		&apos;	.SearchString = &quot;([:space:]+)(г\.)[:space:]*([A-ZА-ЯЁ])&quot;
+		&apos;	.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+		&apos;End With
+		&apos;oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;([:space:]+)(г\.|пос\.|село|дер\.|пл\.|ул\.|пер\.|дом|д\.|корп\.|кв\.|офис|оф\.|каф\.|ауд\.)[:space:]*([0-9]|[A-ZА-ЯЁ])&quot;
-			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+			.SearchString = &quot;([:space:]+)(д\.)[:space:]*([0-9])&quot;
+			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:space:]+)(пос\.|село|дер\.|пл\.|ул\.|пер\.|дом|корп\.|кв\.|офис|оф\.|каф\.|ауд\.)[:space:]*([0-9]|[A-ZА-ЯЁ])&quot;
+			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 	End If
@@ -1291,7 +1302,7 @@ Sub TextCorrectorDlgOk()
 		&apos;Вставка неразрывного пробела после сокращения в документе
 		With oReplace
 			.SearchString = &quot;([:space:]+)(гл\.|стр\.|рис\.|илл\.|табл\.)[:space:]*([:alnum:])&quot;
-			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
+			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 	End If
@@ -1334,6 +1345,9 @@ Sub TextCorrectorDlgOk()
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
 	
+	&apos; замена комбинации простых и неразрывных пробелов на 1 неразрывный
+&apos;	ReplaceSpaceToNotBreakSpace( oDoc, oReplace)
+		
 	&apos; ===========================================================================================================
 	&apos; 													Разное
 	&apos; ===========================================================================================================
@@ -1408,8 +1422,8 @@ Sub TextCorrectorDlgOk()
 		End With
 		oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;([:digit:]{1,})[\x20|\xA0|\x09]*%[\x20|\xA0]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][\x20|\xA0|\x09]*(в|ю|ов|тов|ую|ную|ных|ной)&quot;
-			.ReplaceString = &quot;$1%&quot; &amp; chr(8209) &amp; &quot;$2&quot; &apos; неразрывнывй дефис
+			.SearchString = &quot;([:digit:]{1,})[\x20|\xA0|\x09]*%[\x20|\xA0]*[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; chr(8212) &amp; &quot;][\x20|\xA0|\x09]*(в|ю|ов|тов|ую|ную|ных|ной)(\.|,|:|;|»|&quot;&quot;|!|\?|\x20|\xA0|\x09)&quot;
+			.ReplaceString = &quot;$1%&quot; &amp; chr(8209) &amp; &quot;$2$3&quot; &apos; неразрывнывй дефис
 		End With
 		oDoc.ReplaceAll(oReplace)
 	End If
@@ -1944,10 +1958,12 @@ End Sub
 &apos; Удаление пробелов перед знаком препинания
 Sub RemoveSpaceBeforePunct( oDoc, oReplace )
 	With oReplace
-		&apos;.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])[&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]+([.,:;!?…])&quot;
-		&apos;.ReplaceString = &quot;$1$2&quot;
-		&apos;.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[:space:]{1,}([.,!?:;])([&quot; &amp; chr(32) &amp; &quot;|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
-		.SearchString = &quot;(\&gt;|[\)}\]”\&quot;&quot;»])[\x09|\x20]{1,}([.,!?:;])([\x09|\x20|&quot; &amp; chr(160) &amp; &quot;]{1,})&quot;
+		.SearchString = &quot;([\)}\]”\&quot;&quot;»])[\x09|\x20]{1,}([.,!?:;])([\x09|\x20|\x0A]{1,}|$)&quot;
+		.ReplaceString = &quot;$1$2$3&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	With oReplace
+		.SearchString = &quot;([а-яА-ЯёЁa-zA-Z])[\x09|\x20]{1,}([.,!?:;])([\x09|\x20|\x0A]{1,}|$)&quot;
 		.ReplaceString = &quot;$1$2$3&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -3154,4 +3170,15 @@ Sub InitTextCorrectorDlg()
 	End If
 End Sub
 
+
+&apos; замена комбинации простых и неразрывных пробелов на 1 неразрывный
+Sub ReplaceSpaceToNotBreakSpace( ByRef oDoc As Object, ByRef oReplace As Object)
+	With oReplace
+&apos;		.SearchString = &quot;(\x20+&quot; &amp; chr(160) &amp; &quot;+)&quot;
+		.SearchString = &quot;[:space:]{2,}&quot;
+		.ReplaceString =  chr(160)
+	End With
+	oDoc.ReplaceAll(oReplace)
+End Sub		
+		
 </script:module>

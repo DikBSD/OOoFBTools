@@ -118,11 +118,18 @@ Sub ExportToFB21DlgCanceled()
 	oExportToFB21Dlg.endExecute()
 End Sub
 
-&apos;***************************************************************************
+&apos;**************************************************************************
 &apos; запуск экспорта документа в fb2 формат
 Sub ExportDoc()
-	&apos; Есть ли хоть одно fb2 свойство в документе?
+	Dim oDoc As Object : oDoc = ThisComponent
 	Dim nVar As Integer
+	&apos; нужно ли задавать данные описания книги по умолчанию?
+	If bDefaultDescription Then
+		SetDefaultBookDescription()
+		SaveDocIsModified( oDoc )
+	End If
+	
+	&apos; Есть ли хоть одно fb2 свойство в документе?
 	If Not IsFB2NotFlagPropertyIsExsist() Then
 		nVar = MsgBox( sETFB2DD.sFB2ExportFB2NotFB2Property &amp; chr(10) &amp; sETFB2DD.sFB2ExportFB2StartFB2PropEditor, _
     					16 + 1 + 128, sConvertorName )
@@ -189,7 +196,6 @@ Sub ExportDoc()
 		End If
 	End If
 	
-	Dim oDoc As Object : oDoc = ThisComponent
 	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
 &apos;	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount )
 	oProgressBar.setValue( 0 )

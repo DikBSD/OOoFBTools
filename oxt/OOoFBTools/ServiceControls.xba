@@ -49,6 +49,8 @@ Public bValidate As Boolean
 Public nListSpaceCount As Integer &apos; число неразрывных пробелов для иммитации отступов во вложенных списках
 &apos; Удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе
 Public bNotUsedBookmarks As Boolean
+&apos; описание книги по-умолчанию
+Public bDefaultDescription As Boolean
 
 Private oServiceDlg		As Object
 Private sHeaderTVA		As String
@@ -61,6 +63,26 @@ Private sHVList()			As String &apos; выравнивание по высоте
 Private sTFList()			As String &apos; вид экспорта врезок
 Private sGraphList()		As String &apos; форматы для преобразования графики
 Private sSpaceList()		As String &apos; число неразрывных пробелов для иммитации отступов во вложенных списках
+
+&apos; для хранения сообщений для диалога Настроек
+Type tServiceDlgData
+	sNotes			As String &apos; Примечания
+	sFootNotes		As String &apos; Сноски
+	sCommentaries	As String &apos; Комментарии
+	
+	sOnTop			As String &apos; Сверху
+	sOnCentre		As String &apos; По Центру
+	sFromBottom		As String &apos; Снизу
+	
+	sTable			As String &apos; Таблица
+	sText			As String &apos; Текст
+	sCite			As String &apos; Цитата
+	sStructure		As String &apos; Структура
+	
+	sInitializing	As String &apos; Инициализация:
+End Type
+
+Public sServD As tServiceDlgData
 
 
 Sub ServiceDlgExec()
@@ -333,6 +355,8 @@ Sub SetDefaultSettingsToControls()
 		
 		&apos; Удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе
 		.Model.cbNotUsedBookmarks.State = 0
+		&apos; описание книги по-умолчанию
+		.Model.cbDefaultDescription.State = 0
 	End With
 End Sub
 
@@ -413,6 +437,9 @@ Sub SetDefaultSettingsToVars()
 	
 	&apos; число неразрывных пробелов для иммитации отступов во вложенных списках
 	nListSpaceCount = 3
+	
+	&apos; описание книги по-умолчанию
+	bDefaultDescription = False
 End Sub
 
 &apos; Настройки из файла - в переменные
@@ -612,6 +639,9 @@ Sub SetSettingsToVars( sCurrentLine )
 		&apos; Удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе
 		Case &quot;cbNotUsedBookmarks&quot;
 			bNotUsedBookmarks = sSetting(1)
+		&apos; описание книги по-умолчанию
+		Case &quot;cbDefaultDescription&quot;
+			bDefaultDescription = sSetting(1)
 	End Select
 End Sub
 
@@ -666,5 +696,193 @@ Function GetFormat( sSetting As String) As String
 			GetFormat =  &quot;png&quot;
 	End Select
 End Function
+
+&apos; =============================================================================
+&apos; 					локализация диалога Настроек
+&apos; =============================================================================
+&apos; инициализация сообщений диалога диалога Настроек в зависимости от локали
+Sub InitServiceDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sServD
+			.sNotes			= &quot;Примечания&quot;
+			.sFootNotes		= &quot;Сноски&quot;
+			.sCommentaries	= &quot;Комментарии&quot;
+			.sOnTop			= &quot;Сверху&quot;
+			.sOnCentre		= &quot;По Центру&quot;
+			.sFromBottom	= &quot;Снизу&quot;
+			.sTable			= &quot;Таблица&quot;
+			.sText			= &quot;Текст&quot;
+			.sCite			= &quot;Цитата&quot;
+			.sStructure		= &quot;Структура&quot;
+			.sInitializing	= &quot;Инициализация:&quot;
+		End With
+	Else
+		With sServD
+			.sNotes			= &quot;Notes&quot;
+			.sFootNotes		= &quot;FootNotes&quot;
+			.sCommentaries	= &quot;Commentaries&quot;
+			.sOnTop			= &quot;On Top&quot;
+			.sOnCentre		= &quot;On Chentre&quot;
+			.sFromBottom	= &quot;From Bottom&quot;
+			.sTable			= &quot;Table&quot;
+			.sText			= &quot;Text&quot;
+			.sCite			= &quot;Citation&quot;
+			.sStructure		= &quot;Structure&quot;
+			.sInitializing	= &quot;Initializing:&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога Настроек в зависимости от локали
+Sub InitServiceDlg()
+	&apos; инициализация сообщений диалога Настроек в зависимости от локали
+	InitServiceDlgMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oServiceDlg.getModel
+			.Title	= &quot;Настройки fb2 Конвертера&quot;
+			.fcFootNotes.Label			= &quot; Сноски и Концевые Сноски &quot;
+			.lblNotesExportType.Label	= &quot;Экспорт сносок и концевых сносок&quot;
+			.obtnFENoteCommon.Label		= &quot;В общий блок&quot;
+			.obtnFENoteSeparately.Label	= &quot;В разные блоки&quot;
+			.fcFN.Label					= &quot; Сноски &quot;
+			.fcEN.Label					= &quot; Концевые Сноски &quot;
+			.cboxSpace.Label			= &quot;Пробел перед сноской&quot;
+			.cboxENSpace.Label			= .cboxSpace.Label
+			.lblStyle.Label				= &quot;Стиль:&quot;
+			.lblENStyle.Label			= .lblStyle.Label
+			.lblNotesTitle.Label		= &quot;Заголовок блока сносок:&quot;
+			.lbEndlNotesTitle.Label		= .lblNotesTitle.Label
+			.fcPoem.Label				= &quot; Стихи &quot;
+			.cboxPoemTitle.Label		= &quot;Собирать Заголовки Стихов в одну строку&quot;
+			.cboxPoemAuthor.Label		= &quot;Собирать Авторов Стихов в одну строку&quot;
+			.cboxPoemSubtitle.Label		= &quot;Собирать Подзаголовки Стихов в одну строку&quot;
+			.fcSubtitle.Label			= &quot; Подзаголовок (SubTitle) &quot;
+			.cboxSubtitle.Label			= &quot;Собирать Подзаголовки в одну строку&quot;
+			.fcEpigraph.Label			= &quot; Эпиграфы &quot;
+			.cboxEpigAuthor.Label		= &quot;Собирать Авторов Эпиграфа в одну строку&quot;
+			.fcTables.Label				= &quot; Таблицы &quot;
+			.lblHeadersAllign.Label		= &quot;Выравнивание Заголовков:&quot;
+			.lblThValign.Label			= &quot;По высоте (th valign):&quot;
+			.lblLineAllign.Label		= &quot;Выравнивание Строк:&quot;
+			.lblTdValign.Label			= &quot;По высоте (td valign):&quot;
+			.fcCite.Label				= &quot; Цитаты &quot;
+			.cboxCiteAuthor.Label		= &quot;Собирать Авторов Цитаты в одну строку&quot;
+			.cboxCiteSubtitle.Label		= &quot;Собирать Подзаголовки Цитаты в одну строку&quot;
+			.fcAnnotation.Label			= &quot; Аннотации &quot;
+			.cboxAnnotationSubtitle.Label	= &quot;Собирать Подзаголовки Аннотации в одну строку&quot;
+			.fcFB2Create.Label			= &quot; Созданный fb2-файл &quot;
+			.cboxValidate.Label			= &quot;Валидация созданного fb2-файла&quot;
+			.cboxFB2Execute.Label		= &quot;Запустить созданный fb2-файл (Просмотр)&quot;
+			.cboxFB2Execute.HelpText	= &quot;Сгенерированный fb2-файл запускается через приложение, ассоциированное с fb2-расширением файла&quot;
+			.fcTextFrame.Label			= &quot; Текстовые Врезки &quot;
+			.lblTextFrameSaveAs.Label	= &quot;Экспортировать как:&quot;
+			.fcGraphics.Label			= &quot; Графические объекты &quot;
+			.cboxImageTitle.Label		= &quot;Сохранять название, как атрибут &quot;&quot;title&quot;&quot;&quot;
+			.cboxExportGraphics.Label	= &quot;Экспортировать Графические Объекты&quot;
+			.lblToFormats.Label			= &quot;Преобразовывать форматы:&quot;
+			.lblJPEG.Label				= &quot;jpg, jpeg, как:&quot;
+			.lblPNG.Label				= &quot;png, как:&quot;
+			.lblGif.Label				= &quot;gif, как:&quot;
+			.lblTif.Label				= &quot;tif, tiff, bmp, как:&quot;
+			.lblAny.Label				= &quot;другие форматы, как:&quot;
+			.lblOLE.Label				= &quot;формулы и диаграммы, как:&quot;
+			.fcJPEG.Label				= &quot;Экспорт качества jpeg&quot;
+			.lbColorMode.Label			= &quot;Цветовой режим:&quot;
+			.obtnJPEGColor.Label		= &quot;Цвет&quot;
+			.obtnJPEGGrayscale.Label	= &quot;Серый&quot;
+			.lbQuality.Label			= &quot;Качество:&quot;
+			.fcMisk.Label				= &quot; Разное &quot;
+			.cboxCorrect.Label			= &quot;Обработка &quot;&quot;проблемных&quot;&quot; символов (&amp;, &lt;, &gt;)&quot;
+			.cboxCorrect.HelpText		= &quot;При включении этой опции увеличивается время экспорта!&quot;
+			.cboxDelEL.Label			= &quot;Удалять пустые строки&quot;
+			.cboxDocLinks.Label			= &quot;Обработка ссылок внутри документа&quot;
+			.cboxDocLinks.HelpText		= .cboxCorrect.HelpText
+			.cboxCourrierNew.Label		= &quot;Шрифт &apos;Courier New&apos;, как определитель листингов программ&quot;
+			.cboxSaveUTF8.Label			= &quot;Сохранять fb2-файл в utf-8, если в тексте есть маркеры&quot;
+			.cboxTextField.Label		= &quot;Экспорт текстовых полей&quot;
+			.OKBtn.Label		= &quot;OK&quot;
+			.CancelBtn.Label	= &quot;Отмена&quot;
+			.DefaultlBtn.Label	= &quot;Настройки по умолчанию&quot;
+			.fcListIndent.Label	= &quot;Вложенные списки&quot;
+			.lbSpaceCount.Label	= &quot;Число пробелов для отступа:&quot;
+			
+			.cbNotUsedBookmarks.Label	= &quot;Удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе&quot;
+			.cbDefaultDescription.Label	= &quot;Задать описание книги по-умолчанию&quot;
+		End With
+	Else
+		With oServiceDlg.getModel
+			.Title	= &quot;Settings of fb2 Converter&quot;
+			.fcFootNotes.Label			= &quot; Footnotes and EndNotes &quot;
+			.lblNotesExportType.Label	= &quot;Export Footnotes and EndNotes&quot;
+			.obtnFENoteCommon.Label		= &quot;To common block&quot;
+			.obtnFENoteSeparately.Label	= &quot;To separately blocks&quot;
+			.fcFN.Label					= &quot; Footnotes &quot;
+			.fcEN.Label					= &quot; EndNotes &quot;
+			.cboxSpace.Label			= &quot;Blank before a Footnote&quot;
+			.cboxENSpace.Label			= .cboxSpace.Label
+			.lblStyle.Label				= &quot;Style:&quot;
+			.lblENStyle.Label			= .lblStyle.Label
+			.lblNotesTitle.Label		= &quot;Heading of the Block of Footnotes:&quot;
+			.lbEndlNotesTitle.Label		= .lblNotesTitle.Label
+			.fcPoem.Label				= &quot; Poetry, Poems &quot;
+			.cboxPoemTitle.Label		= &quot;Collect the Poem Titles to One Line&quot;
+			.cboxPoemAuthor.Label		= &quot;Collect the Poem Authors to One Line&quot;
+			.cboxPoemSubtitle.Label		= &quot;Collect the Poem Subtitles to One Line&quot;
+			.cboxSubtitle.Label			= &quot;Collect the Subtitles to One Line&quot;
+			.fcSubtitle.Label			= &quot; SubTitle &quot;
+			.fcEpigraph.Label			= &quot; Epigraphs &quot;
+			.cboxEpigAuthor.Label		= &quot;Collect the Epigraphs Authors to One Line&quot;
+			.fcTables.Label				= &quot; Tables &quot;
+			.lblHeadersAllign.Label		= &quot;Allign the Headers:&quot;
+			.lblThValign.Label			= &quot;On Height (th valign):&quot;
+			.lblLineAllign.Label		= &quot;Allign The Lines:&quot;
+			.lblTdValign.Label			= &quot;On Height (td valign):&quot;
+			.fcCite.Label				= &quot; Quotation, Citation, Cite &quot;
+			.cboxCiteAuthor.Label		= &quot;Collect the Cite Authors to One Line&quot;
+			.cboxCiteSubtitle.Label		= &quot;Collect the Cite Subtitles to One Line&quot;
+			.fcAnnotation.Label			= &quot; Annotations &quot;
+			.cboxAnnotationSubtitle.Label	= &quot;Collect Annotation Subtitles to One Line&quot;
+			.fcFB2Create.Label			= &quot; Created fb2-file &quot;
+			.cboxValidate.Label			= &quot;Validate created fb2-file&quot;
+			.cboxFB2Execute.Label		= &quot;Start created fb2-file (Preview)&quot;
+			.cboxFB2Execute.HelpText	= &quot;The generated fb2-file is started through the application, associated with fb2-expansion of a File&quot;
+			.fcTextFrame.Label			= &quot; Text Frames &quot;
+			.lblTextFrameSaveAs.Label	= &quot;Export As:&quot;
+			.fcGraphics.Label			= &quot; Graphic Objects &quot;
+			.cboxImageTitle.Label		= &quot;Save the Name, as Attribute &quot;&quot;title&quot;&quot;&quot;
+			.cboxExportGraphics.Label	= &quot;Export Graphics Objects&quot;
+			.lblToFormats.Label			= &quot;Transform the Formats:&quot;
+			.lblJPEG.Label				= &quot;jpg, jpeg, As:&quot;
+			.lblPNG.Label				= &quot;png, As:&quot;
+			.lblGif.Label				= &quot;gif, As:&quot;
+			.lblTif.Label				= &quot;tif, tiff, bmp, As:&quot;
+			.lblAny.Label				= &quot;Any Formats, As:&quot;
+			.lblOLE.Label				= &quot;Formulas and Diagrams, As:&quot;
+			.fcJPEG.Label				= &quot;JPEG Quality&quot;
+			.lbColorMode.Label			= &quot;ColorMode:&quot;
+			.obtnJPEGColor.Label		= &quot;Color&quot;
+			.obtnJPEGGrayscale.Label	= &quot;Grayscale&quot;
+			.lbQuality.Label			= &quot;Quality:&quot;
+			.fcMisk.Label				= &quot; Misk &quot;
+			.cboxCorrect.Label			= &quot;Processing &quot;&quot;problem&quot;&quot; Symbols (&amp;, &lt;, &gt;)&quot;
+			.cboxCorrect.HelpText		= &quot;At inclusion of this option Time of export increases!&quot;
+			.cboxDelEL.Label			= &quot;Remove Empty Paragraphs&quot;
+			.cboxDocLinks.Label			= &quot;Processing Footnotes inside Document&quot;
+			.cboxDocLinks.HelpText		= .cboxCorrect.HelpText
+			.cboxCourrierNew.Label		= &quot;Font &apos;Courier New&apos;, as the determinant of program listings&quot;
+			.cboxSaveUTF8.Label			= &quot;Save a fb2-file in utf-8 if in the Text there are Markers&quot;
+			.cboxTextField.Label		= &quot;Export the Text Fileds&quot;
+			.OKBtn.Label		= &quot;OK&quot;
+			.CancelBtn.Label	= &quot;Cancel&quot;
+			.DefaultlBtn.Label	= &quot;Default Settings&quot;
+			.fcListIndent.Label	= &quot;Nested Lists&quot;
+			.lbSpaceCount.Label	= &quot;Spaces to indent:&quot;
+			
+			.cbNotUsedBookmarks.Label	= &quot;Remove Bookmarks which refers to nothing (not used) in all docement&quot;
+			.cbDefaultDescription.Label	= &quot;Set default book description&quot;
+		End With
+	End If
+End Sub
 
 </script:module>

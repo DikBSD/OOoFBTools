@@ -21,7 +21,23 @@ Private IsFirstStep As Boolean	&apos; True, если сделано нажати
 Private IsFirstCut	As Boolean	&apos; True, если сделано первое нажатие кнопки вырезать в буфер
 
 Private Const sConstFootNoteFindFromBookMark	As String = &quot;_ooo_foot_note_find_from_dikbsd_&quot;	&apos; временная закладка
+Private Const sConstFootNoteFindFromBookMarkPos As String = &quot;_ooo_foot_note_find_from_pos_dikbsd_&quot;	&apos; временная закладка
 Private Const sConstFootNoteListBookMark		As String = &quot;_ooo_foot_note_list_dikbsd_&quot;		&apos; временная закладка
+
+
+&apos; для хранения сообщений для работы со сносками
+Type tFindUpIndexMakerData
+	sToContinueSearch			As String &apos; Достигнут конец документа. Следущее слово не найдено. Продолжить поиск с начала?
+	sToContinuePreviousSearch	As String &apos; Достигнуто начало документа. Следущее слово не найдено. Продолжить поиск с конца?
+	sImpossibleToFind			As String &apos; Невозможно найти слово в выделенном объекте.
+	sTitle						As String &apos; Интерактивное создание сносок
+	sMarkOK						As String &apos; Выделение цветом номеров сносок закончено
+	sProgress					As String &apos; Выделение цветом номеров сносок:
+	sNumberInUpIndex			As String &apos; цифры в верхнем индексе
+	sText						As String &apos; Текст
+End Type
+
+Public sFNUIMD As tFindUpIndexMakerData
 
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////////////////
 Sub FootNoteInteractiveMakerDlg_windowActivated(oEv)
@@ -40,6 +56,7 @@ Sub FootNoteInteractiveMakerDlg_windowClosing(oEv)
 	bWorkStart	= False	&apos; готовность к новому запуску диалога
 	&apos; удаляем временные закладки
 	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMark )
+	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMarkPos )
 	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteListBookMark )
 End Sub
 
@@ -180,7 +197,7 @@ Sub CutSelectedTextInBufferAndGoToFootNoteUpIndex()
 		Dim otxtCursor : otxtCursor = ThisComponent.Text.createTextCursor()
 		otxtCursor.gotoRange( ovCurs.getStart(), False )
 		Dim i As Integer
-		For i=0 To 19
+		For i = 0 To 19
 			otxtCursor.gotoPreviousParagraph( False )
 		Next i
 		ovCurs.gotoRange( otxtCursor, False )
@@ -207,15 +224,29 @@ End Sub
 &apos; 										2. вставка текста сноски из буфер обмена
 &apos; ===========================================================================================================================
 Sub InsertNoteText()
-	&apos; удаляем временную неактуальную уже закладку номера сноски и ставим актуальную
+	&apos; удаляем временные неактуальныю уже закладки для номера сноски и ставим актуальные
 	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMark )
+	DeleteAllBookMarkWithTemplate( ThisComponent.getBookmarks(), sConstFootNoteFindFromBookMarkPos )
 	_UnoInsertBookmark( sConstFootNoteFindFromBookMark )
+	&apos; ставим временную закладку справа от места положения номера сноски
+	ovCurs.collapseToEnd()
+	_UnoInsertBookmark( sConstFootNoteFindFromBookMarkPos )
+	&apos; переход назад на закладку номера сноски
+	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
+	If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
+		GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
+	End If
 	&apos; очистить стиль символа - на случай верхнего регистра и т.д.
 	ClearSymbolFormat()
 	&apos; удалить выделенные остатки текста сноски, вставить очередную сноску, вставить текст сноски
-	_UnoDelete() : 	_UnoInsertFootnote() : 	_UnoPaste()
+	_UnoDelete()
+	If oFootNoteInteractiveMakerDlg.GetControl( &quot;optbtnFootnote&quot; ).State Then
+		_UnoInsertFootnote()
+	Else
+		_UnoInsertEndnote()
+	End If
+	_UnoPaste()
 	&apos; переход на обрабатываемый список сносок, если есть закладка sConstFootNoteListBookMark
-	Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
 	If oBookMarks.hasByName( sConstFootNoteListBookMark ) Then
 		GoToViewCursorToBookMark( ovCurs, sConstFootNoteListBookMark, True )
 		&apos; переходим к первому символу/цифре после номера сноски (пропускаеи цифры в верхнем индексе и пробелы сначала абзаца)
@@ -233,10 +264,10 @@ Sub FindPreviousFootNoteUpIndex()
 	bStart = False &apos; признак начала документа
 	
 	If Not IsFirstStep Then &apos; только для случая, когда после вырезания текста в буфер ни разу не производили поиск
-		&apos; переход на закладку sConstFootNoteFindFromBookMark, если она есть
+		&apos; переход на закладку sConstFootNoteFindFromBookMarkPos, если она есть
 		Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
-		If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
-			GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
+		If oBookMarks.hasByName( sConstFootNoteFindFromBookMarkPos ) Then
+			GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMarkPos, True )
 		End If
 	End If
 
@@ -334,10 +365,10 @@ Sub FindNextFootNoteUpIndex()
 	bEnd = False &apos; признак конца документа
 	
 	If Not IsFirstStep Then &apos; только для случая, когда после вырезания текста в буфер ни разу не производили поиск
-		&apos; переход на закладку sConstFootNoteFindFromBookMark, если она есть
+		&apos; переход на закладку sConstFootNoteFindFromBookMarkPos, если она есть
 		Dim oBookMarks As Object : oBookMarks = ThisComponent.getBookmarks()
-		If oBookMarks.hasByName( sConstFootNoteFindFromBookMark ) Then
-			GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMark, True )
+		If oBookMarks.hasByName( sConstFootNoteFindFromBookMarkPos ) Then
+			GoToViewCursorToBookMark( ovCurs, sConstFootNoteFindFromBookMarkPos, True )
 		End If
 	End If
 
@@ -597,6 +628,77 @@ Sub ClearSpaceNumberColor()
 	oDisp.executeDispatch(oDoc, &quot;.uno:BackColor&quot;, &quot;&quot;, 0, Array())
 End Sub
 
-&apos;***************************************************************************
+&apos; ==================================================================================================
+&apos; 								локализация интерактивной вставки сносок
+&apos; ==================================================================================================
+&apos; инициализация сообщений интерактивной вставки сносок в зависимости от локали
+Sub InitFindUpIndexFootNoteMakerDataMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sFNUIMD
+			.sToContinueSearch	= &quot;Достигнут конец документа.&quot; &amp; chr(10) &amp; &quot;Ничего не найдено.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+									&quot;Продолжить поиск с начала?&quot;
+			.sToContinuePreviousSearch	= &quot;Достигнуто начало документа.&quot; &amp; chr(10) &amp; &quot;Ничего не найдено.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+									&quot;Продолжить поиск с конца?&quot;
+			.sImpossibleToFind	= &quot;Невозможно найти слово в выделенном объекте.&quot;
+			.sTitle				= &quot;Интерактивное создание сносок&quot;
+			.sMarkOK			= &quot;Выделение цветом номеров сносок закончено.&quot;
+			.sProgress			= &quot;Разметка цветом:&quot;
+			.sNumberInUpIndex	= &quot;цифры в верхнем индексе&quot;
+			.sText				= &quot;Текст&quot;
+		End With
+	Else
+		With sFNUIMD
+			.sToContinueSearch	= &quot;The end of the document is reached. &quot; &amp; chr (10) &amp; &quot;Up Index is not found.&quot; &amp; chr (10) &amp; chr (10) &amp; _
+									&quot;To continue search from the beginning?&quot;
+			.sToContinuePreviousSearch	= &quot;The start of the document is reached. &quot; &amp; chr (10) &amp; &quot;Up Index is not found.&quot; &amp; chr (10) &amp; chr (10) &amp; _
+									&quot;To continue search from the end?&quot;
+			.sImpossibleToFind	= &quot;It is impossible to find a Word in the allocated Object.&quot;
+			.sTitle				= &quot;Interactive FootNotes building&quot;
+			.sMarkOK			= &quot;The Color Separation the Footnotes Numbers is finished.&quot;
+			.sProgress			= &quot;Color Marking:&quot;
+			.sNumberInUpIndex	= &quot;Numers in Upper Index&quot;
+			.sText				= &quot;the Text&quot;
+		End With
+	End If
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; инициализация диалога интерактивной вставки сносок по шаблону в зависимости от локали
+Sub InitFindUpIndexFootNoteMakerDlg()
+	&apos; инициализация сообщений интерактивной вставки сносок в зависимости от локали
+	InitFindUpIndexFootNoteMakerDataMessage()
+	
+	oFootNoteInteractiveMakerDlg.getModel.Title	= sFNUIMD.sTitle
+	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oFootNoteInteractiveMakerDlg.getModel
+			.selecFNTextCmdBtn.Label		= &quot;0. Выделить текст сноски&quot;
+			.cutSelectedTextCmdBtn.Label	= &quot;1. Вырезать в буфер&quot;
+			.insertFootNoteCmdBtn.Label		= &quot;2. Вставить сноску&quot;
+			.findPrevUpIndexCmdBtn.Label	= &quot;Предыдущий номер сноски&quot;
+			.findNextUpIndexCmdBtn.Label	= &quot;Следующий номер сноски&quot;
+			.MarkNumbersUpIndexCmdBtn.HelpText	= &quot;Выделение цветом номеров сносок для наглядности&quot; 
+			.lblNumberInFNListTemplate.Label	= &quot;Шаблон для № примечания в списке:&quot;
+			
+			.lblFENoteType.Label			= &quot;Тип генерируемых сносок:&quot;
+			.optbtnFootnote.Label			= &quot;Сноска&quot;
+			.optbtnEndnote.Label			= &quot;Концевая сноска&quot;
+		End With
+	Else
+		With oFootNoteInteractiveMakerDlg.getModel
+			.selecFNTextCmdBtn.Label		= &quot;0. Select Footnote Text&quot;
+			.cutSelectedTextCmdBtn.Label	= &quot;1. Cut to Buffer&quot;
+			.insertFootNoteCmdBtn.Label		= &quot;2. Insert FotNote&quot;
+			.findPrevUpIndexCmdBtn.Label	= &quot;Previous FootNote №&quot;
+			.findNextUpIndexCmdBtn.Label	= &quot;Next FootNote №&quot;
+			.MarkNumbersUpIndexCmdBtn.HelpText	= &quot;Color mark thr Footnotes Numbers for clarity&quot; 
+			.lblNumberInFNListTemplate.Label	= &quot;the Pattern for № Notes in the List:&quot;
+			
+			.lblFENoteType.Label			= &quot;Type generated footnotes:&quot;
+			.optbtnFootnote.Label			= &quot;Footnote&quot;
+			.optbtnEndnote.Label			= &quot;EndNote&quot;
+		End With
+	End If
+End Sub
 
 </script:module>
