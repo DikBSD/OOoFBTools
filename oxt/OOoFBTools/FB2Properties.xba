@@ -115,12 +115,12 @@ Sub FB2PropertiesEditorDlgExec()
 	With oFB2PropertiesDlg.Model
 		If .obtnFB21.State = True Or .obtnFB21.State = 1 Then
 			InitFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-		ElseIf .obtnFB22.State = True Or .obtnFB22.State = 1 Then
-			InitFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
 		ElseIf .obtnFB2LibRusEc.State = True Or .obtnFB2LibRusEc.State = 1 Then
 			InitFBLibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
-		Else
+		ElseIf .obtnFB2Flibusta.State = True Or .obtnFB2Flibusta.State = 1 Then
 			InitFBFlibusta() &apos; Инициализация жанрами схемы FictionBook 2 Flibusta
+		Else
+			InitFBUnion() &apos; Инициализация жанрами объединенной схемы FictionBook 2 (LibRusEc &amp; Flibusta)
 		End If
 	End With
 	oProgressBar.setValue(5)
@@ -208,17 +208,6 @@ Sub InitFB21()
 End Sub
 
 &apos;***************************************************************************
-&apos; Инициализация жанрами схемы FictionBook 2.2
-Sub InitFB22()
-	GenreFB22()
-
-	With oFB2PropertiesDlg.Model
-		.Title = sFB2PED.sFB2PropEditorDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
-		.GenreComboBox.StringItemList = sGLN()
-	End With
-End Sub
-
-&apos;***************************************************************************
 &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
 Sub InitFBLibRusEc()
 	GenreFB2LibRusEc()
@@ -236,6 +225,17 @@ Sub InitFBFlibusta()
 
 	With oFB2PropertiesDlg.Model
 		.Title = sFB2PED.sFB2PropEditorDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB2Flibusta
+		.GenreComboBox.StringItemList = sGLN()
+	End With
+End Sub
+
+&apos;***************************************************************************
+&apos; Инициализация жанрами Объединенной схемы FictionBook 2 (LibRusEc &amp; Flibusta)
+Sub InitFBUnion()
+	GenreFB2Union()
+
+	With oFB2PropertiesDlg.Model
+		.Title = sFB2PED.sFB2PropEditorDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB2Union
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 End Sub
@@ -259,7 +259,7 @@ Function LoadFB2PropEditorFormSettings() As Boolean
 			If sLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные
 				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
-				If sSetting(0) = &quot;obtnFB21&quot; Or sSetting(0) = &quot;obtnFB22&quot; Or sSetting(0) = &quot;obtnFB2LibRusEc&quot; Or sSetting(0) = &quot;obtnFB2Flibusta&quot; Then
+				If sSetting(0) = &quot;obtnFB21&quot; Or sSetting(0) = &quot;obtnFB2LibRusEc&quot; Or sSetting(0) = &quot;obtnFB2Flibusta&quot; Or sSetting(0) = &quot;obtnFB2Union&quot; Then
 					oFB2PropertiesDlg.getControl( sSetting(0) ).setState( sSetting(1) )
 				ElseIf sSetting(0) = &quot;X&quot; Then
 					nX = sSetting(1)
@@ -295,7 +295,7 @@ Sub SaveFB2PropEditorDlgSettings()
 	ctrl = oFB2PropertiesDlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			If ctrl(i).Model.Name = &quot;obtnFB21&quot; Or ctrl(i).Model.Name = &quot;obtnFB22&quot; Or ctrl(i).Model.Name = &quot;obtnFB2LibRusEc&quot; Or ctrl(i).Model.Name = &quot;obtnFB2Flibusta&quot; Then
+			If ctrl(i).Model.Name = &quot;obtnFB21&quot; Or ctrl(i).Model.Name = &quot;obtnFB2LibRusEc&quot; Or ctrl(i).Model.Name = &quot;obtnFB2Flibusta&quot; Or ctrl(i).Model.Name = &quot;obtnFB2Union&quot; Then
 				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 			End If
 		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
@@ -533,7 +533,7 @@ Function IsGenreExsistInArray() As Boolean
 		Dim i As Integer
 		Dim oGenreList : oGenreList = .getControl(&quot;lbGenre&quot;).Items
 		For i=0 To UBound( oGenreList )
-			If InStr( oGenreList(i), .getControl(&quot;GenreComboBox&quot;).SelectedItem ) = 1 Then
+			If InStr( oGenreList(i), Trim (.getControl(&quot;GenreComboBox&quot;).SelectedItem ) ) = 1 Then
 				IsGenreExsistInArray = True
 				Exit For
 			End If
@@ -559,7 +559,7 @@ Sub _BookGenreAdd()
 	With oFB2PropertiesDlg
 		Dim oGenreComboBox	As Object : oGenreComboBox	= .getControl(&quot;GenreComboBox&quot;)
 		Dim oListOfGenres	As Object : oListOfGenres	= .getControl(&quot;lbGenre&quot;)
-		Dim sGenreWithMatch	As String : sGenreWithMatch	= IsNewGenre()
+		Dim sGenreWithMatch	As String : sGenreWithMatch	= Trim ( IsNewGenre() )
 		&apos; проверяем, нет ли в списке добавляемого Жанра
 		If sGenreWithMatch &lt;&gt; &quot;&quot; Then
 			oListOfGenres.addItem( sGenreWithMatch, oListOfGenres.getItemCount() )
@@ -631,7 +631,7 @@ End Sub
 &apos;***************************************************************************
 &apos; генерация строки Жанра с Match
 Function MakeGenreWithMatchString(Genre As String, Match As String) As String
-	MakeGenreWithMatchString = Genre &amp; &quot; | &quot; &amp; Match &amp; &quot;%&quot;
+	MakeGenreWithMatchString = Trim(Genre) &amp; &quot; | &quot; &amp; Trim(Match) &amp; &quot;%&quot;
 End Function
 
 &apos;***************************************************************************
@@ -1631,7 +1631,7 @@ Sub InsertGEToGenreBox( oEvent )
 	If InStr(sCR, chr(10)) &gt; 0 Then
 		sCR = ReplaceInString( sCR, chr(10), &quot;&quot;, False )
 	End If
-	oFB2PropertiesDlg.getControl(&quot;GenreComboBox&quot;).selectItem( sCR, True )
+	oFB2PropertiesDlg.getControl(&quot;GenreComboBox&quot;).selectItem( Space(8) &amp; sCR, True )
 End Sub
 
 &apos; ===========================================================================================================================
@@ -1830,5 +1830,87 @@ End Sub
 &apos;						&quot;mo&quot;,&quot;nl&quot;,&quot;no&quot;,&quot;pl&quot;,&quot;pt&quot;,&quot;ru&quot;,&quot;sa&quot;,&quot;sk&quot;,&quot;sl&quot;,&quot;sq&quot;,&quot;sv&quot;,&quot;tg&quot;,&quot;tr&quot;,&quot;tt&quot;,&quot;uk&quot;,_
 &apos;						&quot;uz&quot;,&quot;vi&quot;,&quot;zh&quot;)
 &apos;End Sub
+
+&apos; ===========================================================================
+&apos; 			Инициализация жанров в зависимости от выбранной Схемы
+&apos; ===========================================================================
+
+&apos; жанры схемы fb2.1 - Инициализация жанрами схемы FictionBook 2.1
+Sub GenreFB21()
+	Dim fb21GenresFileName As String
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		fb21GenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-schema/fb21_genres_ru.txt&quot;
+	Else
+		fb21GenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-schema/fb21_genres_en.txt&quot;
+	End If
+	
+	makeGenreList( fb21GenresFileName )
+	
+End Sub
+
+&apos; жанры схемы fb2 LibRusEc - Инициализация жанрами схемы FictionBook 2
+Sub GenreFB2LibRusEc()
+	
+	Dim librusecGenresFileName As String
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		librusecGenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-librusec-schema/librusec_genres_ru.txt&quot;
+	Else
+		librusecGenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-librusec-schema/librusec_genres_en.txt&quot;
+	End If
+	
+	makeGenreList( librusecGenresFileName )
+
+End Sub	
+
+&apos; жанры схемы fb2 Flibusta - Инициализация жанрами схемы FictionBook 2
+Sub GenreFB2Flibusta()
+	Dim FlibustaGenresFileName As String
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		FlibustaGenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-flibusta-schema/flibusta_genres_ru.txt&quot;
+	Else
+		FlibustaGenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-flibusta-schema/flibusta_genres_en.txt&quot;
+	End If
+	
+	makeGenreList( FlibustaGenresFileName )
+
+End Sub
+
+&apos; жанры Объединенной схемы fb2 (LibRusEc &amp; Flibusta) - Инициализация жанрами схемы FictionBook 2
+Sub GenreFB2Union()
+	Dim UnionaGenresFileName As String
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		UnionaGenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-union-schema/union_genres_ru.txt&quot;
+	Else
+		UnionaGenresFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-union-schema/union_genres_en.txt&quot;
+	End If
+	
+	makeGenreList( UnionaGenresFileName )
+
+End Sub
+
+&apos; формирования выпадающегно списка жанров в зависимости от схемы
+Sub makeGenreList( ByRef FileName As String )
+	Dim oSFA As Object	: oSFA	= createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+	Dim oFS As Object	: oFS	= oSFA.openFileRead ( ConvertToURL ( FileName ) )
+	Dim oTIS As Object	: oTIS	= createUnoService ( &quot;com.sun.star.io.TextInputStream&quot; )
+	oTIS.setInputStream (oFS)
+	
+	Dim GLN() As String
+	AddNewItemToArray1( GLN(), &quot;&quot; )
+	Dim Genre As String
+	Do While ( NOT oTIS.isEOF() )
+		Genre = oTIS.readLine()
+		If Genre &lt;&gt; &quot;&quot; Then
+			If Left( Genre, 1 ) &lt;&gt; &quot; &quot; Then
+				&apos; Группа жанров
+				AddNewItemToArray1( GLN(), UCase( Genre ) )
+			Else
+				&apos; Жанры
+				AddNewItemToArray1( GLN(), Genre )
+			End If
+		End If
+	Loop
+	sGLN = GLN()
+End Sub
 
 </script:module>

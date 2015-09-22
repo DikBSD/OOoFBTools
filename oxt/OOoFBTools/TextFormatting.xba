@@ -223,6 +223,11 @@ Sub UnUnderlineCheckBoxCheck()
 	CheckBoxesCheck()
 End Sub
 
+Sub UnCapitelCheckBoxCheck()
+	&apos; доступность кнопки старта форматирования документа
+	CheckBoxesCheck()
+End Sub
+
 &apos; графика
 Sub EmbedGraphicsIntoDocumentCheckBoxCheck()
 	&apos; доступность кнопки старта форматирования документа
@@ -287,6 +292,7 @@ Sub SetControlsEnabled()
 	UnUnderlineCheckBoxCheck()
 	CharacterWidthScalingFactorCheckBoxCheck()
 	CharSpacingCheckBoxCheck()
+	UnCapitelCheckBoxCheck()
 	
 	&apos; для графики
 	EmbedGraphicsIntoDocumentCheckBoxCheck()
@@ -491,6 +497,25 @@ Sub formatAllParagrahps()
 		If .UnUnderlineCheckBox.State = 1 Then
 			oAllDocCursor.CharUnderline = com.sun.star.awt.FontUnderline.NONE
 		End If
+		
+		&apos; Убрать капитель (требуется много времени)
+		If .UnCapinelCheckBox.State = 1 Then
+			&apos;0 - НЕТ
+			&apos;1 - ПРОПИСНЫЕ
+			&apos;2 - строчные
+			&apos;3 - Имя
+			&apos;4 - Капитель
+			&apos; обработка капителя для текста
+			UncapitelText( oDoc, 0 )
+			&apos; для сносок
+			UncapitelFootEndNote( oDoc, 0, True )
+			&apos; для концевых сносок
+			UncapitelFootEndNote( oDoc, 0, False )
+			&apos; обработка капителя для текстовых врезок
+			UncapitelTextFrame( oDoc, 0 )
+			&apos; обработка капителя для таблиц
+			UncapitelTable( oDoc, 0 )
+		End If
 	End With
 End Sub
 
@@ -625,6 +650,7 @@ Sub InitTextFormattingDlg()
 			.UnUnderlineCheckBox.Label					= &quot;Убрать подчеркивания в тексте&quot;
 			.CharacterWidthScalingFactorCheckBox.Label	= &quot;100% масштаб символов по ширине&quot;
 			.CharSpacingCheckBox.Label					= &quot;Убрать разрядку&quot;
+			.UnCapinelCheckBox.Label					= &quot;Убрать капитель (требуется много времени)&quot;
 			
 			.GraphicsFrameControl.Label					= &quot;Графика&quot;
 			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Встроить всю графику-ссылки в документ&quot;
@@ -683,6 +709,7 @@ Sub InitTextFormattingDlg()
 			.UnUnderlineCheckBox.Label					= &quot;Remove underline from the text&quot;
 			.CharacterWidthScalingFactorCheckBox.Label	= &quot;100% scale character width&quot;
 			.CharSpacingCheckBox.Label					= &quot;Remove discharge&quot;
+			.UnCapinelCheckBox.Label					= &quot;Remove Capitel (it takes a many time)&quot;
 			
 			.GraphicsFrameControl.Label					= &quot;Graphics&quot;
 			.EmbedGraphicsIntoDocumentCheckBox.Label	= &quot;Embedding all graphics-links into document&quot;

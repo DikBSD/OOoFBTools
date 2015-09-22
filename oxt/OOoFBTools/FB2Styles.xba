@@ -180,7 +180,31 @@ Sub FB2StylesDlgStart()
 	
 	&apos; считаем положение диалога из файла настроек
 	ReadFB2StylesDlgSettings( sFB2StylesDlgSettings )
-
+	
+	&apos; формируем Подзаголовки
+	Dim oDoc		As Object	: oDoc		= ThisComponent
+	Dim oReplace	As Object	: oReplace	= oDoc.createReplaceDescriptor()
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^[:space:]*(\*)[:space:]*(\*)[:space:]*(\*)[:space:]*$&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(160) &amp; &quot;$2&quot; &amp; chr(160) &amp; &quot;$3&quot;
+	End With
+	oDoc.replaceAll(oReplace)
+	With oReplace
+		.SearchRegularExpression = True
+		.SearchString = &quot;^\*&quot; &amp; chr(160) &amp; &quot;\*&quot; &amp; chr(160) &amp; &quot;\*$&quot;
+	End With
+	Dim fb2 As FB2StylesType : fb2 = GetLocaFB2Styles()
+	sStyleSubTitle = RenameRedefiedSubTitleStylesToOOoSubtitleIsNeed( fb2.SubTitle )
+	
+	Dim vFound As Variant : vFound = oDoc.findNext( oDoc.getText().getStart(), oReplace )
+	If Not IsNull( vFound ) Then
+		Do While ( Not IsNull( vFound ) )
+			vFound.Parastylename = sStyleSubTitle
+			vFound = oDoc.findNext( vFound.getEnd(), oReplace )
+		Loop
+	End If
+	
 	bWorkEnd = False
 	
 	Dim oList : oList = createUnoListener( &quot;FB2StylesDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
@@ -196,6 +220,16 @@ Sub FB2StylesDlgStart()
 	&apos; записываем настройки диалога
 	SaveSettings( sFB2StylesDlgSettings, oFB2StylesDlg )
 	oFB2StylesDlg.setVisible( False )
+End Sub
+
+&apos; ***********************************************************************************************
+&apos; перключение &quot;вкладок&quot; групп fb2 стилей
+Sub ChangePage(o)
+	If o.Source.Model.Name = &quot;optbtnStyle&quot; Then
+		oFB2StylesDlg.Model.Step = 1
+	ElseIf o.Source.Model.Name = &quot;optbtnOptions&quot; Then
+		oFB2StylesDlg.Model.Step = 2
+	End If
 End Sub
 
 &apos; ***********************************************************************************************
@@ -215,8 +249,8 @@ Function MakeFB2StylesToDoc() As Boolean
 	Dim oParaStyles			As Object			: oParaStyles	= oFamilies.getByName(&quot;ParagraphStyles&quot;)
 	
 	&apos; загружаем стили в документ, если свойство документа _fb2_FB2StylesIsLoaded не задано
-	If ( GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; OR ( Not oParaStyles.hasByName( fb2Style.Cite ) ) )  Then
-	    &apos; Проверка OR ( Not oParaStyles.hasByName( fb2Style.Cite ) ) нужна для случая, когда панель fb2 стилей
+	&apos;If ( GetStringProperty( _fb2_FB2StylesIsLoaded ) = &quot;&quot; OR ( Not oParaStyles.hasByName( fb2Style.Cite ) ) )  Then
+&apos;	    &apos; Проверка OR ( Not oParaStyles.hasByName( fb2Style.Cite ) ) нужна для случая, когда панель fb2 стилей
 	    &apos; запускается на документах, которые уже форматировались fb2 стилями на старых версиях OooFBTools,
 	    &apos; в которых стили не создавались, а грузились из файла стилей (В таком случае на LO стиль Цитата отсутствует и не создается).
 	    &apos; Теперь стиль Цитата создается и для таких документов.
@@ -314,7 +348,7 @@ Function MakeFB2StylesToDoc() As Boolean
 		oProgressBar.End
 
     	MakeFB2StylesToDoc = True
-    End If
+&apos;    End If
 End Function
 
 &apos; ***********************************************************************************************
@@ -357,32 +391,90 @@ End Function
 
 &apos; ***********************************************************************************************
 &apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем
-Sub ListOfFB2StylesClicked( Optional oEvent As Variant )
+Sub ListOfFB2Styles( ListBoxStyle As String, ClickCount As Integer )
+	Dim oLB	As Object : oLB = oFB2StylesDlg.getControl( ListBoxStyle )
+	If oFB2StylesDlg.getControl( &quot;cbToOneClick&quot; ).State = 1 Then
+		&apos; Обработка одинарного щелчка мышью по списку fb2 стилей
+		If ClickCount = 1 Then
+			&apos; разметка абзаца выбранным fb2 стилем
+			setParaSelectedFB2Style( oLB )
+		End If
+	Else
+		&apos; Обработка двойного щелчка мышью по списку fb2 стилей
+		If ClickCount = 2 Then
+			&apos; разметка абзаца выбранным fb2 стилем
+			setParaSelectedFB2Style( oLB )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Названия Книги
+Sub ListOfFB2StylesBookTitleClicked( Optional oEvent As Variant )
 	If NOT IsMissing(oEvent) Then
 		If oEvent.Buttons = 1 Then
-			Dim oLB	As Object : oLB = oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
-			If oFB2StylesDlg.getControl( &quot;cbToOneClick&quot; ).State = 1 Then
-				&apos; Обработка одинарного щелчка мышью по списку fb2 стилей
-				If oEvent.ClickCount = 1 Then
-					&apos; разметка абзаца выбранным fb2 стилем
-					setParaSelectedFB2Style()
-				End If
-			Else
-				&apos; Обработка двойного щелчка мышью по списку fb2 стилей
-				If oEvent.ClickCount = 2 Then
-					&apos; разметка абзаца выбранным fb2 стилем
-					setParaSelectedFB2Style()
-				End If
-			End If
+			ListOfFB2Styles( &quot;lbFB2StylesBookTitle&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Heading
+Sub ListOfFB2StylesHeadingClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesHeading&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Annotation
+Sub ListOfFB2StylesAnnotationClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesAnnotation&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Poem
+Sub ListOfFB2StylesPoemClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesPoem&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Cite
+Sub ListOfFB2StylesCiteClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesCite&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Epigraph
+Sub ListOfFB2StylesEpigraphClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesEpigraph&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем code
+Sub ListOfFB2StylesCodeClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesCode&quot;, oEvent.ClickCount )
 		End If
 	End If
 End Sub
 
 &apos; ***********************************************************************************************
 &apos; разметка абзаца выбранным fb2 стилем
-Sub setParaSelectedFB2Style()
-	Dim oLB						As Object	: oLB						= oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
-	Dim Style					As String	: Style						= oLB.getSelectedItem()
+Sub setParaSelectedFB2Style( ByRef ListBoxStyles As Object )
+	Dim Style					As String	: Style						= ListBoxStyles.getSelectedItem()
 	Dim ClearBeforeFB2			As Integer	: ClearBeforeFB2			= oFB2StylesDlg.getControl( &quot;cbClearBeforeFB2&quot; ).State
 	Dim ClearBoldFromHeadings	As Integer	: ClearBoldFromHeadings		= oFB2StylesDlg.getControl( &quot;cbClearBoldFromHeadings&quot; ).State
 	Dim ClearItalicFromHeadings	As Integer	: ClearItalicFromHeadings	= oFB2StylesDlg.getControl( &quot;cbClearItalicFromHeadings&quot; ).State
@@ -390,7 +482,7 @@ Sub setParaSelectedFB2Style()
 	&apos; разметка текста выбранным fb2 стилем
 	setFB2StyleToSelectedText( Style, ClearBeforeFB2, ClearBoldFromHeadings, ClearItalicFromHeadings )
 	
-	oLB.selectItem( oLB.getSelectedItem(), False )
+	ListBoxStyles.selectItem( ListBoxStyles.getSelectedItem(), False )
 End Sub
 
 &apos; разметка текста выбранным fb2 стилем
@@ -439,8 +531,8 @@ Sub SetStyleIfOneOrNoneSelect( ByRef oViewCursor As Object, ByRef TempBookMarkNa
 	
 	If InStr( Style, GetLocalHeadingStyleName() ) Or InStr( Style, GetLocaSubtitleStyleName() ) Then
 		&apos; только для Заголовков: убрать bold и/или italic для Заголовков, если включены соответствующие опции
-		If ClearBoldFromHeadings = 1 Then ClearBold()
-		If ClearItalicFromHeadings = 1 Then ClearItalic()
+		If ClearBoldFromHeadings = 1 OR ClearBoldFromHeadings = True Then ClearBold()
+		If ClearItalicFromHeadings = 1 OR ClearItalicFromHeadings = True Then ClearItalic()
 	End If
 
 	&apos; восстановление положения видимого курсора
@@ -532,6 +624,8 @@ Sub InitFB2StylesDlg()
 			.cmdbtnSub.HelpText				= &quot;Нижний индекс (SubScript)&quot;
 			.cmdbtnCode.HelpText			= &quot;Код программ, пример, иллюстрация&quot;
 			.cbF1F10.Label					= &quot;F1... F10 для Заголовков&quot;
+			.optbtnStyle.Label				= &quot;Стили&quot;
+			.optbtnOptions.Label			= &quot;Настройки&quot;
 		End With
 	Else
 		With oFB2StylesDlg.getModel
@@ -548,6 +642,8 @@ Sub InitFB2StylesDlg()
 			.cmdbtnSub.HelpText				= &quot;SubScript&quot;
 			.cmdbtnCode.HelpText			= &quot;Program code, example, illustration&quot;
 			.cbF1F10.Label					= &quot;use F1... F10 for Heading&quot;
+			.optbtnStyle.Label				= &quot;Styles&quot;
+			.optbtnOptions.Label			= &quot;Options&quot;
 		End With
 	End If
 End Sub
@@ -1141,14 +1237,20 @@ End Sub
 &apos; заполнение списка локализованными fb2 стилями
 Sub setFb2LocalStylesToListBox()
 &apos;	Dim sOOoLocal	As String : sOOoLocal	= getOOoLocal()
-	Dim oLB			As Object : oLB			= oFB2StylesDlg.getControl( &quot;lbFB2Styles&quot; )
+	Dim fb2 As FB2StylesType : fb2 = GetLocaFB2Styles()
+	Dim oLB	As Object : oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesBookTitle&quot; )
 	With oLB
 		&apos; удаление всех стилей в ListBox
 		.removeItems( 0, .getItemCount() )
-		Dim fb2 As FB2StylesType : fb2 = GetLocaFB2Styles()
-		&apos; Аннотация
-		.addItem( fb2.Annotation, .getItemCount() )
-		.addItem( fb2.AnnotationSubTitle, .getItemCount() )
+		&apos; Данные книги
+		.addItem( fb2.BookTitle, .getItemCount() )
+		.addItem( fb2.BookAnnotation, .getItemCount() )
+	End With
+	
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesHeading&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
 		&apos; Заголовки (Уровни)
 		.addItem( fb2.Level1, .getItemCount() )
 		.addItem( fb2.Level2, .getItemCount() )
@@ -1160,27 +1262,58 @@ Sub setFb2LocalStylesToListBox()
 		.addItem( fb2.Level8, .getItemCount() )
 		.addItem( fb2.Level9, .getItemCount() )
 		.addItem( fb2.Level10, .getItemCount() )
-		&apos; Данные книги
-		.addItem( fb2.BookTitle, .getItemCount() )
-		.addItem( fb2.BookAnnotation, .getItemCount() )
 		&apos; Глава: Подзаголовок
 		.addItem( fb2.SubTitle, .getItemCount() )
+	End With
+	
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesAnnotation&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
+		&apos; Аннотация
+		.addItem( fb2.Annotation, .getItemCount() )
+		.addItem( fb2.AnnotationSubTitle, .getItemCount() )
+	End With
+	
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesPoem&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
 		&apos; Стих
 		.addItem( fb2.Poem, .getItemCount() )
 		.addItem( fb2.PoemTitle, .getItemCount() )
 		.addItem( fb2.PoemSubTitle, .getItemCount() )
 		.addItem( fb2.PoemAuthor, .getItemCount() )
 		.addItem( fb2.PoemDate, .getItemCount() )
+	End With
+	
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesCite&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
 		&apos; Цитата
 		.addItem( fb2.Cite, .getItemCount() )
 		.addItem( fb2.CiteSubTitle, .getItemCount() )
 		.addItem( fb2.CiteAuthor, .getItemCount() )
+	End With
+	
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesEpigraph&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
 		&apos; Эпиграф
 		.addItem( fb2.Epigraph, .getItemCount() )
 		.addItem( fb2.EpigraphAuthor, .getItemCount() )
+	End With
+	
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesCode&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
 		&apos; code - стиль для листингов программ и моноширинного текста
 		.addItem( &quot;code&quot;, .getItemCount() )
 	End With
+	
 End Sub
 
 &apos; ***********************************************************************************************

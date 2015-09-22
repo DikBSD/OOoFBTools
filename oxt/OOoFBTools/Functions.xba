@@ -2722,6 +2722,107 @@ Sub setPageOrientation( Landscape As Boolean )
 	End If
 End Sub
 
+&apos; обработка капителя для текста
+Sub UncapitelText( ByRef oDoc As Object, SymbolType As Integer )
+	Dim oText		As Variant	: oText			= oDoc.getText()
+	Dim oTextCursor	As Variant	: oTextCursor	= oText.CreateTextCursor()
+	oTextCursor.GoToStart( False )	
+	Dim oSymbolCursor As Variant
+	Do
+		If NOT oTextCursor.goRight(1, True) Then Exit Do
+		oSymbolCursor = oTextCursor.Text.createTextCursorByRange( oTextCursor.getEnd() )
+		oSymbolCursor.goLeft(1, True)
+		If oSymbolCursor.CharcaseMap = 4 Then
+			oSymbolCursor.CharcaseMap = SymbolType
+		End If
+	Loop Until 0
+End Sub
+
+&apos; обработка капителя для сносок и концевых сносок
+&apos; IsFootNote = True - обработка сносок; IsFootNote = False - обработка концевых сносок
+Sub UncapitelFootEndNote( ByRef oDoc As Object, SymbolType As Integer, IsFootNote As Boolean )
+	Dim oFootnotes As Object
+	If IsFootNote Then
+		oFootnotes = oDoc.getFootNotes()
+	Else
+		oFootnotes = oDoc.getEndNotes()
+	End If
+	
+	Dim nFootnoteCount	As Integer : nFootnoteCount = oFootnotes.getCount()
+	Dim oFootnote		As Object
+	Dim oTextCursor		As Variant
+	Dim oSymbolCursor	As Variant
+	Dim nCount			As Integer
+	If oFootnotes.hasElements() Then
+		For nCount = 0 To nFootnoteCount - 1
+			oFootNote = oFootnotes.getByIndex(nCount)
+			oTextCursor = oFootNote.getText().CreateTextCursor()
+			Do
+				If NOT oTextCursor.goRight(1, True) Then Exit Do
+					oSymbolCursor = oTextCursor.Text.createTextCursorByRange( oTextCursor.getEnd() )
+					oSymbolCursor.goLeft(1, True)
+					If oSymbolCursor.CharcaseMap = 4 Then
+						oSymbolCursor.CharcaseMap = SymbolType
+					End If
+			Loop Until 0
+		Next nCount
+	End If
+End Sub
+
+&apos; обработка капителя для текстовых врезок
+Sub UncapitelTextFrame( ByRef oDoc As Object, SymbolType As Integer )
+	Dim oTextFrames()	As Object	: oTextFrames		= oDoc.getTextFrames()
+	Dim nTextFrameCount As Integer	: nTextFrameCount	= oTextFrames.getCount()
+	Dim oTextFrame		As Object
+	Dim oTextCursor		As Variant
+	Dim oSymbolCursor	As Variant
+	Dim nCount			As Integer
+	If oTextFrames.hasElements() Then
+		For nCount = 0 To nTextFrameCount - 1
+			oTextFrame = oTextFrames.getByIndex(nCount)
+			oTextCursor = oTextFrame.getText().CreateTextCursor()
+			Do
+				If NOT oTextCursor.goRight(1, True) Then Exit Do
+					oSymbolCursor = oTextCursor.Text.createTextCursorByRange( oTextCursor.getEnd() )
+					oSymbolCursor.goLeft(1, True)
+					If oSymbolCursor.CharcaseMap = 4 Then
+						oSymbolCursor.CharcaseMap = SymbolType
+					End If
+			Loop Until 0
+		Next nCount
+	End If
+End Sub
+
+&apos; обработка капителя для таблиц
+Sub UncapitelTable( ByRef oDoc As Object, SymbolType As Integer )
+	Dim oTextTables()	As Object	: oTextTables		= oDoc.getTextTables()
+	Dim nTextTableCount As Integer	: nTextTableCount	= oTextTables.getCount()
+	Dim oTextTable		As Object
+	Dim oCellNames()	As String
+	Dim oTextCursor		As Variant
+	Dim oSymbolCursor	As Variant
+	Dim nCount			As Integer
+	If oTextTables.hasElements() Then
+		For nCount = 0 To nTextTableCount - 1
+			oTextTable = oTextTables.getByIndex(nCount)
+			oCellNames() = oTextTable.getCellNames()
+			Dim nCellCount As Integer : nCellCount = UBound( oCellNames() )
+			Dim i As Integer
+			For i = 0 To nCellCount
+				oTextCursor = oTextTable.getCellByName( oCellNames(i) ).getText().CreateTextCursor()
+				Do
+					If NOT oTextCursor.goRight(1, True) Then Exit Do
+						oSymbolCursor = oTextCursor.Text.createTextCursorByRange( oTextCursor.getEnd() )
+						oSymbolCursor.goLeft(1, True)
+						If oSymbolCursor.CharcaseMap = 4 Then
+							oSymbolCursor.CharcaseMap = SymbolType
+						End If
+				Loop Until 0
+			Next i
+		Next nCount
+	End If
+End Sub
+
 &apos; ====================================================================================
 &apos; 									Полезные заготовки
 &apos; ====================================================================================

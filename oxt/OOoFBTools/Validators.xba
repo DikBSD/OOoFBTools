@@ -80,13 +80,19 @@ Sub FB2Validate()
 		MsgBox sVD.sChooseFB2FileToValidate, 64, sVD.sFB2FileValidate
 		Exit Sub
 	ElseIf Not FileExists( sFile ) Then
-		MsgBox sVD.sFileNotExists + chr(10)+sFile, 64, sVD.sFB2FileValidate
+		MsgBox sVD.sFileNotExists + chr(10) + sFile, 64, sVD.sFB2FileValidate
 		Exit Sub
 	End If
 
 	Dim sFB2SchemaPath As String
 	With oValidateDlg.Model
-		If .optbtnFB2LibRusEc.State = True Or .optbtnFB2LibRusEc.State = 1 Then
+		If .optbtnFB21.State = True Or .optbtnFB21.State = 1 Then
+			If GetOS() = 0 Then
+				sFB2SchemaPath = &quot;\fb2-schema\FictionBook.xsd&quot;
+			Else
+				sFB2SchemaPath = &quot;/fb2-schema/FictionBook.xsd&quot;
+			End If
+		ElseIf .optbtnFB2LibRusEc.State = True Or .optbtnFB2LibRusEc.State = 1 Then
 			If GetOS() = 0 Then
 				sFB2SchemaPath = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
 			Else
@@ -98,11 +104,11 @@ Sub FB2Validate()
 			Else
 				sFB2SchemaPath = &quot;/fb2-flibusta-schema/FictionBook.xsd&quot;
 			End If
-		Else
+		ElseIf .optbtnFB2Union.State = True Or .optbtnFB2Union.State = 1 Then
 			If GetOS() = 0 Then
-				sFB2SchemaPath = &quot;\fb2-schema\FictionBook.xsd&quot;
+				sFB2SchemaPath = &quot;\fb2-union-schema\FictionBook.xsd&quot;
 			Else
-				sFB2SchemaPath = &quot;/fb2-schema/FictionBook.xsd&quot;
+				sFB2SchemaPath = &quot;/fb2-union-schema/FictionBook.xsd&quot;
 			End If
 		End If
 	End With
@@ -170,7 +176,7 @@ Function Validate( ByRef sFB2File As String, ByRef sFB2Schema As String ) As Str
 		Shell(&quot;/bin/sh&quot;, 1, sFileValidateScript, true)
 	End If
 	
-	Wait 500
+	Wait 1000
 	Validate = LoadResult( sLog )
 End Function
 

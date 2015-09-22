@@ -3,16 +3,16 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="GenreFavorites" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
-&apos; //////////////////////////////////////////////////////////////////////
-&apos; //////////////////// Работа с Избранным Жанров ///////////////////////
-&apos; //////////////////////////////////////////////////////////////////////
+&apos; ======================================================================================
+&apos; 									Работа с Избранным Жанров
+&apos; ======================================================================================
 
 &apos; запуск диалога работы со списком избранных жанров
 Sub cbtnGenreElite_Click()
 	oGEDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.GenreEliteDlg )
 	
 	&apos; инициализация диалога работы с Избранными Жанрами от локали
-	InitGenreEliteDlg()
+	InitGenreFavoritesDlg()
 	
 	With oGEDlg.Model
 		.Height	= 165
@@ -33,10 +33,12 @@ Sub cbtnGenreElite_Click()
 	&apos; Загрузка Списка Жанров, в зависимости от выбранной Схемы Жанров
 	If oGEDlg.Model.obtnGEFB21.State = True Or oGEDlg.Model.obtnGEFB21.State = 1 Then
 		InitGEFB21() &apos; Инициализация жанрами схемы FictionBook 2.1
-	ElseIf oGEDlg.Model.obtnGEFB22.State = True Or oGEDlg.Model.obtnGEFB22.State = 1 Then
-		InitGEFB22() &apos; Инициализация жанрами схемы FictionBook 2.2
 	ElseIf oGEDlg.Model.obtnGEFB2LibRuSec.State = True Or oGEDlg.Model.obtnGEFB2LibRuSec.State = 1 Then
 		InitGEFB2LibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
+	ElseIf oGEDlg.Model.obtnGEFB2Flibusta.State = True Or oGEDlg.Model.obtnGEFB2Flibusta.State = 1 Then
+		InitGEFB2Flibusta() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
+	Else
+		InitGEFB2Union() &apos; Инициализация жанрами Объединенной схемы FictionBook 2 (LibRusEc &amp; LibRusEc)
 	End If
 	
 	oGEDlg.execute()
@@ -51,17 +53,6 @@ Sub InitGEFB21()
 		.cboxGE.StringItemList = sGLN()
 	End With
 
-End Sub
-
-&apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2.2
-Sub InitGEFB22()
-	GenreFB22()
-
-	With oGEDlg.Model
-		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB22
-		.cboxGE.StringItemList = sGLN()
-	End With
-	
 End Sub
 
 &apos; Инициализация диалога работы со списком Избранных Жанров жанрами схемы FictionBook 2 LibRusEc
@@ -86,6 +77,17 @@ Sub InitGEFB2Flibusta()
 	
 End Sub
 
+&apos; Инициализация диалога работы со списком Избранных Жанров жанрами Объединенной схемы FictionBook 2 (LibRusEc &amp; Flibusta)
+Sub InitGEFB2Union()
+	GenreFB2Union()
+
+	With oGEDlg.Model
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB2Union
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+End Sub
+
 &apos; Добавить жанр в список Избранного
 Sub GEAdd()
 	Dim sGenreName As String, sGenre As String, i As Integer, aArray() As String, sTitle As String
@@ -93,7 +95,7 @@ Sub GEAdd()
 	sGenre = &quot;&quot;
 	For i=0 To UBound(sGLN())
 		If sGLN(i) = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem Then
-			sGenreName = oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem
+			sGenreName = Trim( oGEDlg.getControl(&quot;cboxGE&quot;).SelectedItem )
 			sGenre = GetGenreCode( sGenreName )
 			Exit For
 		End If
@@ -212,5 +214,43 @@ Sub GenreDown()
 	End If
 End Sub
 
-&apos;/////////////////////////////////////////////////////////
+&apos; ======================================================================================================
+&apos; 					локализация диалога работы с Избранными Жанрами
+&apos; ======================================================================================================
+
+&apos; инициализация диалога работы с Избранными Жанрами от локали
+Sub InitGenreFavoritesDlg()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oGEDlg.getModel
+			.lblGESchema.Label			= &quot;Схема Жанров:&quot;
+			.obtnGEFB21.HelpText		= &quot;Переключение на жанры схемы FictionBook 2.1&quot;
+			.obtnGEFB2LibRuSec.HelpText	= &quot;Переключение на жанры схемы FictionBook 2 Либрусек&quot;
+			.obtnGEFB2Flibusta.HelpText	= &quot;Переключение на жанры схемы FictionBook 2 Флибуста&quot;
+			.obtnGEFB2Union.HelpText	= &quot;Переключение на жанры объединенной схемы FictionBook 2 (Либрусек и Флибуста)&quot;
+			.lblGEGenre.Label		= &quot;Жанр:&quot;
+			.lblGEElite.Label		= &quot;Избранное:&quot;
+			.cbtnGEAdd.Label		= &quot;Добавить&quot;
+			.cbtnGERemove.Label		= &quot;Удалить&quot;
+			.cbtnSort.Label			= &quot;Сортировать&quot;
+			.cbtnGEOK.Label			= &quot;OK&quot;
+			.cbteCancel.Label		= &quot;Отмена&quot;
+		End With
+	Else
+		With oGEDlg.getModel
+			.lblGESchema.Label			= &quot;The Scheme of Genres:&quot;
+			.obtnGEFB21.HelpText		= &quot;Switching on genres of FictionBook 2.1 Scheme &quot;
+			.obtnGEFB2LibRuSec.HelpText	= &quot;Switching on genres of Librusec FictionBook 2 Scheme&quot;
+			.obtnGEFB2Flibusta.HelpText	= &quot;Switching on genres of Flibusta FictionBook 2 Scheme&quot;
+			.obtnGEFB2Union.HelpText	= &quot;Switching on genres of Union Librusec &amp; Flibusta FictionBook 2 Scheme&quot;
+			.lblGEGenre.Label		= &quot;The Genre:&quot;
+			.lblGEElite.Label		= &quot;The Selected Works:&quot;
+			.cbtnGEAdd.Label		= &quot;Add&quot;
+			.cbtnGERemove.Label		= &quot;Delete&quot;
+			.cbtnSort.Label			= &quot;Sort&quot;
+			.cbtnGEOK.Label			= &quot;OK&quot;
+			.cbteCancel.Label		= &quot;Cancel&quot;
+		End With
+	End If
+End Sub
+
 </script:module>
