@@ -1140,7 +1140,12 @@ Sub TextCorrectorDlgOk()
 &apos;	oProgressBar.start( sTCD.sTextCorrecting &amp; &quot;:&quot;, 13 )
 	&apos; Разрывы строк
 	If bBreakLine = True Then
-		BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
+		IF isLibreOffice() Then
+			&apos; только для LO - из-за быга в regexp
+			LOBreakLineTo( bDel, bPar, bSpace )
+		Else
+			BreakLineTo( oDoc, oReplace, bDel, bPar, bSpace )
+		End If
 	End If
 	oProgressBar.setValue(nCur)
 	nCur = nCur+1
@@ -1261,12 +1266,12 @@ Sub TextCorrectorDlgOk()
 		
 		&apos;Вставка неразрывного пробела перед сокращением после числительных: Восемь   шт. ==&gt; Восемь шт.
 		With oReplace
-			.SearchString = &quot;([а-яА-ЯёЁ])[:space:]{1,}(экз\.|шт\.|тыс\.|млн\.|млрд\.)([,.:;!?|\x20|\x09|\xA0]+)&quot;
+			.SearchString = &quot;([а-яА-ЯёЁ])[:space:]{1,}\&lt;(экз\.|шт\.|тыс\.|млн\.|млрд\.)([,.:;!?|\x20|\x09|\xA0]+)&quot;
 			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;([:digit:])[:space:]{1,}(экз\.|шт\.|тыс\.|млн\.|млрд\.)[:space:]+([,.:;!?])&quot;
+			.SearchString = &quot;([:digit:])[:space:]{1,}\&lt;(экз\.|шт\.|тыс\.|млн\.|млрд\.)[:space:]+([,.:;!?])&quot;
 			.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
@@ -1277,19 +1282,24 @@ Sub TextCorrectorDlgOk()
 	&apos;Обработать сокращения в почтовых адресах (ул., пос., кв. ...)
 	If bReductionsAddress = True Then
 		&apos;Вставка неразрывного пробела после сокращения в адресе
-		&apos; город не обрабатывемс, иначе год (г.) склеивается со словом за ним.
+		&apos; город не обрабатывем, иначе год (г.) склеивается со словом за ним.
 		&apos;With oReplace
-		&apos;	.SearchString = &quot;([:space:]+)(г\.)[:space:]*([A-ZА-ЯЁ])&quot;
+		&apos;	.SearchString = &quot;([:space:]+)\&lt;(г\.)[:space:]*([A-ZА-ЯЁ])&quot;
 		&apos;	.ReplaceString =  &quot;$1&quot; &amp; chr(160) &amp; &quot;$2$3&quot;
 		&apos;End With
 		&apos;oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;([:space:]+)(д\.)[:space:]*([0-9])&quot;
+			.SearchString = &quot;([:space:]+)\&lt;(д\.)[:space:]*([0-9])&quot;
 			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
 		With oReplace
-			.SearchString = &quot;([:space:]+)(пос\.|село|дер\.|пл\.|ул\.|пер\.|дом|корп\.|кв\.|офис|оф\.|каф\.|ауд\.)[:space:]*([0-9]|[A-ZА-ЯЁ])&quot;
+			.SearchString = &quot;([:space:]+)\&lt;(пос\.|дер\.|пл\.|ул\.|пер\.|корп\.|кв\.|оф\.|каф\.|ауд\.)[:space:]*([0-9]|[A-ZА-ЯЁ])&quot;
+			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
+		End With
+		oDoc.ReplaceAll(oReplace)
+		With oReplace
+			.SearchString = &quot;([:space:]+)\&lt;(дом|офис)\&gt;[:space:]*([0-9])&quot;
 			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
@@ -1301,7 +1311,7 @@ Sub TextCorrectorDlgOk()
 	If bReductionsDoc = True Then
 		&apos;Вставка неразрывного пробела после сокращения в документе
 		With oReplace
-			.SearchString = &quot;([:space:]+)(гл\.|стр\.|рис\.|илл\.|табл\.)[:space:]*([:alnum:])&quot;
+			.SearchString = &quot;([:space:]+)\&lt;(гл\.|стр\.|рис\.|илл\.|табл\.)[:space:]*([:alnum:])&quot;
 			.ReplaceString =  chr(160) &amp; &quot;$2$3&quot;
 		End With
 		oDoc.ReplaceAll(oReplace)
@@ -1944,12 +1954,12 @@ End Sub
 Sub	RemoveSpaceInQuote( oDoc, oReplace )
 	With oReplace
 &apos;		.SearchString = &quot;([\&gt;“\&quot;&quot;«])\x20+|\x20+([”\&quot;&quot;»\&lt;])&quot;
-		.SearchString = &quot;(\&gt;«)[:space:]+&quot;
+		.SearchString = &quot;(«)[:space:]+&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
 	With oReplace
-		.SearchString = &quot;[:space:]+(»\&lt;)&quot;
+		.SearchString = &quot;[:space:]+(»)&quot;
 		.ReplaceString = &quot;$1&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)

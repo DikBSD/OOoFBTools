@@ -84,7 +84,9 @@ Sub OCRErrorStart()
 		.getControl( &quot;lbTDFPunctMarks&quot; ).SelectItemPos( 0, True )
 		.getControl( &quot;lbTDFPunctMarks&quot; ).Enable	= False
 	End With
-	
+	&apos; восстановление хнаков пунктуации для поиска
+	cmbBtnRestoreClick()
+
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( sOCRTCSettingsFilename, oTDF, nX, nY )
@@ -115,7 +117,10 @@ Sub lbTDFModeChange()
 				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= True
 				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= True
-				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+				.GetControl( &quot;chBoxFindBN&quot; ).Visible			= True
+				.GetControl( &quot;lbPunct&quot; ).Visible		= False
+				.GetControl( &quot;tfPunct&quot; ).Visible		= False
+				.GetControl( &quot;cmbBtnRestore&quot; ).Visible	= False
 			End With
 			With oTDF.Model
 				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
@@ -136,7 +141,10 @@ Sub lbTDFModeChange()
 				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Visible			= False
+				.GetControl( &quot;lbPunct&quot; ).Visible		= False
+				.GetControl( &quot;tfPunct&quot; ).Visible		= False
+				.GetControl( &quot;cmbBtnRestore&quot; ).Visible	= False
 			End With
 			With oTDF.Model
 				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
@@ -157,7 +165,10 @@ Sub lbTDFModeChange()
 				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= True
 				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= False
+				.GetControl( &quot;chBoxFindBN&quot; ).Visible			= False
+				.GetControl( &quot;lbPunct&quot; ).Visible		= True
+				.GetControl( &quot;tfPunct&quot; ).Visible		= True
+				.GetControl( &quot;cmbBtnRestore&quot; ).Visible	= True
 			End With
 			With oTDF.Model
 				.cmdbtnTDFInsertSymbol.HelpText			= sTDFD.sWorkerHintInsertPunctMark
@@ -179,7 +190,10 @@ Sub lbTDFModeChange()
 				.GetControl( &quot;lbTDFPunctMarks&quot; ).Enable			= False
 				.GetControl( &quot;cmdbtnTDFSave&quot; ).Enable			= False
 				.GetControl( &quot;cmdbtnTDFEdit&quot; ).Enable			= False
-				.GetControl( &quot;chBoxFindBN&quot; ).Enable				= True
+				.GetControl( &quot;chBoxFindBN&quot; ).Visible			= True
+				.GetControl( &quot;lbPunct&quot; ).Visible		= False
+				.GetControl( &quot;tfPunct&quot; ).Visible		= False
+				.GetControl( &quot;cmbBtnRestore&quot; ).Visible	= False
 			End With
 			With oTDF.Model
 				.cmdbtnTDFInsertSymbol.HelpText			= &quot;&quot;
@@ -200,6 +214,11 @@ Sub TDFFind()
 	FindRegWord( sTDF.sRegString, sTDF.sMessage )
 End Sub
 
+&apos; восстановление хнаков пунктуации для поиска
+Sub cmbBtnRestoreClick()
+	oTDF.GetControl( &quot;tfPunct&quot; ).Text = &quot;)}\],”»&quot;&quot;;:&quot;
+End Sub
+
 &apos; возвращает строку с регулярным выражением для поиска, в зависимости от режима поиска
 Function GetRegString( oLB As Object ) As tFindData
 	Dim sTDF As tFindData
@@ -216,7 +235,10 @@ Function GetRegString( oLB As Object ) As tFindData
 								&quot;\&lt;[:alnum:]+[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:space:]$&quot;
 			sTDF.sMessage = sTDFD.sSearchWrdsBrokenCarry
 		Case 2 &apos; Обрыв предложения на словах, знаках препинания, кавычках и скобках
-			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+&apos;			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+&apos;							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
+			Dim Punct As String : Punct = oTDF.GetControl( &quot;tfPunct&quot; ).Text
+			sTDF.sRegString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[&quot; &amp; Punct &amp; &quot;]$|\&lt;[:alnum:]+[&quot; &amp; Punct &amp; &quot;]+[&quot; &amp; Punct &amp; &quot;]$|[:space:]+[-&quot;&amp; _
 							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
 			sTDF.sMessage = sTDFD.sSearchBreakageOffer
 		Case 3 &apos; Место с недостающим пробелом между словами
@@ -356,8 +378,11 @@ Function GetRegWorkerString() As String
 			GetRegWorkerString = &quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;]$&quot; &amp; &quot;|&quot; &amp; _
 								&quot;[-&quot; &amp; chr(8209) &amp; chr(8211) &amp; chr(8212) &amp; &quot;][:space:]$&quot;
 		Case 2 &apos; Обрыв предложения на знаках препинания, кавычках и скобках
-			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
-								chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
+&apos;			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[)}\],»”\&quot;&quot;:;]$|\&lt;[:alnum:]+[)}\]\.,»”\&quot;&quot;:;]+[)}\],»”\&quot;&quot;:;]$|[:space:]+[-&quot;&amp; _
+&apos;								chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
+			Dim Punct As String : Punct = oTDF.GetControl( &quot;tfPunct&quot; ).Text
+			GetRegWorkerString = &quot;\&lt;[:alnum:]+$|\&lt;[:alnum:]+[&quot; &amp; Punct &amp; &quot;]$|\&lt;[:alnum:]+[&quot; &amp; Punct &amp; &quot;]+[&quot; &amp; Punct &amp; &quot;]$|[:space:]+[-&quot;&amp; _
+							chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;]$&quot;&amp;&quot;|[:space:]+[-&quot;&amp;chr(8209)&amp;chr(8211)&amp;chr(8212)&amp;&quot;][:space:]+$&quot;
 		Case 3 &apos; Место с недостающим пробелом между словами (вероятно)
 			GetRegWorkerString = &quot;[({\[\&quot;&quot;«“)}\],.!?…»”\&quot;&quot;:;]&quot;
 	End Select
@@ -769,6 +794,9 @@ Sub InitOCRErrorDlg()
 			.cmdbtnTDFFind.Label	= &quot;Найти&quot;
 			.chBoxFindNext.Label	= &quot;Искать далее после обработки найденного&quot;
 			.chBoxFindBN.Label		= &quot;Искать между цифрами&quot;
+			
+			.lbPunct.Label			= &quot;Знаки препинания:&quot;
+			.cmbBtnRestore.Label	= &quot;Восстановить&quot;
 		End With
 	Else
 		With oTDF.getModel
@@ -777,6 +805,9 @@ Sub InitOCRErrorDlg()
 			.cmdbtnTDFFind.Label	= &quot;Find&quot;
 			.chBoxFindNext.Label	= &quot;Continue search after processing&quot;
 			.chBoxFindBN.Label		= &quot;Search between figures&quot;
+			
+			.lbPunct.Label			= &quot;Search punctuation marks:&quot;
+			.cmbBtnRestore.Label	= &quot;Restore punct. marks&quot;
 		End With
 	End If
 End Sub
