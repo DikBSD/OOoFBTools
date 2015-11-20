@@ -90,6 +90,8 @@ Type FB2StylesType
 	Level8				As String
 	Level9				As String
 	Level10				As String
+	&apos; Base стиль
+	BaseStyle			As String
 End Type
 
 &apos; структурв хранения свойств стиля
@@ -471,6 +473,15 @@ Sub ListOfFB2StylesCodeClicked( Optional oEvent As Variant )
 	End If
 End Sub
 
+&apos; Обработка двойного/одинарного щелчка мышью по списку fb2 стилей - форматирование абзаца выбранным стилем Группы Базовый
+Sub ListOfFB2StylesBaseClicked( Optional oEvent As Variant )
+	If NOT IsMissing(oEvent) Then
+		If oEvent.Buttons = 1 Then
+			ListOfFB2Styles( &quot;lbFB2StylesBase&quot;, oEvent.ClickCount )
+		End If
+	End If
+End Sub
+
 &apos; ***********************************************************************************************
 &apos; разметка абзаца выбранным fb2 стилем
 Sub setParaSelectedFB2Style( ByRef ListBoxStyles As Object )
@@ -701,6 +712,8 @@ Function fb2StylesStandart() As FB2StylesType
 	fb2.Level8				= &quot;Level 8&quot;
 	fb2.Level9				= &quot;Level 9&quot;
 	fb2.Level10				= &quot;Level 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Base&quot;
 	
 	fb2StylesStandart = fb2
 End Function
@@ -741,6 +754,8 @@ Function fb2StylesEn() As FB2StylesType
 	fb2.Level8				= &quot;Heading 8&quot;
 	fb2.Level9				= &quot;Heading 9&quot;
 	fb2.Level10				= &quot;Heading 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Base&quot;
 	
 	fb2StylesEn = fb2
 End Function
@@ -781,7 +796,9 @@ Function fb2RussianStyles() As FB2StylesType
 	&apos; Эпиграф
 	fb2.Epigraph			= &quot;Эпиграф&quot;
 	fb2.EpigraphAuthor		= &quot;Эпиграф - Автор&quot;
-
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Базовый&quot;
+	
 	fb2RussianStyles = fb2
 End Function
 
@@ -821,7 +838,9 @@ Function fb2StylesUk() As FB2StylesType
 	&apos; Эпиграф
 	fb2.Epigraph			= &quot;Епіграф&quot;
 	fb2.EpigraphAuthor		= &quot;Епіграф - Автор&quot;
-
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Базовий&quot;
+	
 	fb2StylesUk = fb2
 End Function
 
@@ -861,7 +880,9 @@ Function fb2StylesBe() As FB2StylesType
 	&apos; Эпиграф
 	fb2.Epigraph			= &quot;Эпіграф&quot;
 	fb2.EpigraphAuthor		= &quot;Эпіграф - Аўтар&quot;
-
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Прадвызначана&quot;
+	
 	fb2StylesBe = fb2
 End Function
 
@@ -901,6 +922,8 @@ Function fb2StylesEs() As FB2StylesType
 	fb2.Level8				= &quot;Encabezado 8&quot;
 	fb2.Level9				= &quot;Encabezado 9&quot;
 	fb2.Level10				= &quot;Encabezado 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Predeterminado&quot;
 	
 	fb2StylesEs = fb2
 End Function
@@ -941,6 +964,8 @@ Function fb2StylesDe() As FB2StylesType
 	fb2.Level8				= &quot;Überschrift 8&quot;
 	fb2.Level9				= &quot;Überschrift 9&quot;
 	fb2.Level10				= &quot;Überschrift 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Standard&quot;
 	
 	fb2StylesDe = fb2
 End Function
@@ -981,6 +1006,8 @@ Function fb2StylesFr() As FB2StylesType
 	fb2.Level8				= &quot;Titre 8&quot;
 	fb2.Level9				= &quot;Titre 9&quot;
 	fb2.Level10				= &quot;Titre 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Standard&quot;
 	
 	fb2StylesFr = fb2
 End Function
@@ -1021,6 +1048,8 @@ Function fb2StylesIt() As FB2StylesType
 	fb2.Level8				= &quot;Intestazione 8&quot;
 	fb2.Level9				= &quot;Intestazione 9&quot;
 	fb2.Level10				= &quot;Intestazione 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Predefinito&quot;
 	
 	fb2StylesIt = fb2
 End Function
@@ -1061,6 +1090,8 @@ Function fb2StylesPl() As FB2StylesType
 	fb2.Level8				= &quot;Nagłówek 8&quot;
 	fb2.Level9				= &quot;Nagłówek 9&quot;
 	fb2.Level10				= &quot;Nagłówek 10&quot;
+	&apos; Базовый
+	fb2.BaseStyle			= &quot;Domyślnie&quot;
 	
 	fb2StylesPl = fb2
 End Function
@@ -1313,7 +1344,14 @@ Sub setFb2LocalStylesToListBox()
 		&apos; code - стиль для листингов программ и моноширинного текста
 		.addItem( &quot;code&quot;, .getItemCount() )
 	End With
-	
+
+	oLB	= oFB2StylesDlg.getControl( &quot;lbFB2StylesBase&quot; )
+	With oLB
+		&apos; удаление всех стилей в ListBox
+		.removeItems( 0, .getItemCount() )
+		&apos; Базовый
+		.addItem( fb2.BaseStyle, .getItemCount() )
+	End With
 End Sub
 
 &apos; ***********************************************************************************************
@@ -1694,6 +1732,43 @@ Sub Code()
 		Next i
 	End If
 
+	&apos; делаем активным текущий документ
+	ActiveDocument()
+End Sub
+
+&apos; очистка всех формата абзацев стиля &quot;под курсором&quot; (стиль абзацев сохраняется)
+Sub ClearFormat()
+	Dim oViewCursor	As Object : oViewCursor	= ThisComponent.getCurrentController().getViewCursor()
+	Dim oText As Object : oText = oViewCursor.getText().createTextCursorByRange( oViewCursor )
+	Dim ParaStyle	As String : ParaStyle	= oViewCursor.ParaStyleName
+	Dim SymbolStyle As String : SymbolStyle	= GetLocaDefaultStyleName() &apos; название стиля &quot;Базовый&quot; в зависимости от локали
+	Dim Enum As Object : Enum = ThisComponent.getText().createEnumeration()
+	Dim TextElement As Object
+	Do While Enum.hasMoreElements()
+		TextElement = Enum.nextElement()
+		If TextElement.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			With TextElement
+				If .ParaStyleName = ParaStyle Then
+					oViewCursor.gotoRange( TextElement, False )
+					&apos; расширить видимый курсор на начало первого абзаца и конец последнего абзайа в выделении
+					Dim IsTextSelected As Boolean : IsTextSelected = False
+					ExtendViewCursorToStartEndParaOfSelections( oViewCursor, IsTextSelected )
+					&apos; очистка всех стилей в заданной видимой курсором области текста
+					ClearStyleToBase()
+					&apos; задаем новый стиль, если Style не равна &quot;&quot;
+					If ParaStyle &lt;&gt; &quot;&quot; Then
+						SetParaStyle( ParaStyle )
+					End If
+					If SymbolStyle &lt;&gt; &quot;&quot; Then
+						SetSymbolStyle( SymbolStyle )
+					End If
+	
+					oViewCursor.ParaStyleName = ParaStyle
+				End If
+			End With
+		End If
+	Loop
+	oViewCursor.gotoRange( oText, False )
 	&apos; делаем активным текущий документ
 	ActiveDocument()
 End Sub
