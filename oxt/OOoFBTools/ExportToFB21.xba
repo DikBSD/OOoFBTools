@@ -78,7 +78,7 @@ Sub ExportToFB21DlgExec()
 	oProgressBar.setValue(1)
 	
 	&apos; меняем расширение на fb2
-	Dim sFile() As String, i As Integer
+	Dim sFile() As String, i As Long
 	sFile = Split(sCurDocFile, &quot;.&quot;)
 	If UBound(sFile) &gt; 0 Then
 		For i = 0 To UBound(sFile)
@@ -122,7 +122,7 @@ End Sub
 &apos; запуск экспорта документа в fb2 формат
 Sub ExportDoc()
 	Dim oDoc As Object : oDoc = ThisComponent
-	Dim nVar As Integer
+	Dim nVar As Long
 	&apos; нужно ли задавать данные описания книги по умолчанию?
 	If bDefaultDescription Then
 		SetDefaultBookDescription()
@@ -213,7 +213,7 @@ Sub ExportDoc()
 	oProgressLabel.Text = &quot;1. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCovers &amp; &quot; … &quot;
 	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
-	Dim CoverCount As Integer : CoverCount = -1
+	Dim CoverCount As Long : CoverCount = -1
 	If IsStyleExists( sStyleBookTitle ) And ( oDoc.getGraphicObjects().Count &gt; 0 Or oDoc.getDrawPage().Count &gt; 0) Then
 		CoverCount = MakeCoverParser()
 	End If
@@ -268,7 +268,7 @@ Sub ExportDoc()
 	If bFENoteSeparately = True Then &apos; в разные блоки
 		&apos; сохранение блока сносок (примечания)
 		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;4. &quot; &amp; sETFB2DD.sFB2ExportProgressBarFootnote &amp; &quot; … &quot;
-		Dim imaxProgress As Integer
+		Dim imaxProgress As Long
 		If UBound( vFootnoteText() ) &lt;&gt; -1 Then imaxProgress = UBound( vFootnoteText() )
 		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarFootnote, imaxProgress )
 		oProgressBar.setValue(0)
@@ -360,7 +360,7 @@ Function GetWorkFB2Schema() As String
 	Dim sFB21 As String, sFB2LibRusEc As String, sFB2Flibusta As String, sFBUnion As String
 	sFB21 = &quot;0&quot; : sFB2LibRusEc = &quot;0&quot; : sFB2Flibusta = &quot;0&quot; : sFBUnion = &quot;0&quot;
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
-	Dim nX As Integer, nY As Integer
+	Dim nX As Long, nY As Long
 	
 	If GetOS() = 0 Then
 		GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
@@ -445,7 +445,7 @@ Function IsFB2BindingPropertiesCorrect() As String
     PropertyValue = GetUserProperty(_fb2_ti_Lang)
     MakeErrorMessage(PropertyValue, sErrorMess, &quot;Lang&quot;)
     
-    Dim i As Integer
+    Dim i As Long
     Dim bGenre As Boolean : bGenre = False
     For i = 0 To uBound(PropertyValues) 
         If InStr( PropertyValues(i).Name, _fb2_ti_GenreCM ) = 1 Then
@@ -499,7 +499,7 @@ Function LoadExportToFB21DlgSettings() As Boolean
 	On Error Resume Next
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2ConverterDialogSettings
 	If FileExists( sFileName ) Then
-		Dim nX As Integer, nY As Integer
+		Dim nX As Long, nY As Long
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
 		
@@ -539,7 +539,7 @@ Sub SaveExportToFB21DlgSettings()
 	oTOS.setOutputStream( oOS )
 	oTOS.setEncoding( &quot;utf-8&quot; )
 	
-	Dim ctrl As Object, i As Integer
+	Dim ctrl As Object, i As Long
 	ctrl = oExportToFB21Dlg.getControls()
 	For i=LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
@@ -562,7 +562,7 @@ End Sub
 &apos; 												Функции экспорта
 &apos; ===========================================================================================================================
 Function SaveFBCorrectText(sStr As String, bCHR10 As Boolean)
-	Dim count As Integer : count = 0
+	Dim count As Long : count = 0
 	&apos; до тех пор, пока не останется ни одной &quot;пустышки&quot;.
 	Do
 		count = RemoveSuperfluous(sStr)
@@ -611,7 +611,7 @@ Function MakePoemTitle(sArray As String, bBody As Boolean) As String
 	Dim sPoemTitle As String
 	sPoemTitle = &quot;&quot;
 	If bMergePoemTitle = True Then &apos; собираем Заголовки стиха, идущие один за другим в одну строку
-		Dim nCount As Integer, nCountTag As String &apos; число заголовков с закладками
+		Dim nCount As Long, nCountTag As String &apos; число заголовков с закладками
 		nCount = 0
 		nCountTag = 0
 		For l = lCurrentElement To UBound(sArray)
@@ -734,7 +734,7 @@ Function SwitchSubTitleStanza(sArray As String, bBody As Boolean) As String
 End Function
 
 Function MakeStanza(sArray As String, bBody As Boolean) As String
-	Dim l As Long, sStanza As String, nC As Integer
+	Dim l As Long, sStanza As String, nC As Long
 	sStanza =  &quot;&quot;
 	nC = 0 &apos; счетчик строк поэмы
 	For l = lCurrentElement To UBound(sArray)
@@ -796,7 +796,7 @@ Function MakePoemAuthor(sArray As String, bBody As Boolean) As String
 	If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 	If sArray(lCurrentElement,1) = sStylePoemAuthor Then
 		If bMergePoemAuthors = True Then &apos; собираем Авторов стиха, идущих один за другим в одну строку
-			Dim nCount As Integer, nCountTag As Integer &apos; число авторов поэмы с закладками
+			Dim nCount As Long, nCountTag As Long &apos; число авторов поэмы с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sAPTag As String
@@ -921,7 +921,7 @@ Function MakeEpigraphAuthor(sArray As String, sStyle_EpigraphAuthor As String, b
 	If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 	If sArray(lCurrentElement,1) = sStyle_EpigraphAuthor Then
 		If bMergeEpigraphAuthors = True Then &apos; собираем Авторов епиграфа, идущих один за другим в одну строку
-			Dim nCount As Integer, nCountTag As Integer &apos; число авторов эпиграфа с закладками
+			Dim nCount As Long, nCountTag As Long &apos; число авторов эпиграфа с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sAETag As String
@@ -1089,7 +1089,7 @@ Function MakeCiteAuthor(sArray As String, bBody As Boolean) As String
 	If lCurrentElement &gt; UBound( sArray() ) Then Exit Function
 	If sArray(lCurrentElement,1) = sStyleCiteAuthor Then
 		If bMergeCiteAuthors = True Then &apos; собираем Авторов цитаты, идущих один за другим в одну строку
-			Dim nCount As Integer, nCountTag As Integer &apos; число авторов цитаты с закладками
+			Dim nCount As Long, nCountTag As Long &apos; число авторов цитаты с закладками
 			nCount = 0
 			nCountTag = 0
 			Dim sACTag As String
@@ -1149,7 +1149,7 @@ End Function
 Function MakeSubtitle(sArray As String, sStyle_SubTitle As String, bMerge_SubTitle As String, bBody As Boolean) As String
 	Dim sSubtitle As String, l As Long, sSubTag As String, sID As String
 	If bMerge_SubTitle = True Then &apos; собираем подзаголовки, идущие один за другим в одну строку
-		Dim nCount As Integer &apos; число подзаголовков с закладками
+		Dim nCount As Long &apos; число подзаголовков с закладками
 		nCount = 0
 		For l = lCurrentElement To UBound(sArray)
 			If sArray(l,1) = sStyle_SubTitle Then
@@ -1236,7 +1236,7 @@ Function MakeParaWithID( sArray() As String, lCurrentElement As Long, sID As Str
 	Dim sPara		As String : sPara	= sArray( lCurrentElement, 0 )
 	Dim aParas()	As String : aParas	= Split( sPara, chr(10) )
 	Dim aIDs()		As String : aIDs	= Split( sID, &quot;|&quot; )
-	Dim i as Integer
+	Dim i As Long
 	For i = LBound( aIDs() ) To UBound( aIDs() )
 		If aIDs(i) &lt;&gt; &quot;&quot; Then
 			Dim sID As String : sID = aIDs(i)
@@ -1268,8 +1268,8 @@ End Function
 Function _FindBookmarkForID( sID As String ) As String
 	_FindBookmarkForID = &quot;&quot;
 	If sID &lt;&gt; &quot;&quot; Then
-		Dim indQ As Integer : indQ = InStr( sID, &quot;?&quot; )
-		Dim indR As Integer : indR = InStr( sID, &quot;|&quot; )
+		Dim indQ As Long : indQ = InStr( sID, &quot;?&quot; )
+		Dim indR As Long : indR = InStr( sID, &quot;|&quot; )
 		If indQ &lt;&gt; 0 AND indR &lt;&gt; 0 Then &apos; есть несколько закладок в одном абзаце и сборка абзацев с закладками
 			sID = Mid( sID, 1, indQ-1 ) &amp; Mid( sID, indR )
 			_FindBookmarkForID = CorrectBMLink( sID )
@@ -1369,7 +1369,7 @@ Function GetIndexOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long )
 	Next i
 End Function
 
-Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Integer
+Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Long
 	&apos; данные о текущем и следующем уровне (по возрастанию);
 	&apos; шаг - разница текущего и следующего уровней (current и next, напр: 1 и 2)
 	&apos; знак (+ или -) показывает переход вправо с большего на меньший (напр: 5 и 2) уровень (-) или с меньшего на больший (напр: 1 и 2) уровень (+)
@@ -1386,7 +1386,7 @@ Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrent
 	End If
 	
 	Dim lIndexOfNextLevel : lIndexOfNextLevel = GetIndexOfNextLevel( sArray(), lIndexOfCurrentLevel,1 )
-	Dim nStep As Integer
+	Dim nStep As Long
 	If lIndexOfNextLevel = -1 Then &apos; нет следующего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - последний Заголовок)
 		IsAdjacentCurrentLevelsOfNextLevel = 5
 		Exit Function
@@ -1407,7 +1407,7 @@ Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrent
 	End If
 End Function
 
-Function IsAdjacentCurrentLevelsOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Integer
+Function IsAdjacentCurrentLevelsOfPrevLevel( sArray() As String, lIndexOfCurrentLevel As Long ) As Long
 	&apos; данные о текущем и предыдущем уровне (по убыванию);
 	&apos; шаг - разница текущего и предыдущего уровней (prev и current, напр: 1 и 2)
 	&apos; знак (+ или -) показывает переход влево с большего на меньший (напр: 2 и 5) уровень (-) или с меньшего на больший (напр: 2 и 1) уровень (+)
@@ -1423,7 +1423,7 @@ Function IsAdjacentCurrentLevelsOfPrevLevel( sArray() As String, lIndexOfCurrent
 	End If
 	
 	Dim lIndexOfPrevLevel : lIndexOfPrevLevel = GetIndexOfPrevLevel( sArray(), lIndexOfCurrentLevel,1 )
-	Dim nStep As Integer
+	Dim nStep As Long
 	If lIndexOfPrevLevel = -1 Then &apos; нет предыдущего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - самый 1-й Заголовок)
 		IsAdjacentCurrentLevelsOfPrevLevel = -1 
 		Exit Function
@@ -1444,7 +1444,7 @@ Function IsAdjacentCurrentLevelsOfPrevLevel( sArray() As String, lIndexOfCurrent
 	End If
 End Function
 
-Function GetLevelNumber(Level As String) As Integer
+Function GetLevelNumber(Level As String) As Long
 	&apos; Возвращает номер уровня (число) из строки уровня
 	Select Case Level
 		Case sStyleLevel1
@@ -1536,9 +1536,9 @@ Function Save1OpenSectionForCandidate( sArray() As String, lCurrentElement As Lo
 End Function
 
 &apos; печать заданного числа открывающих &lt;section&gt;
-Sub SaveNOpenSections( N As Integer )
+Sub SaveNOpenSections( N As Long )
 	If N &gt; 0 Then
-		Dim i As Integer
+		Dim i As Long
 		For i = 0 To N - 1
 			oTextOutputStream.writeString( &quot;&lt;section&gt;&quot; &amp; chr(10) )
 		Next i
@@ -1641,9 +1641,9 @@ Sub SaveNote( idSymbol As String, ByRef vaFNPara() As Variant, lCount As Long )
 End Sub
 
 &apos; печатаем коды картинок
-Function SaveImages() As Integer
+Function SaveImages() As Long
 	If( UBound( Images() ) &gt;= 0 ) Then
-		Dim i As Integer, j As Integer
+		Dim i As Long, j As Long
 		j = 0
 		For i = 0 To UBound( Images() )
 			Dim sMimeFile As String : sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; i &amp; &quot;.txt&quot;
@@ -1721,7 +1721,7 @@ Sub RelinkHREF( sArray() As String, lCurrentIter As Long, IsBody As Boolean )
 		Dim index As Long : index = InStr( str, &quot;type=&quot;&quot;note&quot;&quot;&quot; )
 		If index = 0 Then &apos; только для гиперссылок (ссылки на сноски не обрабатываем)
 			Dim sTagA	As String	: sTagA		= &quot;&lt;a l:href=&quot;
-			Dim indTagA	As Integer	: indTagA	= InStr( str, sTagA )
+			Dim indTagA	As Long	: indTagA	= InStr( str, sTagA )
 			If indTagA &lt;&gt; 0 Then
 				Dim sStart		As String : sStart		= Mid( str, 1, indTagA + Len( sTagA ) + 1 )
 				Dim sMiddleTemp	As String : sMiddleTemp	= Mid( str, Len( sStart ) + 1 )
@@ -1869,10 +1869,10 @@ Sub MakeBody( sArray() As String, IsBody As Boolean )
 		&apos; 2. Печать всех блоков секций, начиная от 1-й
 		If lIndexOf1Section &lt;&gt; -1 Then &apos; секция есть
 			&apos; 2.1 Печать блока секции для 1-го Заголовка (Уровня)
-			Dim nH1Index As Integer : nH1Index = lCurrentElement
-			Dim nH2Index As Integer : nH2Index = GetIndexOfNextLevel(sArray, lCurrentElement)
-			Dim nH1Level As Integer : nH1Level = GetLevelNumber( sArray(nH1Index,1) )
-			Dim nH2Level As Integer
+			Dim nH1Index As Long : nH1Index = lCurrentElement
+			Dim nH2Index As Long : nH2Index = GetIndexOfNextLevel(sArray, lCurrentElement)
+			Dim nH1Level As Long : nH1Level = GetLevelNumber( sArray(nH1Index,1) )
+			Dim nH2Level As Long
 			If nH2Index = -1 Then
 				nH2Level = 0
 			Else
@@ -1948,7 +1948,7 @@ Sub MakeBody( sArray() As String, IsBody As Boolean )
 			
 			&apos; 2.2 Печать остальных блоков секций, начиная от 2-й
 			Dim lIndexOfCurrentLevel As Long, lIndexOfNextLevel As Long
-			Dim nCurrentLevel As Integer, nNextLevel As Integer			
+			Dim nCurrentLevel As Long, nNextLevel As Long			
 			While lCurrentElement &lt;= lParaCount &apos; по индексам
 				lIndexOfCurrentLevel	= lCurrentElement &apos; индекс текущего уровня
 				lIndexOfNextLevel		= GetIndexOfNextLevel( sArray(), lCurrentElement ) &apos; индекс следующего уровня
@@ -1964,7 +1964,7 @@ Sub MakeBody( sArray() As String, IsBody As Boolean )
 					&apos; печатаем все абзацы между секциями (саму следующую секцию не включаем)
 					&apos; печатаем Заголовок
 					SaveElements(sArray, sArray( lIndexOfCurrentLevel, 1), sArray(lIndexOfCurrentLevel, 0), IsBody )
-					Dim NN As Integer : NN = IsAdjacentCurrentLevelsOfNextLevel( sArray(), lIndexOfCurrentLevel )
+					Dim NN As Long : NN = IsAdjacentCurrentLevelsOfNextLevel( sArray(), lIndexOfCurrentLevel )
 					&apos; NN: знак (+ или -) показывает переход вправо с большего на меньший (напр: 5 и 2) уровень (-) или с меньшего на больший (напр: 1 и 2) уровень (+)
 					&apos; 10 - если lIndexOfCurrentLevel вышел за правую границу массива (все уже обработали)
 					&apos;  5 - нет следующего уровня, есть только текущий (либо в книге всего 1 Заголовок, либо текущий - последний Заголовок)
@@ -2149,7 +2149,7 @@ Sub SaveElements( sArray() As String, sParaStyleName As String, sPara As String,
 						Else
 							&apos; проверка - следующая строка в массиве - уровень меньшего ранга?
 							Dim sLevels(9) As String
-							Dim i As Integer, nPrev As Integer, nNext As Integer
+							Dim i As Long, nPrev As Long, nNext As Long
 							sLevels = Array(sStyleLevel1, sStyleLevel2, sStyleLevel3, sStyleLevel4, sStyleLevel5, _
 											sStyleLevel6, sStyleLevel7, sStyleLevel8, sStyleLevel9, sStyleLevel10)
 							For i = LBound( sLevels ) To UBound( sLevels )
@@ -2222,10 +2222,10 @@ Sub SaveElements( sArray() As String, sParaStyleName As String, sPara As String,
 End Sub
 
 &apos; есть ли текст между 2-мя Заголовками?
-Function IsTextBetween2Levels( sArray(), nCurrentLevelIndex As Integer, nNextLevelIndex As Integer ) As Boolean
+Function IsTextBetween2Levels( sArray(), nCurrentLevelIndex As Long, nNextLevelIndex As Long ) As Boolean
 	&apos; Возвращает: False - если текста нет; True - если текст есть
 	IsTextBetween2Levels = False
-	Dim nIter As Integer
+	Dim nIter As Long
 	For nIter = nCurrentLevelIndex To nNextLevelIndex
 		If Not IsLevel( sArray( nIter,1 ) ) Then
 			IsTextBetween2Levels = True : Exit Function
@@ -2233,8 +2233,8 @@ Function IsTextBetween2Levels( sArray(), nCurrentLevelIndex As Integer, nNextLev
 	Next nIter
 End Function
 
-Function SaveCloseSection(nCount As Integer) As Long
-	Dim i As Integer
+Function SaveCloseSection(nCount As Long) As Long
+	Dim i As Long
 	If nCount &gt; 0 Then
 		For i = 0 To nCount-1
 			oTextOutputStream.writeString(&quot;&lt;/section&gt;&quot; &amp; chr(10))
@@ -2263,7 +2263,7 @@ Sub SaveDescription( sFB2Encoding As String )
 	
 	oTextOutputStream.writeString(&quot;&lt;title-info&gt;&quot; &amp; chr(10))
 	
-	Dim i As Integer, aTemp() As String
+	Dim i As Long, aTemp() As String
 	&apos; для Жанров Книги
 	Dim sGenreArray() As Variant : sGenreArray() = GetUserPropertyArray(_fb2_ti_GenreCM)
 	If UBound( sGenreArray() ) &lt;&gt; -1 Then
@@ -2467,7 +2467,7 @@ Sub SavePublisher()
 	If Year &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;year&gt;&quot; &amp; CorrectPara( Year ) &amp; &quot;&lt;/year&gt;&quot; &amp; chr(10))
 	If ISBN &lt;&gt; &quot;&quot; Then oTextOutputStream.writeString(&quot;&lt;isbn&gt;&quot; &amp; CorrectPara( ISBN ) &amp; &quot;&lt;/isbn&gt;&quot; &amp; chr(10))
 	If UBound( sSequenceArray() ) &lt;&gt; -1 Then
-		Dim i As Integer, s As String, aTemp() As String
+		Dim i As Long, s As String, aTemp() As String
 		For i = 0 To UBound( sSequenceArray() )
 			aTemp() = SplitStringToArray( sSequenceArray(i).Value )
 			s = &quot;&lt;sequence name=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) )
@@ -2485,7 +2485,7 @@ End Sub
 Sub SaveCustomInfo()
 	Dim sCustomInfoArray() As Variant : sCustomInfoArray() = GetUserPropertyArray(_fb2_ci_CustomInfo)
 	If UBound( sCustomInfoArray() ) &lt;&gt; -1 Then
-		Dim i As Integer, aTemp() As String
+		Dim i As Long, aTemp() As String
 		For i = 0 To UBound( sCustomInfoArray() )
 			aTemp() = SplitStringToArray( sCustomInfoArray(i).Value )
 			oTextOutputStream.writeString(&quot;&lt;custom-info info-type=&quot;&quot;&quot; &amp; CorrectPara( Trim( aTemp(0) ) ) &amp; &quot;&quot;&quot;&gt;&quot; &amp; CorrectPara( Trim( aTemp(1) ) ) &amp; &quot;&lt;/custom-info&gt;&quot; &amp; chr(10))
@@ -2516,8 +2516,8 @@ Function GetGenreCode( ByRef GenreString As String ) As String
 		Exit Function
 	End If
 	Dim sGenre	As String	: sGenre	= Trim( GenreString )
-	Dim nFrom	As Integer	: nFrom		= InStr(sGenre, &quot; (&quot;) + Len(&quot; (&quot;)
-	Dim nTo		As Integer	: nTo		= InStr(sGenre, &quot;)&quot;)
+	Dim nFrom	As Long	: nFrom		= InStr(sGenre, &quot; (&quot;) + Len(&quot; (&quot;)
+	Dim nTo		As Long	: nTo		= InStr(sGenre, &quot;)&quot;)
 	GetGenreCode = Trim( Mid( sGenre, nFrom, nTo - nFrom )  )
 End Function
 
