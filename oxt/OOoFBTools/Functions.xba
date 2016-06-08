@@ -956,10 +956,10 @@ End Function
 &apos; ====================================================================================
 
 &apos; удаление из сортированного массива int чисел всех одинаковых
-Function RemoveIdenticalSortArrayElements_int( naArray() As Long ) As Array
+Function RemoveIdenticalSortArrayElements_int( naArray() As Integer ) As Array
 	If UBound( naArray() ) = -1 Then Exit Function
-	Dim naTemp() As Long
-	Dim nCurrent As Long, nPrev As Long : nPrev = naArray(0)
+	Dim naTemp() As Integer
+	Dim nCurrent As Integer, nPrev As Integer : nPrev = naArray(0)
 	AddNewItemToIntArray1( naTemp(), nPrev )
 	Dim l As Long
 	For l=1 To UBound( naArray() )
@@ -979,11 +979,11 @@ Function RemoveIdenticalSortArrayElements_int( naArray() As Long ) As Array
 End Function
 
 &apos; удаление из не сортированного массива int чисел всех одинаковых
-Function RemoveIdenticalNonSortArrayElements_int( naArray() As Long ) As Array
+Function RemoveIdenticalNonSortArrayElements_int( naArray() As Integer ) As Array
 	If UBound( naArray() ) = -1 Then Exit Function
-	Dim l As Long, i As Long
-	Dim naTemp() As Long
-	Dim nCurrent As Long, b As Boolean : b = False
+	Dim l As Integer, i As Integer
+	Dim naTemp() As Integer
+	Dim nCurrent As Integer, b As Boolean : b = False
 	For l=0 To UBound( naArray() )
 		nCurrent = naArray(l)
 		For i=0 To UBound( naArray() )
@@ -1015,8 +1015,8 @@ Function AddNewItemToObjectArray1( oArray() As Object, oValue As Object )
 	oArray(l) = oValue
 End Function
 
-Function AddNewItemToIntArray1( nArray() As Long, nValue As Long )
-	Dim l As Long : l = Ubound(nArray()) + 1
+Function AddNewItemToIntArray1( nArray() As Integer, nValue As Integer )
+	Dim l As Integer : l = Ubound(nArray()) + 1
 	ReDim Preserve nArray(l)
 	nArray(l) = nValue
 End Function
@@ -1320,22 +1320,22 @@ Function ReplaceFromString( sSource As String, sDel As String, sReplace As Strin
 	Dim i As Long, c As Long
 	c = 0 &apos; счетчик число изменений в строке
 	i = InStr(sSource, sDel)
-	If i=0 Then
+	If i = 0 Then
 		ReplaceFromString = 0
 		Exit Function
 	End If
 	
-On Local Error goTo ErrHandler &apos; на случай переполнения строки - таблица и т.д. Тогда просто возвращаем исходную строку, ничего не делая с ней.
+On Local Error goTo ErrHandler &apos; на случай переполнения строки - таблица и т.д.
 	Do While i &gt; 0
-		&apos; В LO4 Mid в режиме замены работает неверно, поэтому используем ее в режиме функции возвпрата значений.
-		sSource = Mid( sSource, 1, i-1 ) &amp; sReplace &amp; Mid( sSource, i + Len( sDel ) )
+		&apos; В LO4 Mid в режиме замены работает неверно, поэтому используем ее в режиме функции возврата значений.
+		sSource = Mid( sSource, 1, i - 1 ) &amp; sReplace &amp; Mid( sSource, i + Len( sDel ) )
 		i = InStr( i, sSource, sDel )
 		c = c + 1
 	Loop
 	ReplaceFromString = c
 	Exit Function
 ErrHandler:
-	ReplaceFromString = sSource
+	ReplaceFromString = c
 End Function
 
 &apos; Строка sSource изменяется - в ней все части sSearch заменяются на sReplace
@@ -1364,7 +1364,7 @@ Function ReplaceInStringWithRepCount( sSource As String, sSearch As String, sRep
 				sResult = sResult &amp; Mid(sSource, lStartPos, lCurrentPos - lStartPos)
 				sResult = sResult &amp; sReplace
 				lStartPos = lCurrentPos + Len(sSearch)
-				c = c+1
+				c = c + 1
 			Else
 				sResult = sResult &amp; Mid(sSource, lStartPos, Len(sSource))
 			End If
@@ -1976,16 +1976,16 @@ Function bubble_sort( aArray() As String )
 End Function
 
 &apos; пузырьковая сортировка
-Function bubble_sort_int( aArray() As Long )
-	Dim nSize As Long : nSize = Ubound(aArray())
+Function bubble_sort_int( aArray() As Integer )
+	Dim nSize As Integer : nSize = Ubound(aArray())
 	If nSize &lt;= 1 Then Exit Function
-	Dim i As Long, j As Long
+	Dim i As Integer, j As Integer
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
 	&apos; наибольший автоматически оказывается в правильной позиции. 
 	For i = 0 To nSize - 1
 		j = nSize - 1
 		Do
-			If (aArray(j - 1) &gt; aArray(j)) Then
+			If ( aArray(j - 1) &gt; aArray(j) ) Then
 				swap_int(aArray, j - 1, j)
 			End If
 		j = j - 1

@@ -1207,7 +1207,7 @@ Function MakeSection( sArray() As String, bBody As Boolean ) As String
 	Dim sSection As String, sID As String
 	If bDocLinks = True Then
 		&apos; обработка ссылок внутри документа
-		sID = FindBookmarkForID(lCurrentElement, bBody)
+		sID = FindBookmarkForID( lCurrentElement, bBody )
 		If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 			If InStr( pItem, &quot;&lt;p&gt;&quot; ) = 1 Then
 				pItem = MakeParaWithID( sArray(), lCurrentElement, sID )
@@ -1237,15 +1237,33 @@ Function MakeParaWithID( sArray() As String, lCurrentElement As Long, sID As Str
 	Dim aParas()	As String : aParas	= Split( sPara, chr(10) )
 	Dim aIDs()		As String : aIDs	= Split( sID, &quot;|&quot; )
 	Dim i As Long
+	Dim l As Long : l = 0
 	For i = LBound( aIDs() ) To UBound( aIDs() )
 		If aIDs(i) &lt;&gt; &quot;&quot; Then
 			Dim sID As String : sID = aIDs(i)
 			If sID &lt;&gt; &quot;&quot; Then
-				aParas(i) = &quot;&lt;p id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid( aParas(i), 4 )
+				aParas(l) = &quot;&lt;p id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid( aParas(l), 4 )
+			End If
+		Else
+			If l &gt; 0 Then
+				l = l - 1
 			End If
 		End If
 	Next i
 	MakeParaWithID = Join( aParas(), chr(10) )
+End Function
+
+&apos; Замена любых символов кроме букв в идентификаторе на _
+Function CorrectID( sID As String ) As String
+	Dim l As Long
+	For l = 1 To Len( sID )
+		If Not IsLetter( Mid( sID, l, 1 ) ) Then
+			If Not IsNumber( Mid( sID, l, 1 ) ) Then
+				sID = Mid( sID, 1, l - 1 ) &amp; &quot;_&quot; &amp; Mid( sID, l + 1 )
+			End If
+		End If
+	Next l
+	CorrectID = sID
 End Function
 
 &apos; поиск названия закладки для текущего lCurElement элемента
@@ -1259,7 +1277,7 @@ Function FindBookmarkForID( lCurElement As Long, bBody As Boolean ) As String
 		sID = sBodyParagraphs( lCurElement, 2 )
 	Else &apos; для сносок
 		If asFNPars( lCurElement, 2 ) &lt;&gt; &quot;&quot;  Then
-			sID = CorrectBMLink( asFNPars(lCurElement, 2) )
+			sID = CorrectBMLink( asFNPars( lCurElement, 2 ) )
 		End If
 	End If
 	FindBookmarkForID = _FindBookmarkForID( sID )
@@ -1272,15 +1290,15 @@ Function _FindBookmarkForID( sID As String ) As String
 		Dim indR As Long : indR = InStr( sID, &quot;|&quot; )
 		If indQ &lt;&gt; 0 AND indR &lt;&gt; 0 Then &apos; есть несколько закладок в одном абзаце и сборка абзацев с закладками
 			sID = Mid( sID, 1, indQ-1 ) &amp; Mid( sID, indR )
-			_FindBookmarkForID = CorrectBMLink( sID )
+			_FindBookmarkForID = CorrectID( CorrectBMLink( sID ) )
 		ElseIf indQ = 0 AND indR = 0 Then &apos; нет несколько закладок в одном абзаце и нет сборки абзацев с закладками
-			_FindBookmarkForID = CorrectBMLink( sID )
+			_FindBookmarkForID = CorrectID( CorrectBMLink( sID ) )
 		ElseIf indQ &lt;&gt; 0 AND indR = 0 Then &apos; есть несколько закладок в одном абзаце и нет сборки абзацев с закладками
 			sID = Mid( sID, 1, indQ-1 )
-			_FindBookmarkForID = CorrectBMLink( sID )
+			_FindBookmarkForID = CorrectID( CorrectBMLink( sID ) )
 		Else &apos; нет несколько закладок в одном абзаце и есть сборка абзацев с закладками (indQ = 0 AND indR &lt;&gt; 0)
 			sID = Mid( sID, 1, indQ-1 )
-			_FindBookmarkForID = CorrectBMLink( sID )
+			_FindBookmarkForID = CorrectID( CorrectBMLink( sID ) )
 		End If
 	End If
 End Function
