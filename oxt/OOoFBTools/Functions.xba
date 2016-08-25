@@ -157,7 +157,7 @@ Sub embeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional P
 	Next l
 	
 	Dim oText As Object
-	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
+	If NOT IsMissing( oProgressBar ) And ( NOT IsMissing( ProgressLabel ) ) Then
 		oProgressBar.start( ProgressLabel, UBound( oGraphics() )
 	End If
 	For l = 0 To UBound( oGraphics() )
@@ -195,10 +195,10 @@ Sub embeddingGraphicLinkToDoc ( oDoc, oGraphic )
 End Sub
 
 &apos; изменение привязки для всей графики в документе
-Sub changeAnchorForAllGraphics( iAnchor As Long, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+Sub changeAnchorForAllGraphics( iAnchor As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
 	Dim oDoc		As Object	: oDoc		= ThisComponent
 	Dim oGraphics	As Object	: oGraphics	= oDoc.getGraphicObjects()
-	Dim oThisGraphic As Object, i As Long
+	Dim oThisGraphic As Object, i As Integer
 
 	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
 		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
@@ -214,10 +214,10 @@ Sub changeAnchorForAllGraphics( iAnchor As Long, ByRef Optional oProgressBar, By
 End Sub
 
 &apos; изменение обтекания для всей графики в документе
-Sub wrapImageForAllGraphics( wrapImage As Long, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+Sub wrapImageForAllGraphics( wrapImage As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
 	Dim oDoc		As Object	: oDoc		= ThisComponent
 	Dim oGraphics	As Object	: oGraphics = oDoc.getGraphicObjects()
-	Dim oThisGraphic As Object, i As Long
+	Dim oThisGraphic As Object, i As Integer
 
 	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
 		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
@@ -234,10 +234,10 @@ Sub wrapImageForAllGraphics( wrapImage As Long, ByRef Optional oProgressBar, ByR
 End Sub
 
 &apos; изменение горизонтального выравнивания графики в документе
-Sub HorizontalAllignImageForAllGraphics( haImage As Long, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+Sub HorizontalAllignImageForAllGraphics( haImage As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
 	Dim oDoc		As Object	: oDoc		= ThisComponent
 	Dim oGraphics	As Object	: oGraphics = oDoc.getGraphicObjects()
-	Dim oThisGraphic As Object, i As Long
+	Dim oThisGraphic As Object, i As Integer
 
 	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
 		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
@@ -253,10 +253,10 @@ Sub HorizontalAllignImageForAllGraphics( haImage As Long, ByRef Optional oProgre
 End Sub
 
 &apos; изменение вертикального выравнивания графики в документе
-Sub VerticalAllignImageForAllGraphics( vaImage As Long, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
+Sub VerticalAllignImageForAllGraphics( vaImage As Integer, ByRef Optional oProgressBar, ByRef Optional ProgressLabel )
 	Dim oDoc		As Object	: oDoc		= ThisComponent
 	Dim oGraphics	As Object	: oGraphics = oDoc.getGraphicObjects()
-	Dim oThisGraphic As Object, i As Long
+	Dim oThisGraphic As Object, i As Integer
 
 	If NOT IsMissing(oProgressBar) And ( NOT IsMissing(ProgressLabel) ) Then
 		oProgressBar.start( ProgressLabel, oGraphics.getCount() )
@@ -464,7 +464,7 @@ Function ListOfDocumentStyles( StyleType As String ) As Array
 	Dim sCharacterStyleNames()	As String	: sCharacterStyleNames()	= oCharacterStyles.getElementNames()
 	
 	Dim sListOfCharacterStyleNames As String
-	Dim i As Long
+	Dim i As Integer
 	Dim aArray() As String
 	For i = LBound(sCharacterStyleNames()) To UBound (sCharacterStyleNames())
 		AddNewItemToArray1( aArray(), sCharacterStyleNames(i) )
@@ -477,7 +477,7 @@ End Function
 Function GetTextOfStyle(sStyle As String, bMerge As Boolean) As String
 	Dim sResult As String
 	Dim oStr As Object, oEnum As Object
-	Dim oDesc As Object, iCount As Long
+	Dim oDesc As Object, iCount As Integer
 	oDesc = ThisComponent.createSearchDescriptor()
 	With oDesc
 		.SearchStyles = true
@@ -654,7 +654,7 @@ Function ListSystemFonts( Sort As Boolean ) As Array
 	Dim oFontDescriptors	As Variant	: oFontDescriptors	= oDevice.FontDescriptors
 	Dim oFontDescriptor		As Object
 	Dim aFontArray()		As String
-	Dim iIndex				As Long
+	Dim iIndex				As Integer
 	For iIndex = LBound(oFontDescriptors) To UBound(oFontDescriptors)
 		oFontDescriptor = oFontDescriptors(iIndex)
 		Dim j As Long
@@ -707,7 +707,7 @@ End Function
 
 &apos; Запись массива в файл
 Sub SaveArray( aArray() As String, sFile As String )
-	Dim oOS As Object, oFA As Object, oTOS As Object, i As Long
+	Dim oOS As Object, oFA As Object, oTOS As Object, l As Long
 
 	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oTOS = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
@@ -717,9 +717,9 @@ Sub SaveArray( aArray() As String, sFile As String )
 	oTOS.setOutputStream(oOS)
 	oTOS.setEncoding(&quot;utf-8&quot;)
 	
-	For i=LBound(aArray()) To UBound(aArray())
-		oTOS.writeString(aArray(i) &amp; chr(10))
-	Next i
+	For l=LBound(aArray()) To UBound(aArray())
+		oTOS.writeString(aArray(l) &amp; chr(10))
+	Next l
 	oTOS.closeOutput()
 End Sub
 
@@ -752,7 +752,7 @@ Sub ReadFileInArray( aArray() As String, sFile As String )
 End Sub
 
 &apos; Читаем настройки и задаем координаты X,Y форме
-Function ReadXYFormPos( sFileName As String, nX As Long, nY As Long ) As Boolean
+Function ReadXYFormPos( sFileName As String, ByRef nX As Integer, ByRef nY As Integer ) As Boolean
 	On Error Resume Next
 	If FileExists( sFileName ) Then
 		Dim sLine As String
@@ -782,7 +782,7 @@ Function ReadXYFormPos( sFileName As String, nX As Long, nY As Long ) As Boolean
 End Function
 
 &apos; Читаем настройки и задаем значения контролам формы
-Function ReadDlgSettings( sFileName As String, oDlg, nX As Long, nY As Long ) As Boolean
+Function ReadDlgSettings( sFileName As String, oDlg, ByRef nX As Integer, ByRef  nY As Integer ) As Boolean
 	If FileExists( sFileName ) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
@@ -840,7 +840,7 @@ Sub SaveSettings( sSettingsFilename As String, oDlg As Object )
 	oTOS.setOutputStream( oOS )
 	oTOS.setEncoding( &quot;utf-8&quot; )
 	
-	Dim ctrl As Object, i As Long
+	Dim ctrl As Object, i As Integer
 	ctrl = oDlg.getControls()
 	For i = LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoEditControl&quot; Then
@@ -905,21 +905,21 @@ End Function
 Function DelBreakLineInString( sString As String ) As String
 	Dim aTemp() As String
 	aTemp() = Split( sString, chr(10) )
-	Dim i As Long : sString = &quot;&quot;
+	Dim i As Integer : sString = &quot;&quot;
 	If UBound( aTemp() ) &lt;&gt; -1 Then
 		For i = 0 To UBound( aTemp() )
 			sString = sString &amp; aTemp( i ) &amp; &quot; &quot;
 		Next i
 	End If
-	If sString&lt;&gt;&quot;&quot; Then
-		sString = Left( sString, Len( sString )-1, )
+	If sString &lt;&gt; &quot;&quot; Then
+		sString = Left( sString, Len( sString ) - 1, )
 	End If
 	DelBreakLineInString = sString
 End Function
 
 &apos; /// Работа с экраном ///
 
-Function ToScreenCenter(oDlg)
+Function ToScreenCenter( oDlg )
 	&apos; центрирование на экране
 	Dim CurPosSize As New com.sun.star.awt.Rectangle
 	Dim oFrame, FramePosSize, xWindowPeer, WindowHeight, WindowWidth, DialogWidth, DialogHeight, iXPos, iYPos
@@ -1133,13 +1133,13 @@ End Function
 
 &apos; убираем перевод строки в тексте из ячеек матрицы
 Function DelCR( sTextArray() As String )
-	Dim sCR As String, i As Long
-	For i = 0 To UBound(sTextArray())
-		sCR = sTextArray(i)
+	Dim sCR As String, l As Long
+	For l = 0 To UBound(sTextArray())
+		sCR = sTextArray(l)
 		If InStr(sCR, chr(13)) &gt; 0 Then
-			sTextArray(i) = ReplaceInString( sCR, chr(13), &quot;&quot;, False )
+			sTextArray(l) = ReplaceInString( sCR, chr(13), &quot;&quot;, False )
 		End If
-	Next i
+	Next l
 End Function
 
 &apos; удаление из массива указанного элемента
@@ -1455,7 +1455,7 @@ End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
 Function FB2CorrectWord( sWord As String, iResult As Long )
-	Dim i As Long, iLen As Long
+	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
 	For i = 1 To iLen
@@ -1478,7 +1478,7 @@ End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
 Function FB2CorrectBracketsWord( sWord As String, iResult As Long )
-	Dim i As Long, iLen As Long
+	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
 	For i = 1 To iLen
@@ -1498,7 +1498,7 @@ End Function
 
 &apos; корректировка слова - отлов символов &lt;,&gt;,&amp;
 Function FB2CorrectAmpWord(sWord As String, iResult As Long)
-	Dim i As Long, iLen As Long
+	Dim i As Integer, iLen As Integer
 	Dim newWord As String, sChar As String
 	iLen = Len(sWord)&apos; длина анализируемого слова-лексемы
 	For i = 1 To iLen
@@ -1634,7 +1634,7 @@ End Sub
 Function getInnerTableNames( oDoc As Object )
 	Dim aTablesName()	As String &apos; список всех вложенных таблиц
 	Dim oTables			As Object : oTables = oDoc.getTextTables()
-	Dim i As Long
+	Dim i As Integer
 	&apos; список вложенных таблиц
 	For i=0 To oTables.getCount() - 1
 		Dim oTable As Object : oTable = oTables.getByIndex(i)
@@ -1665,7 +1665,7 @@ Function IsComplexRowsCollTable(oTable As Object) As Boolean
 	&apos; True - если сложная таблица с разным числом столбцов и строк В ЯЧЕЙКЕ
 	&apos; False - если сложная таблица с разным числом столбцов в строке
 	Dim oCell As Object
-	Dim n As String, i As Long
+	Dim n As String, i As Integer
 	Dim sNames() As String : sNames() = oTable.getCellNames()
 	For i = LBound(sNames()) To UBound(sNames())
 		oCell = oTable.getCellByName(sNames(i))
@@ -1681,7 +1681,7 @@ End Function
 
 &apos; разбивает название ячейки таблицы на Букву (возвращаемое значение) и ее Номер (sNumber)
 Function GetCellLetterAndNumber(sCell As String, sNumber As String) As String
-	Dim i As Long
+	Dim i As Integer
 	Dim s As String, sy As String
 	s = &quot;&quot;
 	sy = &quot;&quot;
@@ -1709,8 +1709,8 @@ Function GetCellLetterAndNumber(sCell As String, sNumber As String) As String
 End Function
 
 &apos; возвращает max число столбцов в сложной таблице (просмотр всех строк)
-Function GetMaxColInTable(oTable As Object) As Long
-	Dim i As Long, j As Long, nCollMaxInTable As Long
+Function GetMaxColInTable(oTable As Object) As Integer
+	Dim i As Integer, j As Integer, nCollMaxInTable As Integer
 	Dim sNames() As String
 	sNames() = oTable.getCellNames()
 	nCollMaxInTable = 0
@@ -1741,9 +1741,9 @@ Function GetMaxColInTable(oTable As Object) As Long
 End Function
 
 &apos; число столбцов в строке стожной таблицы
-Function GetColumnCountInRow(oTable As Object, nCell As Long, CellNames() ) As Long
+Function GetColumnCountInRow(oTable As Object, nCell As Integer, CellNames() ) As Integer
 	Dim oCell As Object, sNumber As String, c As String
-	Dim nColumnCount As Long, i As Long, CellCursor
+	Dim nColumnCount As Integer, i As Integer, CellCursor
 	nColumnCount = nCell
 	nColumnCount = nColumnCount + 1
 	i = 0
@@ -1763,8 +1763,8 @@ Function GetColumnCountInRow(oTable As Object, nCell As Long, CellNames() ) As L
 End Function
 
 &apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы
-Function GetMaxLineInRow(oTable, CellNames, iCel As Long) As Long
-	Dim nMaxLines As Long, nLines As Long, iCol As Long
+Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
+	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
 	Dim Cell
 	nMaxLines = 0
 	For iCol = 0 To oTable.Columns.Count-1
@@ -1780,7 +1780,7 @@ End Function
 
 &apos; возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы,
 &apos; учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
-Function GetMaxLineInRowWithProtect(oTable, CellNames, iCel As Long, nColumns As Long) As Long
+Function GetMaxLineInRowWithProtect(oTable, CellNames, iCel As Integer, nColumns As Integer) As Integer
 	Dim nMaxLines As Long, nLines As Long, iCol As Long
 	Dim Cell
 	nMaxLines = 0
@@ -1824,9 +1824,9 @@ End Sub
 &apos; ===============================================================================
 
 &apos; есть ли строка Template в строковом массиве sArray()
-Function IsExsistStringInArray( ByRef sArray() As String, Template As String ) As Long
+Function IsExsistStringInArray( ByRef sArray() As String, Template As String ) As Integer
 	IsExsistStringInArray = -1
-	Dim i As Long
+	Dim i As Integer
 	For i=0 To UBound( sArray() )
 		If Template = sArray(i) Then
 			IsExsistStringInArray = i
@@ -1868,7 +1868,7 @@ End Function
 &apos; ====================================================================================
 &apos; Установка итема языкового листбокса - язык системы по-умолчанию
 Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
-	Dim i As Long
+	Dim i As Integer
 	For i=0 To UBound( sLangList() )
 		If InStr( sLangList(i), &quot;(&quot; &amp; getOOoLocal() &amp; &quot;)&quot; ) &gt; 0  Then
 			oDlg.getControl( slbLang ).selectItem( sLangList(i), True )
@@ -1881,7 +1881,7 @@ End Sub
 Function isOneCheckBoxeCheched( oDlg As Object ) As Boolean
 	isOneCheckBoxeCheched = False
 	Dim ctrl As Object : ctrl = oDlg.getControls()
-	Dim i As Long
+	Dim i As Integer
 	For i=LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
 			If ctrl(i).Model.State Then
@@ -1893,10 +1893,10 @@ Function isOneCheckBoxeCheched( oDlg As Object ) As Boolean
 End Function
 
 &apos; сколько помечено CheckBox
-Function countCheckBoxesCheched( oDlg As Object ) As Long
+Function countCheckBoxesCheched( oDlg As Object ) As Integer
 	countCheckBoxesCheched = 0
 	Dim ctrl As Object : ctrl = oDlg.getControls()
-	Dim i As Long
+	Dim i As Integer
 	For i=LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
 			If ctrl(i).Model.State Then
@@ -1911,8 +1911,22 @@ End Function
 &apos; 								сортировка
 &apos; ====================================================================================
 &apos; перемена местами двух int массивов одинаковой размерности
-Function swap_arrays_int( aArray1() As Long, aArray2() As Long ) As Boolean
+Function swap_arrays_int( aArray1() As Integer, aArray2() As Integer ) As Boolean
 	swap_arrays_int = False
+	If UBound( aArray1() ) &lt;&gt; UBound( aArray1() ) Then Exit Function
+	Dim i As Integer
+	Dim nTemp As Integer
+	For i=0 To UBound( aArray1() )
+		nTemp = aArray1(i)
+		aArray1(i) = aArray2(i)
+		aArray2(i) = nTemp
+	Next i
+	swap_arrays_int = True
+End Function
+
+&apos; перемена местами двух long массивов одинаковой размерности
+Function swap_arrays_long( aArray1() As Long, aArray2() As Long ) As Boolean
+	swap_arrays_long = False
 	If UBound( aArray1() ) &lt;&gt; UBound( aArray1() ) Then Exit Function
 	Dim l As Long
 	Dim nTemp As Long
@@ -1921,7 +1935,7 @@ Function swap_arrays_int( aArray1() As Long, aArray2() As Long ) As Boolean
 		aArray1(l) = aArray2(l)
 		aArray2(l) = nTemp
 	Next l
-	swap_arrays_int = True
+	swap_arrays_long = True
 End Function
 
 &apos; перемена местами двух string массивов одинаковой размерности
@@ -1940,7 +1954,7 @@ End Function
 
 &apos; перемена местами двух итемов в массиве
 Sub swap( aArray() As String, nPos1 As Long, nPos2 As Long )
-	If UBound( aArray() )=-1 Then Exit Sub
+	If UBound( aArray() ) = -1 Then Exit Sub
 	If nPos1 =-1 Then Exit Sub
 	Dim sTemp As String
 	sTemp = aArray(nPos1)
@@ -1948,10 +1962,19 @@ Sub swap( aArray() As String, nPos1 As Long, nPos2 As Long )
 	aArray(nPos2) = sTemp
 End Sub
 
-&apos; перемена местами двух итемов в массиве
-Sub swap_int( aArray() As Long, nPos1 As Long, nPos2 As Long )
-	If UBound( aArray() )=-1 Then Exit Sub
+&apos; перемена местами двух int итемов в массиве
+Sub swap_int( aArray() As Integer, nPos1 As Integer, nPos2 As Integer )
+	If UBound( aArray() ) = -1 Then Exit Sub
 	Dim nTemp As Long
+	nTemp = aArray(nPos1)
+	aArray(nPos1) = aArray(nPos2)
+	aArray(nPos2) = nTemp
+End Sub
+
+&apos; перемена местами двух long итемов в массиве
+Sub swap_long( aArray() As Long, nPos1 As Long, nPos2 As Long )
+	If UBound( aArray() ) = -1 Then Exit Sub
+	Dim nTemp As Integer
 	nTemp = aArray(nPos1)
 	aArray(nPos1) = aArray(nPos2)
 	aArray(nPos2) = nTemp
@@ -1975,11 +1998,29 @@ Function bubble_sort( aArray() As String )
 	Next i
 End Function
 
-&apos; пузырьковая сортировка
+&apos; пузырьковая сортировка int элементов массива
 Function bubble_sort_int( aArray() As Integer )
 	Dim nSize As Integer : nSize = Ubound(aArray())
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Integer, j As Integer
+	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
+	&apos; наибольший автоматически оказывается в правильной позиции. 
+	For i = 0 To nSize - 1
+		j = nSize - 1
+		Do
+			If ( aArray(j - 1) &gt; aArray(j) ) Then
+				swap_int(aArray, j - 1, j)
+			End If
+		j = j - 1
+		Loop While (j &gt; i)
+	Next i
+End Function
+
+&apos; пузырьковая сортировка long элементов массива
+Function bubble_sort_long( aArray() As Long )
+	Dim nSize As Long : nSize = Ubound(aArray())
+	If nSize &lt;= 1 Then Exit Function
+	Dim i As Long, j As Long
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
 	&apos; наибольший автоматически оказывается в правильной позиции. 
 	For i = 0 To nSize - 1
@@ -2067,7 +2108,7 @@ Function getOOoFBToolsTempPath() As String
 End Function
 
 &apos; что за система: 0 - Windows, 1 - Mac OS X, 2 - Linux, FreeBSD и т.д.
-Function _GetOS() As Long &apos; старая ф-я определения OS - не работает под Linux и OOo 3.0
+Function _GetOS() As Integer &apos; старая ф-я определения OS - не работает под Linux и OOo 3.0
 	Dim oPathSettings, sDir As String
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
 	sDir = oPathSettings.Work
@@ -2080,7 +2121,7 @@ Function _GetOS() As Long &apos; старая ф-я определения OS - 
 	End If
 End Function
 
-Function GetOS() As Long 
+Function GetOS() As Integer 
    Dim sDir As String : sDir = GetHomePath() 
    If InStr( sDir, &quot;file:///home/&quot; ) &gt; 0 Or InStr( sDir, &quot;file:///root&quot; ) &gt; 0 Then 
       GetOS = 2 &apos; Linux, FreeBSD и т.д. 
@@ -2260,7 +2301,7 @@ Sub _UnoResetCellProtection()
 End Sub
 
 &apos; масштабирование символов по ширине
-sub _UnoSetCharacterWidthScalingFactor( value As Long )
+sub _UnoSetCharacterWidthScalingFactor( value As Integer )
 	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
 	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(0) As New com.sun.star.beans.PropertyValue
@@ -2270,7 +2311,7 @@ sub _UnoSetCharacterWidthScalingFactor( value As Long )
 End Sub
 
 &apos; интервал для символов (стандарт, разрядка или уплотнение)
-Sub _UnoSetCharSpacing( value As Long )
+Sub _UnoSetCharSpacing( value As Integer )
 	Dim oDoc   		As Object : oDoc   		= ThisComponent.CurrentController.Frame
 	Dim oDispatcher	As Object : oDispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	Dim args1(0) As New com.sun.star.beans.PropertyValue

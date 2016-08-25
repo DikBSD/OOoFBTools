@@ -101,7 +101,7 @@ Sub FootNoteInteractiveMakerStart()
 	IsFirstCut	= True	&apos; еще не нажимали кнопку вырезать в буфер
 	
 	Dim aNFNInListList() As String
-	aNFNInListList() = Array( &quot;x. &quot; &amp; sBTEND.sText &amp; &quot; ...&quot;, sFNUIMD.sNumberInUpIndex &amp; &quot; ...&quot;	)
+	aNFNInListList() = Array( &quot;x &quot; &amp; sBTEND.sText &amp; &quot; ...&quot;, &quot;x. &quot; &amp; sBTEND.sText &amp; &quot; ...&quot;, sFNUIMD.sNumberInUpIndex &amp; &quot; ...&quot;	)
 	
 	Dim oList : oList = createUnoListener( &quot;FootNoteInteractiveMakerDlg_&quot;,&quot;com.sun.star.awt.XTopWindowListener&quot; )
 	With oFootNoteInteractiveMakerDlg
@@ -498,6 +498,9 @@ Sub MarkFootNoteNumbers()
 	If oLB.SelectedItemPos = 1 Then
 		&apos; пометка заданным маркером и цветом шрифта только стартовых цифр в верхнем индексе (номера сносок в списках текста сносок)
 		MarkTextForTemplate( &quot;^[:space:]*[:digit:]+&quot;, 16711680, 10079487, True )
+	ElseIf oLB.SelectedItemPos = 0 Then
+		&apos; пометка заданным маркером и цветом шрифта только стартовых цифр без индекса (номера сносок в списках текста сносок)
+		MarkTextForTemplate( &quot;^[:space:]*[:digit:]+&quot;, 16711680, 10079487, False )
 	Else
 		&apos; пометка заданным маркером и цветом шрифта только стартовых цифр без индекса (номера сносок в списках текста сносок)
 		MarkTextForTemplate( &quot;^[:space:]*[:digit:]+\.&quot;, 16711680, 10079487, False )

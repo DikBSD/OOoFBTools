@@ -118,6 +118,22 @@ Sub ExportToFB21DlgCanceled()
 	oExportToFB21Dlg.endExecute()
 End Sub
 
+&apos;***************************************************************************
+&apos;Доступность выбора расширения архива, если включен режим архивации
+Sub ZipFB2CheckBoxStateChange()
+	If oExportToFB21Dlg.getControl(&quot;ZipFB2CheckBox&quot;).State = 1 Then
+		With oExportToFB21Dlg
+			.getControl(&quot;fb2ZipOptionButton&quot;).Enable = True
+			.getControl(&quot;fbzOptionButton&quot;).Enable = True
+		End With
+	Else
+		With oExportToFB21Dlg
+			.getControl(&quot;fb2ZipOptionButton&quot;).Enable = False
+			.getControl(&quot;fbzOptionButton&quot;).Enable = False
+		End With
+	End If
+End Sub
+
 &apos;**************************************************************************
 &apos; запуск экспорта документа в fb2 формат
 Sub ExportDoc()
@@ -178,6 +194,9 @@ Sub ExportDoc()
 		.getControl(&quot;cmdbtnExportToFB21&quot;).Enable = False
 		.getControl(&quot;cmdbtnCancel&quot;).Enable = False
 		.getControl(&quot;ReplaceExistFB2CheckBox&quot;).Enable = False
+		.getControl(&quot;ZipFB2CheckBox&quot;).Enable = False
+		.getControl(&quot;fb2ZipOptionButton&quot;).Enable = False
+		.getControl(&quot;fbzOptionButton&quot;).Enable = False
 	End With
     
 	&apos; записываем расположение на экране диалога Конвертера в файл настроек
@@ -336,6 +355,31 @@ Sub ExportDoc()
 	Dim sValidateResult As String
 	If bValidate Then
 		sValidateResult = Validate( sFB2File, GetWorkFB2Schema() ) &apos;валидация результата
+	End If
+	
+	&apos; сжатие fb2 файла в zip
+	If oExportToFB21Dlg.getControl(&quot;ZipFB2CheckBox&quot;).State = 1 Then
+		If FileExists( sFB2File ) Then
+			Dim Ext As String
+			If oExportToFB21Dlg.getControl(&quot;fb2ZipOptionButton&quot;).State = True Then
+				Ext	= &quot;.fb2.zip&quot;
+			Else
+				Ext	= &quot;.fbz&quot;
+			End If
+			Dim FileWithoutExt As String : FileWithoutExt = Mid ( sFB2File, 1, Len ( sFB2File ) - 4 )
+			Dim sScript As String
+			If GetOS() = 0 Then &apos; Для Windows
+				Dim _7zaPath As String : _7zaPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\7za.exe&quot;
+				sScript = _7zaPath &amp; &quot; a -tzip -mx7 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FileWithoutExt &amp; Ext &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; sFB2File &amp; &quot;&quot;&quot;&quot;
+				Shell( sScript, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
+			ElseIf GetOS() &gt; 0 Then &apos; для Nix систем
+				Dim sScriptPath As String
+				sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;zip.exe -r &quot; &amp; &quot;&quot;&quot;&quot; &amp; FileWithoutExt &amp; Ext &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; sFB2File &amp; &quot;&quot;&quot;&quot;
+				sScriptPath = getOOoFBToolsTempPath() &amp; &quot;/fb2_zip.sh&quot; 
+				SaveText( sScriptPath, sScript, &quot;utf-8&quot; )
+				Shell( &quot;/bin/sh&quot;, 1, sScriptPath, true )
+			End If
+		End If
 	End If
 
 	If bFB2Execute Then
@@ -512,7 +556,11 @@ Function LoadExportToFB21DlgSettings() As Boolean
 			If sLine &lt;&gt; &quot;&quot; Then
 				&apos; Устанавливаем данные
 				Dim sSetting() As String : sSetting = Split(sLine, &quot;=&quot;)
-				If sSetting(0) = &quot;X&quot; Then
+				If sSetting(0) = &quot;fb2ZipOptionButton&quot; Or sSetting(0) = &quot;fbzOptionButton&quot; Then
+					oExportToFB21Dlg.getControl( sSetting(0) ).setState( sSetting(1) )
+				ElseIf sSetting(0) = &quot;ReplaceExistFB2CheckBox&quot; Or sSetting(0) = &quot;ZipFB2CheckBox&quot; Then
+					oExportToFB21Dlg.getControl( sSetting(0) ).setState( sSetting(1) )
+				ElseIf sSetting(0) = &quot;X&quot; Then
 					nX = sSetting(1)
 				ElseIf sSetting(0) = &quot;Y&quot; Then
 					nY = sSetting(1)
@@ -525,6 +573,8 @@ Function LoadExportToFB21DlgSettings() As Boolean
 	Else
 		LoadExportToFB21DlgSettings = False
 	End If
+	&apos;Доступность выбора расширения архива, если включен режим архивации
+	ZipFB2CheckBoxStateChange()
 End Function
 
 &apos;***************************************************************************
@@ -541,14 +591,14 @@ Sub SaveExportToFB21DlgSettings()
 	
 	Dim ctrl As Object, i As Long
 	ctrl = oExportToFB21Dlg.getControls()
-	For i=LBound(ctrl) To UBound(ctrl)
+	For i = LBound(ctrl) To UBound(ctrl)
 		If ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoRadioButtonControl&quot; Then
-			If ctrl(i).Model.Name = &quot;obtnFB21&quot; Or ctrl(i) = &quot;obtnFB2LibRusEc&quot; Or ctrl(i) = &quot;obtnFB2Flibusta&quot; Then
+			If ctrl(i).Model.Name = &quot;fb2ZipOptionButton&quot; Or ctrl(i).Model.Name = &quot;fbzOptionButton&quot; Then
 				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 			End If
-		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoListBoxControl&quot; Then
-			If ctrl(i).Model.Name = &quot;Codepage&quot; Then
-				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).SelectedItemPos &amp; chr(10))
+		ElseIf ctrl(i).getImplementationName() = &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+			If ctrl(i).Model.Name = &quot;ReplaceExistFB2CheckBox&quot; Or ctrl(i).Model.Name = &quot;ZipFB2CheckBox&quot; Then
+				oTOS.writeString(ctrl(i).Model.Name &amp; &quot;=&quot; &amp; ctrl(i).Model.State &amp; chr(10))
 			End If
 		End If
 	Next i
