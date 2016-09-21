@@ -22,6 +22,7 @@ Public bELForStartAnnot As Boolean
 Public asFNPars() As String &apos; массив абзацев сноски с ее &quot;аттрибутами&quot; (для печати)
 
 Public sBookAnnotation() As String &apos; массив хранит &quot;обработанную&quot; Аннотацию на Книгу
+Private saTranslitLetters(66)	As String &apos; для транслитерации
 
 &apos; ===========================================================================================================================
 &apos; 												Работа контролов и формы Конвертера
@@ -39,10 +40,10 @@ Sub ExportToFB21DlgExec()
 	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
 	InitExportToFB21DlgMessage()
 	
-	&apos; Задаем настройки в переменные по умолчанию
-	SetDefaultSettingsToVars()
-	&apos; считываем настройки из файла в переменные
-	LoadSettingsToVars()
+&apos;	&apos; Задаем настройки в переменные по умолчанию
+&apos;	SetDefaultSettingsToVars()
+&apos;	&apos; считываем настройки из файла в переменные
+&apos;	LoadSettingsToVars()
 		
 	&apos; Предварительная обработка текста: удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе (текст, Врезки, таблицы)
 	If bNotUsedBookmarks Then
@@ -107,7 +108,40 @@ Sub ExportToFB21DlgExec()
 	&apos; только теперь считываем настройки из файла в переменные
 	LoadSettingsToVars()
 	oProgressBar.setValue(4)
+	&apos; инициализация массива транслитерации
+	MakeTranslitLettersList( saTranslitLetters() )
+	oProgressBar.setValue(5)
+	
 	oProgressBar.end
+	
+	If GetOS() = &quot;UNIX&quot; Then &apos; для Unix
+		&apos; проверка на наличие утилит в Unix системе
+		If _guidPath = &quot;&quot; Then
+			_guidPath = UnixUuidgenPath() 
+		End If
+		If _xmlPath = &quot;&quot; Then
+			_xmlPath = UnixXmllintPath()
+		End If
+		If _base64 = &quot;&quot; Then
+			_base64 = UnixBase64Path()
+		End If
+		If _openssl = &quot;&quot; Then
+			_openssl = UnixOpensslPath()
+		End If
+		If _zipPath = &quot;&quot; Then
+			_zipPath = UnixZipPath()
+		End If
+		Dim oProgressLabel As Object : oProgressLabel = oExportToFB21Dlg.getControl(&quot;exportLabel&quot;)
+		If _zipPath = &quot;&quot; Then
+			oProgressLabel.Text = oProgressLabel.Text &amp; sNYMD.sNoZip &amp; chr(10)
+		End If
+		If _base64 = &quot;&quot; AND _openssl = &quot;&quot; Then
+			oProgressLabel.Text = oProgressLabel.Text &amp; sNYMD.sNoZip &amp; chr(10)
+		End If
+		If _xmlPath = &quot;&quot; Then
+			oProgressLabel.Text = oProgressLabel.Text &amp; sNYMD.sNoXmllint &amp; chr(10)
+		End If
+	End If
 	
 	oExportToFB21Dlg.execute()
 End Sub
@@ -207,28 +241,19 @@ Sub ExportDoc()
 		MkDir getOOoFBToolsTempPath()
 	End If
 
-	&apos; для Windows системы копируем base64.exe из расширения в OOoFBToolsTemp папку для работы экспорта графики в портабельном режиме
-	If GetOS() = 0 Then &apos; для Windows-системы
-		Dim base64Path As String : base64Path = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\base64.exe&quot;
-		If FileExists( base64Path ) Then
-			FileCopy base64Path, ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\base64.exe&quot; )
-		End If
-	End If
-	
 	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount + 50 )
 &apos;	oProgressBar.start( sETFB2DD.sFB2ExportProgressBarAnalysis, oDoc.ParagraphCount )
 	oProgressBar.setValue( 0 )
 	
-	Dim oProgress As Object
-	Dim oProgressLabel As Object
-	oProgress = oExportToFB21Dlg.getControl(&quot;exportProgressBar&quot;)
+	Dim oProgress As Object : oProgress = oExportToFB21Dlg.getControl(&quot;exportProgressBar&quot;)
 	If bFENoteSeparately = True Then
 		oProgress.setRange(0, 7)
 	Else
 		oProgress.setRange(0, 6)
 	End If
 	oProgress.setValue(0)
-	oProgressLabel = oExportToFB21Dlg.getControl(&quot;exportLabel&quot;)
+	
+	Dim oProgressLabel As Object : oProgressLabel = oExportToFB21Dlg.getControl(&quot;exportLabel&quot;)	
 	oProgressLabel.Text = &quot;1. &quot; &amp; sETFB2DD.sFB2ExportProgressBarCovers &amp; &quot; … &quot;
 	
 	&apos; если есть картинки (ДО абзаца со стилем Названия Книги), то сначала формируем тэги обложек
@@ -328,7 +353,7 @@ Sub ExportDoc()
 		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;5. &quot; &amp; sETFB2DD.sFB2ExportProgressBarGraphics &amp; &quot; … &quot;
 	End if
 	If UBound(Images()) &lt;&gt; -1 Then
-		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound(Images() )
+		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound( Images() )
 		oProgressBar.setValue(0)
 		SaveImages()
 		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; UBound( Images() )+1 &amp; &quot;.&quot; &amp; chr(10)
@@ -340,16 +365,14 @@ Sub ExportDoc()
 	Else
 		oProgress.setValue(6)
 	End If
-	oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
-	oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportEnd &amp; chr(10)
 	
 	oTextOutputStream.writeString(&quot;&lt;/FictionBook&gt;&quot; &amp; chr(10))
 	oTextOutputStream.closeOutput()
 	oProgressBar.End
-		
-	&apos; запустить полученный файл на просмотр и валидацию, если нужно
-	Dim sEndMessage	As String : sEndMessage	= sETFB2DD.sFB2ExportEnd
+	
+	&apos; запустить полученный файл на валидацию, если нужно
 	Dim sFB2File	As String : sFB2File	= oExportToFB21Dlg.Model.fb2PathTextField.Text
+	Dim sEndMessage	As String : sEndMessage	= sETFB2DD.sFB2ExportEnd
 	Dim sMess		As String : sMess		= sEndMessage &amp; chr(10) &amp; chr(10)
 	
 	Dim sValidateResult As String
@@ -357,32 +380,69 @@ Sub ExportDoc()
 		sValidateResult = Validate( sFB2File, GetWorkFB2Schema() ) &apos;валидация результата
 	End If
 	
+	Dim FB2Zip	As String : FB2Zip	= &quot;&quot;
+	Dim Ext		As String : Ext		= &quot;&quot;
 	&apos; сжатие fb2 файла в zip
 	If oExportToFB21Dlg.getControl(&quot;ZipFB2CheckBox&quot;).State = 1 Then
 		If FileExists( sFB2File ) Then
-			Dim Ext As String
+			Dim Log As String : Log = getOOoFBToolsTempPath() &amp; NativeSeparator() &amp; &quot;log_zip.txt&quot;
+            If FileExists( Log ) Then
+                Kill Log
+            End If
+			
 			If oExportToFB21Dlg.getControl(&quot;fb2ZipOptionButton&quot;).State = True Then
 				Ext	= &quot;.fb2.zip&quot;
 			Else
 				Ext	= &quot;.fbz&quot;
 			End If
-			Dim FileWithoutExt As String : FileWithoutExt = Mid ( sFB2File, 1, Len ( sFB2File ) - 4 )
-			Dim sScript As String
-			If GetOS() = 0 Then &apos; Для Windows
-				Dim _7zaPath As String : _7zaPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\7za.exe&quot;
-				sScript = _7zaPath &amp; &quot; a -tzip -mx7 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FileWithoutExt &amp; Ext &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; sFB2File &amp; &quot;&quot;&quot;&quot;
-				Shell( sScript, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
-			ElseIf GetOS() &gt; 0 Then &apos; для Nix систем
-				Dim sScriptPath As String
-				sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;zip.exe -r &quot; &amp; &quot;&quot;&quot;&quot; &amp; FileWithoutExt &amp; Ext &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; sFB2File &amp; &quot;&quot;&quot;&quot;
-				sScriptPath = getOOoFBToolsTempPath() &amp; &quot;/fb2_zip.sh&quot; 
-				SaveText( sScriptPath, sScript, &quot;utf-8&quot; )
-				Shell( &quot;/bin/sh&quot;, 1, sScriptPath, true )
+			
+			&apos; транслитерация строки (только для русских букв)
+			Dim FB2Name As String : FB2Name = getFileName( sFB2File )
+			Dim TranlitFB2Name As String : TranlitFB2Name = RusTransliterationString( saTranslitLetters(), FB2Name )
+			Dim NewTranslatedPath As String : NewTranslatedPath = getPathDir(sFB2File) &amp; NativeSeparator() &amp; TranlitFB2Name
+			&apos;транслитерация ИМЕНИ файла
+			If FileExists( NewTranslatedPath ) Then
+				Kill NewTranslatedPath
 			End If
+			Name sFB2File As NewTranslatedPath
+			
+			FB2Zip = FilePathWithoutExt( NewTranslatedPath ) &amp; Ext
+			Dim Script As String
+			If GetOS() = &quot;WIN&quot; Then &apos; Для Windows
+				Script = WindowsZipPath() &amp; &quot; a -tzip -mx7 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot;
+				Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
+			ElseIf GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+				Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _zipPath &amp; &quot; -j -9 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot; &amp; &quot; 2&gt; &quot; &amp; Log
+				Dim ScriptPath As String : ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/fb2_zip.sh&quot; 
+				SaveText( ScriptPath, Script, &quot;utf-8&quot; )
+				Shell( &quot;/bin/sh&quot;, 1, ScriptPath, true )
+			End If
+			If FileExists( FB2Zip ) Then
+				oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sZipOk
+				Kill NewTranslatedPath
+			End If
+
+			&apos; переименовывание архива обратно в язык локали
+			Dim FB2ZipWithoutExt As String
+			FB2ZipWithoutExt = FilePathWithoutExt( FB2Zip )
+			FB2ZipWithoutExt = FilePathWithoutExt( FB2ZipWithoutExt )
+			Dim LangNameToBack As String : LangNameToBack = FilePathWithoutExt( sFB2File ) &amp; Ext
+			If FileExists( LangNameToBack ) Then
+				Kill LangNameToBack
+			End If
+			Name FB2Zip As LangNameToBack
+			
+			oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
+			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportEnd &amp; chr(10)
 		End If
 	End If
 
-	If bFB2Execute Then
+	If Ext = &quot;.fb2.zip&quot; OR Ext = &quot;.fbz&quot; Then
+		sValidateResult = ReplaceInString( sValidateResult, sFB2File, LangNameToBack, False )
+   	End If
+
+	If bFB2Execute = True Then
+		&apos; запустить полученный файл на просмотр, если нужно
 		FileExecute( ConvertToUrl( sFB2File ) )
 		MsgBox sMess &amp; sValidateResult &amp; sETFB2DD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
 				sFB2File &amp; chr(10) &amp; sETFB2DD.sFB2ExportReportStartToPreview, 64, sConvertorName
@@ -391,7 +451,7 @@ Sub ExportDoc()
 	End If
 	oExportToFB21Dlg.endExecute()
 	
-	&apos; удаляем временные файлы
+	&apos; удаляем временные файлы (всю папку OOoFBtoolsTemp)
 	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
 		RmDir getOOoFBToolsTempPath()
 	End If
@@ -406,11 +466,7 @@ Function GetWorkFB2Schema() As String
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
 	Dim nX As Long, nY As Long
 	
-	If GetOS() = 0 Then
-		GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
-	Else
-		GetWorkFB2Schema = &quot;/fb2-schema/FictionBook.xsd&quot;
-	End If
+	GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 	
 	If FileExists( sFileName ) Then
 		Dim sLine As String
@@ -439,29 +495,13 @@ Function GetWorkFB2Schema() As String
 		oTIS.closeInput()
 		
 		If sFB21 = 1 Then
-			If GetOS() = 0 Then
-				GetWorkFB2Schema = &quot;\fb2-schema\FictionBook.xsd&quot;
-			Else
-				GetWorkFB2Schema = &quot;/fb2-schema/FictionBook.xsd&quot;
-			End If
+			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 		ElseIf sFB2LibRusEc = 1 Then
-			If GetOS() = 0 Then
-				GetWorkFB2Schema = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
-			Else
-				GetWorkFB2Schema = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
-			End If
+			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-librusec-schem&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 		ElseIf sFB2Flibusta = 1 Then
-			If GetOS() = 0 Then
-				GetWorkFB2Schema = &quot;\fb2-flibusta-schema\FictionBook.xsd&quot;
-			Else
-				GetWorkFB2Schema = &quot;/fb2-flibusta-schema/FictionBook.xsd&quot;
-			End If
+			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-flibusta-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 		ElseIf sFBUnion = 1 Then
-			If GetOS() = 0 Then
-				GetWorkFB2Schema = &quot;\fb2-union-schema\FictionBook.xsd&quot;
-			Else
-				GetWorkFB2Schema = &quot;/fb2-union-schema/FictionBook.xsd&quot;
-			End If
+			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-union-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 		End If
 	End If
 End Function
@@ -1668,9 +1708,8 @@ Function SaveNotesToComonBlock() As Long
 	SaveNotesToComonBlock = 0
 	lCurrentElement = 0
 	Dim lCount As Long : lCount = 0
-	If UBound( vFootnoteText() ) &gt; 0 Then
+	If UBound( vFootnoteText() ) &lt;&gt; -1 Then
 		Dim vaFNPara()	As Variant
-
 		oTextOutputStream.writeString(&quot;&lt;body name=&quot;&quot;notes&quot;&quot;&gt;&quot; &amp; chr(10))
 		oTextOutputStream.writeString(&quot;&lt;title&gt;&quot; &amp; chr(10) &amp; &quot;&lt;p&gt;&quot; &amp; sFootnoteTitle &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10) &amp; &quot;&lt;/title&gt;&quot; &amp; chr(10))
 		For lCount = 0 To UBound( vFootnoteText() )
@@ -2589,5 +2628,156 @@ Function GetGenreCode( ByRef GenreString As String ) As String
 	GetGenreCode = Trim( Mid( sGenre, nFrom, nTo - nFrom )  )
 End Function
 
+&apos; ===================================================================================
+&apos; 			локализация формы Конвертера ExportToFB21
+&apos; ===================================================================================
+&apos; для хранения сообщений для формы Конвертера ExportToFB21
+Type tExportToFB21DlgData	
+	&apos; Конвертер
+	sFB2ExportToFB21DlgTitle			As String &apos; Заголовок основной формы Конвертера
+	sFB2ExportProgressBarCreateDialog	As String &apos; Создание диалога
+	sFB2ExportProgressBarInit			As String &apos; Инициализация
+	sFB2ExportProgressBarCovers			As String &apos; Сбор данных об Обложках
+	sFB2ExportProgressBarCreate			As String &apos; Экспорт в FB2: Создание файла
+	sFB2ExportProgressBarAnalysis		As String &apos; Экспорт в FB2: Анализ
+	sFB2ExportProgressBarFootnote		As String &apos; Экспорт в FB2: Сохранение сносок (примечания)
+	sFB2ExportProgressBarEndnote		As String &apos; Экспорт в FB2: Сохранение концевых сносок (комментарии)
+	sFB2ExportProgressBarFootEndnote	As String &apos; Экспорт в FB2: Сохранение сносок и концевых сносок в один блок
+	sFB2ExportProgressBarGraphics		As String &apos; Экспорт в FB2: Сохранение картинок
+	sFB2ExportProgressNotFound			As String &apos; Не найдено
+	sFB2ExportProgressFound				As String &apos; Найдено
+	sFB2ExportProgressDone				As String &apos; Сделано
+	sFB2ExportSaveMessage				As String &apos; Перед экспортом сохраните, пожалуйста, ваш ООо файл.
+	sFB2ExportEnd						As String &apos; Создание книги в fb2 формате завершено!
+	sFB2ExportReportGeneratedFB2File	As String &apos; Сгенерированный fb2-файл:
+	sFB2ExportReportStartToPreview		As String &apos; запущен на просмотр.
+	sFB2ExportRequiredPropNotFound		As String &apos; Не заданы обязательные свойства документа:
+	sFB2ExportFB2PathNotFound			As String &apos; Не задан путь к создаваемому fb2 файлу.
+	sFB2ExportEnterAnotherFB2Path		As String &apos; Задайте другое название fb2-файла.
+	sFB2ExportFB2NotFB2Property			As String &apos; В документе нет ни одного сохраненного fb2 свойства.
+	sFB2ExportFB2StartFB2PropEditor		As String &apos; Запустить Редактор FB2 свойств?
+	&apos; диалог сохранения файла
+	sFileDlgSaveAs						As String &apos; Сохранить как...
+	sZipOk								As String &apos; Сжатие в zip архив произведено.
+End Type
 
+Public sETFB2DD	As tExportToFB21DlgData
+
+&apos;***************************************************************************
+&apos; инициализация основной формы конвертера в зависимости от локали
+Sub InitExportToFB21Dlg()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oExportToFB21Dlg.getModel
+			.Title						= &quot;Экспорт в формат fb2.1&quot;
+			.fb2Path.Label				= &quot;fb2 файл:&quot;
+			.cmdbtnCancel.Label			= &quot;Отмена&quot;
+			.cmdbtnExportToFB21.Label	= &quot;Экспорт&quot;
+			.ReplaceExistFB2CheckBox.Label	= &quot;Заменять существующий fb2 файл без подтверждения&quot;
+			.ZipFB2CheckBox.Label			= &quot;Сжать fb2 файл в zip архив&quot;
+		End With
+	Else
+		With oExportToFB21Dlg.getModel
+			.Title						= &quot;Export to fb2.1&quot;
+			.fb2Path.Label				= &quot;fb2 file:&quot;
+			.cmdbtnCancel.Label			= &quot;Cancel&quot;
+			.cmdbtnExportToFB21.Label	= &quot;Export&quot;
+			.ReplaceExistFB2CheckBox.Label = &quot;Replace the existing fb2 File without confirmation&quot;
+			.ZipFB2CheckBox.Label			= &quot;Zip fb2 file&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация сообщений основной формы конвертера в зависимости от локали
+Sub InitExportToFB21DlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sETFB2DD
+			&apos; Конвертер
+			.sFB2ExportProgressBarCreateDialog	= &quot;Создание диалога&quot;
+			.sFB2ExportProgressBarInit			= &quot;Инициализация&quot;
+			.sFB2ExportProgressBarCovers		= &quot;Сбор данных об Обложках&quot;
+			.sFB2ExportProgressBarCreate		= &quot;Создание файла&quot;
+			.sFB2ExportProgressBarAnalysis		= &quot;Анализ документа&quot;
+			.sFB2ExportProgressBarFootnote		= &quot;Сохранение сносок (примечания)&quot;
+			.sFB2ExportProgressBarEndnote		= &quot;Сохранение концевых сносок (комментарии)&quot;
+			.sFB2ExportProgressBarFootEndnote	= &quot;Сохранение сносок и концевых сносок в один блок&quot;
+			.sFB2ExportProgressBarGraphics		= &quot;Сохранение графики&quot;
+			.sFB2ExportProgressNotFound			= &quot;Не найдено&quot;
+			.sFB2ExportProgressFound			= &quot;Найдено: &quot;
+			.sFB2ExportProgressDone				= &quot;Сделано.&quot;
+			.sFB2ExportSaveMessage				= &quot;Перед экспортом сохраните, пожалуйста, ваш ООо файл.&quot;
+			.sFB2ExportEnd						= &quot;Создание книги в fb2 формате завершено!&quot;
+			.sFB2ExportReportGeneratedFB2File	= &quot;Сгенерированный fb2-файл:&quot;
+			.sFB2ExportReportStartToPreview		= &quot;запущен на просмотр.&quot;
+			.sFB2ExportRequiredPropNotFound		= &quot;Не заданы обязательные свойства документа: &quot;
+			.sFB2ExportFB2PathNotFound			= &quot;Не задан путь к создаваемому fb2 файлу.&quot;
+			.sFB2ExportEnterAnotherFB2Path		= &quot;Задайте другое название fb2-файла.&quot;
+			.sFB2ExportFB2NotFB2Property		= &quot;В документе нет ни одного сохраненного fb2 свойства.&quot;
+			.sFB2ExportFB2StartFB2PropEditor	= &quot;Запустить Редактор FB2 свойств?&quot;
+			&apos; диалог сохранения файла
+			.sFileDlgSaveAs						= &quot;Сохранить как...&quot;
+			.sZipOk								= &quot;Сжатие в zip архив произведено.&quot;
+		End With
+	Else
+		With sETFB2DD
+			&apos; Converter
+			.sFB2ExportProgressBarCreateDialog	= &quot;Creating the Dialog&quot;
+			.sFB2ExportProgressBarInit			= &quot;Initialization&quot;
+			.sFB2ExportProgressBarCovers		= &quot;Data Collection Cover&quot;
+			.sFB2ExportProgressBarCreate		= &quot;File creating&quot;
+			.sFB2ExportProgressBarAnalysis		= &quot;Document Analysis&quot;
+			.sFB2ExportProgressBarFootnote		= &quot;Export Footnotes (notes)&quot;
+			.sFB2ExportProgressBarEndnote		= &quot;Export Endnotes (comments)&quot;
+			.sFB2ExportProgressBarFootEndnote	= &quot;Export Footnote and Endnotes to common block&quot;
+			.sFB2ExportProgressBarGraphics		= &quot;Export Graphics&quot;
+			.sFB2ExportProgressNotFound			= &quot;Not Found&quot;
+			.sFB2ExportProgressFound			= &quot;Found: &quot;
+			.sFB2ExportProgressDone				= &quot;Done.&quot;
+			.sFB2ExportSaveMessage				= &quot;Please, save yuor ООо File before export.&quot;
+			.sFB2ExportEnd						= &quot;Creation of the Book in fb2 a Format is completed!&quot;
+			.sFB2ExportReportGeneratedFB2File	= &quot;Generated fb2-File:&quot;
+			.sFB2ExportReportStartToPreview		= &quot;It is started on viewing.&quot;
+			.sFB2ExportRequiredPropNotFound		= &quot;Do not set the required properties of the document:&quot;
+			.sFB2ExportFB2PathNotFound			= &quot;Do not know the path to the created fb2 file&quot;
+			.sFB2ExportEnterAnotherFB2Path		= &quot;Enter another name fb2 file.&quot;
+			.sFB2ExportFB2NotFB2Property		= &quot;In the document there is no saved fb2 properties.&quot;
+			.sFB2ExportFB2StartFB2PropEditor	= &quot;Open the FB2 Properties Editor?&quot;
+			&apos; Save As Dialog
+			.sFileDlgSaveAs						= &quot;Save As...&quot;
+			.sZipOk								= &quot;Compressing to zip file finished.&quot;
+		End With
+	End If
+End Sub
+
+&apos; ===========================================================================================
+&apos; 				локализация сообщений отсутствия в системе вспомогательных утилит
+&apos; ===========================================================================================
+&apos; для хранения сообщений отсутствия в системе вспомогательных утилит
+Type tNoToolsMessageData
+	sNoUuidgen			As String &apos; Нет uuidgen
+	sNoZip				As String &apos; Нет zip
+	sNoBase64OrOpenssl	As String &apos; Нет base64 или openssl
+	sNoXmllint			As String &apos; Нет xmllint
+End Type
+
+Public sNYMD As tNoToolsMessageData
+
+&apos; ===========================================================================================
+&apos; инициализация сообщений отсутствия в системе вспомогательных утилит
+Sub InitNoToolsMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sNYMD
+			.sNoUuidgen			= &quot;Утилита uuidgen в системе не установлена. Генерация нового id книги производиться не будет. Установите утилиту uuidgen.&quot;
+			.sNoZip				= &quot;Утилита zip в системе не установлена. Архивирование fb2-файла производиться не будет. Установите утилиту zip.&quot;
+			.sNoBase64OrOpenssl	= &quot;Утилиты base64 или openssl в системе не установлены. Экспорт картинок производиться не будет. Установите утилиту base64 или openssl.&quot;
+			.sNoXmllint			= &quot;Утилита xmllint в системе не установлена. Валидация fb2-файла производиться не будет.  Установите утилиту xmllint.&quot;
+		End With
+	Else
+		With sNYMD
+			.sNoUuidgen			= &quot;No uuidgen utility is installed in the system. New book ID won&apos;t be created. Install uuidgen.&quot;
+			.sNoZip				= &quot;No zip utility is installed in the system. FB2 files won&apos;t be compressed. Install zip.&quot;
+			.sNoBase64OrOpenssl	= &quot;No base64 or openssl utility is installed in the system. Images won&apos;t be exported. Install base64 or openssl.&quot;
+			.sNoXmllint			= &quot;No xmllint utility is installed in the system. FB2 files won&apos;t be validated. Install xmllint.&quot;
+		End With
+	End If
+End Sub
 </script:module>

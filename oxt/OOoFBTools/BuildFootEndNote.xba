@@ -2187,4 +2187,320 @@ Function TextFrameOrAndTableExistsInBookmark( ByRef aListBookMarks() As Object, 
 	Next i
 End Function
 
+
+&apos; ====================================================================
+&apos; 				локализация работы с примечаниями
+&apos; ====================================================================
+&apos; для хранения сообщений для работы с примечаниями
+Type tBuildFootEndNoteData
+	sLBCountNotEqualRBCount				As String &apos; Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!
+	sNoSelectText						As String &apos; Нет ни одного выделенного фрагмента текста для поиска!
+	sProcessAllDoc						As String &apos; Обрабатывать весь документ?
+	sFindInSelected						As String &apos; Поиск в выделенных областях текста
+	sProcessAllDocEnd					As String &apos; Обработан весь документ:
+	sProcessSelectedFragments			As String &apos; Обработано выделенных фрагментов текста:
+	sFootnotesGeneration				As String &apos; Генерация сносок
+	sHyperLinksGeneration				As String &apos; Генерация гиперссылок
+	sFootnotesGenerationCount			As String &apos; Сгенерировано сносок:
+	sHyperlinksGenerationCount			As String &apos; Сгенерировано гиперссылок:
+	sFootnotesNotGeneration				As String &apos; Сноски не сгенерированы:
+	sNotFoundSelectedTextForTemplate	As String &apos; Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!
+	sNotFoundBookmarkZoneForNoteList	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!
+	sNotFoundBookmarkZoneForNoteNumber	As String &apos; Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!
+	sBuildFootNoteComplexVerify			As String &apos;
+	sDocumentIsProcessing				As String &apos; Документ обработан.
+	sOnlyOneTextZone					As String &apos; Выделено ... областей текста. Пожалуйста, выделите только 1 список примечаний! Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.
+	sText								As String &apos; текст
+	sSText								As String &apos; Текст
+	&apos; для Теста
+	Analysis							As String &apos; Анализ
+	sTestDataGathering					As String &apos; Сбор данных
+	sTestDataAnalysis 					As String &apos; Анализ данных
+	sTestProgressReport 				As String &apos; Генерация отчета
+	sTestResults		 				As String &apos; Тест сложной генерации сносок
+	sTestMode1			 				As String &apos; Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги
+	sTestMode2			 				As String &apos; Режим: Список примечаний - после каждой главы книги
+	sTestMode3			 				As String &apos; Режим: Все Списки примечаний - в конце книги
+	sTestBookChapter	 				As String &apos; Глава книги
+	sTestNotesList	 					As String &apos; Список примечаний
+	sTestProcessedNotesNumbersInText	As String &apos; Обработано номеров примечаний в Тексте (Всего)
+	sTestProcessedNotesNumbersInList	As String &apos; Обработано примечаний в Списке (Всего)
+	sTestUniqueNumbersInText			As String &apos; Уникальные (неповторяющиеся) номера в Тексте
+	sTestUniqueNumbersInList			As String &apos; Уникальные (неповторяющиеся) номера в Списке
+	sTestRepeatingNumbersInText			As String &apos; Повторяющиеся номера в Тексте
+	sTestRepeatingNumbersInList			As String &apos; Повторяющиеся номера в Списке
+	sTestAbsentNumbersInText			As String &apos; Отсутствующие номера в Тексте
+	sTestAbsentNumbersInList			As String &apos; Отсутствующие номера в Списке
+	sTestAbsentNumbersFromTextInList	As String &apos; Отсутствующие номера из Текста в Списке
+	sTestAbsentNumbersFromListInText	As String &apos; Отсутствующие номера из Списка в Тексте
+	sTestNoteNumber						As String &apos; Номер примечания
+	sTestNoteQuantity					As String &apos; количество
+	sTestAnalysisOfResult				As String &apos; Анализ результатов работы теста и текста книги
+	sTestCorrectlyBook					As String &apos; В правильно оформленной книге должно быть следующее
+	sTestCorrectlyBook1					As String &apos; 1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.
+	sTestCorrectlyBook2					As String &apos; 2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработаных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0
+	sTestCorrectlyBook3					As String &apos; Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.
+	sTestCorrectlyBook4					As String &apos; Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.
+	sTestBookmarkForStatChapter			As String &apos; Закладки для начала главы
+	sTestBookmarkForListNotes			As String &apos; Закладки для Списка примечаний
+	sTestBookmarkForSearchZones			As String &apos; Число зон поиска примечаний (закладок)
+	sTestZoneSearch	 					As String &apos; Зона поиска
+	sTestChapterAndNotesList			As String &apos; (Глава и Список ее примечаний)
+	sTestGeneralResume					As String &apos; Результаты работы Теста
+	sTestZones							As String &apos; Зоны
+	sTestNeedyCorrect					As String &apos; требующие ручной корректуры
+	sTestChapterBookmarkName			As String &apos; Название Закладки для Главы
+	sTestListNotesBookmarkName			As String &apos; Название Закладки для Списка примечаний этой Главы
+	sTestResultOK						As String &apos; Все в порядке!
+	sTestResultOKMess					As String &apos; Для каждого Номера примечаний в Главе найден соответствующий ему текст в Списке примечаний.
+	sTestResultOKMess1					As String &apos; Ни одна Глава Книги и ни один Список примечаний не нуждается в корректировке!
+	sTestContinueQuery					As String &apos; Продолжить выполнение задания?
+	stfTestHelpTableTextFrame			As String &apos; В Документе имеются Таблицы и/или Текстовые Врезки.
+	stfTestHelpNotTableTextFrame		As String &apos; Документ не имеет Таблиц и Текстовых Врезок
+	sNumberInUpIndex					As String &apos; цифры в верхнем индексе
+	sCount								As String &apos; кол-во
+End Type
+
+Public sBTEND As tBuildFootEndNoteData
+
+&apos; *****************************************************************************************
+&apos; инициализация сообщений работы с примечаниями в зависимости от локали
+Sub InitBuildFootEndNoteMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sBTEND
+			.sLBCountNotEqualRBCount	= &quot;Число закладок для Глав книги c НОМЕРАМИ примечаний не равно числу закладок для Списков примечаний!&quot;
+			.sNoSelectText				= &quot;Нет ни одного выделенного фрагмента текста для поиска!&quot;
+			.sProcessAllDoc				= &quot;Обрабатывать весь документ?&quot;
+			.sFindInSelected			= &quot;Поиск в выделенных областях текста&quot;
+			.sProcessAllDocEnd			= &quot;Обработан весь документ:&quot;
+			.sProcessSelectedFragments	= &quot;Обработано выделенных фрагментов текста:&quot;
+			.sFootnotesGeneration		= &quot;Генерация сносок&quot;
+			.sHyperLinksGeneration		= &quot;Генерация гиперссылок&quot;
+			.sFootnotesGenerationCount	= &quot;Сгенерировано сносок:&quot;
+			.sHyperlinksGenerationCount	= &quot;Сгенерировано гиперссылок:&quot;
+			.sFootnotesNotGeneration	= &quot;Сноски не сгенерированы:&quot;
+			.sNotFoundSelectedTextForTemplate	= &quot;Не найдено ни одного текстового фрагмента, удовлетворяющего заданному шаблону поиска примечаний!&quot;
+			.sNotFoundBookmarkZoneForNoteList	= &quot;Нет ни одной помеченной закладкой зоны, содержащей СПИСОК примечаний!&quot;
+			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Нет ни одной помеченной закладкой зоны, содержащей НОМЕРА примечаний (Закладка для Главы)!&quot;
+			.sBuildFootNoteComplexVerify		= sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; _
+					&quot;Т.е. число закладок для Глав книги с НОМЕРАМИ примечаний не соответствует числу закладок для их Списков примечаний.&quot; &amp; _
+					&quot;Это приведет к тому, что примечание окажется  &quot;&quot;привязанным&quot;&quot; не к той главе.&quot; &amp; chr(10) &amp; _
+					&quot;Генерация сносок (гиперссылок) прервана.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Совет:&quot; &amp; chr(10) &amp; _
+					&quot;1. Если в главе нет ни одного № примечаний (ошибки OCR), то не ставьте в ее начале закладку для зоны поиска № примечаний.&quot; &amp; chr(10) &amp; _
+					&quot;Например, в книге - 5 глав, номера примечаний есть только в 3-й главе. В конце книги перечислены списки примечаний для глав 1 и 3. Оригинала книги у вас нет.&quot; &amp; chr(10) &amp; _
+					&quot;Значит, нужно поставить закладки для зон поиска № примечаний в начале глав и 1, и 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;2. Если списков с текстом примечаний в тексте меньше, чем глав с № примечаний (ошибки OCR), &quot; &amp; _
+					&quot;то поставьте пустую закладку для зоны поиска списков примечаний:&quot; &amp; chr(10) &amp; _
+					&quot;Например, в книге - 5 глав, № примечаний есть только в 1,3,5 главах. В конце книги перечислены списки примечаний только для глав 1 и 5. Оригинала книги у вас нет.&quot; &amp; _
+					&quot;Значит, нужно после списка примечаний для главы 1 вставть пустой абзац и на нем - закладку для зоны поиска списка примечаний.&quot; &amp; _
+					&quot;Эта закладка будет соответствовать главе 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;3. Самый лучший вариант - найти бумажный оригинал книги, и по нему внести в текст все номера примечаний для глав, где они есть, &quot; &amp; _
+					&quot;и соответствующие этим главам списки примечаний! А потом  - для всех глав, где есть № примечаний - поставить в начале главы закладки зон поиска № примечаний, &quot; &amp; _
+					&quot;а в конце книги - на каждый список примечаний - закладку зоны поиска списка примечаний.&quot; &amp; chr(10)
+			.sDocumentIsProcessing				= &quot;Документ обработан.&quot;
+			.sOnlyOneTextZone					= &quot;областей текста.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выделите только 1 список примечаний!&quot; &amp; chr(10) &amp; _
+				&quot;Если в вашем документе списков примечаний несколько (для каждой главы...), то поставить закладку надо ДЛЯ КАЖДОГО списка ОТДЕЛЬНО.&quot;
+			.sText								= &quot;текст&quot;
+			.sSText								= &quot;Текст&quot;
+			&apos; Тест
+			.Analysis							= &quot;Анализ&quot;
+			.sTestDataGathering					= &quot;Сбор Данных&quot;
+			.sTestDataAnalysis					= &quot;Анализ данных&quot;
+			.sTestProgressReport 				= &quot;Генерация отчета&quot;
+			.sTestResults		 				= &quot;Тест сложной генерации сносок&quot;
+			.sTestMode1			 				= &quot;Режим: Нумерация номеров примечаний в тексте - сквозная; Общий список примечаний - в конце книги&quot;
+			.sTestMode2			 				= &quot;Режим: Список примечаний - после каждой главы книги&quot;
+			.sTestMode3			 				= &quot;Режим: Все Списки примечаний - в конце книги&quot;
+			.sTestBookChapter		 			= &quot;Глава книги&quot;
+			.sTestNotesList	 					= &quot;Список примечаний&quot;
+			.sTestProcessedNotesNumbersInText	= &quot;Обработано номеров примечаний в Тексте (Всего)&quot;
+			.sTestProcessedNotesNumbersInList	= &quot;Обработано примечаний в Списке (Всего)&quot;
+			.sTestUniqueNumbersInText			= &quot;Уникальные (неповторяющиеся) номера в Тексте&quot;
+			.sTestUniqueNumbersInList			= &quot;Уникальные (неповторяющиеся) номера в Списке&quot;
+			.sTestRepeatingNumbersInText		= &quot;Повторяющиеся номера в Тексте&quot;
+			.sTestRepeatingNumbersInList		= &quot;Повторяющиеся номера в Списке&quot;
+			.sTestAbsentNumbersInText			= &quot;Отсутствующие номера в Тексте&quot;
+			.sTestAbsentNumbersInList			= &quot;Отсутствующие номера в Списке&quot;
+			.sTestAbsentNumbersFromTextInList	= &quot;Отсутствующие номера из Текста в Списке&quot;
+			.sTestAbsentNumbersFromListInText	= &quot;Отсутствующие номера из Списка в Тексте&quot;
+			.sTestNoteNumber					= &quot;Номер примечания&quot;
+			.sTestNoteQuantity					= &quot;Количество&quot;
+			.sTestAnalysisOfResult				= &quot;Анализ результатов работы теста и текста книги&quot;
+			.sTestCorrectlyBook					= &quot;В правильно оформленной книге должно быть следующее&quot;
+			.sTestCorrectlyBook1				= &quot;1. Число номеров примечаний из Текста и номеров из Списка примечаний должно совпадать.&quot;
+			.sTestCorrectlyBook2				= &quot;2. В таблицах результатов Число обработанных номеров примечаний в Тексте должно быть равно числу Уникальных номеров в Тексте, а Число обработанных примечаний в Списке - Числу Уникальных номеров в Списке; Повторяющиеся номера = 0; Отсутствующие номера = 0; Отсутствующие номера из Текста в Списке = 0; Отсутствующие номера из Списка в Тексте = 0&quot;
+			.sTestCorrectlyBook3				= &quot;Если это не так, то проанализируйте результаты работы теста и текст книги, и устраните ошибки с номерами примечаний.&quot; &amp; _
+												&quot;С помощью Навигатора в OpenOffice.org и по названиям закладок из зон, требующих ручной корректировки легко перейти на нужное место книги и найти ошибки в нумерации примечаний.&quot;
+			.sTestCorrectlyBook4				= &quot;Как подробнее проводить анализ - см. в справке к пакету OOoFBTools.&quot;
+			.sTestBookmarkForSearchZones		= &quot;Число зон поиска примечаний (закладок)&quot;
+			.sTestBookmarkForStatChapter		= &quot;Закладки для начала главы&quot;
+			.sTestBookmarkForListNotes			= &quot;Закладки для Списка примечаний&quot;
+			.sTestZoneSearch	 				= &quot;Зона поиска&quot;
+			.sTestChapterAndNotesList			= &quot;(Глава и Список ее примечаний)&quot;
+			.sTestGeneralResume					= &quot;Результаты работы Теста&quot;
+			.sTestZones							= &quot;Зоны&quot;
+			.sTestNeedyCorrect					= &quot;требующие ручной корректировки&quot;
+			.sTestChapterBookmarkName			= &quot;Название Закладки для Главы&quot;
+			.sTestListNotesBookmarkName			= &quot;Название Закладки для Списка примечаний этой Главы&quot;
+			.sTestResultOK						= &quot;Все в порядке!&quot;
+			.sTestResultOKMess					= &quot;Для каждого Номера примечаний в Главе найден соответствующий ему текст в Списке примечаний.&quot;
+			.sTestResultOKMess1					= &quot;Ни одна Глава Книги и ни один Список примечаний не нуждается в корректировке!&quot;
+			.sTestContinueQuery					= &quot;Продолжить выполнение задания?&quot;
+			.stfTestHelpTableTextFrame			= &quot;В Документе имеются Таблицы и/или Текстовые Врезки.&quot; &amp; chr(10) &amp; _
+						&quot;OOo Writer не может размещать Таблицы в сносках.&quot; &amp; chr(10) &amp; _
+						&quot;Генератор и Тест не могут корректно работать, если в Списках примечаний есть Таблицы и/или Текстовые Врезки.&quot;  &amp; chr(10) &amp; _
+						&quot;Поэтому, посмотрите, есть ли в Списках Примечаний Таблицы и/или Врезки, и сделайте для них следующее:&quot;  &amp; chr(10) &amp; _
+						&quot;1. Вынесите текст из Врезки в соответствующий ей текст Списка примечаний.&quot;  &amp; chr(10) &amp; _
+						&quot;2. Таблицу уберите из Списка примечаний, а после генерации сносок вставьте в нужное место текста сноски картинку этой Таблицы.&quot;
+			.stfTestHelpNotTableTextFrame		= &quot;Документ не имеет Таблиц и Текстовых Врезок.&quot; &amp; chr(10) &amp; _
+						&quot;Это - важное условие для корректной работы Теста, Генератора Сносок и Генератора Гиперссылок!&quot;
+			.sNumberInUpIndex					= &quot;цифры в верхнем индексе&quot;
+			.sCount								= &quot;кол-во&quot;
+		End With
+	Else
+		With sBTEND
+			.sLBCountNotEqualRBCount	= &quot;The Number of Bookmarks for the Book Chapter with NUMBERS of Notes is Not Equal the Number of Bookmarks for the Lists of Notes!&quot;
+			.sNoSelectText				= &quot;There is no allocated Fragment of the Text for search!&quot;
+			.sProcessAllDoc				= &quot;Process all Document?&quot;
+			.sFindInSelected			= &quot;Search in the allocated Areas of the Text&quot;
+			.sProcessAllDocEnd			= &quot;Process all Document:&quot;
+			.sProcessSelectedFragments	= &quot;It is processed the allocated Fragments of the Text:&quot;
+			.sFootnotesGeneration		= &quot;Generation of Footnotes&quot;
+			.sHyperLinksGeneration		= &quot;Generation of HyperLinks&quot;
+			.sFootnotesGenerationCount	= &quot;It is generated Footnotes:&quot;
+			.sHyperlinksGenerationCount	= &quot;It is generated Hyperlonks:&quot;
+			.sFootnotesNotGeneration	= &quot;Footnotes are not generated:&quot;
+			.sNotFoundSelectedTextForTemplate	= &quot;It is not found any Text Fragment, search of notes satisfying to a set Pattern!&quot;
+			.sNotFoundBookmarkZoneForNoteList	= &quot;Is not present any marked Bookmark of the Zone containing the LIST of Notes!&quot;
+			.sNotFoundBookmarkZoneForNoteNumber	= &quot;Is not Present any marked Bookmark of the Zone containing NUMBERS of Notes (Bookmark for the Chapter)!&quot;
+			.sBuildFootNoteComplexVerify		= sBTEND.sLBCountNotEqualRBCount &amp; chr(10) &amp; _
+					&quot;That is the Number of Bookmarks for Chapters of the Book with NUMBERS of Notes mismatches Тumber of Bookmarks for their Lists of Notes.&quot; &amp; _
+					&quot;It will lead to that the Note will appear &quot;&quot;adhered&quot;&quot; not to that Chapter.&quot; &amp; chr(10) &amp; _
+					&quot;Generation of Footnotes (Hyperlinks) is interrupted.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;Advice:&quot; &amp; chr(10) &amp; _
+					&quot;1. If in the Chapter there is no № Notes (Mistake OCR) do not put in its beginning a Bookmark for a Zone of search № Notes.&quot; &amp; chr(10) &amp; _
+					&quot;For Example, in the Book - 5 Chapters, Numbers of Notes are only in 3-rd Chapter. In the End of the Book Lists of Notes for Chapters 1 and 3 are listed. The Original of the Book at you is not present.&quot; &amp; chr(10) &amp; _
+					&quot;Means, it is necessary to put Bookmarks for Zones of Search № Notes in the Beginning of Chapters both 1, and 3.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+					&quot;2. If with the text of notes in the text it is less than lists, than chapters with № Notes (mistake OCR) &quot; &amp;_
+					&quot;put an empty bookmark for a zone of search of lists of notes:&quot; &amp; chr(10) &amp; _
+					&quot;For example, in the book - 5 chapters, № Notes are only in 1,3,5 chapters. In the end of the book lists of notes only for chapters 1 and 5 are listed. The original of the book at you is not present.&quot; &amp; _
+					&quot;Means, it is necessary after the list of notes for chapter 1 вставть the empty paragraph and on it - a bookmark for a zone of search of the list of notes.&quot; &amp; _
+					&quot;This Bookmark will correspond to Chapter 3.&quot; &amp; chr(10)  &amp;chr(10) &amp; _
+					&quot;3. The best variant - to find the paper original of the book, and on it to bring in the text all numbers of notes for chapters where they are, &quot; &amp; _
+					&quot;and corresponding to these chapters lists of notes! And then - for all chapters where is № Notes - to put in the beginning of the chapter of a bookmark of zones of search № Notes, &quot; &amp; _
+					&quot;and in the end of the book - on each list of notes - a bookmark of a zone of search of the list of notes.&quot; &amp; chr(10)
+			.sDocumentIsProcessing				= &quot;The Socument is processed.&quot;
+			.sOnlyOneTextZone					= &quot;Areas of the Text.&quot; &amp; chr(10) &amp; &quot;Please, allocate only 1 List of Notes!&quot; &amp; chr(10) &amp; _
+				&quot;If in Your Document of Lists of Notes a little (for each Chapter...) to put a Bookmark it is necessary FOR EACH List SEPARATELY.&quot;
+			.sText								= &quot;the text&quot;
+			.sSText								= &quot;the Text&quot;
+			&apos; Test
+			.Analysis							= &quot;Analysis&quot;
+			.sTestDataGathering					= &quot;Data gathering&quot;
+			.sTestDataAnalysis					= &quot;The Analysis of Data&quot;
+			.sTestProgressReport 				= &quot;Report generation&quot;
+			.sTestResults		 				= &quot;Test of complex Footnote Generation&quot;
+			.sTestMode1			 				= &quot;Mode: Numbering of Numbers of Notes in the Text - through; the General List of Notes - in the End of the Book&quot;
+			.sTestMode2			 				= &quot;Mode: the List of Notes - after each Chapter of the Book&quot;
+			.sTestMode3			 				= &quot;Mode: All Lists of Notes - in the End of the Book&quot;
+			.sTestBookChapter	 				= &quot;the Chapter of the Book&quot;
+			.sTestNotesList	 					= &quot;the List of Notes&quot;
+			.sTestProcessedNotesNumbersInText	= &quot;It is processed Numbers of Notes in the Text (in All)&quot;
+			.sTestProcessedNotesNumbersInList	= &quot;It is processed Numbers of Notes in the List (in All)&quot;
+			.sTestUniqueNumbersInText			= &quot;Unique (non-recurrent) numbers in the Text&quot;
+			.sTestUniqueNumbersInList			= &quot;Unique (non-recurrent) numbers in the List&quot;
+			.sTestRepeatingNumbersInText		= &quot;Repeating Numbers in the Text&quot;
+			.sTestRepeatingNumbersInList		= &quot;Repeating Numbers in the List&quot;
+			.sTestAbsentNumbersInText			= &quot;Absent Numbers in the Text&quot;
+			.sTestAbsentNumbersInList			= &quot;Absent Numbers in the List&quot;
+			.sTestAbsentNumbersFromTextInList	= &quot;Absent Numbers from the Text in the List&quot;
+			.sTestAbsentNumbersFromListInText	= &quot;Absent Numbers from the List in the Text&quot;
+			.sTestNoteNumber					= &quot;Number of the Note&quot;
+			.sTestNoteQuantity					= &quot;Quantity&quot;
+			.sTestAnalysisOfResult				= &quot;The Analysis of Results of Work of the Test and the Text of the Book&quot;
+			.sTestCorrectlyBook					= &quot;In correctly issued Book there should be a following&quot;
+			.sTestCorrectlyBook1				= &quot;1. The Number of Numbers of Notes from the Text and Numbers from the List of Notes should coincide.&quot;
+			.sTestCorrectlyBook2				= &quot;2. In Tables of Results the Number of processed Numbers of Notes in the Text should be equal to Number of Unique Numbers the Text, and Number of the processed Notes in the List - to Number of Unique Numbers in the List; Repeating Numbers = 0; Absent Numbers = 0; Absent Numbers from the Text in the List = 0; Absent Numbers from the List in the Text = 0&quot;
+			.sTestCorrectlyBook3				= &quot;If it not so Analyse Results of Work of the Test and the Text of the Book, and eliminate mistakes with Numbers of Notes.&quot; &amp; _
+												&quot;By means of the Navigator in OpenOffice.org and under names of bookmarks from the zones demanding manual updating it is easy to pass to the necessary place of the book and to find mistakes in numbering notes.&quot;
+			.sTestCorrectlyBook4				= &quot;How more in detail to spend the Analysis - see in the Information (Manual) to Package OOoFBTools.&quot;
+			.sTestBookmarkForSearchZones		= &quot;Number of Zones of search of Notes (Bookmarks)&quot;
+			.sTestBookmarkForStatChapter		= &quot;Bookmarks for the Beginning the Chapter&quot;
+			.sTestBookmarkForListNotes			= &quot;Bookmarks for the List of Notes&quot;
+			.sTestZoneSearch	 				= &quot;Zone of Search&quot;
+			.sTestChapterAndNotesList			= &quot;(Chapter and List of its Notes)&quot;
+			.sTestGeneralResume					= &quot;General Resume&quot;
+			.sTestZones							= &quot;Zones&quot;
+			.sTestNeedyCorrect					= &quot;demanding manual Updating&quot;
+			.sTestChapterBookmarkName			= &quot;Name for Chapter Bookmark&quot;
+			.sTestListNotesBookmarkName			= &quot;Name for List of FootNotes&quot;
+			.sTestResultOK						= &quot;All Right!&quot;
+			.sTestResultOKMess					= &quot;For each Number of the Notes in Chapter is found corresponding to him text in List of the notes.&quot;
+			.sTestResultOKMess1					= &quot;Nor one Chapter of the Book and nor a one List of the Notes not needs for adjustment!&quot;
+			.sTestContinueQuery					= &quot;Continue performance of task?&quot;
+			.stfTestHelpTableTextFrame			= &quot;In Document there are Tables and Text Frames Exist.&quot; &amp; chr(10) &amp; _
+						&quot;The OOo Writer cannot place the Table in footnotes.&quot; &amp; chr(10) &amp; _
+						&quot;The Generator and Test can not correct to work if there is Tables in List of the notes and/or Text Frames Exists.&quot;  &amp; chr(10) &amp; _
+						&quot;Therefore, see, there is in List of the Notes of the Tables or/and Frames, and do for them following:&quot;  &amp; chr(10) &amp; _
+						&quot;1. Transfer all text from Text Frame in the corresponding it text of the List of notes.&quot;  &amp; chr(10) &amp; _
+						&quot;2. The Table remove from the List of notes, and after generation of footnotes insert into the necessary place of the text of a footnote a picture of this Table.&quot;
+			.stfTestHelpNotTableTextFrame		= &quot;In the Document of no Tables and Text Frames.&quot; &amp; chr(10) &amp; _
+						&quot;This - an important condition for correct functioning(working) the Test, Generator of the footnotes and Generator of the Hyperlinks!&quot;
+			.sNumberInUpIndex					= &quot;Numers in Upper Index&quot;
+			.sCount								= &quot;amount&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация диалога генерации сносок в зависимости от локали
+Sub InitBuildFootEndNoteDlg()
+	&apos; инициализация сообщений работы со сносками в зависимости от локали
+	InitBuildFootEndNoteMessage()
+	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oBuildFootEndNoteDlg.getModel
+			.lblFENoteType.Label			= &quot;Тип генерируемых сносок:&quot;
+			.optbtnFootnote.Label			= &quot;Сноска&quot;
+			.optbtnEndnote.Label			= &quot;Концевая сноска&quot;
+			.optbtnSimpleFootNote.Label		= &quot;Простой режим генерации сносок (по шаблону)&quot;
+			.lblSimpleFN.Label				= &quot;Шаблон для текста примечаний:&quot;
+			.optbtnComplexFootNote.Label	= &quot;Сложный режим генерации сносок (по спискам примечаний)&quot;
+			.lblComplexFNInText.Label		= &quot;Шаблон для № примечания в тексте:&quot;
+			.lblComplexFNInList.Label		= &quot;Шаблон для № примечания в списке:&quot;
+			.optbtnFNTextInBookEnd.Label			= &quot;Нумерация - сквозная; Общий список примечаний - в конце книги&quot;
+			.optbtnFNTextAfterEachChapter.Label		= &quot;Список примечаний - после каждой главы книги&quot;
+			.optbtnAllChaptersFNTextAtEndOf.Label	= &quot;Все списки примечаний - в конце книги&quot;
+			.cboxDelBookMarks.Label		= &quot;Удалить все закладки-пометки для генерации сносок или гиперссылок по завершению работы&quot;
+			.cmnbtnBuild.Label			= &quot;Сгенерировать&quot;
+			.cmnbtnCancel.Label			= &quot;Отмена&quot;
+			.cmnbtnTest					= &quot;Тест&quot;
+			.lblTestHelp.Label			= &quot;Подсказка:&quot;
+			.cmnbtnFootNote.Label		= &quot;Генератор Сносок&quot;
+			.cmnbtnHyperLinks.Label		= &quot;Генератор Гиперссылок&quot;
+		End With
+	Else
+		With oBuildFootEndNoteDlg.getModel
+			.lblFENoteType.Label			= &quot;Type generated footnotes:&quot;
+			.optbtnFootnote.Label			= &quot;Footnote&quot;
+			.optbtnEndnote.Label			= &quot;EndNote&quot;
+			.optbtnSimpleFootNote.Label		= &quot;the Simple Mode of generation of Footnotes (on a Pattern)&quot;
+			.lblSimpleFN.Label				= &quot;the Pattern for the Text of Notes:&quot;
+			.optbtnComplexFootNote.Label	= &quot;the Complex Mode of generation of Footnotes (under lists of Notes)&quot;
+			.lblComplexFNInText.Label		= &quot;the Pattern for № Notes in the Text:&quot;
+			.lblComplexFNInList.Label		= &quot;the Pattern for № Notes in the List:&quot;
+			.optbtnFNTextInBookEnd.Label			= &quot;Numbering - throught; General List of Notes - in the End of the Book&quot;
+			.optbtnFNTextAfterEachChapter.Label		= &quot;List of Notes - after the each Chapter of the Book&quot;
+			.optbtnAllChaptersFNTextAtEndOf.Label	= &quot;All Lists of Notes - in the End of the Book&quot;
+			.cboxDelBookMarks.Label		= &quot;to remove all Bookmarks-Marks for generation of Footnotes or Hyperlinks on End of Work&quot;
+			.cmnbtnBuild.Label			= &quot;Generate&quot;
+			.cmnbtnCancel.Label			= &quot;Cancel&quot;
+			.cmnbtnTest					= &quot;Test&quot;
+			.lblTestHelp.Label			= &quot;Hint:&quot;
+			.cmnbtnFootNote.Label		= &quot;Footnotes Generator&quot;
+			.cmnbtnHyperLinks.Label		= &quot;Hyperlinks Generator&quot;
+		End With
+	End If
+End Sub
+
 </script:module>

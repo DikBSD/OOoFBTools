@@ -7,6 +7,22 @@
 
 Option Explicit
 
+Function GetRegistryKeyContent(sKeyName as string, Optional bforUpdate as Boolean)
+	Dim oConfigProvider as Object : oConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot;)
+	Dim aNodePath(0) as new com.sun.star.beans.PropertyValue
+	aNodePath(0).Name = &quot;nodepath&quot;
+	aNodePath(0).Value = sKeyName
+	If IsMissing(bForUpdate) Then
+		GetRegistryKeyContent() = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;, aNodePath())
+	Else
+		If bForUpdate Then
+			GetRegistryKeyContent() = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationUpdateAccess&quot;, aNodePath())
+		Else
+			GetRegistryKeyContent() = oConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;, aNodePath())
+		End If
+	End If
+End Function
+
 &apos; ====================================================================
 &apos;						 Работа с Документом
 &apos; ====================================================================
@@ -685,6 +701,48 @@ End Function
 &apos; ===========================================================
 &apos; 				Работа с файлами
 &apos; ===========================================================
+&apos; Сепаратор для текущей системы
+Function NativeSeparator() As String
+	If GetOS() = &quot;WIN&quot; Then &apos; Windows
+		NativeSeparator() = &quot;\&quot;
+	Else &apos; Mac OS X, Linux, FreeBSD и т.д.
+		NativeSeparator() = &quot;/&quot;
+	End If
+End Function
+
+&apos; Имя файла
+Function getFileName( FilePath As String ) As String
+	Dim arr() As String : arr() = Split( FilePath, NativeSeparator() )
+	getFileName() = arr( Ubound( arr() ) )
+End Function
+
+&apos; Папка файла
+Function getPathDir( FilePath As String ) As String
+	Dim FileName As String : FileName = getFileName( FilePath )
+	Dim Pos As Integer : Pos = InStr( FilePath, FileName )
+	getPathDir() = Mid( FilePath, 1, Pos-2 )
+End Function
+
+&apos; Расширение файла
+Function getFileExtention( FilePath As String ) As String
+	getFileExtention() = &quot;&quot;
+	Dim Pos As Integer : Pos = InStr( FilePath, &quot;.&quot; )
+	while Pos &gt; 0
+		getFileExtention() = Mid( FilePath, Pos, Len( FilePath ) + Pos-1 )
+        Pos = InStr( Pos+1, FilePath, &quot;.&quot; )
+    Wend
+End Function
+
+&apos; Путь к файлу без его расширения/ Если нет расширения, то возвращается FilePath
+Function FilePathWithoutExt( FilePath As String ) As String
+	FilePathWithoutExt() = FilePath
+	Dim Pos As Integer : Pos = InStr( FilePath, &quot;.&quot; )
+	while Pos &gt; 0
+		FilePathWithoutExt() = Mid( FilePath, 1, Pos-1 )
+        Pos = InStr( Pos+1, FilePath, &quot;.&quot; )
+    Wend
+End Function
+
 &apos; Пуст ли файл
 Function IsFileEmpty( sFileInput As String ) As Boolean
 	Dim bFileEmpty As Boolean : bFileEmpty = False
@@ -723,8 +781,8 @@ Sub SaveArray( aArray() As String, sFile As String )
 	oTOS.closeOutput()
 End Sub
 
+&apos; чтение файла в массив
 Sub ReadFileInArray( aArray() As String, sFile As String )
-	&apos; чтение файла в массив
 	If FileExists(sFile) Then
 		Dim sLine As String
 		Dim oSFA As Object, oFS As Object, oTIS As Object
@@ -827,8 +885,8 @@ Function ReadDlgSettings( sFileName As String, oDlg, ByRef nX As Integer, ByRef 
 	End If
 End Function
 
+&apos; записываем установки
 Sub SaveSettings( sSettingsFilename As String, oDlg As Object )
-	&apos; записываем установки
 	Dim oOS As Object, oFA As Object, oTOS As Object
 	Dim oLB As Object &apos; Для работы с ListBox`ами
 
@@ -886,8 +944,8 @@ Sub SetSettingsToControlls( sCurrentLine As String, oDlg )
 	&apos;ErrorHandler: &apos; идем дальше
 End Sub
 
+&apos; Сохранение текстовой строки в файл
 Function SaveText(sFile As String, sText As String, sEncoding As String)
-	&apos; Сохранение текстовой строки в файл
 	Dim oOS As Object, oFA As Object, oTOS As Object
 
 	oFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
@@ -1188,6 +1246,76 @@ Function GetSubStrCount(sStr As String, sSubStr As String) As Long
 	GetSubStrCount = UBound(sArray)
 End Function
 
+&apos; инициализация массива символов для транлитерации
+Sub MakeTranslitLettersList( saTranslitLetters() )
+	saTranslitLetters(0)=&quot;a&quot; &apos;	// а
+	saTranslitLetters(1)=&quot;b&quot; &apos;	// б
+	saTranslitLetters(2)=&quot;v&quot; &apos;	// в
+	saTranslitLetters(3)=&quot;g&quot; &apos;	// г
+	saTranslitLetters(4)=&quot;d&quot; &apos;	// д
+	saTranslitLetters(5)=&quot;e&quot; &apos;	// е
+	saTranslitLetters(6)=&quot;yo&quot; &apos;	// ё
+	saTranslitLetters(7)=&quot;zh&quot; &apos;	// ж
+	saTranslitLetters(8)=&quot;z&quot; &apos;	// з
+	saTranslitLetters(9)=&quot;i&quot; &apos;	// и
+	saTranslitLetters(10)=&quot;y&quot; &apos;	// й
+	saTranslitLetters(11)=&quot;k&quot; &apos;	// к
+	saTranslitLetters(12)=&quot;l&quot; &apos;	// л
+	saTranslitLetters(13)=&quot;m&quot; &apos;	// м
+	saTranslitLetters(14)=&quot;n&quot; &apos;	// н
+	saTranslitLetters(15)=&quot;o&quot; &apos;	// о
+	saTranslitLetters(16)=&quot;p&quot; &apos;	// п
+	saTranslitLetters(17)=&quot;r&quot; &apos;	// р
+	saTranslitLetters(18)=&quot;s&quot; &apos;	// с
+	saTranslitLetters(19)=&quot;t&quot; &apos;	// т
+	saTranslitLetters(20)=&quot;u&quot; &apos;	// у
+	saTranslitLetters(21)=&quot;f&quot; &apos;	// ф
+	saTranslitLetters(22)=&quot;h&quot; &apos;	// х
+	saTranslitLetters(23)=&quot;ts&quot; &apos;// ц
+	saTranslitLetters(24)=&quot;ch&quot; &apos;// ч
+	saTranslitLetters(25)=&quot;sh&quot; &apos;// ш
+	saTranslitLetters(26)=&quot;sch&quot; &apos;// щ
+	saTranslitLetters(27)=&quot;&apos;&quot; &apos;	// ъ
+	saTranslitLetters(28)=&quot;y&quot; &apos;	// ы
+	saTranslitLetters(29)=&quot;&apos;&quot; &apos;	// ь
+	saTranslitLetters(30)=&quot;e&quot; &apos;	// э
+	saTranslitLetters(31)=&quot;yu&quot; &apos;// ю
+	saTranslitLetters(32)=&quot;ya&quot; &apos;// я
+	saTranslitLetters(33)=&quot;A&quot; &apos;	// А
+	saTranslitLetters(34)=&quot;B&quot; &apos;	// Б
+	saTranslitLetters(35)=&quot;V&quot; &apos;	// В
+	saTranslitLetters(36)=&quot;G&quot; &apos;	// Г
+	saTranslitLetters(37)=&quot;D&quot; &apos;	// Д
+	saTranslitLetters(38)=&quot;E&quot; &apos;	// Е
+	saTranslitLetters(39)=&quot;YO&quot; &apos;// Ё
+	saTranslitLetters(40)=&quot;ZH&quot; &apos;// Ж
+	saTranslitLetters(41)=&quot;Z&quot; &apos;	// З
+	saTranslitLetters(42)=&quot;I&quot; &apos;	// И
+	saTranslitLetters(43)=&quot;Y&quot; &apos;	// Й
+	saTranslitLetters(44)=&quot;K&quot; &apos;	// К
+	saTranslitLetters(45)=&quot;L&quot; &apos;	// Л
+	saTranslitLetters(46)=&quot;M&quot; &apos;	// М
+	saTranslitLetters(47)=&quot;N&quot; &apos;	// Н
+	saTranslitLetters(48)=&quot;O&quot; &apos;	// О
+	saTranslitLetters(49)=&quot;P&quot; &apos;	// П
+	saTranslitLetters(50)=&quot;R&quot; &apos;	// Р
+	saTranslitLetters(51)=&quot;S&quot; &apos;	// С
+	saTranslitLetters(52)=&quot;T&quot; &apos;	// Т
+	saTranslitLetters(53)=&quot;U&quot; &apos;	// У
+	saTranslitLetters(54)=&quot;F&quot; &apos;	// Ф
+	saTranslitLetters(55)=&quot;H&quot; &apos;	// Х
+	saTranslitLetters(56)=&quot;TS&quot; &apos;// Ц
+	saTranslitLetters(57)=&quot;CH&quot; &apos;// Ч
+	saTranslitLetters(58)=&quot;SH&quot; &apos;// Ш
+	saTranslitLetters(59)=&quot;SCH&quot; &apos;// Щ
+	saTranslitLetters(60)=&quot;&apos;&quot; &apos;	// Ъ
+	saTranslitLetters(61)=&quot;Y&quot; &apos;	// Ы
+	saTranslitLetters(62)=&quot;&apos;&quot; &apos;	// Ь
+	saTranslitLetters(63)=&quot;E&quot; &apos;	// Э
+	saTranslitLetters(64)=&quot;YU&quot; &apos;// Ю
+	saTranslitLetters(65)=&quot;YA&quot; &apos;// Я
+End Sub
+
 &apos; транслитерация строки (только для русских букв)
 Function RusTransliterationString( saTranslitLetters() As String, sString As String ) As String
 	RusTransliterationString = sString
@@ -1197,7 +1325,7 @@ Function RusTransliterationString( saTranslitLetters() As String, sString As Str
 		Dim sTemplate As String : sTemplate = &quot;абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ&quot;
 		Dim sTranslit As String : sTranslit = &quot;&quot;
 		Dim i As Long, nInd As Long
-		For i=1 To Len( sString )
+		For i = 1 To Len( sString )
 			s = Mid( sStr, i, 1 )
 			nInd = InStr( sTemplate, s )
 			nCode = Asc( s )
@@ -1869,7 +1997,7 @@ End Function
 &apos; Установка итема языкового листбокса - язык системы по-умолчанию
 Sub SetBookLangOOoDefaultLocal( oDlg As Object, slbLang As String )
 	Dim i As Integer
-	For i=0 To UBound( sLangList() )
+	For i = 0 To UBound( sLangList() )
 		If InStr( sLangList(i), &quot;(&quot; &amp; getOOoLocal() &amp; &quot;)&quot; ) &gt; 0  Then
 			oDlg.getControl( slbLang ).selectItem( sLangList(i), True )
 			Exit For
@@ -2100,42 +2228,25 @@ End Function
 
 &apos; возвращает временную папку для OOoFBTools (в зависимости от системы)
 Function getOOoFBToolsTempPath() As String
-	If GetOS() = 0 Then &apos; Windows
+	If GetOS() = &quot;WIN&quot; Then &apos; Windows
 		getOOoFBToolsTempPath = ConvertFromUrl( getTempPath() ) &amp; &quot;\ooofbtools-tmp&quot;
 	Else &apos; Mac OS X, Linux, FreeBSD и т.д.
 		getOOoFBToolsTempPath = &quot;/tmp/ooofbtools-tmp&quot;
 	End If
 End Function
 
-&apos; что за система: 0 - Windows, 1 - Mac OS X, 2 - Linux, FreeBSD и т.д.
-Function _GetOS() As Integer &apos; старая ф-я определения OS - не работает под Linux и OOo 3.0
-	Dim oPathSettings, sDir As String
-	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
-	sDir = oPathSettings.Work
-	If InStr( sDir, &quot;file:///home/&quot; ) &gt; 0 Then
-		GetOS = 2 &apos; Linux, FreeBSD и т.д.
-	ElseIf InStr( sDir, &quot;file:///Users/&quot; ) &gt; 0 Then
-		GetOS = 1 &apos; Mac OS X
-	Else
-		GetOS = 0 &apos; Windows
+&apos; Определение системы: WIN или UNIX
+Function GetOS() As String 
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded(&quot;Tools&quot;)) Then
+		GlobalScope.BasicLibraries.loadLibrary(&quot;Tools&quot;)
 	End If
-End Function
-
-Function GetOS() As Integer 
-   Dim sDir As String : sDir = GetHomePath() 
-   If InStr( sDir, &quot;file:///home/&quot; ) &gt; 0 Or InStr( sDir, &quot;file:///root&quot; ) &gt; 0 Then 
-      GetOS = 2 &apos; Linux, FreeBSD и т.д. 
-   ElseIf InStr( sDir, &quot;file:///Users/&quot; ) &gt; 0 Then 
-      GetOS = 1 &apos; Mac OS X 
-   Else 
-      GetOS = 0 &apos; Windows 
-   End If 
+	Dim oSystemNode As Object : oSystemNode = GetRegistryKeyContent(&quot;org.openoffice.Office.Common/Help&quot;)
+	GetOS() = oSystemNode.GetByName(&quot;System&quot;)
 End Function
 
 &apos; &quot;Путь&quot; к расширению
 Function getRootStorage( sOXTName As String ) As String
-	Dim oPIP As Object
-	oPIP = GetDefaultContext().getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
+	Dim oPIP As Object : oPIP = GetDefaultContext().getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
 	getRootStorage = oPIP.getPackageLocation( sOXTName )
 End Function
 
@@ -2922,6 +3033,229 @@ Sub UncapitelTable( ByRef oDoc As Object, SymbolType As Long )
 	End If
 End Sub
 
+&apos; ====================================================================================
+&apos; 									Генерация GUID
+&apos; ====================================================================================
+&apos; генерация GUID в текстовый файл для ID книги
+Function generateID() As String
+	generateID = &quot;&quot;
+	Dim guidTxtPath As String, Script As String
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows-системы
+		&apos; создаем OOoFBToolsTemp папку, если ее нет
+		If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
+			MkDir getOOoFBToolsTempPath()
+		End If
+
+		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;\guid.txt&quot;
+		
+		&apos; очистка временных файлов
+		If FileExists( guidTxtPath ) Then
+			Kill guidTxtPath
+		End If
+		
+		Script = &quot;&quot;&quot;&quot; &amp; WindowsUuidgenPath() &amp; &quot;&quot;&quot; -o&quot; &amp; &quot;&quot;&quot;&quot; &amp; &quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
+		Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;	
+	Else &apos; для Nix систем
+		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;/guid.txt&quot;
+		&apos; очистка временных файлов
+		If FileExists( guidTxtPath ) Then
+			Kill guidTxtPath
+		End If
+		
+		Dim ScriptPath As String : ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
+		Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _guidPath &amp; &quot; &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
+		ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
+		SaveText( ScriptPath, Script, &quot;utf-8&quot; )
+		Shell( &quot;/bin/sh&quot;, 1, ScriptPath, true )
+		
+		&apos; очистка временных файлов
+		If FileExists( ScriptPath ) Then
+			Kill ScriptPath
+		End If
+	End If
+	
+	generateID = UCase( getGUID( guidTxtPath ) )
+	
+	&apos; очистка временных файлов
+	If FileExists( guidTxtPath ) Then
+		Kill guidTxtPath
+	End If
+End Function
+
+&apos;***************************************************************************
+Function getGUID( guidTxtPath As String ) As String
+	&apos; считываем GUID из сгенерированного txt файла
+	If FileExists( guidTxtPath ) Then
+		&apos; считываем GUID из файла
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL ( guidTxtPath ) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		If Not IsFileEmpty( guidTxtPath ) Then
+			getGUID = oTIS.readLine()
+			oTIS.closeInput()
+		End If
+	End If
+End Function
+&apos;***************************************************************************
+Function getLineText( txtPath As String ) As String
+	If FileExists( txtPath ) Then
+		Dim oSFA As Object, oFS As Object, oTIS As Object
+		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oFS = oSFA.openFileRead ( ConvertToURL ( txtPath ) )
+		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
+		oTIS.setInputStream (oFS)
+		If Not IsFileEmpty( txtPath ) Then
+			getLineText = oTIS.readLine()
+			oTIS.closeInput()
+		End If
+	End If
+End Function
+&apos; ==================================================================================
+&apos; 									 Для Windows
+&apos; ============================================================================
+&apos; Путь к утилите zip для Windows
+Function WindowsZipPath() As String
+	WindowsZipPath = &quot;&quot;
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
+		WindowsZipPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\7za.exe&quot;
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите uuidgen для Windows
+Function WindowsUuidgenPath() As String
+	WindowsUuidgenPath = &quot;&quot;
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
+		WindowsUuidgenPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;\win32\uuidgen.exe&quot; 
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите base64 для Windows
+Function WindowsBase64Path() As String
+	WindowsBase64Path = &quot;&quot;
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
+		WindowsBase64Path = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;\win32\base64.exe&quot; )
+	End If
+End Function
+
+&apos; ==================================================================================
+&apos; 									 Для Unix
+&apos; ==================================================================================
+Function getUnixToolPath( Tool As String ) As String
+	Dim TempPath As String : TempPath = &quot;/tmp/ooofbtools-tmp&quot;
+	Dim TestLog As String : TestLog = TempPath &amp; &quot;/TestLog.txt&quot;
+	Dim ScriptPath As String : ScriptPath = TempPath &amp; &quot;/script.sh&quot; 
+	
+	&apos; Создание временной папки, если ее нет
+	If Dir ( TempPath, 16 ) = &quot;&quot; Then
+		MkDir TempPath
+	End If
+	
+	&apos; Удаление временных файлов
+	If FileExists( ScriptPath ) Then
+		Kill ScriptPath
+	End If
+	If FileExists( TestLog ) Then
+		Kill TestLog
+	End If
+	
+	Dim Script As String : Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;which &quot; &amp; Tool &amp; &quot; &gt;&gt; &quot;&quot;&quot; &amp; TestLog &amp; &quot;&quot;&quot;&quot;
+	SaveText( ScriptPath, Script, &quot;utf-8&quot; )
+	Shell( &quot;/bin/sh&quot;, 1, ScriptPath, true )
+	getUnixToolPath = getLineText( TestLog )
+
+	&apos; Удаление временных файлов
+	If FileExists( ScriptPath ) Then
+		Kill ScriptPath
+	End If
+	If FileExists( TestLog ) Then
+		Kill TestLog
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите zip для Nix систем
+Function UnixZipPath() As String
+	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+		If getUnixToolPath( &quot;zip&quot; ) &lt;&gt; &quot;&quot; Then
+			UnixZipPath = &quot;zip&quot;
+		Else
+			UnixZipPath = &quot;&quot;
+		End If
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите uuidgen для Nix систем
+Function UnixUuidgenPath() As String
+	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+		If getUnixToolPath( &quot;uuidgen&quot; ) &lt;&gt; &quot;&quot; Then
+			UnixUuidgenPath = &quot;uuidgen&quot;
+		Else
+			UnixUuidgenPath = &quot;&quot;
+		End If
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите xmllint для Nix систем
+Function UnixXmllintPath() As String
+	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+		If getUnixToolPath( &quot;xmllint&quot; ) &lt;&gt; &quot;&quot; Then
+			UnixXmllintPath = &quot;xmllint&quot;
+		Else
+			UnixXmllintPath = &quot;&quot;
+		End If
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите openssl для Nix систем
+Function UnixOpensslPath() As String
+	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+		If getUnixToolPath( &quot;openssl&quot; ) &lt;&gt; &quot;&quot; Then
+			UnixOpensslPath = &quot;openssl&quot;
+		Else
+			UnixOpensslPath = &quot;&quot;
+		End If
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите base64 для Nix систем
+Function UnixBase64Path() As String
+	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+		If getUnixToolPath( &quot;base64&quot; ) &lt;&gt; &quot;&quot; Then
+			UnixBase64Path = &quot;base64&quot;
+		Else
+			UnixBase64Path = &quot;&quot;
+		End If
+	End If
+End Function
+&apos;***************************************************************************
+
+&apos; Путь к утилите zip в завсисимости от системы
+Function ZipSystemPath() As String
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
+		ZipSystemPath = WindowsZipPath()
+	Else &apos; для Nix систем
+		ZipSystemPath = UnixZipPath()
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите uuidgen в завсисимости от системы
+Function UuidgenSystemPath() As String
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
+		UuidgenSystemPath = WindowsUuidgenPath()
+	Else &apos; для Nix систем
+		UuidgenSystemPath = UnixUuidgenPath()
+	End If
+End Function
+&apos;***************************************************************************
+&apos; Путь к утилите base в завсисимости от системы
+Function Base64SystemPath() As String
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
+		Base64SystemPath = WindowsBase64Path()
+	Else &apos; для Nix систем
+		Base64SystemPath = UnixBase64Path()
+	End If
+End Function
 &apos; ====================================================================================
 &apos; 									Полезные заготовки
 &apos; ====================================================================================

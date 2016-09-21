@@ -3,6 +3,13 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ServiceControls" script:language="StarBasic">REM  *****  BASIC  *****
 Option Explicit
 
+&apos; Пути к утилитам
+Public _guidPath	As String &apos; путь к утилите uuidgen
+Public _base64		As String &apos; путь к утилите base64
+Public _xmlPath		As String &apos; путь к утилите xmllint
+Public _openssl		As String &apos; путь к утилите openssl
+Public _zipPath		As String &apos; путь к утилите zip
+
 &apos; для аннотации
 Public bMergeAnnotationSubTitle As Boolean
 &apos; оформление подзаголовков
@@ -63,7 +70,7 @@ Private sHVList()			As String &apos; выравнивание по высоте
 Private sTFList()			As String &apos; вид экспорта врезок
 Private sGraphList()		As String &apos; форматы для преобразования графики
 Private sSpaceList()		As String &apos; число неразрывных пробелов для иммитации отступов во вложенных списках
-
+	
 &apos; для хранения сообщений для диалога Настроек
 Type tServiceDlgData
 	sNotes			As String &apos; Примечания
@@ -103,19 +110,19 @@ Sub ServiceDlgExec()
 	sSpaceList()		= Array( &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot; )
 						
 	With oServiceDlg.Model
-		.cmbboxStyle.StringItemList		= sFootStyleList()
-		.cmbboxENStyle.StringItemList	= sFootStyleList()
-		.cmbboxTitle.StringItemList		= sFootTitleList()
-		.cmbboxENTitle.StringItemList	= sFootTitleList()
-		.cmbboxHeaderTHV.StringItemList	= sHVList()
-		.cmbboxLineTDV.StringItemList	= sHVList()
-		.cmbboxTextFrame.StringItemList	= sTFList()
-		.lbJPEGAs.StringItemList		= sGraphList()
-		.lbPNGAs.StringItemList			= sGraphList()
-		.lbGifAs.StringItemList			= sGraphList()
-		.lbTifBMPAs.StringItemList		= sGraphList()
-		.lbAnyAs.StringItemList			= sGraphList()
-		.lbOLEAs.StringItemList			= sGraphList()
+		.cmbboxStyle.StringItemList			= sFootStyleList()
+		.cmbboxENStyle.StringItemList		= sFootStyleList()
+		.cmbboxTitle.StringItemList			= sFootTitleList()
+		.cmbboxENTitle.StringItemList		= sFootTitleList()
+		.cmbboxHeaderTHV.StringItemList		= sHVList()
+		.cmbboxLineTDV.StringItemList		= sHVList()
+		.cmbboxTextFrame.StringItemList		= sTFList()
+		.lbJPEGAs.StringItemList			= sGraphList()
+		.lbPNGAs.StringItemList				= sGraphList()
+		.lbGifAs.StringItemList				= sGraphList()
+		.lbTifBMPAs.StringItemList			= sGraphList()
+		.lbAnyAs.StringItemList				= sGraphList()
+		.lbOLEAs.StringItemList				= sGraphList()
 		.lbListSpaceCount.StringItemList	= sSpaceList()
 	End With
 	
@@ -753,23 +760,18 @@ Sub InitServiceDlg()
 			.lblENStyle.Label			= .lblStyle.Label
 			.lblNotesTitle.Label		= &quot;Заголовок блока сносок:&quot;
 			.lbEndlNotesTitle.Label		= .lblNotesTitle.Label
-			.fcPoem.Label				= &quot; Стихи &quot;
 			.cboxPoemTitle.Label		= &quot;Собирать Заголовки Стихов в одну строку&quot;
 			.cboxPoemAuthor.Label		= &quot;Собирать Авторов Стихов в одну строку&quot;
 			.cboxPoemSubtitle.Label		= &quot;Собирать Подзаголовки Стихов в одну строку&quot;
-			.fcSubtitle.Label			= &quot; Подзаголовок (SubTitle) &quot;
 			.cboxSubtitle.Label			= &quot;Собирать Подзаголовки в одну строку&quot;
-			.fcEpigraph.Label			= &quot; Эпиграфы &quot;
 			.cboxEpigAuthor.Label		= &quot;Собирать Авторов Эпиграфа в одну строку&quot;
 			.fcTables.Label				= &quot; Таблицы &quot;
 			.lblHeadersAllign.Label		= &quot;Выравнивание Заголовков:&quot;
 			.lblThValign.Label			= &quot;По высоте (th valign):&quot;
 			.lblLineAllign.Label		= &quot;Выравнивание Строк:&quot;
 			.lblTdValign.Label			= &quot;По высоте (td valign):&quot;
-			.fcCite.Label				= &quot; Цитаты &quot;
 			.cboxCiteAuthor.Label		= &quot;Собирать Авторов Цитаты в одну строку&quot;
 			.cboxCiteSubtitle.Label		= &quot;Собирать Подзаголовки Цитаты в одну строку&quot;
-			.fcAnnotation.Label			= &quot; Аннотации &quot;
 			.cboxAnnotationSubtitle.Label	= &quot;Собирать Подзаголовки Аннотации в одну строку&quot;
 			.fcFB2Create.Label			= &quot; Созданный fb2-файл &quot;
 			.cboxValidate.Label			= &quot;Валидация созданного fb2-файла&quot;
@@ -806,6 +808,7 @@ Sub InitServiceDlg()
 			.DefaultlBtn.Label	= &quot;Настройки по умолчанию&quot;
 			.fcListIndent.Label	= &quot;Вложенные списки&quot;
 			.lbSpaceCount.Label	= &quot;Число пробелов для отступа:&quot;
+			.fcStruct.Label	= &quot;Структуры&quot;
 			
 			.cbNotUsedBookmarks.Label	= &quot;Удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе&quot;
 			.cbDefaultDescription.Label	= &quot;Задать описание книги по-умолчанию&quot;
@@ -825,23 +828,18 @@ Sub InitServiceDlg()
 			.lblENStyle.Label			= .lblStyle.Label
 			.lblNotesTitle.Label		= &quot;Heading of the Block of Footnotes:&quot;
 			.lbEndlNotesTitle.Label		= .lblNotesTitle.Label
-			.fcPoem.Label				= &quot; Poetry, Poems &quot;
-			.cboxPoemTitle.Label		= &quot;Collect the Poem Titles to One Line&quot;
+			.cboxPoemTitle.Label		= &quot;Colleczipt the Poem Titles to One Line&quot;
 			.cboxPoemAuthor.Label		= &quot;Collect the Poem Authors to One Line&quot;
 			.cboxPoemSubtitle.Label		= &quot;Collect the Poem Subtitles to One Line&quot;
 			.cboxSubtitle.Label			= &quot;Collect the Subtitles to One Line&quot;
-			.fcSubtitle.Label			= &quot; SubTitle &quot;
-			.fcEpigraph.Label			= &quot; Epigraphs &quot;
 			.cboxEpigAuthor.Label		= &quot;Collect the Epigraphs Authors to One Line&quot;
 			.fcTables.Label				= &quot; Tables &quot;
 			.lblHeadersAllign.Label		= &quot;Allign the Headers:&quot;
 			.lblThValign.Label			= &quot;On Height (th valign):&quot;
 			.lblLineAllign.Label		= &quot;Allign The Lines:&quot;
 			.lblTdValign.Label			= &quot;On Height (td valign):&quot;
-			.fcCite.Label				= &quot; Quotation, Citation, Cite &quot;
 			.cboxCiteAuthor.Label		= &quot;Collect the Cite Authors to One Line&quot;
 			.cboxCiteSubtitle.Label		= &quot;Collect the Cite Subtitles to One Line&quot;
-			.fcAnnotation.Label			= &quot; Annotations &quot;
 			.cboxAnnotationSubtitle.Label	= &quot;Collect Annotation Subtitles to One Line&quot;
 			.fcFB2Create.Label			= &quot; Created fb2-file &quot;
 			.cboxValidate.Label			= &quot;Validate created fb2-file&quot;
@@ -878,6 +876,7 @@ Sub InitServiceDlg()
 			.DefaultlBtn.Label	= &quot;Default Settings&quot;
 			.fcListIndent.Label	= &quot;Nested Lists&quot;
 			.lbSpaceCount.Label	= &quot;Spaces to indent:&quot;
+			.fcStruct.Label	= &quot;Struct&quot;
 			
 			.cbNotUsedBookmarks.Label	= &quot;Remove Bookmarks which refers to nothing (not used) in all docement&quot;
 			.cbDefaultDescription.Label	= &quot;Set default book description&quot;

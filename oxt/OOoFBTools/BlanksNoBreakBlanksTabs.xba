@@ -261,4 +261,85 @@ Sub ReplaceBlanksTabsToBlankOrTabsInSelectionsWorker( oDoc As Object, oLCurs As 
 	Loop
 End Sub
 
+&apos; ============================================================================================
+&apos; 				локализация инструмента поиска и замены множества пробелов,
+&apos;				неразрывных пробелов и табуляций в заданом месте текста
+&apos; ============================================================================================
+&apos; для хранения сообщений
+Type tBlanksNoBreakBlanksTabData
+	sBlanks				As String &apos; Простые пробелы
+	sNoBreakBlanks		As String &apos; Неразрывные пробелы
+	sTabs				As String &apos; Табуляции
+	sSearchIsReplace	As String &apos; Объект поиска не может совпадать с объектом замены!
+	sTitleAllText		As String &apos; Обработка пробелов и табуляций во всем тексте
+	sTitleSelText		As String &apos; Обработка пробелов и табуляций в выделенных фрагментах
+	sSelectParaForWork	As String &apos; Выделите абзацы для обработки в тексте.
+	sProcessAllDoc		As String &apos; Вы не выделили ни одного фрагмента текста. Обработать весь документ?
+	sEndWork			As String &apos; Обработка документа завершена!
+End Type
+
+Public sBNBBTD As tBlanksNoBreakBlanksTabData
+
+Sub InitBlanksNoBreakBlanksTabsMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sBNBBTD
+			.sBlanks		= &quot;Простые пробелы&quot;
+			.sNoBreakBlanks	= &quot;Неразрывные пробелы&quot;
+			.sTabs			= &quot;Табуляции&quot;
+			.sSearchIsReplace	= &quot;Объект поиска не может совпадать с объектом замены!&quot;
+			.sTitleAllText		= &quot;Обработка пробелов и табуляций во всем тексте&quot;
+			.sTitleSelText		= &quot;Обработка пробелов и табуляций в выделенных фрагментах&quot;
+			.sSelectParaForWork	= &quot;Выделите абзацы для обработки в тексте.&quot;
+			.sProcessAllDoc		= &quot;Вы не выделили ни одного фрагмента текста. Обработать весь документ?&quot;
+			.sEndWork			= &quot;Обработка документа завершена!&quot;
+		End With
+	Else
+		With sBNBBTD
+			.sBlanks		= &quot;Simple blanks&quot;
+			.sNoBreakBlanks	= &quot;No-break blanks&quot;
+			.sTabs			= &quot;Tabulations&quot;
+			.sSearchIsReplace	= &quot;The Object of searching can not comply with object of the change!&quot;
+			.sTitleAllText		= &quot;Processing blanks and tabulation in all text&quot;
+			.sTitleSelText		= &quot;Processing blanks and tabulation in selected text fragments&quot;
+			.sSelectParaForWork	= &quot;Select Paragraphs for processing in Text.&quot;
+			.sProcessAllDoc		= &quot;You have not selected nor one fragment of the text. Process whole document?&quot;
+			.sEndWork			= &quot;Processing is complete!&quot;
+		End With
+	End If
+End Sub
+
+&apos; **********************************************************************************************************
+&apos; инициализация диалога в зависимости от локали
+Sub InitBlanksNoBreakBlanksTabsDlg
+	&apos; инициализация сообщений в зависимости от локали
+	InitBlanksNoBreakBlanksTabsMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oBNBBTDlg.getModel
+			.lblReplaceIn.Label				= &quot;Где производить замену:&quot;
+			.obReplaceInSelect.Label		= &quot;В выделенных фрагментах текста&quot;
+			.obReplaceInAllText.Label		= &quot;Во всем тексте&quot;
+			.obReplaceInAllTextStartPara.Label	= &quot;В начале абзаца&quot;
+			.obReplaceInAllTextAny.Label		= &quot;В любом месте текста&quot;
+			.lblSearchReplace.Label				= &quot;Что на что заменять:&quot;
+			.lblOn.Label						= &quot;на&quot;
+			.cmdbtnStart.Label					= &quot;Обработать&quot;
+			.cmdbtnCancel.Label					= &quot;Отмена&quot;
+			.Title								= &quot;Обработка множественных пробелов и табуляций&quot;
+		End With
+	Else
+		With oBNBBTDlg.getModel
+			.lblReplaceIn.Label				= &quot;Where produce change:&quot;
+			.obReplaceInSelect.Label		= &quot;In selected fragment of the text&quot;
+			.obReplaceInAllText.Label		= &quot;In All Text&quot;
+			.obReplaceInAllTextStartPara.Label	= &quot;At start of paragraph&quot;
+			.obReplaceInAllTextAny.Label		= &quot;In any place of the text&quot;
+			.lblSearchReplace.Label				= &quot;The searching and replace Objects:&quot;
+			.lblOn.Label						= &quot;on&quot;
+			.cmdbtnStart.Label					= &quot;Start&quot;
+			.cmdbtnCancel.Label					= &quot;Cancel&quot;
+			.Title								= &quot;Processing plural blanks and tabulation&quot;
+		End With
+	End If
+End Sub
+
 </script:module>

@@ -4,209 +4,302 @@
 
 Option Explicit
 
-Private	oValidateDlg				As Object
-Private	sValidatorSettingsFilename	As String
+Private    oValidateDlg                As Object
+Private    sValidatorSettingsFilename    As String
 
 Sub StartValidate()
-	sValidatorSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;validator.txt&quot;
-	
-	&apos;DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
-    	GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
-	End If
-	oValidateDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.ValidateDlg )
-	
-	&apos; инициализация диалога Валидатора в зависимости от локали
-	InitValidateDlg()
+    sValidatorSettingsFilename = getOOoFBToolsSettingsDir() &amp; &quot;validator.txt&quot;
+    
+    &apos;DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+    If Not GlobalScope.DialogLibraries.isLibraryLoaded( &quot;OOoFBTools&quot; ) Then
+        GlobalScope.DialogLibraries.LoadLibrary( &quot;OOoFBTools&quot; )
+    End If
+    oValidateDlg = CreateUnoDialog( GlobalScope.DialogLibraries.OOoFBTools.ValidateDlg )
+    
+    &apos; инициализация диалога Валидатора в зависимости от локали
+    InitValidateDlg()
 
-	With oValidateDlg.getModel
-		.Height	= 73
-		.Width	= 256
-	End With
-	
-	&apos; считаем положение диалога из файла настроек
-	Dim nX As Integer, nY As Integer
-	ReadDlgSettings( sValidatorSettingsFilename, oValidateDlg, nX, nY )
-	oValidateDlg.setPosSize( nX, nY, 73, 256, com.sun.star.awt.PosSize.POS )
-	
-	oValidateDlg.Execute()
+    With oValidateDlg.getModel
+        .Height    = 68
+        .Width    = 270
+    End With
+    
+    &apos; считаем положение диалога из файла настроек
+    Dim nX As Integer, nY As Integer
+    ReadDlgSettings( sValidatorSettingsFilename, oValidateDlg, nX, nY )
+    oValidateDlg.setPosSize( nX, nY, 68, 270, com.sun.star.awt.PosSize.POS )
+    
+    If GetOS() = &quot;UNIX&quot; Then
+    	_xmlPath = UnixXmllintPath() &apos; утилита xmllint для Unix-систем
+    	If _xmlPath = &quot;&quot; Then
+	        InitNoToolsMessage() &apos; инициализация сообщений отсутствия в системе вспомогательных утилит
+    	    MsgBox sNYMD.sNoXmllint, 64, sVD.sValidatorTitle
+        	Exit Sub
+        End If
+    End If
+    oValidateDlg.Execute()
 End Sub
 
 Sub OpenFB2FileForValidate()
-	Dim sInitPath As String
-	
-	If ( Not GlobalScope.BasicLibraries.isLibraryLoaded( &quot;Tools&quot; ) ) Then
-		GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
-	End If
-	
-	Dim oFileDlg As Object	: oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
-	Dim oUcb As object		: oUcb = createUnoService( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
-	Dim sArg() As String	: sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
-	
-	With oFileDlg
-		.initialize( sArg() )
-		.appendFilter( &quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot; )
-		.setTitle( sVD.sChooseFB2File )
-		.setDefaultName( sInitPath )
-	End With
-	
-	sInitPath = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text
-	If oUcb.Exists( sInitPath ) Then
-		&apos; Открываем папку файла
-		oFileDlg.SetDisplayDirectory( Trim(Left(sInitPath, (Len(sInitPath)-Len(Dir$(sInitPath))))) )
-	Else
-		&apos; Открываем домашнюю папку
-		oFileDlg.SetDisplayDirectory( GetPathSettings(&quot;Work&quot;) )
-	End If
-	
-	If oFileDlg.execute() Then
-		Dim sPath As String : sPath = oFileDlg.Files(0)
-		If oUcb.Exists(sPath) Then
-			oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text = ConvertFromUrl(sPath)
-		End If
-	End If
-	oFileDlg.Dispose()
+    Dim sInitPath As String
+    
+    If ( Not GlobalScope.BasicLibraries.isLibraryLoaded( &quot;Tools&quot; ) ) Then
+        GlobalScope.BasicLibraries.LoadLibrary( &quot;Tools&quot; )
+    End If
+    
+    Dim oFileDlg As Object    : oFileDlg = CreateUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+    Dim oUcb As object        : oUcb = createUnoService( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
+    Dim sArg() As String    : sArg() = Array( com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE )
+    
+    With oFileDlg
+        .initialize( sArg() )
+        .appendFilter( &quot;Fictionbook (.fb2)&quot;, &quot;*.fb2;*.FB2&quot; )
+        .setTitle( sVD.sChooseFB2File )
+        .setDefaultName( sInitPath )
+    End With
+    
+    sInitPath = oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text
+    If oUcb.Exists( sInitPath ) Then
+        &apos; Открываем папку файла
+        oFileDlg.SetDisplayDirectory( Trim(Left(sInitPath, (Len(sInitPath)-Len(Dir$(sInitPath))))) )
+    Else
+        &apos; Открываем домашнюю папку
+        oFileDlg.SetDisplayDirectory( GetPathSettings(&quot;Work&quot;) )
+    End If
+    
+    If oFileDlg.execute() Then
+        Dim sPath As String : sPath = oFileDlg.Files(0)
+        If oUcb.Exists(sPath) Then
+            oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text = ConvertFromUrl(sPath)
+        End If
+    End If
+    oFileDlg.Dispose()
 End Sub
 
 Sub FB2Validate()
-	&apos; инициализация сообщений диалога Валидатора в зависимости от локали
-	InitValidateDlgMessage()
-	
-	&apos; записываем настройки диалога
-	SaveSettings( sValidatorSettingsFilename, oValidateDlg )
-	
-	Dim sFile As String : sFile = Trim( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text )
-	If sFile = &quot;&quot; Then
-		MsgBox sVD.sChooseFB2FileToValidate, 64, sVD.sFB2FileValidate
-		Exit Sub
-	ElseIf Not FileExists( sFile ) Then
-		MsgBox sVD.sFileNotExists + chr(10) + sFile, 64, sVD.sFB2FileValidate
-		Exit Sub
-	End If
+    &apos; инициализация сообщений диалога Валидатора в зависимости от локали
+    InitValidateDlgMessage()
+    
+    &apos; записываем настройки диалога
+    SaveSettings( sValidatorSettingsFilename, oValidateDlg )
+    
+    Dim sFile As String : sFile = Trim( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text )
+    If sFile = &quot;&quot; Then
+        MsgBox sVD.sChooseFB2FileToValidate, 64, sVD.sFB2FileValidate
+        Exit Sub
+    ElseIf Not FileExists( sFile ) Then
+        MsgBox sVD.sFileNotExists + chr(10) + sFile, 64, sVD.sFB2FileValidate
+        Exit Sub
+    End If
 
-	Dim sFB2SchemaPath As String
-	With oValidateDlg.Model
-		If .optbtnFB21.State = True Or .optbtnFB21.State = 1 Then
-			If GetOS() = 0 Then
-				sFB2SchemaPath = &quot;\fb2-schema\FictionBook.xsd&quot;
-			Else
-				sFB2SchemaPath = &quot;/fb2-schema/FictionBook.xsd&quot;
-			End If
-		ElseIf .optbtnFB2LibRusEc.State = True Or .optbtnFB2LibRusEc.State = 1 Then
-			If GetOS() = 0 Then
-				sFB2SchemaPath = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
-			Else
-				sFB2SchemaPath = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
-			End If
-		ElseIf .optbtnFB2Flibusta.State = True Or .optbtnFB2Flibusta.State = 1 Then
-			If GetOS() = 0 Then
-				sFB2SchemaPath = &quot;\fb2-flibusta-schema\FictionBook.xsd&quot;
-			Else
-				sFB2SchemaPath = &quot;/fb2-flibusta-schema/FictionBook.xsd&quot;
-			End If
-		ElseIf .optbtnFB2Union.State = True Or .optbtnFB2Union.State = 1 Then
-			If GetOS() = 0 Then
-				sFB2SchemaPath = &quot;\fb2-union-schema\FictionBook.xsd&quot;
-			Else
-				sFB2SchemaPath = &quot;/fb2-union-schema/FictionBook.xsd&quot;
-			End If
-		End If
-	End With
-	
-	MsgBox Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, sFB2SchemaPath ), 64, sVD.sValidatorTitle
+    Dim sFB2SchemaPath As String
+    With oValidateDlg.Model
+        If .optbtnFB21.State = True Or .optbtnFB21.State = 1 Then
+            If GetOS() = &quot;WIN&quot; Then
+                sFB2SchemaPath = &quot;\fb2-schema\FictionBook.xsd&quot;
+            Else
+                sFB2SchemaPath = &quot;/fb2-schema/FictionBook.xsd&quot;
+            End If
+        ElseIf .optbtnFB2LibRusEc.State = True Or .optbtnFB2LibRusEc.State = 1 Then
+            If GetOS() = &quot;WIN&quot; Then
+                sFB2SchemaPath = &quot;\fb2-librusec-schema\FictionBook.xsd&quot;
+            Else
+                sFB2SchemaPath = &quot;/fb2-librusec-schema/FictionBook.xsd&quot;
+            End If
+        ElseIf .optbtnFB2Flibusta.State = True Or .optbtnFB2Flibusta.State = 1 Then
+            If GetOS() = &quot;WIN&quot; Then
+                sFB2SchemaPath = &quot;\fb2-flibusta-schema\FictionBook.xsd&quot;
+            Else
+                sFB2SchemaPath = &quot;/fb2-flibusta-schema/FictionBook.xsd&quot;
+            End If
+        ElseIf .optbtnFB2Union.State = True Or .optbtnFB2Union.State = 1 Then
+            If GetOS() = &quot;WIN&quot; Then
+                sFB2SchemaPath = &quot;\fb2-union-schema\FictionBook.xsd&quot;
+            Else
+                sFB2SchemaPath = &quot;/fb2-union-schema/FictionBook.xsd&quot;
+            End If
+        End If
+    End With
+    
+    MsgBox Validate( oValidateDlg.GetControl(&quot;txtfldFB2File&quot;).Text, sFB2SchemaPath ), 64, sVD.sValidatorTitle
 End Sub
 
 
-&apos; /// Валидация ///
+&apos; ****************************** Валидация ****************************
 
-Function Validate( ByRef sFB2File As String, ByRef sFB2Schema As String ) As String
-	&apos; инициализация сообщений Валидатора в зависимости от локали
-	InitValidateDlgMessage()
-	
-	Dim sLog As String 
-	If GetOS() = 0 Then &apos; Для Windows
-		sLog = getOOoFBToolsTempPath() &amp; &quot;\log.txt&quot;
-	Else
-		sLog = getOOoFBToolsTempPath() &amp; &quot;/log.txt&quot;
-	End If
-	If FileExists( sLog ) Then
-		Kill sLog
-	End If
-		
-	If GetOS() = 0 Then &apos; Для Windows
-		Dim sFB2VBSFile As String, sFB2VBS As String
-		sFB2VBSFile = getOOoFBToolsTempPath() &amp; &quot;\fb2-valid-win32.vbs&quot;
-		sFB2VBS = &quot;Set doc = WScript.CreateObject(&quot;&quot;MSXML2.DOMDocument.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
-					&quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
-					&quot;doc.async=False&quot; &amp; chr(10) &amp; _
-					&quot;doc.validateOnParse=True&quot; &amp; chr(10) &amp; _
-					&quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp;_
-					&quot;&quot;&quot;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; ConvertFromURL( sFB2Schema ) &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
-					&quot;doc.schemas=cache&quot; &amp; chr(10) &amp; _
-					&quot;Dim fso, tf&quot; &amp; chr(10) &amp; &quot;Set fso = CreateObject(&quot;&quot;Scripting.FileSystemObject&quot;&quot;)&quot; &amp; chr(10) &amp;_
-					&quot;Set tf = fso.CreateTextFile(&quot;&quot;&quot; &amp; sLog &amp; &quot;&quot;&quot;, True)&quot; &amp; chr(10) &amp;_
-					&quot;If not doc.load(&quot;&quot;&quot; &amp; ConvertFromURL(sFB2File) &amp; &quot;&quot;&quot;) Then&quot; &amp; chr(10) &amp; _
-					&quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;Parser error at line &quot;&quot; + cstr(doc.parseError.line) + &quot;&quot;, column &quot;&quot; + cstr(doc.parseError.linepos) + &quot;&quot;:&quot;&quot;)&quot; &amp; chr(10) &amp;_
-					&quot;tf.WriteLine(doc.parseError.reason)&quot; &amp; chr(10) &amp;_
-					&quot;Else&quot; &amp; chr(10) &amp; _
-					&quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;File: &quot; &amp; ConvertFromURL(sFB2File) &amp; &quot; - No errors found&quot;&quot;&quot; &amp; &quot;)&quot; &amp; chr(10) &amp; _
-					&quot;End If&quot; &amp; chr(10) &amp;_
-					&quot;tf.Close&quot;
-				
-		SaveText( sFB2VBSFile, sFB2VBS, &quot;windows-1251&quot; )
-	
-		Dim oSSE As Object
-		oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
-		oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
-		
-	ElseIf GetOS() &gt; 0 Then &apos; для Nix систем
-		&apos; удаляем временные файлы
-		Dim sFileValidateScript As String : sFileValidateScript = getOOoFBToolsTempPath() &amp; &quot;/fb2-validate.sh&quot;
-		If FileExists( sFileValidateScript ) Then
-			Kill sFileValidateScript
-		End If
-		
-		Dim sScript As String
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;xmllint --noout --schema &apos;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; sFB2Schema ) &amp; &quot;&apos; &apos;&quot; &amp; sFB2File &amp; &quot;&apos;&quot; &amp;_
-					&quot; 2&gt; &quot; &amp; sLog
-		SaveText( sFileValidateScript, sScript, &quot;utf-8&quot; )
+Function Validate( FB2File As String, sFB2Schema As String ) As String
+    &apos; инициализация сообщений Валидатора в зависимости от локали
+    InitValidateDlgMessage()
+    
+    Dim Log As String 
+    If GetOS() = &quot;WIN&quot; Then &apos; Для Windows
+        Log = getOOoFBToolsTempPath() &amp; &quot;\log.txt&quot;
+    Else
+        Log = getOOoFBToolsTempPath() &amp; &quot;/log.txt&quot;
+    End If
+    
+    &apos; Удаление временных файлов
+    If FileExists( Log ) Then
+        Kill Log
+    End If
+    
+    Dim TempDir As String : TempDir = getOOoFBToolsTempPath()    
+    If GetOS() = &quot;WIN&quot; Then &apos; Для Windows
+        Dim sFB2VBSFile As String : sFB2VBSFile = TempDir &amp; &quot;\fb2-valid-win32.vbs&quot;
+        Dim sFB2VBS As String : sFB2VBS = &quot;Set doc = WScript.CreateObject(&quot;&quot;MSXML2.DOMDocument.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
+                    &quot;Set cache = WScript.CreateObject(&quot;&quot;MSXML2.XMLSchemaCache.6.0&quot;&quot;)&quot; &amp; chr(10) &amp; _
+                    &quot;doc.async=False&quot; &amp; chr(10) &amp; _
+                    &quot;doc.validateOnParse=True&quot; &amp; chr(10) &amp; _
+                    &quot;cache.add &quot;&quot;&quot; &amp; &quot;http://www.gribuser.ru/xml/fictionbook/2.0&quot;&quot;,&quot; &amp;_
+                    &quot;&quot;&quot;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; ConvertFromURL( sFB2Schema ) &amp; &quot;&quot;&quot;&quot; &amp; chr(10) &amp; _
+                    &quot;doc.schemas=cache&quot; &amp; chr(10) &amp; _
+                    &quot;Dim fso, tf&quot; &amp; chr(10) &amp; &quot;Set fso = CreateObject(&quot;&quot;Scripting.FileSystemObject&quot;&quot;)&quot; &amp; chr(10) &amp; _
+                    &quot;Set tf = fso.CreateTextFile(&quot;&quot;&quot; &amp; Log &amp; &quot;&quot;&quot;, True)&quot; &amp; chr(10) &amp; _
+                    &quot;If not doc.load(&quot;&quot;&quot; &amp; ConvertFromURL(FB2File) &amp; &quot;&quot;&quot;) Then&quot; &amp; chr(10) &amp; _
+                    &quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;Parser error at line &quot;&quot; + cstr(doc.parseError.line) + &quot;&quot;, column &quot;&quot; + cstr(doc.parseError.linepos) + &quot;&quot;:&quot;&quot;)&quot; &amp; chr(10) &amp;_
+                    &quot;tf.WriteLine(doc.parseError.reason)&quot; &amp; chr(10) &amp; _
+                    &quot;Else&quot; &amp; chr(10) &amp; _
+                    &quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;File:&quot;&quot;&quot; &amp; &quot;)&quot; &amp; chr(10) &amp; _
+                    &quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;&quot; &amp; ConvertFromURL(FB2File) &amp; &quot; :&quot;&quot;&quot; &amp; &quot;)&quot; &amp; chr(10) &amp; _
+                    &quot;tf.WriteLine(&quot; &amp; &quot;&quot;&quot;No errors found&quot;&quot;&quot; &amp; &quot;)&quot; &amp; chr(10) &amp; _
+                    &quot;End If&quot; &amp; chr(10) &amp; _
+                    &quot;tf.Close&quot;
+                
+        SaveText( sFB2VBSFile, sFB2VBS, &quot;windows-1251&quot; )
+    
+        Dim oSSE As Object : oSSE = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+        oSSE.execute( sFB2VBSFile, &quot;&quot;, 0 )
+        
+    Else &apos; для Nix систем
+        Dim sFileValidateScript As String : sFileValidateScript = TempDir &amp; &quot;/fb2validate.sh&quot;
+        Dim Script As String
+        
+        &apos; удаление временных файлов
+        If FileExists( sFileValidateScript ) Then
+            Kill sFileValidateScript
+        End If
 
-		Shell(&quot;chmod +x &quot; &amp; sFileValidateScript, true)
-		Shell(&quot;/bin/sh&quot;, 1, sFileValidateScript, true)
-	End If
-	
-	Wait 1000
-	Validate = LoadResult( sLog )
+        &apos; генерация скрипта
+        Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _xmlPath &amp; &quot; --noout --schema &apos;&quot; &amp; ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; sFB2Schema ) &amp; &quot;&apos; &apos;&quot; &amp; FB2File &amp; &quot;&apos;&quot; &amp; _
+                    &quot; 2&gt; &quot; &amp; Log
+        SaveText( sFileValidateScript, Script, &quot;utf-8&quot; )
+        Shell(&quot;chmod +x &quot; &amp; sFileValidateScript, true)
+        Shell(&quot;/bin/sh&quot;, 1, sFileValidateScript, true)
+    
+        &apos; Удаление временных файлов
+        If FileExists( sFileValidateScript ) Then
+            Kill sFileValidateScript
+        End If
+    End If
+    
+    Wait 1000
+    Validate = LoadResult( Log )
+    
+    &apos; Удаление временных файлов
+    If FileExists( Log ) Then
+        Kill Log
+    End If
 End Function
 
 Function LoadResult(ByRef logFile As String) As String
-	Dim ok As Boolean : ok = False
-	Dim filenumber As Integer
-	Dim sLine As String
-	Dim sText As String
-	filenumber = Freefile
-	If FileExists( logFile ) Then
-		Open logFile For Input As filenumber
-		While Not EOF(filenumber)
-			Line Input #filenumber, sLine
-			If (sLine &lt;&gt; &quot;&quot;) Then
-				sText = sText &amp; sLine &amp; chr(10) &amp; chr(10)
-			End If
-		Wend
-		Close #filenumber
-	End If
-	
-	If InStr(sText, &quot;parser error&quot;) = 0 Then ok = True
+    Dim ok As Boolean : ok = False
+    Dim filenumber As Integer
+    Dim sLine As String
+    Dim sText As String
+    filenumber = Freefile
+    If FileExists( logFile ) Then
+        Open logFile For Input As filenumber
+        While Not EOF(filenumber)
+            Line Input #filenumber, sLine
+            If (sLine &lt;&gt; &quot;&quot;) Then
+                sText = sText &amp; sLine &amp; chr(10) &amp; chr(10)
+            End If
+        Wend
+        Close #filenumber
+    End If
+    
+    If InStr(sText, &quot;parser error&quot;) = 0 Then ok = True
 
-	Dim sResult As String
-	If ok = True Then
-		sResult = sVD.sNoErrors &amp; chr(10) &amp; chr(10)
-	Else
-		sResult = sVD.sErrors &amp; chr(10) &amp; chr(10)
-	End If
-	
-	LoadResult = sResult &amp; sText
+    Dim sResult As String : sResult = &quot;&quot;
+    If ok = True Then
+        If GetOS() = &quot;UNIX&quot; Then
+            If _xmlPath = &quot;&quot; Then &apos; нет утилиты xml ()
+                sResult = sNYMD.sNoXmllint &amp; chr(10) &amp; chr(10)
+            Else
+                If InStr( sText, &quot;:&quot; ) &gt; 0 Then &apos; есть ошибка валидации
+                    sResult = sVD.sErrors &amp; chr(10) &amp; chr(10)
+                Else
+                    sResult = sVD.sNoErrors &amp; chr(10) &amp; chr(10)
+                End If
+            End If
+        End If
+    Else
+        sResult = sVD.sErrors &amp; chr(10) &amp; chr(10)
+    End If
+    
+    LoadResult = sResult &amp; sText
 End Function
 
+&apos; ==========================================================
+&apos;         локализациz диалога Валидатора
+&apos; ==========================================================
+&apos; для хранения сообщений для диалога Валидатора
+Type tValidatorsDlgData
+    sChooseFB2File                As String &apos; Выберите fb2 файл...
+    sChooseFB2FileToValidate    As String &apos; Выберите fb2 файл для валидации
+    sFileNotExists                As String &apos; Файл не найден
+    sFB2FileValidate            As String &apos; Валидация fb2-файла
+    sNoErrors                    As String &apos; Ошибок валидации файла не обнаружено:
+    sErrors                        As String &apos; Найдены ошибки валидации файла:
+    sValidatorTitle                As String &apos; Результат вадидации
+End Type
+
+Public sVD As tValidatorsDlgData
+
+&apos; ==========================================================
+&apos; инициализация диалога Валидатора в зависимости от локали
+Sub InitValidateDlg()
+    With oValidateDlg.getModel
+        .Title = sVD.sFB2FileValidate
+    End With
+    
+    If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+        With oValidateDlg.getModel
+            .lblValidFB2Open.Label    = &quot;Открыть файл:&quot;
+            .cmdbtnValCancel.Label    = &quot;Отмена&quot;
+            .cmdbtnValidate.Label    = &quot;Проверить&quot;
+        End With
+    Else
+        With oValidateDlg.getModel
+            .lblValidFB2Open.Label    = &quot;Open the File:&quot;
+            .cmdbtnValCancel.Label    = &quot;Cancel&quot;
+            .cmdbtnValidate.Label    = &quot;Check&quot;
+        End With
+    End If
+End Sub
+
+&apos; инициализация сообщений диалога Валидатора в зависимости от локали
+Sub InitValidateDlgMessage()
+    If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+        With sVD
+            .sFB2FileValidate            = &quot;Валидация fb2-файла&quot;
+            .sFileNotExists                = &quot;Файл не найден:&quot;
+            .sChooseFB2File                = &quot;Выберите fb2 файл...&quot;
+            .sChooseFB2FileToValidate    = &quot;Выберите fb2 файл для валидации&quot;
+            .sNoErrors                    = &quot;Ошибок валидации файла не обнаружено!&quot;
+            .sErrors                    = &quot;Найдены ошибки валидации файла:&quot;
+            .sValidatorTitle            = &quot;Результат вадидации&quot;
+        End With
+    Else
+        With sVD
+            .sFB2FileValidate            = &quot;Validate the fb2 File&quot;
+            .sFileNotExists                = &quot;File Not Exists:&quot;
+            .sChooseFB2File                = &quot;Choose the fb2 File...&quot;
+            .sChooseFB2FileToValidate    = &quot;Choose the fb2 File for Validate&quot;
+            .sNoErrors                    = &quot;Validation errors is not found!&quot;
+            .sErrors                    = &quot;Found the error validation:&quot;
+            .sValidatorTitle            = &quot;Result of validation&quot;
+        End With
+    End If
+End Sub
 </script:module>

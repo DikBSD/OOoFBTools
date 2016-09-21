@@ -20,7 +20,6 @@ Private bWorkStart			As Boolean &apos; флаг начала работы Ред
 Private bWorkEnd			As Boolean &apos; флаг конца работы Редактора - закрытия диалога (True)
 
 Private sLangList() 			As String &apos; список языков
-Private saTranslitLetters(66)	As String &apos; для транслитерации
 
 &apos; ===========================================================================================================================
 &apos; 										запуск формы Редактора fb2 свойств
@@ -41,10 +40,9 @@ Sub FB2PropertiesDlg_windowClosing(oEv)
 End Sub
 
 Sub FB2PropertiesDlg_windowClosed(oEv)
+	&apos; удаляем файлы из временной папки OOoFBToolsTemp
 	Dim guidPath As String, guidTxtPath As String
-	If GetOS() = 0 Then
-		&apos; для Windows системы удаляем guid.exe и guid.txt из временной папки OOoFBToolsTemp
-		guidPath = ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\uuidgen.exe&quot; )
+	If GetOS() = &quot;WIN&quot; Then
 		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;\guid.txt&quot;
 	Else
 		guidPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot;
@@ -76,7 +74,7 @@ Sub FB2PropertiesEditorDlgExec()
 	&apos; инициализация сообщений формы Редактора fb2 свойств в зависимости от локали
 	InitFB2PropertiesDlgMessage()
 	Dim oProgressBar As Object : oProgressBar = ThisComponent.CurrentController.StatusIndicator
-	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog+&quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgInit, 5 )
+	oProgressBar.start( sFB2PED.sFB2PropEditorDlgCreateDialog &amp; &quot;, &quot; &amp; sFB2PED.sFB2PropEditorDlgInit, 4 )
 	oProgressBar.setValue(0)
 
 	&apos; Создание формы
@@ -86,13 +84,10 @@ Sub FB2PropertiesEditorDlgExec()
 
 	&apos; инициализация формы Редактора fb2 свойств в зависимости от локали
 	InitFB2PropertiesDlg()
-	&apos; инициализация массива транслитерации
-	MakeTranslitLettersList( saTranslitLetters() )
-	oProgressBar.setValue(2)
 
 	&apos; создание списков языков книги
 	MakeLangList( sLangList() )
-	oProgressBar.setValue(3)
+	oProgressBar.setValue(2)
 
 	Dim aArray() As String
 	With oFB2PropertiesDlg
@@ -106,7 +101,7 @@ Sub FB2PropertiesEditorDlgExec()
 			&quot;copyright&quot;, &quot;edition&quot;, &quot;editor&quot;, &quot;original_author&quot;, &quot;original_booktitle&quot;, &quot;original_publisher&quot; )
 		.getControl( &quot;cusTypeListBox&quot; ).SelectItemPos( 0, True )
 	End With
-	oProgressBar.setValue(4)
+	oProgressBar.setValue(3)
 	
 	&apos; задаем положение диалога из файла настроек
 	LoadFB2PropEditorFormSettings()
@@ -125,7 +120,7 @@ Sub FB2PropertiesEditorDlgExec()
 			InitFBUnion() &apos; Инициализация жанрами объединенной схемы FictionBook 2 (LibRusEc &amp; Flibusta)
 		End If
 	End With
-	oProgressBar.setValue(5)
+	oProgressBar.setValue(4)
 	oProgressBar.End
 	
 	&apos; заполнение контролов формы
@@ -144,9 +139,9 @@ Sub FB2PropertiesEditorDlgExec()
 	With oFB2PropertiesDlg.Model
 		.LangComboBox.StringItemList	= sLangList()
 		.SrcLangComboBox.StringItemList	= sLangList()
-		.ProgrammUsedField.Text		= &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot; &quot; &amp; &quot;(ExportToFB21)&quot;
+		.ProgrammUsedField.Text	= &quot;OOoFBTools-&quot; &amp; getMyVersion( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot; &quot; &amp; &quot;(ExportToFB21)&quot;
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
-		.NumericFieldMatch.Value	= &quot;100&quot;
+		.NumericFieldMatch.Value = &quot;100&quot;
 		If bFB2NotFlagPropertyIsExsist Then
 			&apos; загрузка из свойств документа fb2 свойств в контролы формы
 			GetFB2PropertiesFromDoc( oProgressBar, Iter )
@@ -154,8 +149,13 @@ Sub FB2PropertiesEditorDlgExec()
 	End With
 	oProgressBar.setValue(Iter)
 	
+	&apos; Задаем настройки в контролы по умолчанию
+	SetDefaultSettingsToVars()
+	&apos; теперь считываем настройки из файла в переменные
+	LoadSettingsToVars()
+	
 	If Not bFB2NotFlagPropertyIsExsist Then
-		&apos; Читаем стили и задаем значения переменным (для Book Title)
+		&apos; Читаем стили и задаем значения переменным (для BookTitle)
 		SetFB2LocalStylesToVars()
 		With oFB2PropertiesDlg.Model
 			.BookTitleField.Text	= GetTextOfStyle( sStyleBookTitle, True )
@@ -173,7 +173,30 @@ Sub FB2PropertiesEditorDlgExec()
 		End If
 		oProgressBar.setValue(Iter) : Iter = Iter + 1
 	End If
-
+	
+	If GetOS() = &quot;UNIX&quot; Then
+		&apos; утилиты для Unix-систем
+		If _xmlPath = &quot;&quot; Then
+			_xmlPath = UnixXmllintPath()
+		End If
+		If _base64 = &quot;&quot; Then
+			_base64 = UnixBase64Path()
+		End If
+		If _openssl = &quot;&quot; Then
+			_openssl = UnixOpensslPath()
+		End If
+		If _zipPath = &quot;&quot; Then
+			_zipPath = UnixZipPath()
+		End If
+		If _guidPath = &quot;&quot; Then &apos; для Unix систем
+			_guidPath = UnixUuidgenPath()
+			If _guidPath = &quot;&quot; Then &apos;
+				InitNoToolsMessage() &apos; инициализация сообщений отсутствия в системе вспомогательных утилит
+				MsgBox sNYMD.sNoUuidgen, 64, sVD.sValidatorTitle
+			End If
+		End If
+	End If
+	
 	oProgressBar.End
 	
 	bWorkEnd = False
@@ -1655,61 +1678,6 @@ Sub NewBookID()
 	End With
 End Sub
 
-&apos;***************************************************************************
-&apos; генерация GUID в текстовый файл для ID книги
-Function generateID() As String
-	generateID = &quot;&quot;
-	Dim guidTxtPath As String, sScript As String, sScriptPath As String
-	&apos; для Windows системы копируем guid.exe из расширения в OOoFBToolsTemp папку для создания ID книги в портабельном режиме
-	If GetOS() = 0 Then &apos; для Windows-системы
-		&apos; создаем OOoFBToolsTemp папку, если ее нет
-		If Dir( getOOoFBToolsTempPath(), 16 ) = &quot;&quot; Then
-			MkDir getOOoFBToolsTempPath()
-		End If
-		&apos; копируем в OOoFBToolsTemp папку guid.exe
-		Dim guidPath As String : guidPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) ) &amp; &quot;\win32\uuidgen.exe&quot;
-		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;\guid.txt&quot;
-		If FileExists( guidPath ) Then
-			FileCopy guidPath, ConvertFromURL( getOOoFBToolsTempPath() &amp; &quot;\uuidgen.exe&quot; )
-			sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL( getOOoFBToolsTempPath() ) &amp; &quot;\uuidgen.exe&quot;&quot; -o&quot; &amp; &quot;&quot;&quot;&quot; &amp; &quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
-			&apos; генерируем GUID в текстовый файл guid.txt
-			Shell( sScript, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;	
-		End If
-	Else
-		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;/guid.txt&quot;
-		If FileExists( guidTxtPath ) Then
-			Kill guidTxtPath
-		End If
-		sScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
-		If GetOS() = 1 Then &apos; для mac Os X
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;uuidgen &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
-		Else &apos; для Linux и других Unix-систем
-			sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;uuidgen -t &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
-		End If
-		sScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
-		SaveText( sScriptPath, sScript, &quot;utf-8&quot; )
-		Shell( &quot;/bin/sh&quot;, 1, sScriptPath, true )
-	End If
-	generateID = UCase( getGUID( guidTxtPath ) )
-End Function
-
-&apos;***************************************************************************
-Function getGUID( guidTxtPath As String ) As String
-	&apos; считываем GUID из сгенерированного txt файла
-	If FileExists( guidTxtPath ) Then
-		&apos; считываем GUID из файла		
-		Dim oSFA As Object, oFS As Object, oTIS As Object
-		oSFA = createUnoService (&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
-		oFS = oSFA.openFileRead ( ConvertToURL ( guidTxtPath ) )
-		oTIS = createUnoService (&quot;com.sun.star.io.TextInputStream&quot;)
-		oTIS.setInputStream (oFS)
-		If Not IsFileEmpty( guidTxtPath ) Then
-			getGUID = oTIS.readLine()
-			oTIS.closeInput()
-		End If
-	End If
-End Function
-
 &apos; ===========================================================================================================================
 &apos; 										Установка минимального описания книги по-умолчанию
 &apos; ===========================================================================================================================
@@ -1727,76 +1695,6 @@ End Sub
 &apos; ===========================================================================================================================
 &apos; 												Разное
 &apos; ===========================================================================================================================
-
-Sub MakeTranslitLettersList( saTranslitLetters() )
-	saTranslitLetters(0)=&quot;a&quot; &apos;	// а
-	saTranslitLetters(1)=&quot;b&quot; &apos;	// б
-	saTranslitLetters(2)=&quot;v&quot; &apos;	// в
-	saTranslitLetters(3)=&quot;g&quot; &apos;	// г
-	saTranslitLetters(4)=&quot;d&quot; &apos;	// д
-	saTranslitLetters(5)=&quot;e&quot; &apos;	// е
-	saTranslitLetters(6)=&quot;yo&quot; &apos;	// ё
-	saTranslitLetters(7)=&quot;zh&quot; &apos;	// ж
-	saTranslitLetters(8)=&quot;z&quot; &apos;	// з
-	saTranslitLetters(9)=&quot;i&quot; &apos;	// и
-	saTranslitLetters(10)=&quot;y&quot; &apos;	// й
-	saTranslitLetters(11)=&quot;k&quot; &apos;	// к
-	saTranslitLetters(12)=&quot;l&quot; &apos;	// л
-	saTranslitLetters(13)=&quot;m&quot; &apos;	// м
-	saTranslitLetters(14)=&quot;n&quot; &apos;	// н
-	saTranslitLetters(15)=&quot;o&quot; &apos;	// о
-	saTranslitLetters(16)=&quot;p&quot; &apos;	// п
-	saTranslitLetters(17)=&quot;r&quot; &apos;	// р
-	saTranslitLetters(18)=&quot;s&quot; &apos;	// с
-	saTranslitLetters(19)=&quot;t&quot; &apos;	// т
-	saTranslitLetters(20)=&quot;u&quot; &apos;	// у
-	saTranslitLetters(21)=&quot;f&quot; &apos;	// ф
-	saTranslitLetters(22)=&quot;h&quot; &apos;	// х
-	saTranslitLetters(23)=&quot;ts&quot; &apos;// ц
-	saTranslitLetters(24)=&quot;ch&quot; &apos;// ч
-	saTranslitLetters(25)=&quot;sh&quot; &apos;// ш
-	saTranslitLetters(26)=&quot;sch&quot; &apos;// щ
-	saTranslitLetters(27)=&quot;&apos;&quot; &apos;	// ъ
-	saTranslitLetters(28)=&quot;y&quot; &apos;	// ы
-	saTranslitLetters(29)=&quot;&apos;&quot; &apos;	// ь
-	saTranslitLetters(30)=&quot;e&quot; &apos;	// э
-	saTranslitLetters(31)=&quot;yu&quot; &apos;// ю
-	saTranslitLetters(32)=&quot;ya&quot; &apos;// я
-	saTranslitLetters(33)=&quot;A&quot; &apos;	// А
-	saTranslitLetters(34)=&quot;B&quot; &apos;	// Б
-	saTranslitLetters(35)=&quot;V&quot; &apos;	// В
-	saTranslitLetters(36)=&quot;G&quot; &apos;	// Г
-	saTranslitLetters(37)=&quot;D&quot; &apos;	// Д
-	saTranslitLetters(38)=&quot;E&quot; &apos;	// Е
-	saTranslitLetters(39)=&quot;YO&quot; &apos;// Ё
-	saTranslitLetters(40)=&quot;ZH&quot; &apos;// Ж
-	saTranslitLetters(41)=&quot;Z&quot; &apos;	// З
-	saTranslitLetters(42)=&quot;I&quot; &apos;	// И
-	saTranslitLetters(43)=&quot;Y&quot; &apos;	// Й
-	saTranslitLetters(44)=&quot;K&quot; &apos;	// К
-	saTranslitLetters(45)=&quot;L&quot; &apos;	// Л
-	saTranslitLetters(46)=&quot;M&quot; &apos;	// М
-	saTranslitLetters(47)=&quot;N&quot; &apos;	// Н
-	saTranslitLetters(48)=&quot;O&quot; &apos;	// О
-	saTranslitLetters(49)=&quot;P&quot; &apos;	// П
-	saTranslitLetters(50)=&quot;R&quot; &apos;	// Р
-	saTranslitLetters(51)=&quot;S&quot; &apos;	// С
-	saTranslitLetters(52)=&quot;T&quot; &apos;	// Т
-	saTranslitLetters(53)=&quot;U&quot; &apos;	// У
-	saTranslitLetters(54)=&quot;F&quot; &apos;	// Ф
-	saTranslitLetters(55)=&quot;H&quot; &apos;	// Х
-	saTranslitLetters(56)=&quot;TS&quot; &apos;// Ц
-	saTranslitLetters(57)=&quot;CH&quot; &apos;// Ч
-	saTranslitLetters(58)=&quot;SH&quot; &apos;// Ш
-	saTranslitLetters(59)=&quot;SCH&quot; &apos;// Щ
-	saTranslitLetters(60)=&quot;&apos;&quot; &apos;	// Ъ
-	saTranslitLetters(61)=&quot;Y&quot; &apos;	// Ы
-	saTranslitLetters(62)=&quot;&apos;&quot; &apos;	// Ь
-	saTranslitLetters(63)=&quot;E&quot; &apos;	// Э
-	saTranslitLetters(64)=&quot;YU&quot; &apos;// Ю
-	saTranslitLetters(65)=&quot;YA&quot; &apos;// Я
-End Sub
-
 Sub MakeLangList( aLangList() )
 	aLangList() = Array(&quot;Abkhazian (ab)&quot;,&quot;Afar (aa)&quot;,&quot;Afrikaans (af)&quot;,&quot;Albanian (sq)&quot;,&quot;Amharic (am)&quot;,&quot;Arabic (ar)&quot;,&quot;Armenian (hy)&quot;,&quot;Assamese (as)&quot;,&quot;Aymara (ay)&quot;,&quot;Azerbaijani (az)&quot;, _
 						&quot;Bashkir (ba)&quot;,&quot;Basque (eu)&quot;,&quot;Bengali (bn)&quot;,&quot;Bhutani (dz)&quot;,&quot;Bihari (bh)&quot;,&quot;Bislama (bi)&quot;,&quot;Breton (br)&quot;,&quot;Bulgarian (bg)&quot;,&quot;Burmese (my)&quot;,&quot;Byelorussian (be)&quot;,_
@@ -1913,6 +1811,438 @@ Sub makeGenreList( ByRef FileName As String )
 		End If
 	Loop
 	sGLN = GLN()
+End Sub
+
+&apos; ===================================================================================
+&apos; 			локализация формы Редактора fb2 свойств и Жанров
+&apos; ===================================================================================
+Public sGLN() As String &apos;списки названий жанров
+&apos; для хранения сообщений для формы Редактора fb2 свойств
+Type tFB2PropertiesDlgData	
+	&apos; основной диалог
+	sFB2PropEditorDlgCreateDialog			As String &apos; Создание диалога
+	sFB2PropEditorDlgTitle					As String &apos; Заголовок основной формы редактора fb2 свойств
+	sFB2PropEditorDlgInit					As String &apos; Инициализация
+	sFB2PropEditorDlgLoadFB2Properties		As String &apos; Загрузка fb2 свойств
+	sFB2PropEditorDlgSaveFB2Properties		As String &apos; Сохранение fb2 свойств
+	sFB2PropEditorDlgSelectGenre			As String &apos; Выберите, пожалуйста, Жанр Книги
+	sFB2PropEditorDlgFillBookTitle			As String &apos; Заполните, пожалуйста, поля Названия Книги
+	sFB2PropEditorDlgFillVersion			As String &apos; Заполните, пожалуйста, поле Версии Книги (например, 1.0)
+	sFB2PropEditorDlgFillID					As String &apos; Заполните, пожалуйста, поле ID Книги произвольным образом, или нажмите на кнопку new ID
+	sFB2PropEditorDlgFillBookAuthor			As String &apos; Пожалуйста, заполните хоть одно поле для Автора Книги
+	sFB2PropEditorDlgFillBookTrans			As String &apos; Пожалуйста, заполните хоть одно поле для Переводчика Книги
+	sFB2PropEditorDlgFillBookSequence		As String &apos; Пожалуйста, заполните поля названия и (или) номера для Серии Книги
+	sFB2PropEditorDlgFillFB2Author			As String &apos; Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа
+	sFB2PropEditorDlgFillPaperBookSequence	As String &apos; Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги
+	sFB2PropEditorDlgFillCustomInfo			As String &apos; Пожалуйста, заполните оба поля для Custom Info
+	sFB2ExportFB2DeleteItem					As String &apos; Вы действительно хотите удалить:
+	sFB2PropEditorDlgDateValue				As String &apos; Данные Даты написания книги (значение) введены неверно. Проверьте формат ввода данных (ГГГГ-ММ-ДД). Значение для Дня не должно превышать числа дней в конкретном месяце. Значение Месяца не должно быть от 01 до 12.
+	&apos; диалог сохранения файла
+	sFileDlgSaveAs					As String &apos; Сохранить как...
+	&apos; Профили
+	sFB2PropEditorDlgFillPublisher	As String &apos; Пожалуйста, заполните хоть одно поле для Изжательства
+	sProfileFB2AuthorQuestionLoad	As String &apos; Вы действительно хотите загрузить профиль Автора fb2 документа? Все данные в полях Автора fb2 документа будут заменены на данные из профиля!
+	sProfileFB2AuthorQuestionSave	As String &apos; Вы действительно хотите сохранить профиль Автора fb2 документа? Если вы раньше сохраняли свой профиль, то он будет перезаписан!
+	sProfileAuthorOpen				As String &apos; Открыть профиль автора книги ...
+	sProfileAuthorSave				As String &apos; Сохранить профиль для автора книги ...
+	sProfilePublisherOpen			As String &apos; Открыть профиль Издательства ...
+	sProfilePublisherSave			As String &apos; Сохранить профиль Издательства ...
+	sProfileFB2AuthorOpen			As String &apos; Открыть профиль Автора fb2-файла ...
+	sProfileFB2AuthorSave			As String &apos; Сохранить профиль Автора fb2-файла ...
+End Type
+
+&apos; для хранения сообщений для жанров
+Type tGenreData
+	sGenreGroup					As String &apos; Вы выбрали название группы жанров. Пожалуйста, выберите жанр книги!
+	sSchemeFB21					As String &apos; схема fb2.1
+	sSchemeFB22					As String &apos; схема fb2.2
+	sSchemeFB2LibRusEc			As String &apos; схема fb2 LibRusEc
+	sSchemeFB2Flibusta			As String &apos; схема fb2 Flibusta
+	sSchemeFB2Union				As String &apos; Объединенная схема fb2 (LibRusEc &amp; Flibusta)
+	&apos; Избранные Жанры
+	sGenreElite					As String &apos; Избранные Жанры
+	sGenreEliteAdd				As String &apos; Добавление Жанра в Избранное
+	sGenreEliteRemove			As String &apos; Удаление Жанра из Избранного
+	sGenreEliteSorting			As String &apos; Сортировка списка Избранных Жанров
+	sGenreEliteUp				As String &apos; Перемещение Жанра вверх
+	sGenreEliteDown				As String &apos; Перемещение Жанра вниз
+	sGenreEliteSelected			As String &apos; Выбраный жанр
+	sGenreEliteSelectFromList	As String &apos; Пожалуйста, выберите Жанр из выпадающего списка!
+	sGenreEliteSelectOther		As String &apos; Пожалуйста, выберите другой жанр книги!
+	sGenreEliteIsExists			As String &apos; уже имеется в списке Избранных Жанров.
+	sGenreEliteSelectForRemove	As String &apos; Пожалуйста, выберите Жанр из Избранного для удаления.
+	sGenreEliteQuestionRemove	As String &apos; Вы действительно хотите удалить выбранный жанр из Избранного:
+	sGenreEliteQuestionSort		As String &apos; Вы действительно хотите отсортировать список Избранных Жанров
+	sGenreEliteSelectToUp		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!
+	sGenreEliteSelectToDown		As String &apos; Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!
+End Type
+
+Public sFB2PED	As tFB2PropertiesDlgData
+Public sGD		As tGenreData
+
+&apos; ********************************************************************************************************
+&apos; инициализация основной формы Редактора fb2 свойств в зависимости от локали
+Sub InitFB2PropertiesDlg()
+	&apos; инициализация сообщений диалогов по работе с Жанрами в зависимости от локали
+	InitGenreMessage()
+	
+	With oFB2PropertiesDlg.getModel
+		&apos; Title Info
+		.lbGenreElite.HelpText	= sGD.sGenreElite
+	End With
+	
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With oFB2PropertiesDlg.getModel
+			.optbtnTitleInfo.Label		= &quot;Book (Title Info)&quot;
+			.optbtnDocumentInfo.Label	= &quot;FB2 (Document Info)&quot;
+			.optbtnPublishInfo.Label	= &quot;Paper Book (Publish Info)&quot;
+			.optbtnCustomInfo.Label		= &quot;Custom Info&quot;
+			
+			&apos; Title Info
+			.fcTI.Label					= &quot; Книга (Title Info) &quot;
+			.lblGenre.Label				= &quot;Жанр:&quot;
+			.cmbtnFavorites.Label		= &quot;Избранное ...&quot;
+			.cmbtnFavorites.HelpText	= &quot;Работа со списком Избранных Жанров...&quot;
+			.lblMatch.Label				= &quot;Соответствие:&quot;
+			
+			.lblLang.Label			= &quot;Язык:&quot;
+			.lblLangOriginal.Label	= &quot;Оригинал:&quot;
+			
+			.fcTIAuthors.Label			= &quot; Авторы &quot;
+			.lblTIAuthorsFirst.Label	= &quot;Имя:&quot;
+			.lblTIAuthorsMiddle.Label	= &quot;Отчество:&quot;
+			.lblTIAuthorsLast.Label		= &quot;Фамилия:&quot;
+			.lblTIAuthorsNick.Label		= &quot;Ник:&quot;
+			.lblTIAuthorsEmail.Label	= &quot;Email:&quot;
+			.lblTIAuthorsWebcite.Label	= &quot;Сайт:&quot;
+			
+			.lblTIName.Label		= &quot;Название:&quot;
+			.lblTIKeywords.Label	= &quot;Ключевые слова:&quot;
+			.lblTIDate.Label		= &quot;Дата написания книги:&quot;
+			.lblTIDateText.Label	= &quot;Текст (Формат: ГГГГ):&quot;
+			.lblTIDateValue.Label	= &quot;Значение (Формат: ГГГГ-ММ-ДД):&quot;
+			
+			.fcTITranslators.Label			= &quot; Переводчики &quot;
+			.lblTITranslatorsFirst.Label	= &quot;Имя:&quot;
+			.lblTITranslatorsMiddle.Label	= &quot;Отчество:&quot;
+			.lblTITranslatorsLast.Label		= &quot;Фамилия:&quot;
+			.lblTITranslatorsNick.Label		= &quot;Ник:&quot;
+			.lblTITranslatorsEmail.Label	= &quot;Email:&quot;
+			.lblTITranslatorsWebcite.Label	= &quot;Сайт:&quot;
+			
+			
+			.fcSequencies.Label				= &quot; Серии &quot;
+			.lblTISequence.Label			= &quot;Название:&quot;
+			.lblTISequenceNumber.Label		= &quot;Номер:&quot;
+			
+			&apos; Document Info
+			.fcDI.Label				= &quot; FB2 Документ (Document Info) &quot;
+			.lblDIVersion.Label		= &quot;Версия:&quot;
+			.lblDIID.Label			= &quot;ID:&quot;
+			.cmdbtnNewID.Label		= &quot;Новый ID&quot;
+			.cmdbtnNewID.HelpText	= &quot;Сгенерировать уникальный ID Книги заново&quot;
+			.fcDIAuthors.Label			= &quot; Авторы fb2&quot;
+			.lblDIAuthorsFirst.Label	= &quot;Имя:&quot;
+			.lblDIAuthorsMiddle.Label	= &quot;Отчество:&quot;
+			.lblDIAuthorsLast.Label		= &quot;Фамилия:&quot;
+			.lblDIAuthorsNick.Label		= &quot;Ник:&quot;
+			.lblDIAuthorsEmail.Label	= &quot;Email:&quot;
+			.lblDIAuthorsWebcite.Label	= &quot;Сайт:&quot;
+			
+			.lblPrograms.Label		= &quot;Программа:&quot;
+			.lblSourceOCR.Label		= &quot;Источник OCR:&quot;
+			.lblSourceURLs.Label	= &quot;Источник URLs:&quot;
+			.LoadProfileCommandButton.Label		= &quot;Загрузить профиль&quot;
+			.SaveProfileCommandButton.Label		= &quot;Сохранить профиль&quot;
+			.LoadProfileCommandButton.HelpText	= &quot;Загрузить профиль Автора fb2 документа, Source OCR и Истории создания fb2 документа&quot;
+			.SaveProfileCommandButton.HelpText	= &quot;Сохранить профиль Автора fb2 документа, Source OCR и Истории создания fb2 документа&quot;
+			.LoadProfileFB2Author.Label			= &quot;Загрузить профиль как...&quot;
+			.SaveProfileFB2Author.Label			= &quot;Сохранить профиль как...&quot;
+			
+			&apos; Publish Info
+			.fcPI.Label					= &quot; Бумажная Книга (Publish Info) &quot;
+			.lblPIName.Label			= &quot;Название:&quot;
+			.lblPIPublisher.Label		= &quot;Издатель:&quot;
+			.lblPICity.Label			= &quot;Город:&quot;
+			.fcPubSequencies.Label		= &quot; Серии &quot;
+			.lblPISequence.Label		= &quot;Название:&quot;
+			.lblPISequenceNumber.Label	= &quot;Номер:&quot;
+			.lblPIISBN.Label			= &quot;ISBN:&quot;
+			.lblPIYear.Label			= &quot;Год:&quot;
+			.lblPIUDC.Label				= &quot;УДК:&quot;
+			.lblPIBBC.Label				= &quot;ББК:&quot;
+			.lblPIAuthorSign.Label		= &quot;Авторский знак:&quot;
+			
+			.cmdLoadPaperBook.Label		= &quot;Загрузить профиль...&quot;
+			.cmdLoadPaperBook.HelpText	= &quot;Загрузить данные об Издательстве из отдельного профиля...&quot;
+			.cmdSavePaperBook.Label		= &quot;Сохранить профиль...&quot;
+			.cmdSavePaperBook.HelpText	= &quot;Сохранить данные об Издательстве в отдельный профиль...&quot;
+			
+			&apos; Custom Info
+			.fcCI.Label			= &quot; Custom Info &quot;
+			.lblCIType.Label	= &quot;Тип:&quot;
+			.lblCIValue.Label	= &quot;Значение:&quot;
+			
+			&apos; fb2 file History
+			.fcHistory.Label = &quot; История fb2 файла &quot;
+			
+			&apos; any
+			.lblEncoding.Label		= &quot;Кодировка:&quot;
+			.fcGenresType.Label		= &quot;Жанры:&quot;
+			.obtnFB21.HelpText				= &quot;Переключение на жанры схемы FictionBook 2.1&quot;
+			.obtnFB2LibRusEc.HelpText		= &quot;Переключение на жанры схемы FictionBook 2 Либрусек&quot;
+			.obtnFB2Flibusta.HelpText		= &quot;Переключение на жанры схемы FictionBook 2 Флибуста&quot;
+			.obtnFB2Union.HelpText			= &quot;Переключение на жанры объединенной схемы FictionBook 2 (Либрусек и Флибуста)&quot;
+			.SetPropertiesInDocCmdBtn.Label	= &quot;Сохранить FB2 свойства&quot;
+			.CancelButton.Label		= &quot;Отмена&quot;
+		End With
+	Else
+		With oFB2PropertiesDlg.getModel
+			.optbtnTitleInfo.Label		= &quot;Book (Title Info)&quot;
+			.optbtnDocumentInfo.Label	= &quot;FB2 (Document Info)&quot;
+			.optbtnPublishInfo.Label	= &quot;Paper Book (Publish Info)&quot;
+			.optbtnCustomInfo.Label		= &quot;Custom Info&quot;
+			
+			&apos; Title Info
+			.fcTI.Label					= &quot; Book (Title Info) &quot;
+			.lblGenre.Label				= &quot;Genre:&quot;
+			.cmbtnFavorites.Label		= &quot;Favorites ...&quot;
+			.cmbtnFavorites.HelpText	= &quot;Work with the Elite Genres List...&quot;
+			.lblMatch.Label				= &quot;Match:&quot;
+			
+			.lblLang.Label				= &quot;Lang:&quot;
+			.lblLangOriginal.Label		= &quot;Original:&quot;
+			
+			.fcTIAuthors.Label			= &quot; Authors &quot;
+			.lblTIAuthorsFirst.Label	= &quot;First:&quot;
+			.lblTIAuthorsMiddle.Label	= &quot;Middle:&quot;
+			.lblTIAuthorsLast.Label		= &quot;Last:&quot;
+			.lblTIAuthorsNick.Label		= &quot;Nick:&quot;
+			.lblTIAuthorsEmail.Label	= &quot;Email:&quot;
+			.lblTIAuthorsWebcite.Label	= &quot;Webcite:&quot;
+			
+			.lblTIName.Label		= &quot;Title:&quot;
+			.lblTIKeywords.Label	= &quot;Keywords:&quot;
+			.lblTIDate.Label		= &quot;Date of Book writing:&quot;
+			.lblTIDateText.Label	= &quot;Text (Format: YYYY):&quot;
+			.lblTIDateValue.Label	= &quot;Value (Format: YYYY-MM-DD):&quot;
+			
+			.fcTITranslators.Label			= &quot; Translators &quot;
+			.lblTITranslatorsFirst.Label	= &quot;First:&quot;
+			.lblTITranslatorsMiddle.Label	= &quot;Middle:&quot;
+			.lblTITranslatorsLast.Label		= &quot;Last:&quot;
+			.lblTITranslatorsNick.Label		= &quot;Nick:&quot;
+			.lblTITranslatorsEmail.Label	= &quot;Email:&quot;
+			.lblTITranslatorsWebcite.Label	= &quot;Webcite:&quot;
+			
+			.fcSequencies.Label				= &quot; Sequencies &quot;
+			.lblTISequence.Label			= &quot;Name:&quot;
+			.lblTISequenceNumber.Label		= &quot;Number:&quot;
+			
+			&apos; Document Info
+			.fcDI.Label				= &quot; FB2 Document (Document Info) &quot;
+			.lblDIVersion.Label 	= &quot;Version:&quot;
+			.lblDIID.Label			= &quot;ID:&quot;
+			.cmdbtnNewID.Label		= &quot;New ID&quot;
+			.cmdbtnNewID.HelpText	= &quot;Generate new ID again&quot;
+			.fcDIAuthors.Label			= &quot; FB2 Authors &quot;
+			.lblDIAuthorsFirst.Label	= &quot;First:&quot;
+			.lblDIAuthorsMiddle.Label	= &quot;Middle:&quot;
+			.lblDIAuthorsLast.Label		= &quot;Last:&quot;
+			.lblDIAuthorsNick.Label		= &quot;Nick:&quot;
+			.lblDIAuthorsEmail.Label	= &quot;Email:&quot;
+			.lblDIAuthorsWebcite.Label	= &quot;Webcite:&quot;
+			
+			.lblPrograms.Label		= &quot;Programs used:&quot;
+			.lblSourceOCR.Label		= &quot;Source OCR:&quot;
+			.lblSourceURLs.Label	= &quot;Source URLs:&quot;
+			.LoadProfileFB2Author.Label			= &quot;Load default Profile&quot;
+			.SaveProfileFB2Author.Label			= &quot;Save default Profile&quot;
+			.LoadProfileCommandButton.HelpText	= &quot;Load the Profile of Author fb2 File, Source OCR and Histories of creation fb2 file&quot;
+			.SaveProfileCommandButton.HelpText	= &quot;Save the Profile of Author fb2 File, Source OCR and Histories of creation fb2 file&quot;
+			.LoadProfileFB2Author.Label			= &quot;Load Profile As...&quot;
+			.SaveProfileFB2Author.Label			= &quot;Save Profile As...&quot;
+			
+			&apos; Publish Info
+			.fcPI.Label					= &quot; Paper Book (Publish Info) &quot;
+			.lblPIName.Label			= &quot;Title:&quot;
+			.lblPIPublisher.Label		= &quot;Publisher:&quot;
+			.lblPICity.Label			= &quot;City:&quot;
+			.fcPubSequencies.Label		= &quot; Sequencies &quot;
+			.lblPISequence.Label		= &quot;Name:&quot;
+			.lblPISequenceNumber.Label	= &quot;Number:&quot;
+			.lblPIISBN.Label			= &quot;ISBN:&quot;
+			.lblPIYear.Label			= &quot;Year:&quot;
+			.lblPIUDC.Label				= &quot;UDC:&quot;
+			.lblPIBBC.Label				= &quot;BBC:&quot;
+			.lblPIAuthorSign.Label		= &quot;Author Sign:&quot;
+			
+			.cmdLoadPaperBook.Label		= &quot;Load Profile...&quot;
+			.cmdLoadPaperBook.HelpText	= &quot;Load the Data of Publisher from Profile..&quot;
+			.cmdSavePaperBook.Label		= &quot;Save Profile...&quot;
+			.cmdSavePaperBook.HelpText	= &quot;Save the Data of Publisher in Profile..&quot;
+			
+			&apos; Custom Info
+			.fcCI.Label			= &quot; Custom Info &quot;
+			.lblCIType.Label	= &quot;Type:&quot;
+			.lblCIValue.Label	= &quot;Value:&quot;
+			
+			&apos; fb2 file History
+			.fcHistory.Label = &quot; History of fb2 file &quot;
+			
+			&apos; any
+			.lblEncoding.Label		= &quot;Encoding:&quot;
+			.fcGenresType.Label		= &quot;Genres:&quot;
+			.obtnFB21.HelpText		= &quot;Switching on Genres of Scheme FictionBook 2.1&quot;
+			.obtnFB2LibRusEc.HelpText		= &quot;Switching on Genres of Scheme FictionBook 2 LibRusEc&quot;
+			.obtnFB2Flibusta.HelpText		= &quot;Switching on Genres of Scheme FictionBook 2 Flibusta&quot;
+			.obtnFB2Union.HelpText			= &quot;Switching on Genres of Union Scheme FictionBook 2 (LibRusEc &amp; Flibusta)&quot;
+			.SetPropertiesInDocCmdBtn.Label	= &quot;Save fb2 Properties&quot;
+			.CancelButton.Label		= &quot;Cancel&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация сообщений основной формы конвертера в зависимости от локали
+Sub InitFB2PropertiesDlgMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sFB2PED
+			&apos; основной диалог
+			.sFB2PropEditorDlgTitle			= &quot;Редактор fb2 свойств&quot;
+			.sFB2PropEditorDlgCreateDialog	= &quot;Создание диалога&quot;
+			.sFB2PropEditorDlgInit			= &quot;Инициализация&quot;
+			.sFB2PropEditorDlgLoadFB2Properties = &quot;Загрузка fb2 свойств&quot;
+			.sFB2PropEditorDlgSaveFB2Properties	= &quot;Сохранение fb2 свойств&quot;
+			.sFB2PropEditorDlgSelectGenre	= &quot;Выберите, пожалуйста, Жанр Книги.&quot;
+			.sFB2PropEditorDlgFillBookTitle	= &quot;Заполните, пожалуйста, поля Названия Книги.&quot;
+			.sFB2PropEditorDlgFillVersion	= &quot;Заполните, пожалуйста, поле Версии Книги (например, 1.0)&quot;
+			.sFB2PropEditorDlgFillID		= &quot;Заполните, пожалуйста, поле ID Книги произвольным образом,&quot; &amp; chr(10) &amp; &quot;или нажмите на кнопку new ID.&quot;
+			.sFB2PropEditorDlgFillBookAuthor = &quot;Пожалуйста, заполните хоть одно поле для Автора Книги.&quot;
+			.sFB2PropEditorDlgFillBookTrans  = &quot;Пожалуйста, заполните хоть одно поле для Переводчика Книги.&quot;
+			.sFB2PropEditorDlgFillBookSequence		= &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Книги.&quot;
+			.sFB2PropEditorDlgFillFB2Author			= &quot;Пожалуйста, заполните хоть одно поле для Создателя FB2 Документа.&quot;
+			.sFB2PropEditorDlgFillPaperBookSequence	= &quot;Пожалуйста, заполните поля названия и (или) номера для Серии Бумажной Книги.&quot;
+			.sFB2PropEditorDlgFillCustomInfo		= &quot;Пожалуйста, заполните оба поля для Custom Info.&quot;
+			.sFB2ExportFB2DeleteItem				= &quot;Вы действительно хотите удалить:&quot;
+			.sFB2PropEditorDlgDateValue	= &quot;Данные Даты написания книги (значение) введены неверно.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+										&quot;Проверьте формат ввода данных (ДД.ММ.ГГГГ).&quot; &amp; chr(10) &amp; _
+										&quot;Значение для Дня не должно превышать числа дней в конкретном месяце.&quot; &amp; chr(10) &amp; _
+										&quot;Значение Месяца не должно быть от 01 до 12.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+										&quot;Значение Дня задается 2-мя цифрами.&quot; &amp; chr(10) &amp; _
+										&quot;Значение Месяца задается 2-мя цифрами.&quot; &amp; chr(10) &amp; _
+										&quot;Значение Года задается 4-мя цифрами.&quot;
+			&apos; диалог сохранения файла
+			.sFileDlgSaveAs					= &quot;Сохранить как...&quot;
+			&apos; Профили
+			.sFB2PropEditorDlgFillPublisher		= &quot;Пожалуйста, заполните хоть одно поле для Издательства.&quot;
+			.sProfileFB2AuthorQuestionLoad		= &quot;Вы действительно хотите загрузить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
+													&quot;Все данные в полях Автора fb2 документа будут заменены на данные из профиля!&quot;
+			.sProfileFB2AuthorQuestionSave		= &quot;Вы действительно хотите сохранить профиль Автора fb2 документа?&quot; &amp; chr(10) &amp; _
+													&quot;Если вы раньше сохраняли свой профиль, то он будет перезаписан!&quot;
+			.sProfileAuthorOpen					= &quot;Открыть профиль автора книги ...&quot;
+			.sProfileAuthorSave					= &quot;Сохранить профиль для автора книги ...&quot;
+			.sProfilePublisherOpen				= &quot;Открыть профиль Издательства ...&quot;
+			.sProfilePublisherSave				= &quot;Сохранить профиль Издательства ...&quot;
+			.sProfileFB2AuthorOpen				= &quot;Открыть профиль Автора fb2-файла ...&quot;
+			.sProfileFB2AuthorSave				= &quot;Сохранить профиль Автора fb2-файла ...&quot;
+		End With
+	Else
+		With sFB2PED
+			&apos; main Dialog
+			.sFB2PropEditorDlgTitle			= &quot;FB2 Properties Editor&quot;
+			.sFB2PropEditorDlgCreateDialog	= &quot;Creating the Dialog&quot;
+			.sFB2PropEditorDlgInit			= &quot;Initialization&quot;
+			.sFB2PropEditorDlgLoadFB2Properties = &quot;FB2 Properties Loading&quot;
+			.sFB2PropEditorDlgSaveFB2Properties	= &quot;FB2 Properties2 Saving&quot;
+			.sFB2PropEditorDlgSelectGenre	= &quot;Please, select the Genre of the Book.&quot;
+			.sFB2PropEditorDlgFillBookTitle	= &quot;Please, fiil the Field of the Book Title.&quot;
+			.sFB2PropEditorDlgFillVersion	= &quot;Please, fiil the Field of the Book Version (for example, 1.0)&quot;
+			.sFB2PropEditorDlgFillID		= &quot;Please, fiil at will the Field of the Book Version,&quot; &amp; chr(10) &amp; &quot;or click on the Button new ID.&quot;
+			.sFB2PropEditorDlgFillBookAuthor = &quot;Please, fiil though one Field for Book Author.&quot;
+			.sFB2PropEditorDlgFillBookTrans	= &quot;Please, fiil though one Field for Book Translator.&quot;
+			.sFB2PropEditorDlgFillBookSequence		= &quot;Please, fiil the Fields Name And (Or) Number of the Book Sequence.&quot;
+			.sFB2PropEditorDlgFillFB2Author			= &quot;Please, fiil though one Field for FB2 Document Author.&quot;
+			.sFB2PropEditorDlgFillPaperBookSequence	= &quot;Please, fiil the Fields Name And (Or) Number of the Paper Book Sequence.&quot;
+			.sFB2PropEditorDlgFillCustomInfo		= &quot;Please, fiil all Fields for Custom Info.&quot;
+			.sFB2ExportFB2DeleteItem				= &quot;Are you sure you want to remove:&quot;
+			.sFB2PropEditorDlgDateValue	= &quot;Date (value) of Book writing entered incorrectly.&quot; &amp; chr(10) &amp; chr(10) &amp; _
+										&quot;Check the format of the input Date (DD.MM.YYYY).&quot; &amp; chr(10) &amp; _
+										&quot;Value for Day should not exceed the number of days in a particular Month.&quot; &amp; chr(10) &amp;_
+										&quot;Month value should not be from 01 to 12.&quot; &amp; chr(10) &amp; chr(10) &amp;_
+										&quot;Day value is given by 2 digits.&quot; &amp; chr(10) &amp; _
+										&quot;Month value is given by 2 digits.&quot; &amp; chr(10) &amp; _
+										&quot;Year value is given by 4 digits.&quot;
+			&apos; Save As Dialog
+			.sFileDlgSaveAs						= &quot;Save As...&quot;
+			&apos; Profile
+			.sFB2PropEditorDlgFillPublisher		= &quot;Please, fiil though one Field for Publisher.&quot;
+			.sProfileFB2AuthorQuestionLoad		= &quot;Do You want to load the FB2 File Author?&quot; &amp; chr(10) &amp; _
+													&quot;All Data in FB2 Author Fields to do replaced on Data from the Profile!&quot;
+			.sProfileFB2AuthorQuestionSave		= &quot;Do You want to save the FB2 File Author?&quot; &amp; chr(10) &amp; _
+													&quot;If Yuo before save the Profile, then it to do rewrite!&quot;
+			.sProfileAuthorOpen					= &quot;Open the Book Author Profile ...&quot;
+			.sProfileAuthorSave					= &quot;Save the Book Author Profile ...&quot;
+			.sProfilePublisherOpen				= &quot;Open the Publisher Profile ...&quot;
+			.sProfilePublisherSave				= &quot;Save the Publisher Profile ...&quot;
+			.sProfileFB2AuthorOpen				= &quot;Open the fb2 Author Profile ...&quot;
+			.sProfileFB2AuthorSave				= &quot;Save the fb2 Author Profile ...&quot;
+		End With
+	End If
+End Sub
+
+&apos; инициализация сообщений диалогов по работе с Жанрами в зависимости от локали
+Sub InitGenreMessage()
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		With sGD
+			.sGenreGroup				= &quot;Вы выбрали название группы жанров.&quot; &amp; chr(10) &amp; &quot;Пожалуйста, выберите жанр книги!&quot;
+			.sSchemeFB21				= &quot;схема fb2.1&quot;
+			.sSchemeFB22				= &quot;схема fb2.2&quot;
+			.sSchemeFB2LibRusEc			= &quot;схема fb2 Либрусек&quot;
+			.sSchemeFB2Flibusta			= &quot;схема fb2 Флибуста&quot;
+			.sSchemeFB2Union			= &quot;Объединенная схема fb2&quot;
+			&apos; Избранные Жанры
+			.sGenreElite				= &quot;Избранные Жанры&quot;
+			.sGenreEliteAdd				= &quot;Добавление Жанра в Избранное&quot;
+			.sGenreEliteRemove			= &quot;Удаление Жанра из Избранного&quot;
+			.sGenreEliteSorting			= &quot;Сортировка списка Избранных Жанров&quot;
+			.sGenreEliteUp				= &quot;Перемещение Жанра вверх&quot;
+			.sGenreEliteDown			= &quot;Перемещение Жанра вниз&quot;
+			.sGenreEliteSelected		= &quot;Выбраный жанр&quot;
+			.sGenreEliteSelectFromList	= &quot;Пожалуйста, выберите Жанр из выпадающего списка!&quot;
+			.sGenreEliteSelectOther		= &quot;Пожалуйста, выберите другой жанр книги!&quot;
+			.sGenreEliteIsExists		= &quot;уже имеется в списке Избранных Жанров.&quot;
+			.sGenreEliteSelectForRemove	= &quot;Пожалуйста, выберите Жанр из Избранного для удаления.&quot;
+			.sGenreEliteQuestionRemove	= &quot;Вы действительно хотите удалить выбранный жанр из Избранного:&quot;
+			.sGenreEliteQuestionSort	= &quot;Вы действительно хотите отсортировать список Избранных Жанров&quot;
+			.sGenreEliteSelectToUp		= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вверх!&quot;
+			.sGenreEliteSelectToDown	= &quot;Пожалуйста, выберите Жанр из Избранного для перемещения его вниз!&quot;
+		End With
+	Else
+		With sGD
+			.sGenreGroup				= &quot;You choose Name of the Genres Group.&quot; &amp; chr(10) &amp; &quot;Please, select the Genre of the Book!&quot;
+			.sSchemeFB21				= &quot;fb2.1 Scheme&quot;
+			.sSchemeFB22				= &quot;fb2.2 Scheme&quot;
+			.sSchemeFB2LibRusEc			= &quot;fb2 LibRuSec Scheme&quot;
+			.sSchemeFB2Flibusta			= &quot;fb2 Flibusta Scheme&quot;
+			.sSchemeFB2Union			= &quot;fb2 Union Scheme&quot;
+			&apos; Elite Genres
+			.sGenreElite				= &quot;The Elite Genres&quot;
+			.sGenreEliteAdd				= &quot;Add the Genre to the Elite Genres List&quot;
+			.sGenreEliteRemove			= &quot;Remove the Genre from the Elite Genres List&quot;
+			.sGenreEliteSorting			= &quot;Sorting of the Elite Genres List&quot;
+			.sGenreEliteUp				= &quot;Genre Movement Up&quot;
+			.sGenreEliteDown			= &quot;Genre Movement Down&quot;
+			.sGenreEliteSelected		= &quot;Selected Genre&quot;
+			.sGenreEliteSelectFromList	= &quot;Please, select the Genre from out-of-order Box!&quot;
+			.sGenreEliteSelectOther		= &quot;Please, select the Other Book Genre!&quot;
+			.sGenreEliteIsExists		= &quot;is exists in the Elite Genres List.&quot;
+			.sGenreEliteSelectForRemove	= &quot;Please, select the Genre from Elite Genres List for Remove.&quot;
+			.sGenreEliteQuestionRemove	= &quot;Do You want Remove the selected Genre from Elite Genres List:&quot;
+			.sGenreEliteQuestionSort	= &quot;Do You want to Sort the Elite Genres List&quot;
+			.sGenreEliteSelectToUp		= &quot;Please, choose the Genre from Elite Genres List for its moving upwards!&quot;
+			.sGenreEliteSelectToDown	= &quot;Please, choose the Genre from Elite Genres List for its moving downwards!&quot;
+		End With
+	End If
 End Sub
 
 </script:module>

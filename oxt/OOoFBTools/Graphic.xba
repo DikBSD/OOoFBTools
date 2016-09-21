@@ -280,7 +280,7 @@ End Sub
 
 &apos; возвращает путь к будущему mime-файлу в зависимости от системы
 Function GetOOoFBToolsImageURL( sExt As String ) As String
-	If GetOS() = 0 Then &apos; для Windows-системы
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows-системы
 		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;\OOoFBToolsImage.&quot; &amp; sExt
 	Else &apos; для Mac OS X - системы и Unix-систем
 		GetOOoFBToolsImageURL = getOOoFBToolsTempPath() &amp; &quot;/OOoFBToolsImage.&quot; &amp; sExt
@@ -392,37 +392,24 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
 	End If
 	
 	&apos; кодируем картинки
-	Dim sMimeFile As String, sScript As String
-	If GetOS() = 0 Then &apos; для Windows-системы
+	Dim sMimeFile As String, Script As String
+	If GetOS() = &quot;WIN&quot; Then &apos; для Windows-системы
 		&apos; данные картинки и ее расширение
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;\base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
-		
 		&apos; генерируем скрипт
-&apos;		sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL(getRootStorage( &quot;DikBSD.OOoFBTools&quot; )) &amp; &quot;\win32\base64.exe&quot;&quot; &quot; &amp; _
-&apos;				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
-		sScript = &quot;&quot;&quot;&quot; &amp; ConvertFromURL( getOOoFBToolsTempPath() ) &amp; &quot;\base64.exe&quot;&quot; &quot; &amp; _
-				&quot;&quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
- 
+		Script = &quot;&quot;&quot;&quot; &amp; WindowsBase64Path() &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
 		&apos; конвертируем картинку в base64
-		Shell( sScript, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
-	ElseIf GetOS() = 1 Then &apos; для mac Os X
+		Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
+	Else &apos; для Unix-систем
 		&apos; данные картинки и ее расширение
 		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
-		
 		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;openssl base64 -in &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; -out &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
-		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-	
-		&apos; конвертируем картинку в base64
-		Shell( &quot;/bin/sh&quot;, 1, &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, true ) 
-	Else &apos; для Linux и других Unix-систем
-		&apos; данные картинки и ее расширение
-		sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
-
-		&apos; генерируем скрипт
-		sScript = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;base64 &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
-		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, sScript, &quot;utf-8&quot; )
-
+		If _openssl &lt;&gt; &quot;&quot; Then
+			Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _openssl &amp; &quot; base64 -in &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; -out &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
+		ElseIf _base64 &lt;&gt; &quot;&quot; Then
+			Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _base64 &amp; &quot; &quot;&quot;&quot; &amp; sGraphicUrl &amp; &quot;&quot;&quot; &gt;&gt; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
+		End If
+		SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, Script, &quot;utf-8&quot; )
 		&apos; конвертируем картинку в base64
 		Shell( &quot;/bin/sh&quot;, 1, &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, true ) 
 	End If
