@@ -116,28 +116,10 @@ Sub ExportToFB21DlgExec()
 	
 	If GetOS() = &quot;UNIX&quot; Then &apos; для Unix
 		&apos; проверка на наличие утилит в Unix системе
-		If _guidPath = &quot;&quot; Then
-			_guidPath = UnixUuidgenPath() 
-		End If
 		If _xmlPath = &quot;&quot; Then
 			_xmlPath = UnixXmllintPath()
 		End If
-		If _base64 = &quot;&quot; Then
-			_base64 = UnixBase64Path()
-		End If
-		If _openssl = &quot;&quot; Then
-			_openssl = UnixOpensslPath()
-		End If
-		If _zipPath = &quot;&quot; Then
-			_zipPath = UnixZipPath()
-		End If
 		Dim oProgressLabel As Object : oProgressLabel = oExportToFB21Dlg.getControl(&quot;exportLabel&quot;)
-		If _zipPath = &quot;&quot; Then
-			oProgressLabel.Text = oProgressLabel.Text &amp; sNYMD.sNoZip &amp; chr(10)
-		End If
-		If _base64 = &quot;&quot; AND _openssl = &quot;&quot; Then
-			oProgressLabel.Text = oProgressLabel.Text &amp; sNYMD.sNoZip &amp; chr(10)
-		End If
 		If _xmlPath = &quot;&quot; Then
 			oProgressLabel.Text = oProgressLabel.Text &amp; sNYMD.sNoXmllint &amp; chr(10)
 		End If
@@ -384,77 +366,92 @@ Sub ExportDoc()
 	Dim Ext		As String : Ext		= &quot;&quot;
 	&apos; сжатие fb2 файла в zip
 	If oExportToFB21Dlg.getControl(&quot;ZipFB2CheckBox&quot;).State = 1 Then
-		If FileExists( sFB2File ) Then
-			Dim Log As String : Log = getOOoFBToolsTempPath() &amp; NativeSeparator() &amp; &quot;log_zip.txt&quot;
+    	If FileExists( sFB2File ) Then
+        	Dim Log As String : Log = getOOoFBToolsTempPath() &amp; NativeSeparator() &amp; &quot;log_zip.txt&quot;
             If FileExists( Log ) Then
-                Kill Log
+            	Kill Log
             End If
-			
-			If oExportToFB21Dlg.getControl(&quot;fb2ZipOptionButton&quot;).State = True Then
-				Ext	= &quot;.fb2.zip&quot;
+        	        	        
+        	If oExportToFB21Dlg.getControl(&quot;fb2ZipOptionButton&quot;).State = True Then
+        		Ext = &quot;.fb2.zip&quot;
+        	Else
+        		Ext	= &quot;.fbz&quot;
+        	End If
+        	        	        
+        	&apos; транслитерация строки (только для русских букв)
+        	Dim FB2Name As String : FB2Name = getFileName( sFB2File )
+        	Dim TranlitFB2Name As String : TranlitFB2Name = RusTransliterationString( saTranslitLetters(), FB2Name )
+        	Dim NewTranslatedPath As String : NewTranslatedPath = getPathDir(sFB2File) &amp; NativeSeparator() &amp; TranlitFB2Name
+        	        	        
+        	&apos; была ли произведена транслитерация
+        	Dim IsTransliteration As Boolean : IsTransliteration = False
+        	If sFB2File = NewTranslatedPath Then
+        		IsTransliteration = False
+        	Else
+        		IsTransliteration = True
+        	End If
+        	&apos;транслитерация ИМЕНИ файла
+        	If IsTransliteration = True Then
+        		If FileExists( NewTranslatedPath ) Then
+        			Kill NewTranslatedPath
+        	    End If
+        	    Name sFB2File As NewTranslatedPath
+        	End If
+        	        	        
+        	FB2Zip = FilePathWithoutExt( NewTranslatedPath ) &amp; Ext
+        	Dim Script As String
+        	If GetOS() = &quot;WIN&quot; Then &apos; Для Windows
+        		Script = WindowsZipPath() &amp; &quot; a -tzip -mx7 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot;
+        	    Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
+        	ElseIf GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
+        		Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;/usr/bin/python -c &quot;&quot;import zipfile; import zlib; z = zipfile.ZipFile(&apos;&quot; &amp; FB2Zip &amp; &quot;&apos;, &apos;w&apos;, zipfile.ZIP_DEFLATED, zlib.Z_BEST_COMPRESSION); z.write(&apos;&quot; &amp; NewTranslatedPath &amp; &quot;&apos;, &apos;&quot; &amp; TranlitFB2Name &amp; &quot;&apos;); z.close()&quot;&quot;&quot;
+        	    Dim ScriptPath As String : ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/fb2_zip.sh&quot; 
+        	    SaveText( ScriptPath, Script, &quot;utf-8&quot; )
+        	    Shell( &quot;/bin/sh&quot;, 1, ScriptPath, true )
+        	End If
+        	If FileExists( FB2Zip ) Then
+        		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sZipOk
+        	    Kill NewTranslatedPath
+        	End If
+
+        	Dim LangNameToBack As String
+        	If IsTransliteration = True Then
+        		&apos; переименовывание архива обратно в язык локали
+        	    Dim FB2ZipWithoutExt As String
+        	    FB2ZipWithoutExt = FilePathWithoutExt( FB2Zip )
+        	    FB2ZipWithoutExt = FilePathWithoutExt( FB2ZipWithoutExt )
+        	    LangNameToBack = FilePathWithoutExt( sFB2File ) &amp; Ext
+        	    If FileExists( LangNameToBack ) Then
+        	    	Kill LangNameToBack
+        	    End If
+        	    Name FB2Zip As LangNameToBack
 			Else
-				Ext	= &quot;.fbz&quot;
-			End If
-			
-			&apos; транслитерация строки (только для русских букв)
-			Dim FB2Name As String : FB2Name = getFileName( sFB2File )
-			Dim TranlitFB2Name As String : TranlitFB2Name = RusTransliterationString( saTranslitLetters(), FB2Name )
-			Dim NewTranslatedPath As String : NewTranslatedPath = getPathDir(sFB2File) &amp; NativeSeparator() &amp; TranlitFB2Name
-			&apos;транслитерация ИМЕНИ файла
-			If FileExists( NewTranslatedPath ) Then
-				Kill NewTranslatedPath
-			End If
-			Name sFB2File As NewTranslatedPath
-			
-			FB2Zip = FilePathWithoutExt( NewTranslatedPath ) &amp; Ext
-			Dim Script As String
-			If GetOS() = &quot;WIN&quot; Then &apos; Для Windows
-				Script = WindowsZipPath() &amp; &quot; a -tzip -mx7 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot;
-				Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
-			ElseIf GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
-				Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _zipPath &amp; &quot; -j -9 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot; &amp; &quot; 2&gt; &quot; &amp; Log
-				Dim ScriptPath As String : ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/fb2_zip.sh&quot; 
-				SaveText( ScriptPath, Script, &quot;utf-8&quot; )
-				Shell( &quot;/bin/sh&quot;, 1, ScriptPath, true )
-			End If
-			If FileExists( FB2Zip ) Then
-				oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sZipOk
-				Kill NewTranslatedPath
-			End If
+        		LangNameToBack = FB2Zip
+        	End If
+        
+        	oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
+        	oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportEnd &amp; chr(10)
+        	End If
+        End If
 
-			&apos; переименовывание архива обратно в язык локали
-			Dim FB2ZipWithoutExt As String
-			FB2ZipWithoutExt = FilePathWithoutExt( FB2Zip )
-			FB2ZipWithoutExt = FilePathWithoutExt( FB2ZipWithoutExt )
-			Dim LangNameToBack As String : LangNameToBack = FilePathWithoutExt( sFB2File ) &amp; Ext
-			If FileExists( LangNameToBack ) Then
-				Kill LangNameToBack
-			End If
-			Name FB2Zip As LangNameToBack
-			
-			oProgressLabel.Text = oProgressLabel.Text &amp; chr(10)
-			oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportEnd &amp; chr(10)
-		End If
-	End If
+        If Ext = &quot;.fb2.zip&quot; OR Ext = &quot;.fbz&quot; Then
+        	sValidateResult = ReplaceInString( sValidateResult, sFB2File, LangNameToBack, False )
+   	    End If
 
-	If Ext = &quot;.fb2.zip&quot; OR Ext = &quot;.fbz&quot; Then
-		sValidateResult = ReplaceInString( sValidateResult, sFB2File, LangNameToBack, False )
-   	End If
-
-	If bFB2Execute = True Then
-		&apos; запустить полученный файл на просмотр, если нужно
-		FileExecute( ConvertToUrl( sFB2File ) )
-		MsgBox sMess &amp; sValidateResult &amp; sETFB2DD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
-				sFB2File &amp; chr(10) &amp; sETFB2DD.sFB2ExportReportStartToPreview, 64, sConvertorName
-	Else
-		MsgBox sMess &amp; sValidateResult, 64, sConvertorName
-	End If
-	oExportToFB21Dlg.endExecute()
-	
-	&apos; удаляем временные файлы (всю папку OOoFBtoolsTemp)
-	If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
-		RmDir getOOoFBToolsTempPath()
-	End If
+        If bFB2Execute = True Then
+        	&apos; запустить полученный файл на просмотр, если нужно
+        	FileExecute( ConvertToUrl( sFB2File ) )
+        	MsgBox sMess &amp; sValidateResult &amp; sETFB2DD.sFB2ExportReportGeneratedFB2File &amp; chr(10) &amp; _
+        	sFB2File &amp; chr(10) &amp; sETFB2DD.sFB2ExportReportStartToPreview, 64, sConvertorName
+        Else
+        	MsgBox sMess &amp; sValidateResult, 64, sConvertorName
+        End If
+        oExportToFB21Dlg.endExecute()
+        
+        &apos; удаляем временные файлы (всю папку OOoFBtoolsTemp)
+        If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
+        	RmDir getOOoFBToolsTempPath()
+        End If
 End Sub
 
 &apos;***************************************************************************
@@ -2753,9 +2750,7 @@ End Sub
 &apos; ===========================================================================================
 &apos; для хранения сообщений отсутствия в системе вспомогательных утилит
 Type tNoToolsMessageData
-	sNoUuidgen			As String &apos; Нет uuidgen
 	sNoZip				As String &apos; Нет zip
-	sNoBase64OrOpenssl	As String &apos; Нет base64 или openssl
 	sNoXmllint			As String &apos; Нет xmllint
 End Type
 
@@ -2766,16 +2761,12 @@ Public sNYMD As tNoToolsMessageData
 Sub InitNoToolsMessage()
 	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
 		With sNYMD
-			.sNoUuidgen			= &quot;Утилита uuidgen в системе не установлена. Генерация нового id книги производиться не будет. Установите утилиту uuidgen.&quot;
 			.sNoZip				= &quot;Утилита zip в системе не установлена. Архивирование fb2-файла производиться не будет. Установите утилиту zip.&quot;
-			.sNoBase64OrOpenssl	= &quot;Утилиты base64 или openssl в системе не установлены. Экспорт картинок производиться не будет. Установите утилиту base64 или openssl.&quot;
 			.sNoXmllint			= &quot;Утилита xmllint в системе не установлена. Валидация fb2-файла производиться не будет.  Установите утилиту xmllint.&quot;
 		End With
 	Else
 		With sNYMD
-			.sNoUuidgen			= &quot;No uuidgen utility is installed in the system. New book ID won&apos;t be created. Install uuidgen.&quot;
 			.sNoZip				= &quot;No zip utility is installed in the system. FB2 files won&apos;t be compressed. Install zip.&quot;
-			.sNoBase64OrOpenssl	= &quot;No base64 or openssl utility is installed in the system. Images won&apos;t be exported. Install base64 or openssl.&quot;
 			.sNoXmllint			= &quot;No xmllint utility is installed in the system. FB2 files won&apos;t be validated. Install xmllint.&quot;
 		End With
 	End If

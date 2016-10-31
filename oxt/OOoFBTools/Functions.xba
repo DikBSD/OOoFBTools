@@ -2218,12 +2218,21 @@ Function getHomePath() As String
 	getHomePath = oPathSubst.getSubstituteVariableValue(&quot;$(home)&quot;)
 End Function
 
-&apos; Возвращает путь к ВРЕМЕННОЙ  папке OOo
+&apos; Возвращает путь к ВРЕМЕННОЙ папке OOo
 Function getTempPath() As String
 	Dim oPathSettings
 	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
 	getTempPath = oPathSettings.Temp
 	If Right(getTempPath, 1) = &quot;/&quot; Then getTempPath = Mid(getTempPath, 1, Len(getTempPath)-1)
+End Function
+
+&apos; Возвращает путь к папке program Офиса
+Function getOfficeProgramDir() As String
+	Dim oPathSettings
+	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+	getOfficeProgramDir = oPathSettings.Help
+	getOfficeProgramDir = Mid(getOfficeProgramDir, 1, Len(getOfficeProgramDir)-8)
+	If Right(getTempPath, 1) = &quot;/&quot; Then getOfficeProgramDir = Mid(getOfficeProgramDir, 1, Len(getOfficeProgramDir)-1)
 End Function
 
 &apos; возвращает временную папку для OOoFBTools (в зависимости от системы)
@@ -3052,9 +3061,10 @@ Function generateID() As String
 		If FileExists( guidTxtPath ) Then
 			Kill guidTxtPath
 		End If
-		
+
 		Script = &quot;&quot;&quot;&quot; &amp; WindowsUuidgenPath() &amp; &quot;&quot;&quot; -o&quot; &amp; &quot;&quot;&quot;&quot; &amp; &quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
-		Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;	
+&apos;		Script = &quot;&quot;&quot;&quot; &amp; ConvertFromURL(getOfficeProgramDir()) &amp; &quot;\python.exe&quot; &amp; &quot;&quot;&quot; -c &quot;&quot;import uuid; id = str(uuid.uuid4()).upper(); f = open(r&apos;&quot; &amp; guidTxtPath &amp; &quot;&apos;, &apos;w&apos;, encoding=&apos;utf-8&apos;); f.write(id); f.close()&quot;&quot;&quot;
+		Shell( Script, 6, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;	
 	Else &apos; для Nix систем
 		guidTxtPath = getOOoFBToolsTempPath() &amp; &quot;/guid.txt&quot;
 		&apos; очистка временных файлов
@@ -3063,7 +3073,7 @@ Function generateID() As String
 		End If
 		
 		Dim ScriptPath As String : ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
-		Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; _guidPath &amp; &quot; &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
+		Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;/usr/bin/python -c &quot;&quot;import uuid; print(str(uuid.uuid4()).upper())&quot;&quot; &gt;&gt; &quot;&quot;&quot; &amp; guidTxtPath &amp; &quot;&quot;&quot;&quot;
 		ScriptPath = getOOoFBToolsTempPath() &amp; &quot;/guid.sh&quot; 
 		SaveText( ScriptPath, Script, &quot;utf-8&quot; )
 		Shell( &quot;/bin/sh&quot;, 1, ScriptPath, true )
@@ -3185,17 +3195,6 @@ Function UnixZipPath() As String
 	End If
 End Function
 &apos;***************************************************************************
-&apos; Путь к утилите uuidgen для Nix систем
-Function UnixUuidgenPath() As String
-	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
-		If getUnixToolPath( &quot;uuidgen&quot; ) &lt;&gt; &quot;&quot; Then
-			UnixUuidgenPath = &quot;uuidgen&quot;
-		Else
-			UnixUuidgenPath = &quot;&quot;
-		End If
-	End If
-End Function
-&apos;***************************************************************************
 &apos; Путь к утилите xmllint для Nix систем
 Function UnixXmllintPath() As String
 	If GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
@@ -3236,15 +3235,6 @@ Function ZipSystemPath() As String
 		ZipSystemPath = WindowsZipPath()
 	Else &apos; для Nix систем
 		ZipSystemPath = UnixZipPath()
-	End If
-End Function
-&apos;***************************************************************************
-&apos; Путь к утилите uuidgen в завсисимости от системы
-Function UuidgenSystemPath() As String
-	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
-		UuidgenSystemPath = WindowsUuidgenPath()
-	Else &apos; для Nix систем
-		UuidgenSystemPath = UnixUuidgenPath()
 	End If
 End Function
 &apos;***************************************************************************

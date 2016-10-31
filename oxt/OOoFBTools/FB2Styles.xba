@@ -264,7 +264,7 @@ Function MakeFB2StylesToDoc() As Boolean
 	    &apos; Standard (Базовый)
 		If oParaStyles.hasByName( GetLocaDefaultStyleName() ) Then
 			oStyle = oParaStyles.getByName( GetLocaDefaultStyleName() )
-			setPropertyForStyle( oStyle, StandardStyle() )
+			setPropertyForStyle( oStyle, StandardStyle( oStyle.CharFontName ) )
 		End If
 		oProgressBar.setValue(1)
 
@@ -1954,7 +1954,7 @@ End Sub
 &apos;										свойства стилей
 &apos; ===================================================================================================
 &apos; стиль Standard (Базовый)
-Function StandardStyle() As StylePropertyType
+Function StandardStyle( CharFontName As String ) As StylePropertyType
 	Dim style As StylePropertyType
 	style.OutlineLevel = 0
 	If getOOoLocal() = &quot;ru&quot; Then
@@ -1968,7 +1968,7 @@ Function StandardStyle() As StylePropertyType
 	style.ParaBottomMargin		= 0.0
 	style.ParaLineSpacing		= 100 &apos; одинарный
 	style.ParaAdjust	= com.sun.star.style.ParagraphAdjust.BLOCK
-	style.CharFontName	= &quot;Cambria&quot;
+	style.CharFontName	= CharFontName
 	style.CharHeight	= 12
 	style.CharWeight	= com.sun.star.awt.FontWeight.NORMAL
 	style.CharPosture	= com.sun.star.awt.FontSlant.NONE
