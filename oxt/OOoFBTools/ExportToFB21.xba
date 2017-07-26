@@ -335,7 +335,7 @@ Sub ExportDoc()
 		oProgressLabel.Text = oProgressLabel.Text &amp; &quot;5. &quot; &amp; sETFB2DD.sFB2ExportProgressBarGraphics &amp; &quot; … &quot;
 	End if
 	If UBound(Images()) &lt;&gt; -1 Then
-		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound( Images() )
+		oProgressBar.start( sETFB2DD.sFB2ExportProgressBarGraphics, UBound( Images() ) )
 		oProgressBar.setValue(0)
 		SaveImages()
 		oProgressLabel.Text = oProgressLabel.Text &amp; sETFB2DD.sFB2ExportProgressFound &amp; UBound( Images() )+1 &amp; &quot;.&quot; &amp; chr(10)
@@ -551,7 +551,7 @@ Sub SaveFB2FileAs()
 	End If
 	
 	sDir = DirectoryNameOutOfPath(sCurDocFile, &quot;/&quot;)
-	sFName = ConvertFromUrl(FilenameOutOfPath(sCurDocFile, &quot;/&quot;)
+	sFName = ConvertFromUrl( FilenameOutOfPath(sCurDocFile, &quot;/&quot;) )
 	
 	oFileDlg = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
 	sArg() = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION)
@@ -1496,7 +1496,7 @@ Function IsAdjacentCurrentLevelsOfNextLevel( sArray() As String, lIndexOfCurrent
 		IsAdjacentCurrentLevelsOfNextLevel = 5
 		Exit Function
 	Else &apos; следующий Уровень есть
-		nStep = GetLevelNumber( sArray( lIndexOfCurrentLevel, 1 ) ) - GetLevelNumber( sArray( lIndexOfNextLevel,1 )
+		nStep = GetLevelNumber( sArray( lIndexOfCurrentLevel, 1 ) ) - GetLevelNumber( sArray( lIndexOfNextLevel,1 ) )
 	End If
 	
 	If nStep = 0 Then &apos; текущий и следующий уровни - одного ранга, шаг = 0 (напр. 3 и 3)
@@ -1654,7 +1654,7 @@ Function IsCandidateToSections( sArray() As String, lCurrentElement As Long )
 	&apos; возможные кандидаты на обрамление &lt;sections&gt;...&lt;/sections&gt; для уровней, вида 1,текст,2; 1,текст,5
 	IsCandidateToSections = False
 	Dim sElement As String : sElement = sArray(lCurrentElement,1)
-	If sElement=&quot;Para&quot; _
+	If sElement=&quot;Para&quot; OR sElement=&quot;ParaCenter&quot; _
 		OR sElement = sStylePoem Or sElement = sStylePoemTitle Or sElement = sStylePoemSubTitle Or sElement = sStylePoemAuthor _
 		OR sElement = sStyleCite Or sElement = sStyleCiteSubTitle Or sElement = sStyleCiteAuthor _
 		OR sElement = sStyleSubTitle OR sElement = &quot;Image&quot; OR sElement = &quot;Table&quot; OR sElement = &quot;&quot; _
@@ -1938,7 +1938,7 @@ Sub MakeBody( sArray() As String, IsBody As Boolean )
 	Else &apos;секции есть
 		If lIndexOf1Section &gt; 0 Then &apos; что-то есть - записываем до 1-й секции
 			While lCurrentElement &lt; lIndexOf1Section
-				If sArray(lCurrentElement, 1) = &quot;Para&quot; OR _
+				If sArray(lCurrentElement, 1) = &quot;Para&quot; OR sArray(lCurrentElement, 1) = &quot;ParaCenter&quot; OR _
 					sArray(lCurrentElement, 1) = sStylePoemTitle OR sArray(lCurrentElement, 1) = sStylePoem OR sArray(lCurrentElement, 1) = sStylePoemSubTitle OR _
 					sArray(lCurrentElement, 1) = sStyleCiteSubTitle OR sArray(lCurrentElement, 1) = sStyleCite OR _
 					sArray(lCurrentElement, 1) = sStyleSubTitle OR sArray(lCurrentElement, 1) = &quot;&quot; OR _
@@ -2313,12 +2313,24 @@ Sub SaveElements( sArray() As String, sParaStyleName As String, sPara As String,
 				&apos; обработка ссылок внутри документа
 				Dim sID As String : sID = FindBookmarkForID(lCurrentElement, IsBody)
 				If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
-					sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					If sArray( lCurrentElement, 1 ) = &quot;ParaCenter&quot; Then
+						sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot; style=&quot;&quot;text-align:center;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					Else
+						sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					End If
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
-					sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					If sArray( lCurrentElement, 1 ) = &quot;ParaCenter&quot; Then
+						sStr = &quot;&lt;p style=&quot;&quot;text-align:center;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					Else
+						sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					End If
 				End If
 			Else
-				sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				If sArray( lCurrentElement, 1 ) = &quot;ParaCenter&quot; Then
+					sStr = &quot;&lt;p style=&quot;&quot;text-align:center;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				Else
+					sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				End If
 			End If
 			SaveFBCorrectText(sStr, False)
 			lCurrentElement = lCurrentElement + 1
@@ -2356,7 +2368,7 @@ Function AddBookAnnotation( sPara As String )
 	Dim l As Long : l = Ubound( sBookAnnotation() ) + 1
 	ReDim Preserve sBookAnnotation(l)
 	sBookAnnotation(l) = sPara
-	oProgressBar.setValue( UBound( sBodyParagraphs() ), 0 &amp; UBound( sBookAnnotation() )
+	oProgressBar.setValue( UBound( sBodyParagraphs() ), 0 &amp; UBound( sBookAnnotation() ) )
 End Function
 
 &apos;***************************************************************************
@@ -2396,11 +2408,11 @@ Sub SaveDescription( sFB2Encoding As String )
 	oTextOutputStream.writeString(&quot;&lt;book-title&gt;&quot; &amp; CorrectPara( GetBookTitleFromProperty() ) &amp; &quot;&lt;/book-title&gt;&quot; &amp; chr(10))
 	
 	If UBound(sBookAnnotation()) &lt;&gt; -1 Then
-		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10)
+		oTextOutputStream.writeString(&quot;&lt;annotation&gt;&quot; &amp; chr(10) )
 		For i = 0 To UBound(sBookAnnotation())
 			oTextOutputStream.writeString(&quot;&lt;p&gt;&quot; &amp; sBookAnnotation(i) &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10))
 		Next i
-		oTextOutputStream.writeString(&quot;&lt;/annotation&gt;&quot; &amp; chr(10)
+		oTextOutputStream.writeString(&quot;&lt;/annotation&gt;&quot; &amp; chr(10) )
 	End If
 	
 	Dim Keywords As String : Keywords = GetKeywordsFromProperty()

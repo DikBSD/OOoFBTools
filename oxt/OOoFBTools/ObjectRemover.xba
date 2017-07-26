@@ -81,6 +81,13 @@ Sub RemoveObjects()
 			nStep = nStep + 1
 		End If
 		
+		&apos; удаление всех гиперссылок
+		If .AllHyperLinksCheckBox.State = 1 Then
+			DeleteAllHyperLinks()
+			oProgressBar.setValue(nStep)
+			nStep = nStep + 1
+		End If
+		
 		&apos; удаление всей растровой графики
 		If .RasterGraphicsCheckBox.State = 1 Then
 			DeleteAllRasterGraphics()
@@ -170,6 +177,22 @@ Sub DeleteAllTextFrames()
 	Loop
 End Sub
 
+&apos; удаление всех гиперссылок
+Sub DeleteAllHyperLinks()
+	Dim oDoc	As Object : oDoc	= ThisComponent
+	Dim enum1	As Object : enum1	= oDoc.Text.createEnumeration
+
+	While enum1.hasMoreElements
+		Dim thisPara	As Object : thisPara = enum1.nextElement
+		Dim enum2		As Object : enum2 = thisPara.createEnumeration
+		While enum2.hasMoreElements
+			Dim thisPortion As Object : thisPortion = enum2.nextElement
+			thisPortion.HyperlinkTarget = &quot;&quot;
+			thisPortion.HyperLinkURL = &quot;&quot;
+		Wend
+	Wend
+End Sub
+
 &apos; удаление всех таблиц
 Sub DeleteAllTables()
 	Dim oDoc As Object : oDoc = ThisComponent
@@ -217,7 +240,7 @@ Sub DeleteOnlyInnerTables()
 	Dim i As Integer
 	For i = 0 To UBound( aInnerTableNames )
 		If oTextTables.hasByName( aInnerTableNames(i) ) Then
-			oDoc.Text.removetextcontent( oTextTables.getByName( aInnerTableNames(i) )
+			oDoc.Text.removetextcontent( oTextTables.getByName( aInnerTableNames(i) ) )
 		End If	
 	Next i
 End Sub
@@ -316,6 +339,7 @@ Sub InitObjectRemoverDlg()
 			.AllTablesOptionButton.Label	= &quot;Все таблицы&quot;
 			.InnerTablesOptionButton.Label	= &quot;Только вложенные таблицы&quot;
 			.AllTextFramesCheckBox.Label	= &quot;Текстовые Врезки&quot;
+			.AllHyperLinksCheckBox.Label	= &quot;Все гиперссылки&quot;
 			.GraphicsFrameControl.Label		= &quot;Графика и встроенные объекты&quot;
 			.RasterGraphicsCheckBox.Label	= &quot;Растровая графика&quot;
 			.VectorGraphicsCheckBox.Label	= &quot;Векторная графика&quot;
@@ -334,6 +358,7 @@ Sub InitObjectRemoverDlg()
 			.AllTablesOptionButton.Label	= &quot;All Tables&quot;
 			.InnerTablesOptionButton.Label	= &quot;Only Inner Tables&quot;
 			.AllTextFramesCheckBox.Label	= &quot;The Text Frames&quot;
+			.AllHyperLinksCheckBox.Label	= &quot;All Hyperlinks&quot;
 			.GraphicsFrameControl.Label		= &quot;Graphics and embedded Objects&quot;
 			.RasterGraphicsCheckBox.Label	= &quot;Raster Graphics&quot;
 			.VectorGraphicsCheckBox.Label	= &quot;Vector Graphics&quot;

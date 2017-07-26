@@ -109,13 +109,13 @@ Sub AutoCode()
 	&apos; сохраняем списки
 	With oACDlg.Model
 		Dim aArrayPS() As String : aArrayPS = .ParaStyleFindListBox.StringItemList
-		SaveArray( aArrayPS(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaStyle
+		SaveArray( aArrayPS(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaStyle )
 		Dim aArrayPF() As String : aArrayPF = .ParaFontFindListBox.StringItemList
-		SaveArray( aArrayPF(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaFont
+		SaveArray( aArrayPF(), getOOoFBToolsSettingsDir() &amp; sConstWorkParaFont )
 		Dim aArrayCS() As String : aArrayCS = .CharStyleFindListBox.StringItemList
-		SaveArray( aArrayCS(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharStyle
+		SaveArray( aArrayCS(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharStyle )
 		Dim aArrayCF() As String : aArrayCF = .CharFontFindListBox.StringItemList
-		SaveArray( aArrayCF(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharFont
+		SaveArray( aArrayCF(), getOOoFBToolsSettingsDir() &amp; sConstWorkCharFont )
 	End With
 	
 	Dim ProgressMaxIter As Integer : ProgressMaxIter = 1
@@ -327,7 +327,7 @@ Sub ReplaceBlanksTabsToBlankOrTabsInCodeWorker( TextElement As Object, oDoc As O
 		&apos; поиск пробела
 		On Local Error Resume Next &apos; TODO код следующей строки то срабатывает, не выдает ошибку. если выделены сноски и текст в документе.
 		If vFound.Text.compareRegionEnds( vFound, oCursorR ) &lt; 0 Then Exit Sub
-		vFound.setString( String( Len( vFound.getString() ), chr(160) ) &apos; неразрывные пробелы
+		vFound.setString( String( Len( vFound.getString() ), chr(160) ) ) &apos; неразрывные пробелы
 		vFound = oDoc.findNext( vFound.End, vSearch )
 	Loop
 End Sub

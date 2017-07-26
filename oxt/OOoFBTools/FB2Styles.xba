@@ -165,6 +165,9 @@ End Sub
 Sub FB2StylesDlgStart()
 	If bWorkStart Then Exit Sub &apos; Защита от повторного запуска диалога
 	
+	&apos; настройки из файла
+	LoadSettingsToVars()
+	
 	&apos; Создать fb2 стили для активного документа, если они не были созданы
 	MakeFB2StylesToDoc()
 
@@ -261,10 +264,12 @@ Function MakeFB2StylesToDoc() As Boolean
 		oProgressBar.setValue(0)
 		
 		Dim oStyle As Object
-	    &apos; Standard (Базовый)
-		If oParaStyles.hasByName( GetLocaDefaultStyleName() ) Then
-			oStyle = oParaStyles.getByName( GetLocaDefaultStyleName() )
-			setPropertyForStyle( oStyle, StandardStyle( oStyle.CharFontName ) )
+		If bFormatedFB2Styles Then
+		    &apos; Standard (Базовый)
+			If oParaStyles.hasByName( GetLocaDefaultStyleName() ) Then
+				oStyle = oParaStyles.getByName( GetLocaDefaultStyleName() )
+				setPropertyForStyle( oStyle, StandardStyle( oStyle.CharFontName ) )
+			End If
 		End If
 		oProgressBar.setValue(1)
 
@@ -321,14 +326,18 @@ Function MakeFB2StylesToDoc() As Boolean
 		oProgressBar.setValue(15)
 
 		&apos; Подзаголовок
-		MakeParagraphStyle( fb2Style.SubTitle, SubtitleStyle() )
+		If bFormatedFB2Styles Then
+			MakeParagraphStyle( fb2Style.SubTitle, SubtitleStyle() )
+		End If
 		oProgressBar.setValue(16)
 		
 		&apos; Заголовки 1 ... 10
-		Dim i As Integer : i = 1
-		For i = 1 To 10
-			MakeParagraphStyle( GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; i, HeadingStyle( i ) )
-		Next i
+		If bFormatedFB2Styles Then
+			Dim i As Integer : i = 1
+			For i = 1 To 10
+				MakeParagraphStyle( GetLocalHeadingStyleName() &amp; &quot; &quot; &amp; i, HeadingStyle( i ) )
+			Next i
+		End If
 		oProgressBar.setValue(17)
 		
 		&apos; стиль абзаца code

@@ -404,7 +404,8 @@ Sub CodeToBase64( sGraphicUrl As String, ByVal sExt As String )
         &apos; данные картинки и ее расширение
         sMimeFile = getOOoFBToolsTempPath() &amp; &quot;/base64image&quot; &amp; iImgCurrent &amp; &quot;.txt&quot;
         &apos; генерируем скрипт
-        Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;/usr/bin/python -c &quot;&quot;import base64; data = base64.b64encode(open(&apos;&quot; &amp; sGraphicUrl &amp; &quot;&apos;, &apos;rb&apos;).read()); print(data)&quot;&quot; &gt;&gt; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
+        &apos;Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;/usr/bin/python -c &quot;&quot;import base64; data = base64.b64encode(open(&apos;&quot; &amp; sGraphicUrl &amp; &quot;&apos;, &apos;rb&apos;).read()); print(data)&quot;&quot; &gt;&gt; &quot;&quot;&quot; &amp; sMimeFile &amp; &quot;&quot;&quot;&quot;
+        Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;/usr/bin/python -c &quot;&quot;import base64; data = base64.b64encode(open(&apos;&quot; &amp; sGraphicUrl &amp; &quot;&apos;, &apos;rb&apos;).read()); f = open(&apos;&quot; &amp; sMimeFile &amp; &quot;&apos;, &apos;wb&apos;).write(data);&quot;&quot;&quot;
         SaveText( getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;, Script, &quot;utf-8&quot; )
         &apos; конвертируем картинку в base64
         Shell( &quot;/bin/sh&quot;, 1, &quot;&quot;&quot;&quot; &amp; getOOoFBToolsTempPath() &amp; &quot;/image.sh&quot;&quot;&quot;, true ) 

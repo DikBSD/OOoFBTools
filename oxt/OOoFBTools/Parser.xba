@@ -168,17 +168,17 @@ Sub DocumentParser()
 				If ParaStyle = GetLocaCiteStyleName() Then
 					ParaStyle = &quot;Quotations&quot;
 				End If
-				StyleParser( ParaStyle, sPara, sBookmark )
+				StyleParser( oPar, ParaStyle, sPara, sBookmark )
 			Else &apos; для OpenOffice
-				StyleParser( oPar.ParaStyleName, sPara, sBookmark )
+				StyleParser( oPar, oPar.ParaStyleName, sPara, sBookmark )
 			End If
 			sBookmark = &quot;&quot;
 		End If
 	Loop
 End Sub
 
-Sub StyleParser( sParaStyleName As String, sPara As String, sBookmark As String )
-	&apos; перебор по стилям
+&apos; перебор по стилям
+Sub StyleParser( oPar As Object, sParaStyleName As String, sPara As String, sBookmark As String )
 	If sPara = &quot;&quot; Then
 		If sParaStyleName = sStylePoem Then
 			&apos; для разных видов стихов (каждое четверостишие - в своем &lt;stanza&gt;)
@@ -225,7 +225,11 @@ Sub StyleParser( sParaStyleName As String, sPara As String, sBookmark As String 
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( sPara )
 		Else &apos; что-то другое или просто параграф
-			AddLevelToBodyArray( sBodyParagraphs(), sPara, &quot;Para&quot;, sBookmark, False )
+			Dim sParaName As String : sParaName = &quot;Para&quot;
+			If oPar.ParaAdjust = 3 Then
+				sParaName = &quot;ParaCenter&quot;
+			End If
+			AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaName, sBookmark, False )
 		End If
 	End If
 

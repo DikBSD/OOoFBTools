@@ -1750,21 +1750,12 @@ End Sub
 &apos; Заменить минус на дефис в уточняющих словах (черно-белый, дом-небоскреб, и т.д.)
 Sub ReplaceMinusToDash( oDoc, oReplace )
 	Dim SearchCaseSensitive As Boolean : SearchCaseSensitive = False &apos; запоминаем опцию регистра поиска, чтобы потом ее восстановить
-	&apos; Между 2-х слов с Большой буквы: Париж-Берлин
+	&apos; Между 2-х слов с Большой буквы: Париж-Берлин, Ростов-на-Дону
 	With oReplace
 		SearchCaseSensitive = .SearchCaseSensitive
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:upper:]{1}[:lower:]{1,})[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:upper:]{1}[:lower:]{1,})&quot;
-		.ReplaceString = &quot;$1&quot; &amp; chr(8212) &amp; &quot;$2&quot; &apos; длинное тире
-	End With
-	oDoc.ReplaceAll(oReplace)
-	
-	&apos; Между 2-х слов, все буквы которых - строчные
-	With oReplace
-		SearchCaseSensitive = .SearchCaseSensitive
-		.SearchCaseSensitive = True
-		.SearchString = &quot;(\&lt;[:lower:]{2,})[-&quot; &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:lower:]{2,})&quot;
-		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+		.SearchString = &quot;([:upper:]{1}[:lower:]{1,})[&quot; &amp; chr(45) &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:upper:]{1}[:lower:]{1,})&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &apos; длинное тире
 	End With
 	oDoc.ReplaceAll(oReplace)
 	
@@ -1772,7 +1763,16 @@ Sub ReplaceMinusToDash( oDoc, oReplace )
 	With oReplace
 		SearchCaseSensitive = .SearchCaseSensitive
 		.SearchCaseSensitive = True
-		.SearchString = &quot;([:upper:]{1}[:lower:]{1,})[-&quot; &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:lower:]{2,})&quot;
+		.SearchString = &quot;([:upper:]{1}[:lower:]{1,})[&quot; &amp; chr(45) &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:lower:]{2,})&quot;
+		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
+	End With
+	oDoc.ReplaceAll(oReplace)
+	
+	&apos; Между 2-х слов, все буквы которых - строчные: чёрно-белый, англо-русский
+	With oReplace
+		SearchCaseSensitive = .SearchCaseSensitive
+		.SearchCaseSensitive = True
+		.SearchString = &quot;(\&lt;[:lower:]{2,})[&quot; &amp; chr(45) &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; &quot;]{1}([:lower:]{2,})&quot;
 		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot;
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -1781,7 +1781,7 @@ Sub ReplaceMinusToDash( oDoc, oReplace )
 
 	&apos; Обработка слов вида: Да-а-а, Э-э-э
 	With oReplace
-		.SearchString = &quot;([:alpha:]{1,})[-&quot; &amp; chr(8722) &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:alpha:]{1,})&quot; &amp; &quot;[-&quot; &amp; chr(8211) &amp; chr(8209) &amp; &quot;]{1}([:alpha:]{1,})&quot;
+		.SearchString = &quot;([:alpha:]{1,})[&quot; &amp; chr(45) &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; chr(8211) &amp; &quot;]{1}([:alpha:]{1,})&quot; &amp; &quot;[&quot; &amp; chr(45) &amp; chr(8722) &amp; chr(8212) &amp; chr(8209) &amp; chr(8211) &amp; &quot;]{1}([:alpha:]{1,})&quot;
 		.ReplaceString = &quot;$1&quot; &amp; chr(8211) &amp; &quot;$2&quot; &amp; chr(8211) &amp; &quot;$3&quot; &apos; короткое тире
 	End With
 	oDoc.ReplaceAll(oReplace)
@@ -2177,20 +2177,139 @@ Sub InsertNoBreakBlankToDate( oDoc, oReplace )
 	oDoc.ReplaceAll(oReplace)
 End Sub
 
+&apos; =============================================================================================
 &apos; Вставка пробела между русским словом и цифрой (30машин, домов25)
 Sub InsertSpaceBetweenNumLetter( oDoc, oReplace )
-	With oReplace
-		.SearchString	= &quot;([0-9]+)([а-яА-ЯёЁ]{2,})&quot;
-		.ReplaceString	= &quot;$1 $2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
-	With oReplace
-		.SearchString	= &quot;([а-яА-ЯёЁ]+)([0-9]+)&quot;
-		.ReplaceString	= &quot;$1 $2&quot;
-	End With
-	oDoc.ReplaceAll(oReplace)
+&apos;	With oReplace
+&apos;		.SearchString	= &quot;([0-9]+)([а-яА-ЯёЁ]{2,})&quot;
+&apos;		.ReplaceString	= &quot;$1 $2&quot;
+&apos;	End With
+&apos;	oDoc.ReplaceAll(oReplace)
+&apos;	With oReplace
+&apos;		.SearchString	= &quot;([а-яА-ЯёЁ]+)([0-9]+)&quot;
+&apos;		.ReplaceString	= &quot;$1 $2&quot;
+&apos;	End With
+&apos;	oDoc.ReplaceAll(oReplace)
+	
+	Dim oCurs As Object : oCurs = oDoc.Text.createTextCursor()
+	oCurs.gotoStart( False ) &apos; на начало документа
+	&apos; поиск числа, слившихся со следующим за этим числом словом
+	Dim vFound : vFound = FindNumbersText( oCurs )
+	If Not IsNull( vFound ) Then
+		Do While ( Not IsNull( vFound ) )
+			vFound = FindNumbersText( oCurs )
+		Loop
+	End If
+	
+	&apos; поиск числа, слившихся с предыдущим до этого числа словом
+	oCurs.gotoStart( False ) &apos; на начало документа
+	vFound = FindTextNumbers( oCurs )
+	If Not IsNull( vFound ) Then
+		Do While ( Not IsNull( vFound ) )
+			vFound = FindTextNumbers( oCurs )
+		Loop
+	End If
 End Sub
 
+&apos; поиск числа, слившихся со следующим за этим числом словом
+Function FindNumbersText( oCurs As Object ) As Variant
+	Dim oSearch : oSearch = ThisComponent.createSearchDescriptor()
+	With oSearch
+		.SearchRegularExpression = True
+		.ValueSearch = False
+		.SearchString = &quot;([0-9]+)([а-яА-ЯёЁ]{2,})&quot;
+	End With
+	
+	Dim vFound : vFound = ThisComponent.findNext( oCurs, oSearch )
+	If Not IsNull(vFound) Then
+		oCurs.gotoRange( vFound, False )
+		oCurs.collapseToEnd()
+		&apos; проверка, число - в верхнем индексе. Если, то - пропускаем. Иначе - вставка пробела.
+		Dim oTextCurs As Object : oTextCurs = vFound.Text.createTextCursorByRange( vFound.Start )
+		If ExtendFoundToAllNumbers( oTextCurs ) = True Then
+			oTextCurs.String = oTextCurs.String + &quot; &quot;
+		End If
+	End If
+	FindNumbersText = vFound
+End Function
+
+&apos; Расширение найденного курсора числа до начала текста (25номер -&gt; 25)
+&apos; Возвращает True - если число - НЕ в индексе. False, если число - в индексе.
+Function ExtendFoundToAllNumbers( ByRef vFound ) As Boolean
+	ExtendFoundToAllNumbers = False
+	Dim txtTempCursor As Object : txtTempCursor = vFound.Text.createTextCursorByRange( vFound.Start )
+	txtTempCursor.collapseToStart()
+	Dim s As String
+	Do While txtTempCursor.goRight( 1, True )
+		s = Right( txtTempCursor.getString(), 1 )
+		If ( s &lt;&gt; &quot; &quot; And s &lt;&gt; &quot;	&quot; ) Then &apos; пропускаем пробел и табуляцию
+			if txtTempCursor.CharEscapement = 0 Then &apos; пропускаем символы в любом индексе
+				If IsNumeric( s ) Then
+					vFound.goRight( 1, True )
+					ExtendFoundToAllNumbers = True
+				Else
+					Exit Do
+				End If
+			End If
+		Else
+			Exit Do
+		End If
+		txtTempCursor.collapseToEnd()
+	Loop
+End Function
+
+&apos; поиск числа, слившихся с предыдущим до этого числа словом
+Function FindTextNumbers( oCurs As Object ) As Variant
+	Dim oSearch : oSearch = ThisComponent.createSearchDescriptor()
+	With oSearch
+		.SearchRegularExpression = True
+		.ValueSearch = False
+		.SearchString = &quot;([а-яА-ЯёЁ]+)([0-9]+)&quot;
+	End With
+	
+	Dim vFound : vFound = ThisComponent.findNext( oCurs, oSearch )
+	If Not IsNull(vFound) Then
+		On Error Resume Next
+		oCurs.gotoRange( vFound, False )
+		oCurs.collapseToEnd()
+		&apos; проверка, число - в верхнем индексе. Если, то - пропускаем. Иначе - вставка пробела.
+		Dim oTextCurs As Object : oTextCurs = vFound.Text.createTextCursorByRange( vFound.End )
+		If CollapsFoundToAllNumbers( oTextCurs ) = True Then
+			oTextCurs.String = &quot; &quot; + oTextCurs.String
+		End If
+	End If
+	FindTextNumbers = vFound
+End Function
+
+&apos; Сжатие найденного курсора числа до начала текста (номер25 -&gt; 25)
+&apos; Возвращает True - если число - НЕ в индексе. False, если число - в индексе.
+Function CollapsFoundToAllNumbers( ByRef vFound ) As Boolean
+	CollapsFoundToAllNumbers = False
+	Dim txtTempCursor As Object : txtTempCursor = vFound.Text.createTextCursorByRange( vFound.End )
+	txtTempCursor.collapseToEnd()
+	Dim s As String
+	Do While txtTempCursor.goLeft( 1, True )
+		s = Left( txtTempCursor.getString(), 1 )
+		If ( s &lt;&gt; &quot; &quot; And s &lt;&gt; &quot;	&quot; ) Then &apos; пропускаем пробел и табуляцию
+			if txtTempCursor.CharEscapement = 0 Then
+				If IsNumeric( s ) Then
+					vFound.goLeft( 1, True )
+					CollapsFoundToAllNumbers = True
+				Else
+					Exit Do
+				End If
+			Else  &apos; пропускаем символы в любом индексе
+				CollapsFoundToAllNumbers = False
+				Exit Function
+			End If
+		Else
+			Exit Do
+		End If
+		txtTempCursor.collapseToStart()
+	Loop
+End Function
+
+&apos; =============================================================================================
 &apos; Вставка пробела между знаком препинания и минусом, тире или дефисом
 Sub InsertSpaceBetweenPunctAndMinusDashHyphen( oDoc, oReplace, nSymbolCode )
 	With oReplace
@@ -2679,7 +2798,7 @@ Sub ProcessingHyphen( oLCurs, oRCurs, vL, vR, oDoc, bText As Boolean, bDefisWord
 	End If
 	
 	&apos; определяем язык символа слева от знака переноса
-	Dim c As String : c = Trim( Mid( s, InStr(s,sPer ) - 1, 1 )
+	Dim c As String : c = Trim( Mid( s, InStr(s,sPer ) - 1, 1 ) )
 	Dim sLeftLang As String, sRightLang As String
 	If IsLetter(c) = True Then
 		&apos; определяем язык буквы слева от переноса

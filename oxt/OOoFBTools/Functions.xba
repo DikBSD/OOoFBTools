@@ -174,7 +174,7 @@ Sub embeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional P
 	
 	Dim oText As Object
 	If NOT IsMissing( oProgressBar ) And ( NOT IsMissing( ProgressLabel ) ) Then
-		oProgressBar.start( ProgressLabel, UBound( oGraphics() )
+		oProgressBar.start( ProgressLabel, UBound( oGraphics() ) )
 	End If
 	For l = 0 To UBound( oGraphics() )
 		If FileExists( oGraphics(l).GraphicUrl ) Then
@@ -485,7 +485,7 @@ Function ListOfDocumentStyles( StyleType As String ) As Array
 	For i = LBound(sCharacterStyleNames()) To UBound (sCharacterStyleNames())
 		AddNewItemToArray1( aArray(), sCharacterStyleNames(i) )
 	Next i
-	bubble_sort(aArray())
+	bubble_sort_string(aArray())
 	ListOfDocumentStyles = aArray()
 End Function
 
@@ -659,7 +659,7 @@ Function ListOfDocumentFonts( StyleType As String ) As Array
 			End If
 		End If
 	Next i
-	bubble_sort(aArray())
+	bubble_sort_string(aArray())
 	ListOfDocumentFonts = aArray()
 End Function
 
@@ -692,7 +692,7 @@ Function ListSystemFonts( Sort As Boolean ) As Array
 	Next iIndex
 	If Sort Then
 		If Not IsEmpty(aFontArray()) Then
-			bubble_sort( aFontArray() )
+			bubble_sort_string( aFontArray() )
 		End If
 	End If
 	ListSystemFonts = aFontArray()
@@ -2108,9 +2108,9 @@ Sub swap_long( aArray() As Long, nPos1 As Long, nPos2 As Long )
 	aArray(nPos2) = nTemp
 End Sub
 
-&apos; пузырьковая сортировка
-Function bubble_sort( aArray() As String )
-	Dim nSize As Long : nSize = Ubound(aArray())
+&apos; пузырьковая сортировка строк массива
+Function bubble_sort_string( aArray() As String )
+	Dim nSize As Long : nSize = Ubound(aArray()) + 1
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Long, j As Long
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
@@ -2128,7 +2128,7 @@ End Function
 
 &apos; пузырьковая сортировка int элементов массива
 Function bubble_sort_int( aArray() As Integer )
-	Dim nSize As Integer : nSize = Ubound(aArray())
+	Dim nSize As Integer : nSize = Ubound(aArray()) + 1
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Integer, j As Integer
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
@@ -2146,7 +2146,7 @@ End Function
 
 &apos; пузырьковая сортировка long элементов массива
 Function bubble_sort_long( aArray() As Long )
-	Dim nSize As Long : nSize = Ubound(aArray())
+	Dim nSize As Long : nSize = Ubound(aArray()) + 1
 	If nSize &lt;= 1 Then Exit Function
 	Dim i As Long, j As Long
 	&apos; Верхний предел внешнего цикла равен size-l, а не nSize, так как если все прочие элементы заняли свои места, 
@@ -3137,7 +3137,7 @@ End Function
 Function WindowsUuidgenPath() As String
 	WindowsUuidgenPath = &quot;&quot;
 	If GetOS() = &quot;WIN&quot; Then &apos; для Windows
-		WindowsUuidgenPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;\win32\uuidgen.exe&quot; 
+		WindowsUuidgenPath = ConvertFromURL( getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;\win32\uuidgen.exe&quot; )
 	End If
 End Function
 &apos;***************************************************************************

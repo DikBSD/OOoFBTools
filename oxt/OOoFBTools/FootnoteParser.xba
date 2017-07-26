@@ -182,13 +182,13 @@ Sub MakeTextArray( asFNPart() As String, sStr As String, oFootnoteCursor As Obje
 		If ParaStyle = GetLocaCiteStyleName() Then
 			ParaStyle = &quot;Quotations&quot;
 		End If
-		FootnoteStyleParser( asFNPart(), ParaStyle, sStr, sBookMark, sFNType ) &apos; тип абзаца - стих, абзац, цитата...
+		FootnoteStyleParser( asFNPart(), oFootnoteCursor, ParaStyle, sStr, sBookMark, sFNType ) &apos; тип абзаца - стих, абзац, цитата...
 	Else &apos; для OpenOffice
-		FootnoteStyleParser( asFNPart(), oFootnoteCursor.ParaStyleName, sStr, sBookMark, sFNType ) &apos; тип абзаца - стих, абзац, цитата...
+		FootnoteStyleParser( asFNPart(), oFootnoteCursor, oFootnoteCursor.ParaStyleName, sStr, sBookMark, sFNType ) &apos; тип абзаца - стих, абзац, цитата...
 	End If
 End Sub
 
-Sub FootnoteStyleParser( asFNPart() As String, sParaStyleName As String, sPara As String, sBookMark As String, FNType As String )
+Sub FootnoteStyleParser( asFNPart() As String, oFootnoteCursor As Object, sParaStyleName As String, sPara As String, sBookMark As String, FNType As String )
 	&apos; перебор по стилям
 	Dim sParaStyle As String : sParaStyle = sParaStyleName
 	If sPara = &quot;&quot; Then
@@ -219,6 +219,9 @@ Sub FootnoteStyleParser( asFNPart() As String, sParaStyleName As String, sPara A
 			AddNotesArray( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
 		Else &apos; что-то другое или просто параграф
 			sParaStyle = &quot;Para&quot;
+			If oFootnoteCursor.ParaAdjust = 3 Then
+				sParaStyle = &quot;ParaCenter&quot;
+			End If
 			AddNewItemToArray4( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
 		End If
 	End If
