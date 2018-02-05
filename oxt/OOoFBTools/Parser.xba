@@ -225,11 +225,15 @@ Sub StyleParser( oPar As Object, sParaStyleName As String, sPara As String, sBoo
 		ElseIf sParaStyleName = sStyle_BookAnnotation Then
 			AddBookAnnotation( sPara )
 		Else &apos; что-то другое или просто параграф
-			Dim sParaName As String : sParaName = &quot;Para&quot;
-			If oPar.ParaAdjust = 3 Then
-				sParaName = &quot;ParaCenter&quot;
+			Dim sParaStyle As String : sParaStyle = &quot;Para&quot;
+			If bParaAdjust = True Then
+				If oPar.ParaAdjust = 3 Then &apos; центрирование абзаца
+					sParaStyle = &quot;ParaCenter&quot;
+				ElseIf oPar.ParaAdjust = 1 Then &apos; выравнивание абзаца вправо
+					sParaStyle = &quot;ParaRight&quot;
+				End If
 			End If
-			AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaName, sBookmark, False )
+			AddLevelToBodyArray( sBodyParagraphs(), sPara, sParaStyle, sBookmark, False )
 		End If
 	End If
 

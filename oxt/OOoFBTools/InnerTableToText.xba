@@ -133,6 +133,16 @@ Sub TransformInnerTableToText()
 	
 	&apos; Удаление из массива записи обработанной таблицы
 	aTablesName() = RemoveItemFrom3SBB( aTablesName(), CurrentInnerTableName )
+	Dim args1(0) As New com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Delimiter&quot;
+	args1(0).Value = getDelimiterChar()
+	oDispatcher.executeDispatch( oFrame, &quot;.uno:ConvertTableToText&quot;, &quot;&quot;, 0, args1() )
+	
+	oInnerTableToTextDlg.getControl( &quot;cmdbtnTransform&quot; ).Enable = False
+End Sub
+
+&apos; получение символа-разделителя
+Function getDelimiterChar()
 	Dim DelimiterChar As String
 	With oInnerTableToTextDlg
 		If .getControl( &quot;optbtnTab&quot; ).State Then
@@ -145,14 +155,8 @@ Sub TransformInnerTableToText()
 			DelimiterChar = .getControl( &quot;tfOther&quot; ).Text
 		End If
 	End With
-	
-	Dim args1(0) As New com.sun.star.beans.PropertyValue
-	args1(0).Name = &quot;Delimiter&quot;
-	args1(0).Value = DelimiterChar
-	oDispatcher.executeDispatch( oFrame, &quot;.uno:ConvertTableToText&quot;, &quot;&quot;, 0, args1() )
-	
-	oInnerTableToTextDlg.getControl( &quot;cmdbtnTransform&quot; ).Enable = False
-End Sub
+	getDelimiterChar = DelimiterChar
+End Function
 
 &apos; инициализация форм
 Sub InitInnerTableToTextDlg()

@@ -219,8 +219,12 @@ Sub FootnoteStyleParser( asFNPart() As String, oFootnoteCursor As Object, sParaS
 			AddNotesArray( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
 		Else &apos; что-то другое или просто параграф
 			sParaStyle = &quot;Para&quot;
-			If oFootnoteCursor.ParaAdjust = 3 Then
-				sParaStyle = &quot;ParaCenter&quot;
+			If bParaAdjust = True Then
+				If oFootnoteCursor.ParaAdjust = 3 Then &apos; центрирование абзаца
+					sParaStyle = &quot;ParaCenter&quot;
+				ElseIf oFootnoteCursor.ParaAdjust = 3 Then &apos; выравнивание абзаца вправо
+					sParaStyle = &quot;ParaRight&quot;
+				End If
 			End If
 			AddNewItemToArray4( asFNPart(), sPara, sParaStyle, sBookMark, FNType )
 		End If

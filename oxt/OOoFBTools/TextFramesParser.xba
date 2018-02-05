@@ -280,16 +280,10 @@ End Sub
 &apos; ===============================================================================================
 &apos; парсер таблиц внутри Текстовой Врезки
 Function OOo23TextTableParserForTextInCut( oTable As Object ) As String
-	Dim nHeaderRowCount As Integer
+	Dim CellNames As Object : CellNames = oTable.getCellNames()
+	Dim nHeaderRowCount As Integer : nHeaderRowCount = GetHeaderRowCount( oTable ) &apos; число строк заголовка таблицы
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
-	Dim iCel As Integer &apos; текушая ячейка
-	Dim CellNames
-	iCel = 0 &apos; текушая ячейка
-	CellNames = oTable.getCellNames()
 	
-	&apos; число строк заголовка таблицы
-	nHeaderRowCount = GetHeaderRowCount( oTable )
-
 	&apos; обработка сложных таблиц
 	If IsComplexRowsCollTable(oTable) = True Then
 		&apos;Сложная таблица: разное число столбцов и строк В ЯЧЕЙКЕ (очень сложная)

@@ -56,6 +56,8 @@ Public bNotUsedBookmarks As Boolean
 Public bDefaultDescription As Boolean
 &apos; Форматирование fb2 стилей
 Public bFormatedFB2Styles As Boolean
+&apos; Выравнивание абзацев
+Public bParaAdjust As Boolean
 
 Private oServiceDlg		As Object
 Private sHeaderTVA		As String
@@ -364,6 +366,8 @@ Sub SetDefaultSettingsToControls()
 		.Model.cbDefaultDescription.State = 0
 		&apos; Форматирование fb2 стилей
 		.Model.cbFormatedFB2Styles.State = 0
+		&apos; Выравнивание абзацев
+		.Model.cbParaAdjust.State = 0
 	End With
 End Sub
 
@@ -449,6 +453,8 @@ Sub SetDefaultSettingsToVars()
 	bDefaultDescription = False
 	&apos; Форматирование fb2 стилей
 	bFormatedFB2Styles = False
+	&apos; Выравнивание абзацев
+	bParaAdjust = False
 End Sub
 
 &apos; Настройки из файла - в переменные
@@ -654,6 +660,9 @@ Sub SetSettingsToVars( sCurrentLine )
 		&apos; Форматирование fb2 стилей
 		Case &quot;cbFormatedFB2Styles&quot;
 			bFormatedFB2Styles = sSetting(1)
+		&apos; Выравнивание абзацев
+		Case &quot;cbParaAdjust&quot;
+			bParaAdjust = sSetting(1)
 	End Select
 End Sub
 
@@ -818,6 +827,7 @@ Sub InitServiceDlg()
 			.cbNotUsedBookmarks.Label	= &quot;Удаление неиспользуемых закладок (на них ничто не ссылается) во всем Документе&quot;
 			.cbDefaultDescription.Label	= &quot;Задать описание книги по-умолчанию&quot;
 			.cbFormatedFB2Styles.Label	= &quot;Форматирование fb2 стилей&quot;
+			.cbParaAdjust.Label			= &quot;Выравнивание абзацев&quot;
 		End With
 	Else
 		With oServiceDlg.getModel
@@ -887,6 +897,7 @@ Sub InitServiceDlg()
 			.cbNotUsedBookmarks.Label	= &quot;Remove Bookmarks which refers to nothing (not used) in all docement&quot;
 			.cbDefaultDescription.Label	= &quot;Set default book description&quot;
 			.cbFormatedFB2Styles.Label	= &quot;Formated fb2 styles&quot;
+			.cbParaAdjust.Label			= &quot;Para Adjust&quot;
 		End With
 	End If
 End Sub

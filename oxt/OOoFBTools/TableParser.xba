@@ -21,16 +21,10 @@ Function GetHeaderRowCount( oTable As Object) As Integer
 End Function
 
 Sub OOo23TextTableParser( oTable As Object )
-	Dim nHeaderRowCount As Integer
+	Dim CellNames As Object : CellNames = oTable.getCellNames()
+	Dim nHeaderRowCount As Integer : nHeaderRowCount = GetHeaderRowCount( oTable ) &apos; число строк заголовка таблицы
 	Dim sTable As String &apos; текст таблицы в fb2.1 формате
-	Dim iCel As Integer &apos; текушая ячейка
-	Dim CellNames
-	iCel = 0 &apos; текушая ячейка
-	CellNames = oTable.getCellNames()
 	
-	&apos; число строк заголовка таблицы
-	nHeaderRowCount = GetHeaderRowCount( oTable )
-
 	&apos; обработка сложных таблиц
 	If IsComplexRowsCollTable(oTable) = True Then
 		&apos;Сложная таблица: разное число столбцов и строк В ЯЧЕЙКЕ (очень сложная)
@@ -45,15 +39,16 @@ End Sub
 &apos; форматирование стилями каждого абзаца ячейки oCell
 Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As Integer ) As String
 	On Error GoTo ErrHndlr &apos; в случае очень сложной таблицы (ими богаты html-файлы) при сбое ф-ции работа не прерывается, а просто эта ячейка не экспортируется. Лучше так, чем ничего :-)
-	
 	Dim sRes As String, sFormatPara As String, sExt As String
-	Dim oCellPar As Object, oCellParEnum As Object, oSectEnum As Object, oSect As Object, oCEnum As Object, oContent As Object
-	&apos; параграфы
-	oCellParEnum = oCell.createEnumeration()
+	Dim oCellPar As Object, oSectEnum As Object, oSect As Object, oCEnum As Object, oContent As Object
+	&apos; параграфы ячейки
+	Dim oCellParEnum As Object : oCellParEnum = oCell.createEnumeration()
 	Do While oCellParEnum.hasMoreElements()
 		oCellPar = oCellParEnum.nextElement()
 		sFormatPara = &quot;&quot;
-&apos;		If oCellPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+		If oCellPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+			&apos; парсер вложенной таблицы oCellPar
+		ElseIf oCellPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 			oCEnum = oCellPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 			Do While oCEnum.hasMoreElements()
 				oContent = oCEnum.nextElement()
@@ -112,56 +107,60 @@ Function FormatCellPara( oCell As Object, nHeaderRowCount As Integer, nRow As In
 					End If
 				End If
 			Loop
-&apos;		End If
-
-		&apos; Обработка строк - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
-		sFormatPara = DelBreakLineInString( sFormatPara )
-		Dim aLines() As String
-		aLines() = Split( sFormatPara, chr(10) )
-		Dim i As Integer
-		If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
-			bMarker = True
-			For i = 0 To UBound( aLines() )
-				aLines( i ) = MakeNumberingNumberPara( oCellPar, aLines( i ) )
-			Next i
+		Else
+			&apos;print &quot;Что-то ещё.&quot;
 		End If
+
+		If oCellPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+			&apos; Обработка строк - на наличие обрыва строки (&lt;BR&gt; в html текстах) - иначе fb2-файл получается невалидным
+			sFormatPara = DelBreakLineInString( sFormatPara )
+			Dim aLines() As String : aLines() = Split( sFormatPara, chr(10) )
+			If oCellPar.NumberingIsNumber = True Then &apos; нумерованные списки
+				bMarker = True
+				Dim i As Integer
+				For i = 0 To UBound( aLines() )
+					aLines( i ) = MakeNumberingNumberPara( oCellPar, aLines( i ) )
+				Next i
+			End If
 		
-		&apos; задаем аттрибуты
-		Dim sTagTDH As String, sTagStart As String, sTagEnd As String
-		sTagStart = &quot;&quot;
-		sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sLineTVA, &quot;td&quot; )
-		&apos; обработка заголовков таблицы
-		If nHeaderRowCount &gt; 0 Then
-			If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-				sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sHeaderTVA, &quot;th&quot; )
-				sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-				sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
+			&apos; задаем аттрибуты
+			Dim sTagStart	As String : sTagStart	= &quot;&quot;
+			Dim sTagEnd		As String : sTagEnd		= &quot;&quot;
+			Dim sTagTDH		As String : sTagTDH		= MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sLineTVA, &quot;td&quot; )
+			&apos; обработка заголовков таблицы
+			If nHeaderRowCount &gt; 0 Then
+				If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
+					sTagTDH = MakeValignAttrComplex( GetFB2ParagraphAdjust( oCellPar ), sHeaderTVA, &quot;th&quot; )
+					sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
+					sTagEnd = &quot;&lt;/th&gt;&quot; &amp; chr(10)
+				Else
+					sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
+					sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
+				End If
 			Else
 				sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
 				sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
 			End If
-		Else
-			sTagStart = sTagStart &amp; sTagTDH &amp; &quot;&gt;&quot;
-			sTagEnd = &quot;&lt;/td&gt;&quot; &amp; chr(10)
-		End If
 		
-		&apos; для не пустого абзаца в ячейке
-		If UBound( aLines() ) &lt;&gt; -1 Then
-			For i = 0 To UBound( aLines() )
-				sRes = sRes &amp; sTagStart &amp; aLines( i ) &amp; sTagEnd
-			Next i
-		Else &apos; &quot;пустая строка&quot;
-			If nHeaderRowCount &gt; 0 Then
-				If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
-					sRes = sRes &amp; &quot;&lt;th/&gt;&quot; &amp; chr(10)
+			&apos; для не пустого абзаца в ячейке
+			If UBound( aLines() ) &lt;&gt; -1 Then
+				Dim j As Integer
+				For j = 0 To UBound( aLines() )
+					sRes = sRes &amp; sTagStart &amp; aLines( j ) &amp; sTagEnd
+				Next j
+			Else &apos; &quot;пустая строка&quot;
+				If nHeaderRowCount &gt; 0 Then
+					If	nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
+						sRes = sRes &amp; &quot;&lt;th/&gt;&quot; &amp; chr(10)
+					Else
+						sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
+					End If
 				Else
 					sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
 				End If
-			Else
-				sRes = sRes &amp; &quot;&lt;td/&gt;&quot; &amp; chr(10)
 			End If
 		End If
-		
+
 		lAnalyzeProgress = lAnalyzeProgress + 1
 		oProgressBar.setValue( lAnalyzeProgress )
 	Loop
@@ -197,11 +196,15 @@ Function MakeComplexTable(nHeaderRowCount As Integer, ByRef oTable As Object, By
 		Dim n As Integer, nMaxLines As Integer &apos; максимальное число абзацев (по смежным ячейкам в пределах одной строки таблицы)
 		n = nCell
 		nMaxLines = GetMaxLineInRowWithProtect( oTable, CellNames, n, nColumnCountInRow )
-	
+		
 		&apos; форматируем inline стилями абзацы ячейки
 		Dim aCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 		aCellAllFormatText = MakeWorkCellPara( oTable, CellNames(nCell), nHeaderRowCount, nRow )
-			
+		&apos; переопределяем nMaxLines в зависимости от того, есть ли встроенные таблицы
+		If UBound(aCellAllFormatText) &gt; 0 AND nMaxLines = 0 Then
+			nMaxLines = UBound(aCellAllFormatText)
+		End If 
+		
 		&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
 		Dim aFB2ParasRow() As String	&apos; Сформированный fb2 код всей Строки со всеми абзацами
 		oCell = oTable.getCellByName(CellNames(nCell)) &apos; первая ячейка строки
@@ -217,6 +220,10 @@ Function MakeComplexTable(nHeaderRowCount As Integer, ByRef oTable As Object, By
 			If c &lt;&gt; &quot;A&quot; Then
 				&apos; форматируем inline стилями абзацы ячейки
 				aCellAllFormatText = MakeWorkCellPara( oTable, CellNames(nCell), nHeaderRowCount, nRow )
+				&apos; переопределяем nMaxLines в зависимости от того, есть ли встроенные таблицы
+				If UBound(aCellAllFormatText) &gt; 0 AND nMaxLines = 0 Then
+					nMaxLines = UBound(aCellAllFormatText)
+				End If 
 				&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
 				aFB2ParasRow = MakeFB2ParasRow( aFB2ParasRow, aCellAllFormatText(), nMaxLines, _
 												GetFB2ParagraphAdjust(oCell.createTextCursor()), _
@@ -227,7 +234,7 @@ Function MakeComplexTable(nHeaderRowCount As Integer, ByRef oTable As Object, By
 				Exit Do
 			End If
 		Loop
-				
+	
 		&apos; формируем виртуальные строки &lt;tr&gt; для каждой строки таблицы
 		AddNewItemToArray1( aRows, MakeTRRow( aFB2ParasRow(), nCollMaxInTable, nMaxLines ) )
 	Loop
@@ -242,11 +249,11 @@ Function MakeComplexTable(nHeaderRowCount As Integer, ByRef oTable As Object, By
 	MakeComplexTable = sTable
 End Function
 
-Function MakeFB2ParasRow( aFB2ParasRow() As String, aCellAllFormatText() As Variant, _
-							nMaxLines As Integer, sAlling As String, _
-							nHeaderRowCount As Integer, nRow As String ) As Variant
+Function MakeFB2ParasRow( aFB2ParasRow() As String, aCellAllFormatText() As Variant, nMaxLines As Integer, _
+							sAlling As String, nHeaderRowCount As Integer, nRow As String ) As Variant
 	&apos; формируем промежуточный массив массивов строк таблицы с &quot;виртуальными&quot; абзацами из &quot;виртуальных&quot; ячеек
 	Dim i As Integer &apos; размерность массива
+
 	&apos; 1. формируем fb2 код Ячейки со всеми абзацами
 	Dim aCellWithLines(nMaxLines) As String
 	aCellWithLines = MakeFB2ParasCell( aCellAllFormatText(), nMaxLines )
@@ -269,20 +276,36 @@ Function MakeFB2ParasRow( aFB2ParasRow() As String, aCellAllFormatText() As Vari
 			End If
 		End If
 	Next j
+	
+	&apos; замена &quot;пустых&quot; строк, если они есть, на &lt;th/&gt; или &lt;td/&gt;
+	For j = 0 To nMaxLines
+		If aFB2ParasRow(LBound(aFB2ParasRow), j) = &quot;&quot; Then
+			If nRow &lt; nHeaderRowCount Then &apos; для заголовков сложной таблицы
+				aFB2ParasRow(LBound(aFB2ParasRow), j) = &quot;&lt;th/&gt;&quot; &amp; chr(10)
+			Else
+				aFB2ParasRow(LBound(aFB2ParasRow), j) = &quot;&lt;td/&gt;&quot; &amp; chr(10)
+			End If
+		End If
+	Next j
 
 	MakeFB2ParasRow = aFB2ParasRow &apos; Сформированный fb2 код всей Строки со всеми абзацами
 End Function
 
+&apos; формируем fb2 код Ячейки со всеми абзацами
 Function MakeFB2ParasCell( aCellAllFormatText() As Variant, nMaxLines As Integer) As Variant
-	&apos; формируем fb2 код Ячейки со всеми абзацами
+	&apos; переопределяем nMaxLines в зависимости от того, есть ли встроенные таблицы
+	If UBound(aCellAllFormatText) &gt; nMaxLines Then
+		nMaxLines = UBound(aCellAllFormatText)
+	End If
+	
 	Dim i As Integer, j As Integer
 	Dim aCellWithLines(nMaxLines) As String &apos; Сформированный fb2 код Ячейки со всеми абзацами
 	For i = LBound(aCellAllFormatText) To nMaxLines
 		&apos; Выравнивание строк: влево - 0, вправо - 1, по центру - 3, по ширине - 2	
-		If UBound(aCellAllFormatText) = nMaxLines Then		
+		If UBound(aCellAllFormatText) = nMaxLines Then	
 			aCellWithLines(i) = aCellAllFormatText(i)
 		Else &apos; дополняем &quot;отсутствующие&quot; строки до числа nMaxLines
-			For j = 0 To UBound(aCellAllFormatText)
+		For j = 0 To UBound(aCellAllFormatText)
 				aCellWithLines(j) = aCellAllFormatText(j)
 			Next j
 			For j = UBound(aCellAllFormatText)+1 To nMaxLines
@@ -292,7 +315,7 @@ Function MakeFB2ParasCell( aCellAllFormatText() As Variant, nMaxLines As Integer
 		End If
 	Next i
 	
-	&apos; 2. убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
+	&apos; убираем перевод строки в абзацах, если он есть (чтобы он не стоял между текстом строки и закрывающим тэгом) /Просто для &quot;красоты&quot; fb2 кода. Экспорт корректен и без этого/
 	DelCR( aCellWithLines() )
 	
 	MakeFB2ParasCell = aCellWithLines
@@ -369,13 +392,12 @@ End Function
 
 &apos; обработка проблемных символов, форматирование ячеек и разбивка их на абзацы
 Function MakeWorkCellPara( oTable As Object, sCellName As String, nHeaderRowCount As Integer, nRow As Integer ) As Variant
-	Dim oCell As Object, sFormatCellText As String, i As Integer
 	Dim aCellAllFormatText() As String	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	&apos; форматированная строка ячейки (с учетом коррекции проблемных символов)
-	oCell = oTable.getCellByName(sCellName) &apos; первая ячейка строки
+	Dim oCell As Object : oCell = oTable.getCellByName(sCellName) &apos; первая ячейка строки
 	&apos; форматирование строк inline стилями
-	sFormatCellText = FormatCellPara( oCell, nHeaderRowCount, nRow )
-		
+	Dim sFormatCellText As String : sFormatCellText = FormatCellPara( oCell, nHeaderRowCount, nRow )
+	Dim i As Integer
 	&apos; массив ячейки со всеми ее отформатированными inline стилями абзацами
 	If oCell.IsProtected = True Then &apos; заблокированные ячейки
 		Dim aTemp() As String

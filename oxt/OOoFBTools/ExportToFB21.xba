@@ -35,12 +35,35 @@ Function ReOpenDoc( oDoc As Object ) As Object
 	ReOpenDoc = LoadDocFromUrl( sUrl )
 End Function
 
-&apos; Запуск Формы конвертера
+&apos; Запуск конвертертирования документа в fb2 формат
 Sub ExportToFB21DlgExec()
 	&apos; инициализация сообщений основной формы конвертера в зависимости от локали
 	InitExportToFB21DlgMessage()
 	
-&apos;	&apos; Задаем настройки в переменные по умолчанию
+	Dim oDoc As Object : oDoc = ThisComponent
+	&apos; проверка на наличие вложенных таблиц в ячейки других таблиц
+	If isInnerTableExsist( oDoc ) = True Then
+		Dim Ret As Integer
+		Ret = MsgBox( sETFB2DD.sFB2ExportInnerTable, MB_YESNOCANCEL + MB_DEFBUTTON1 + MB_ICONQUESTION, sConvertorName )
+		If Ret = IDYES Then
+			&apos; прервать конвертацию и запустить инструмент преобразования вложенных таблиц в текст
+			InnerTableToTextStart()
+		ElseIf Ret = IDNO Then
+			&apos; продолжаем конвертацию
+			ExportToFB21Dlg( oDoc )
+		ElseIf Ret = IDCANCEL Then
+			&apos; прервать конвертацию и вернуться к тексту документа
+			Exit Sub		
+		End If
+	Else
+		&apos; продолжаем конвертацию
+		ExportToFB21Dlg( oDoc )
+	End If
+End Sub
+
+&apos; Запуск Формы конвертера
+Sub ExportToFB21Dlg( oDoc As Object )
+	&apos; Задаем настройки в переменные по умолчанию
 &apos;	SetDefaultSettingsToVars()
 &apos;	&apos; считываем настройки из файла в переменные
 &apos;	LoadSettingsToVars()
@@ -52,7 +75,6 @@ Sub ExportToFB21DlgExec()
 	End If
 	
 	&apos; основные проверки
-	Dim oDoc As Object : oDoc = ThisComponent
 	If oDoc.hasLocation() Then
 		sCurDocFile = oDoc.getURL()
 	Else
@@ -126,28 +148,6 @@ Sub ExportToFB21DlgExec()
 	End If
 	
 	oExportToFB21Dlg.execute()
-End Sub
-
-&apos;***************************************************************************
-&apos; отмена экспорта
-Sub ExportToFB21DlgCanceled()
-	oExportToFB21Dlg.endExecute()
-End Sub
-
-&apos;***************************************************************************
-&apos;Доступность выбора расширения архива, если включен режим архивации
-Sub ZipFB2CheckBoxStateChange()
-	If oExportToFB21Dlg.getControl(&quot;ZipFB2CheckBox&quot;).State = 1 Then
-		With oExportToFB21Dlg
-			.getControl(&quot;fb2ZipOptionButton&quot;).Enable = True
-			.getControl(&quot;fbzOptionButton&quot;).Enable = True
-		End With
-	Else
-		With oExportToFB21Dlg
-			.getControl(&quot;fb2ZipOptionButton&quot;).Enable = False
-			.getControl(&quot;fbzOptionButton&quot;).Enable = False
-		End With
-	End If
 End Sub
 
 &apos;**************************************************************************
@@ -390,6 +390,7 @@ Sub ExportDoc()
         	Else
         		IsTransliteration = True
         	End If
+        	
         	&apos;транслитерация ИМЕНИ файла
         	If IsTransliteration = True Then
         		If FileExists( NewTranslatedPath ) Then
@@ -452,6 +453,28 @@ Sub ExportDoc()
         If Dir( getOOoFBToolsTempPath(), 16 ) &lt;&gt; &quot;&quot; Then
         	RmDir getOOoFBToolsTempPath()
         End If
+End Sub
+
+&apos;***************************************************************************
+&apos; отмена экспорта
+Sub ExportToFB21DlgCanceled()
+	oExportToFB21Dlg.endExecute()
+End Sub
+
+&apos;***************************************************************************
+&apos;Доступность выбора расширения архива, если включен режим архивации
+Sub ZipFB2CheckBoxStateChange()
+	If oExportToFB21Dlg.getControl(&quot;ZipFB2CheckBox&quot;).State = 1 Then
+		With oExportToFB21Dlg
+			.getControl(&quot;fb2ZipOptionButton&quot;).Enable = True
+			.getControl(&quot;fbzOptionButton&quot;).Enable = True
+		End With
+	Else
+		With oExportToFB21Dlg
+			.getControl(&quot;fb2ZipOptionButton&quot;).Enable = False
+			.getControl(&quot;fbzOptionButton&quot;).Enable = False
+		End With
+	End If
 End Sub
 
 &apos;***************************************************************************
@@ -1654,7 +1677,7 @@ Function IsCandidateToSections( sArray() As String, lCurrentElement As Long )
 	&apos; возможные кандидаты на обрамление &lt;sections&gt;...&lt;/sections&gt; для уровней, вида 1,текст,2; 1,текст,5
 	IsCandidateToSections = False
 	Dim sElement As String : sElement = sArray(lCurrentElement,1)
-	If sElement=&quot;Para&quot; OR sElement=&quot;ParaCenter&quot; _
+	If sElement=&quot;Para&quot; OR sElement=&quot;ParaCenter&quot; OR sElement=&quot;ParaRight&quot; _
 		OR sElement = sStylePoem Or sElement = sStylePoemTitle Or sElement = sStylePoemSubTitle Or sElement = sStylePoemAuthor _
 		OR sElement = sStyleCite Or sElement = sStyleCiteSubTitle Or sElement = sStyleCiteAuthor _
 		OR sElement = sStyleSubTitle OR sElement = &quot;Image&quot; OR sElement = &quot;Table&quot; OR sElement = &quot;&quot; _
@@ -1938,7 +1961,7 @@ Sub MakeBody( sArray() As String, IsBody As Boolean )
 	Else &apos;секции есть
 		If lIndexOf1Section &gt; 0 Then &apos; что-то есть - записываем до 1-й секции
 			While lCurrentElement &lt; lIndexOf1Section
-				If sArray(lCurrentElement, 1) = &quot;Para&quot; OR sArray(lCurrentElement, 1) = &quot;ParaCenter&quot; OR _
+				If sArray(lCurrentElement, 1) = &quot;Para&quot; OR sArray(lCurrentElement, 1) = &quot;ParaCenter&quot; OR sArray(lCurrentElement, 1) = &quot;ParaRight&quot; OR _
 					sArray(lCurrentElement, 1) = sStylePoemTitle OR sArray(lCurrentElement, 1) = sStylePoem OR sArray(lCurrentElement, 1) = sStylePoemSubTitle OR _
 					sArray(lCurrentElement, 1) = sStyleCiteSubTitle OR sArray(lCurrentElement, 1) = sStyleCite OR _
 					sArray(lCurrentElement, 1) = sStyleSubTitle OR sArray(lCurrentElement, 1) = &quot;&quot; OR _
@@ -2315,12 +2338,16 @@ Sub SaveElements( sArray() As String, sParaStyleName As String, sPara As String,
 				If sID &lt;&gt; &quot;&quot; Then &apos; нашли закладку (ссылку) для текущего элемента
 					If sArray( lCurrentElement, 1 ) = &quot;ParaCenter&quot; Then
 						sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot; style=&quot;&quot;text-align:center;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					ElseIf sArray( lCurrentElement, 1 ) = &quot;ParaRight&quot; Then
+						sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot; style=&quot;&quot;text-align:right;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 					Else
 						sStr = &quot;&lt;p &quot; &amp; &quot;id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 					End If
 				Else &apos; для текущего элемента нет ни одной закладки (и ссылки, соответственно)
 					If sArray( lCurrentElement, 1 ) = &quot;ParaCenter&quot; Then
 						sStr = &quot;&lt;p style=&quot;&quot;text-align:center;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+					ElseIf sArray( lCurrentElement, 1 ) = &quot;ParaRight&quot; Then
+						sStr = &quot;&lt;p style=&quot;&quot;text-align:right;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 					Else
 						sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 					End If
@@ -2328,6 +2355,8 @@ Sub SaveElements( sArray() As String, sParaStyleName As String, sPara As String,
 			Else
 				If sArray( lCurrentElement, 1 ) = &quot;ParaCenter&quot; Then
 					sStr = &quot;&lt;p style=&quot;&quot;text-align:center;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
+				ElseIf sArray( lCurrentElement, 1 ) = &quot;ParaRight&quot; Then
+					sStr = &quot;&lt;p style=&quot;&quot;text-align:right;&quot;&quot;&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				Else
 					sStr = &quot;&lt;p&gt;&quot; &amp; sPara &amp; &quot;&lt;/p&gt;&quot; &amp; chr(10)
 				End If
@@ -2643,6 +2672,7 @@ End Function
 &apos; для хранения сообщений для формы Конвертера ExportToFB21
 Type tExportToFB21DlgData	
 	&apos; Конвертер
+	sFB2ExportInnerTable				As String &apos; Наличие в ячейках таблиц вложенных таблиц
 	sFB2ExportToFB21DlgTitle			As String &apos; Заголовок основной формы Конвертера
 	sFB2ExportProgressBarCreateDialog	As String &apos; Создание диалога
 	sFB2ExportProgressBarInit			As String &apos; Инициализация
@@ -2701,6 +2731,13 @@ Sub InitExportToFB21DlgMessage()
 	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
 		With sETFB2DD
 			&apos; Конвертер
+			.sFB2ExportInnerTable				= &quot;В тексте есть таблицы, в ячейки которых вставлена таблица. Конвертер пока не умеет экспортировать эти вложенные таблицы, &quot; + _
+				&quot;и они просто игнорируются. Чтобы данные этих вложенных таблиц не были потеряны, &quot; + _
+				&quot;их можно трансформировать в текст с помощью интерактивного инструмента &quot;&quot;Преобразовать вложенные таблицы в текст&quot;&quot;.&quot; + chr(10) + chr(10) + _
+				&quot;Выберите, что нужно сделать:&quot; + chr(10) + chr(10) + _
+				&quot;(Да): Запустить Преобразование вложенных таблиц в текст&quot; + chr(10) + _
+				&quot;(Нет): Продолжить конвертацию&quot; + chr(10) + _
+				&quot;(Отменить): Прервать конвертацию&quot; + chr(10)
 			.sFB2ExportProgressBarCreateDialog	= &quot;Создание диалога&quot;
 			.sFB2ExportProgressBarInit			= &quot;Инициализация&quot;
 			.sFB2ExportProgressBarCovers		= &quot;Сбор данных об Обложках&quot;
@@ -2729,6 +2766,13 @@ Sub InitExportToFB21DlgMessage()
 	Else
 		With sETFB2DD
 			&apos; Converter
+			.sFB2ExportInnerTable				= &quot;The text has tables with tables nested in cells. &quot; + _
+				&quot;The Converter is not capable so far to export such nested tables and they are simply ignored. &quot; + _
+				&quot;To preserve the data from such nested tables, they can be converted into text by using the tool of Conversion of nested tables to text.&quot; + chr(10) + chr(10) + _
+				&quot;Choose what to proceed with:&quot; + chr(10) + chr(10) + _
+				&quot;(YES): Launch tool for Conversion of nested tables to text&quot; + chr(10) + _
+				&quot;(NO):Continue conversion&quot; + chr(10) + _
+				&quot;(CANCEL): Stop conversion&quot; + chr(10)
 			.sFB2ExportProgressBarCreateDialog	= &quot;Creating the Dialog&quot;
 			.sFB2ExportProgressBarInit			= &quot;Initialization&quot;
 			.sFB2ExportProgressBarCovers		= &quot;Data Collection Cover&quot;

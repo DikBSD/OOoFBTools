@@ -1364,65 +1364,6 @@ End Function
 &apos; ====================================================================================
 &apos; 								Корректура строки
 &apos; ====================================================================================
-&apos; удаление разрыва строки (для LO, у которого в regexp - баг)
-Sub LOBreakLineTo( bDel, bPar, bSpace )
-	Dim oDoc   		As Object : oDoc		= ThisComponent.CurrentController.Frame
-	Dim Dispatcher	As Object : Dispatcher	= createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
-	Dim args1(18) As New com.sun.star.beans.PropertyValue
-	Dim ReplaceSym As String
-	If bDel = True Then
-		&apos; Удаляем разрыв строки
-		ReplaceSym = &quot;&quot;
-	ElseIf bPar = True Then
-		&apos; Заменяем разрыв строки на абзац
-		ReplaceSym = &quot;\n&quot;
-	ElseIf bSpace = True Then
-		&apos; Заменяем разрыв строки на 1 пробел
-		ReplaceSym = &quot; &quot;
-	End If
-	
-	args1(0).Name = &quot;SearchItem.StyleFamily&quot;
-	args1(0).Value = 2
-	args1(1).Name = &quot;SearchItem.CellType&quot;
-	args1(1).Value = 0
-	args1(2).Name = &quot;SearchItem.RowDirection&quot;
-	args1(2).Value = true
-	args1(3).Name = &quot;SearchItem.AllTables&quot;
-	args1(3).Value = false
-	args1(4).Name = &quot;SearchItem.Backward&quot;
-	args1(4).Value = false
-	args1(5).Name = &quot;SearchItem.Pattern&quot;
-	args1(5).Value = false
-	args1(6).Name = &quot;SearchItem.Content&quot;
-	args1(6).Value = false
-	args1(7).Name = &quot;SearchItem.AsianOptions&quot;
-	args1(7).Value = false
-	args1(8).Name = &quot;SearchItem.AlgorithmType&quot;
-	args1(8).Value = 1
-	args1(9).Name = &quot;SearchItem.SearchFlags&quot;
-	args1(9).Value = 65536
-	args1(10).Name = &quot;SearchItem.SearchString&quot;
-	args1(10).Value = &quot;\n&quot;
-	args1(11).Name = &quot;SearchItem.ReplaceString&quot;
-	args1(11).Value = ReplaceSym
-	args1(12).Name = &quot;SearchItem.Locale&quot;
-	args1(12).Value = 255
-	args1(13).Name = &quot;SearchItem.ChangedChars&quot;
-	args1(13).Value = 2
-	args1(14).Name = &quot;SearchItem.DeletedChars&quot;
-	args1(14).Value = 2
-	args1(15).Name = &quot;SearchItem.InsertedChars&quot;
-	args1(15).Value = 2
-	args1(16).Name = &quot;SearchItem.TransliterateFlags&quot;
-	args1(16).Value = 1280
-	args1(17).Name = &quot;SearchItem.Command&quot;
-	args1(17).Value = 3
-	args1(18).Name = &quot;Quiet&quot;
-	args1(18).Value = True
-
-	Dispatcher.executeDispatch( oDoc, &quot;.uno:ExecuteSearch&quot;, &quot;&quot;, 0, args1() )
-End Sub
-
 &apos; Строка sSource изменяется - в ней до sBefore вставляется sInsert
 Function InsertInString( sSource As String, sBefore As String, sInsert As String ) As String
 	Dim i As Long, sStr1 As String, sStr2 As String
@@ -1758,6 +1699,25 @@ Sub ResetAllTablesProtection()
 	_UnoResetAllTablesProtection()
 End Sub
 
+&apos; проверка на наличие вложенных таблиц в ячейки других таблиц
+Function isInnerTableExsist( oDoc As Object )
+	Dim oTables As Object : oTables = oDoc.getTextTables()
+	If oTables.getCount() &lt;&gt; 0 Then
+		Dim i As Integer
+		&apos; список вложенных таблиц
+		For i=0 To oTables.getCount() - 1
+			Dim oTable As Object : oTable = oTables.getByIndex(i)
+			Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+			If Not IsEmpty( oCurs.TextTable ) Then
+				&apos; нашли вложенную таблицу в ячейку другой
+				isInnerTableExsist = True
+				Exit Function
+			End If
+		Next i
+	End If
+	isInnerTableExsist = False
+End Function
+
 &apos; список названий всех вложенных таблиц в ячейки других таблиц
 Function getInnerTableNames( oDoc As Object )
 	Dim aTablesName()	As String &apos; список всех вложенных таблиц
@@ -1871,7 +1831,7 @@ End Function
 &apos; число столбцов в строке стожной таблицы
 Function GetColumnCountInRow(oTable As Object, nCell As Integer, CellNames() ) As Integer
 	Dim oCell As Object, sNumber As String, c As String
-	Dim nColumnCount As Integer, i As Integer, CellCursor
+	Dim nColumnCount As Integer, i As Integer, CellCursor As Object
 	nColumnCount = nCell
 	nColumnCount = nColumnCount + 1
 	i = 0
@@ -1892,15 +1852,30 @@ End Function
 
 &apos;  возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы
 Function GetMaxLineInRow(oTable, CellNames, iCel As Integer) As Integer
-	Dim nMaxLines As Integer, nLines As Integer, iCol As Integer
-	Dim Cell
-	nMaxLines = 0
+	Dim nMaxLines As Integer : nMaxLines = 0
+	Dim iCol As Integer
+	&apos; Dim nLines As Integer
 	For iCol = 0 To oTable.Columns.Count-1
-		Cell = oTable.getCellByName(CellNames(iCel))
-		nLines = UBound( Split( Cell.getString(), chr(10) ) )
-		If nMaxLines &lt; nLines Then
-			nMaxLines = nLines
+		Dim oCell As Object : oCell = oTable.getCellByName(CellNames(iCel))
+		&apos; алгоритм игнорирует строки вложенных таблиц в ячейку
+		Dim oCellParEnum As Object : oCellParEnum = oCell.createEnumeration()
+		Dim i As Integer : i = -1
+		Do While oCellParEnum.hasMoreElements()
+			If oCellParEnum.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+				&apos; только для текста (вложенные таблицы пропускаем)
+				i = i + 1
+			End If
+			oCellParEnum.nextElement()
+		Loop
+		If nMaxLines &lt; i Then
+			nMaxLines = i
 		End If
+		
+		&apos; алгоритм не игнорирует строки вложенных таблиц в ячейку
+		&apos;nLines = UBound( Split( oCell.getString(), chr(10) ) )
+		&apos;If nMaxLines &lt; nLines Then
+		&apos;	nMaxLines = nLines
+		&apos;End If
 		iCel = iCel+1
 	Next iCol
 	GetMaxLineInRow = nMaxLines
@@ -1909,16 +1884,31 @@ End Function
 &apos; возвращает максимальное число строк (абзацев) в ячейке для определенной строки таблицы,
 &apos; учитывая то, что защищенная ячейка игнорируется и считается, что содержит 1 абзац. Т.е. все абзацы в ней сливаем вместе
 Function GetMaxLineInRowWithProtect(oTable, CellNames, iCel As Integer, nColumns As Integer) As Integer
-	Dim nMaxLines As Long, nLines As Long, iCol As Long
-	Dim Cell
-	nMaxLines = 0
+	Dim nMaxLines As Long : nMaxLines = 0
+	Dim iCol As Long
+	&apos;Dim nLines As Long
 	For iCol = 0 To nColumns-1
-		Cell = oTable.getCellByName(CellNames(iCel))
-		If Cell.IsProtected &lt;&gt; True Then &apos; пропускаем заблокированные ячейки
-			nLines = UBound( Split( Cell.getString(), chr(10) ) )
-			If nMaxLines &lt; nLines Then
-				nMaxLines = nLines
+		Dim oCell As Object : oCell = oTable.getCellByName(CellNames(iCel))
+		If oCell.IsProtected &lt;&gt; True Then &apos; пропускаем заблокированные ячейки
+			&apos; алгоритм игнорирует строки вложенных таблиц в ячейку
+			Dim oCellParEnum As Object : oCellParEnum = oCell.createEnumeration()
+			Dim i As Integer : i = -1
+			Do While oCellParEnum.hasMoreElements()
+				If oCellParEnum.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+					&apos; только для текста (вложенные таблицы пропускаем)
+					i = i + 1
+				End If
+				oCellParEnum.nextElement()
+			Loop
+			If nMaxLines &lt; i Then
+				nMaxLines = i
 			End If
+			
+			&apos; алгоритм не игнорирует строки вложенных таблиц в ячейку
+			&apos;nLines = UBound( Split( oCell.getString(), chr(10) ) )
+			&apos;If nMaxLines &lt; nLines Then
+			&apos;	nMaxLines = nLines
+			&apos;End If
 		End If
 		iCel = iCel+1
 	Next iCol
