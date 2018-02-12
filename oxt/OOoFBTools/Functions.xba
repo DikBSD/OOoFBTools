@@ -1706,8 +1706,14 @@ Function isInnerTableExsist( oDoc As Object )
 		Dim i As Integer
 		&apos; список вложенных таблиц
 		For i=0 To oTables.getCount() - 1
-			Dim oTable As Object : oTable = oTables.getByIndex(i)
-			Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+			Dim oTable	As Object : oTable	= oTables.getByIndex(i)
+			Dim oText	As Object : oText	= oTable.getAnchor().getText()
+			Dim oCurs	As Object
+			If oText.ImplementationName = &quot;SwXTextFrame&quot; Then
+				oCurs = oText.getAnchor().getText().createTextCursor() &apos; родительская таблица
+			Else
+				oCurs = oText.createTextCursor() &apos; родительская таблица
+			End If
 			If Not IsEmpty( oCurs.TextTable ) Then
 				&apos; нашли вложенную таблицу в ячейку другой
 				isInnerTableExsist = True
@@ -1725,8 +1731,13 @@ Function getInnerTableNames( oDoc As Object )
 	Dim i As Integer
 	&apos; список вложенных таблиц
 	For i=0 To oTables.getCount() - 1
-		Dim oTable As Object : oTable = oTables.getByIndex(i)
-		Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+		Dim oTable	As Object : oTable = oTables.getByIndex(i)
+		Dim oCurs	As Object
+		If oText.ImplementationName = &quot;SwXTextFrame&quot; Then
+			oCurs = oText.getAnchor().getText().createTextCursor() &apos; родительская таблица
+		Else
+			oCurs = oText.createTextCursor() &apos; родительская таблица
+		End If
 		If Not IsEmpty( oCurs.TextTable ) Then
 			AddNewItemToArray1( aTablesName(), oTable.getName() )
 		End If

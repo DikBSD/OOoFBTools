@@ -35,8 +35,14 @@ Sub InnerTableToTextStart()
 	Dim i As Integer
 	&apos; список вложенных таблиц
 	For i=0 To oTables.getCount() - 1
-		Dim oTable As Object : oTable = oTables.getByIndex(i)
-		Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+		Dim oTable	As Object : oTable	= oTables.getByIndex(i)
+		Dim oText	As Object : oText	= oTable.getAnchor().getText()
+		Dim oCurs	As Object
+		If oText.ImplementationName = &quot;SwXTextFrame&quot; Then
+			oCurs = oText.getAnchor().getText().createTextCursor() &apos; родительская таблица
+		Else
+			oCurs = oText.createTextCursor() &apos; родительская таблица
+		End If
 		If Not IsEmpty( oCurs.TextTable ) Then
 			&apos; нашли вложенную таблицу в ячейку другой
 			AddNewItemToArray3SBB( aTablesName(), oTable.getName(), False, False )
@@ -86,8 +92,14 @@ Sub FindNextInnerTable()
 	
 		Dim oTables As Object : oTables = oDoc.getTextTables()
 		For i = 0 To oTables.getCount() - 1
-			Dim oTable As Object : oTable = oTables.getByIndex(i)
-			Dim oCurs : oCurs = oTable.getAnchor().getText().createTextCursor() &apos; родительская таблица
+			Dim oTable	As Object : oTable	= oTables.getByIndex(i)
+			Dim oText	As Object : oText	= oTable.getAnchor().getText()
+			Dim oCurs	As Object
+			If oText.ImplementationName = &quot;SwXTextFrame&quot; Then
+				oCurs = oText.getAnchor().getText().createTextCursor() &apos; родительская таблица
+			Else
+				oCurs = oText.createTextCursor() &apos; родительская таблица
+			End If
 			If Not IsEmpty( oCurs.TextTable ) Then
 				&apos; нашли вложенную таблицу в ячейку другой
 				Dim otxtCurs As Object : otxtCurs = oTable.getCellByName(&quot;A1&quot;).createTextCursor()
