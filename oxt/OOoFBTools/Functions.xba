@@ -166,7 +166,14 @@ Sub embeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional P
 	For l = 0 To DrawPageCount - 1
 		oGraphic = oDoc.getDrawPage().getByIndex(l)
 		If isRasterGraphic( oGraphic ) Then
-			If InStr(oGraphic.GraphicURL, &quot;vnd.sun&quot;) = 0 Then
+			Dim URL As String
+			If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+				URL = oGraphic.GraphicUrl
+			Else
+				URL = oGraphic.Graphic.OriginURL
+			End If
+	
+			If InStr(URL, &quot;vnd.sun&quot;) = 0 Then
 				AddNewItemToObjectArray1( oGraphics(), oGraphic )
 			End If
     	End If
@@ -177,7 +184,13 @@ Sub embeddingAllGraphicLinksToDoc( ByRef Optional oProgressBar, ByRef Optional P
 		oProgressBar.start( ProgressLabel, UBound( oGraphics() ) )
 	End If
 	For l = 0 To UBound( oGraphics() )
-		If FileExists( oGraphics(l).GraphicUrl ) Then
+		If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+			URL = oGraphics(l).GraphicUrl
+		Else
+			URL = oGraphics(l).Graphic.OriginURL
+		End If
+		
+		If FileExists( URL ) Then
 			oText = oGraphics(l).getAnchor().getText()
 			embeddingGraphicLinkToDoc( oDoc, oGraphics(l) )
 			oText.removeTextContent( oGraphics(l) )
@@ -195,13 +208,24 @@ Sub embeddingGraphicLinkToDoc ( oDoc, oGraphic )
 	Dim oGraphicObject	As Object : oGraphicObject	= oDoc.createInstance(&quot;com.sun.star.text.GraphicObject&quot;)
 	oDoc.getDrawPage().add( oShape )
 
+  	Dim URL As String
+	If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+		URL = oGraphic.GraphicUrl
+	Else
+		URL = oGraphic.Graphic.OriginURL
+	End If
+  	
   	Dim props(0) As New com.sun.star.beans.PropertyValue
 	props(0).Name  = &quot;URL&quot;
-	props(0).Value = oGraphic.GraphicUrl
+	props(0).Value = URL
 
 	oShape.Graphic = oProvider.queryGraphic( props() )
 
-	oGraphicObject.GraphicUrl	= oShape.GraphicUrl
+	If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+		oGraphicObject.GraphicUrl			= oShape.GraphicUrl
+	Else
+		oGraphicObject.Graphic.OriginURL	= oShape.GraphicUrl
+	End If
 	oGraphicObject.Width		= oGraphic.getSize().Width
 	oGraphicObject.Height		= oGraphic.getSize().Height
 	oGraphicObject.AnchorType	= oGraphic.AnchorType &apos;com.sun.star.text.TextContentAnchorType.AS_CHARACTER
@@ -1699,7 +1723,17 @@ Sub ResetAllTablesProtection()
 	_UnoResetAllTablesProtection()
 End Sub
 
-&apos; проверка на наличие вложенных таблиц в ячейки других таблиц
+&apos; Есть ли вложенная таблица в ячейку другой таблицы?
+Function IsInnerTable( oTable As Object ) As Boolean
+	IsInnerTable = False
+	On Error GoTo Err &apos; если вложенной таблицы нет
+	Dim oTable1 As Object : oTable1 = oTable.getAnchor().TextTable
+	IsInnerTable = True
+	Exit Function
+	Err: IsInnerTable = False
+End Function
+
+&apos; проверка на наличие вложенных таблиц в ячейки других таблиц во всем документе
 Function isInnerTableExsist( oDoc As Object )
 	Dim oTables As Object : oTables = oDoc.getTextTables()
 	If oTables.getCount() &lt;&gt; 0 Then
@@ -1707,14 +1741,7 @@ Function isInnerTableExsist( oDoc As Object )
 		&apos; список вложенных таблиц
 		For i=0 To oTables.getCount() - 1
 			Dim oTable	As Object : oTable	= oTables.getByIndex(i)
-			Dim oText	As Object : oText	= oTable.getAnchor().getText()
-			Dim oCurs	As Object
-			If oText.ImplementationName = &quot;SwXTextFrame&quot; Then
-				oCurs = oText.getAnchor().getText().createTextCursor() &apos; родительская таблица
-			Else
-				oCurs = oText.createTextCursor() &apos; родительская таблица
-			End If
-			If Not IsEmpty( oCurs.TextTable ) Then
+			If IsInnerTable( oTable ) = True Then
 				&apos; нашли вложенную таблицу в ячейку другой
 				isInnerTableExsist = True
 				Exit Function
@@ -1732,13 +1759,8 @@ Function getInnerTableNames( oDoc As Object )
 	&apos; список вложенных таблиц
 	For i=0 To oTables.getCount() - 1
 		Dim oTable	As Object : oTable = oTables.getByIndex(i)
-		Dim oCurs	As Object
-		If oText.ImplementationName = &quot;SwXTextFrame&quot; Then
-			oCurs = oText.getAnchor().getText().createTextCursor() &apos; родительская таблица
-		Else
-			oCurs = oText.createTextCursor() &apos; родительская таблица
-		End If
-		If Not IsEmpty( oCurs.TextTable ) Then
+		If IsInnerTable( oTable ) = True Then
+			&apos; нашли вложенную таблицу в ячейку другой
 			AddNewItemToArray1( aTablesName(), oTable.getName() )
 		End If
 	Next i

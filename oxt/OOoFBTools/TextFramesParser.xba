@@ -33,11 +33,11 @@ End Sub
 
 &apos; парсер графики и сносок для Врезок - Общий для разных видов экспорта Врезок
 Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
-	Dim oCEnum As Object, oSectEnum As Object, oSect As Object, oContent As Object 
+	Dim oSect As Object, oContent As Object 
 	Dim sExt As String
-	Dim sFormatPara : sFormatPara = &quot;&quot; &apos; отформатированный fb2-кодом текст
+	Dim sFormatPara As String : sFormatPara = &quot;&quot; &apos; отформатированный fb2-кодом текст
 	
-	oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+	Dim oCEnum As Object : oCEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
 	Do While oCEnum.hasMoreElements()
 		oContent = oCEnum.nextElement()
 		If isRasterGraphic( oContent ) Then
@@ -59,7 +59,7 @@ Function GraphicsFootEndNoteTextFrameParser( oPar As Object )
 	Loop
 
 	&apos; Символы
-	oSectEnum = oPar.createEnumeration()
+	Dim oSectEnum As Object : oSectEnum = oPar.createEnumeration()
 	Do While oSectEnum.hasMoreElements()
 		oSect = oSectEnum.nextElement()				
 		If oSect.TextPortionType = &quot;Frame&quot; Then
@@ -105,12 +105,12 @@ End Function
 
 &apos; парсер текстовой врезки как таблицы
 Sub TextFrameTableParser( oCont As Object )
-	Dim oParEnum As Object, oPar As Object
+	Dim oPar As Object
 	Dim sFormatPara As String, sTable As String
 		
 	Dim nMaxCollCount As Integer &apos; max число столбцов в таблице - из всех таблиц во Врезке
 	Dim TableRows() As tTableRowsInCut &apos; массив, хранящий данные по каждой структуре или параграфу Врезки
-	oParEnum = oCont.createEnumeration()
+	Dim oParEnum As Object : oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
@@ -170,10 +170,10 @@ End Sub
 
 &apos; парсер текстовой врезки как цитаты
 Sub TextFrameCiteParser( oCont As Object )
-	Dim oParEnum As Object, oPar As Object
+	Dim oPar As Object
 	Dim sFormatPara As String, sCite As String
 	
-	oParEnum = oCont.createEnumeration()
+	Dim oParEnum As Object : oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
@@ -205,10 +205,10 @@ End Sub
 
 &apos; парсер текстовой врезки как текста
 Sub TextFrameTextParser( oCont As Object )
-	Dim oParEnum As Object, oPar As Object
+	Dim oPar As Object
 	Dim sFormatPara As String, sText As String
 
-	oParEnum = oCont.createEnumeration()
+	Dim oParEnum As Object : oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
@@ -242,11 +242,11 @@ End Sub
 &apos; ===============================================================================================
 &apos; парсер текстовой врезки как структуры
 Sub TextFrameStructParser( oCont As Object )
-	Dim oParEnum As Object, oPar As Object
+	Dim oPar As Object
 	Dim sFormatPara As String
 	Dim sBookmark As String : sBookmark = &quot;&quot;
 
-	oParEnum = oCont.createEnumeration()
+	Dim oParEnum As Object : oParEnum = oCont.createEnumeration()
 	Do While oParEnum.hasMoreElements()
 		oPar = oParEnum.nextElement()
 		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
@@ -304,8 +304,7 @@ Function ImagesTextInCutParser( oContent As Object, sExt As String ) As String
 End Function
 
 Sub AddNewItemTotTableRowsInCutArray( sArray() As tTableRowsInCut, sStr As String, isTable As Boolean )
-	Dim j As Long
-	j = Ubound(sArray()) + 1
+	Dim j As Long : j = Ubound(sArray()) + 1
 	ReDim Preserve sArray(j)
 	sArray(j).str = sStr
 	sArray(j).isTable = isTable
@@ -315,7 +314,7 @@ End Sub
 Function InsertColspanForInCutRow( sText As String, nCollMaxInTable As Integer ) As String
 	Dim sStr As String, i As Integer
 	sStr = sText
-	If Instr( sStr, &quot;&lt;td/&gt;&quot; )&gt;0 Or Instr( sStr, &quot;&lt;th/&gt;&quot; )&gt;0 Then
+	If Instr( sStr, &quot;&lt;td/&gt;&quot; ) &gt; 0 Or Instr( sStr, &quot;&lt;th/&gt;&quot; ) &gt; 0 Then
 		&apos; для &quot;пустых&quot; тэгов
 		InsertInString( sStr, &quot;/&gt;&quot;, &quot; colspan=&quot;&quot;&quot; &amp; nCollMaxInTable &amp; &quot;&quot;&quot;/&quot; )
 	Else
@@ -349,8 +348,7 @@ End Function
 &apos; возвращает валидное расширение файла Графики
 Function GetValidateForFB2FileExt( oContent As Object ) As String
 	&apos; определяем тип (расширение) картинки
-	Dim sExt As String
-	sExt = GetGraphicExt( oContent )
+	Dim sExt As String : sExt = GetGraphicExt( oContent )
 	&apos; приведение расширения графики к допустимому для fb2-читалок
 	sExt = ValidateFileExt( sExt )
 	GetValidateForFB2FileExt = sExt

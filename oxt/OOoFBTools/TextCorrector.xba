@@ -2186,28 +2186,28 @@ Sub InsertSpaceBetweenNumLetter( oDoc, oReplace )
 &apos;	End With
 &apos;	oDoc.ReplaceAll(oReplace)
 	
-	Dim oCurs As Object : oCurs = oDoc.Text.createTextCursor()
-	oCurs.gotoStart( False ) &apos; на начало документа
+	Dim oTextCursor As Object : oTextCursor = oDoc.Text.createTextCursor()
+	oTextCursor.gotoStart( False ) &apos; на начало документа
 	&apos; поиск числа, слившихся со следующим за этим числом словом
-	Dim vFound : vFound = FindNumbersText( oCurs )
+	Dim vFound As Variant : vFound = FindNumbersText( oTextCursor )
 	If Not IsNull( vFound ) Then
 		Do While ( Not IsNull( vFound ) )
-			vFound = FindNumbersText( oCurs )
+			vFound = FindNumbersText( oTextCursor )
 		Loop
 	End If
 	
 	&apos; поиск числа, слившихся с предыдущим до этого числа словом
-	oCurs.gotoStart( False ) &apos; на начало документа
-	vFound = FindTextNumbers( oCurs )
+	oTextCursor.gotoStart( False ) &apos; на начало документа
+	vFound = FindTextNumbers( oTextCursor )
 	If Not IsNull( vFound ) Then
 		Do While ( Not IsNull( vFound ) )
-			vFound = FindTextNumbers( oCurs )
+			vFound = FindTextNumbers( oTextCursor )
 		Loop
 	End If
 End Sub
 
 &apos; поиск числа, слившихся со следующим за этим числом словом
-Function FindNumbersText( oCurs As Object ) As Variant
+Function FindNumbersText( oTextCursor As Object ) As Variant
 	Dim oSearch : oSearch = ThisComponent.createSearchDescriptor()
 	With oSearch
 		.SearchRegularExpression = True
@@ -2215,14 +2215,19 @@ Function FindNumbersText( oCurs As Object ) As Variant
 		.SearchString = &quot;([0-9]+)([а-яА-ЯёЁ]{2,})&quot;
 	End With
 	
-	Dim vFound : vFound = ThisComponent.findNext( oCurs, oSearch )
+	Dim vFound As Variant : vFound = ThisComponent.findNext( oTextCursor, oSearch )
 	If Not IsNull(vFound) Then
-		oCurs.gotoRange( vFound, False )
-		oCurs.collapseToEnd()
-		&apos; проверка, число - в верхнем индексе. Если, то - пропускаем. Иначе - вставка пробела.
-		Dim oTextCurs As Object : oTextCurs = vFound.Text.createTextCursorByRange( vFound.Start )
-		If ExtendFoundToAllNumbers( oTextCurs ) = True Then
-			oTextCurs.String = oTextCurs.String + &quot; &quot;
+&apos;		On Error Resume Next
+		If Not IsEmpty( vFound.TextFrame ) Then 
+			Dim oCursor As Variant : oCursor = vFound.Text.createTextCursorByRange( vFound.End )
+			oTextCursor = oCursor
+		End If
+		oTextCursor.gotoRange( vFound, False )
+		oTextCursor.collapseToEnd()
+		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела.
+		Dim oTextCursEdit As Object : oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.Start )
+		If ExtendFoundToAllNumbers( oTextCursEdit ) = True Then
+			oTextCursEdit.String = oTextCursEdit.String + &quot; &quot;
 		End If
 	End If
 	FindNumbersText = vFound
@@ -2254,7 +2259,7 @@ Function ExtendFoundToAllNumbers( ByRef vFound ) As Boolean
 End Function
 
 &apos; поиск числа, слившихся с предыдущим до этого числа словом
-Function FindTextNumbers( oCurs As Object ) As Variant
+Function FindTextNumbers( oTextCursor As Object ) As Variant
 	Dim oSearch : oSearch = ThisComponent.createSearchDescriptor()
 	With oSearch
 		.SearchRegularExpression = True
@@ -2262,15 +2267,19 @@ Function FindTextNumbers( oCurs As Object ) As Variant
 		.SearchString = &quot;([а-яА-ЯёЁ]+)([0-9]+)&quot;
 	End With
 	
-	Dim vFound : vFound = ThisComponent.findNext( oCurs, oSearch )
+	Dim vFound As Variant : vFound = ThisComponent.findNext( oTextCursor, oSearch )
 	If Not IsNull(vFound) Then
-		On Error Resume Next
-		oCurs.gotoRange( vFound, False )
-		oCurs.collapseToEnd()
-		&apos; проверка, число - в верхнем индексе. Если, то - пропускаем. Иначе - вставка пробела.
-		Dim oTextCurs As Object : oTextCurs = vFound.Text.createTextCursorByRange( vFound.End )
-		If CollapsFoundToAllNumbers( oTextCurs ) = True Then
-			oTextCurs.String = &quot; &quot; + oTextCurs.String
+&apos;		On Error Resume Next
+		If Not IsEmpty( vFound.TextFrame ) Then 
+			Dim oCursor As Variant : oCursor = vFound.Text.createTextCursorByRange( vFound.End )
+			oTextCursor = oCursor
+		End If
+		oTextCursor.gotoRange( vFound, False )
+		oTextCursor.collapseToEnd()
+		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела.
+		Dim oTextCursEdit As Object : oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.End )
+		If CollapsFoundToAllNumbers( oTextCursEdit ) = True Then
+			oTextCursEdit.String = &quot; &quot; + oTextCursEdit.String
 		End If
 	End If
 	FindTextNumbers = vFound

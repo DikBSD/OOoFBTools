@@ -150,28 +150,20 @@ Sub SelectFNText( ByRef oDocControl As Object, ByRef ovCurs As Object )
 		If s = chr(32) Or s = chr(160) Or s = chr(9) Or s = &quot;.&quot; Then &apos; пробел, неразрывный пробле, табуляция или точка
 			ovCurs.goRight( 1, False )
 		Else
-			If oLB.SelectedItemPos = 1 Then
-				&apos; для цифр в верхнем индексе
-				If otxtTempCurs.CharEscapement &gt; 0 Then
-					If IsNumeric( s ) Then &apos; цифра в верхнем индексе
-						ovCurs.goRight( 1, False )
-					Else &apos; символ в верхнем индексе
-						&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
-						Exit Do
-					End If
-				Else
+			&apos; для цифр в верхнем индексе
+			If otxtTempCurs.CharEscapement &gt; 0 Then
+				If IsNumeric( s ) Then &apos; цифра в верхнем индексе
+					ovCurs.goRight( 1, False )
+				Else &apos; символ в верхнем индексе
+					&apos; TODO ввести опцию: ищем только цифры или еще и символы в верхнем индексе (неверно распознанная цифра после OCR)
 					Exit Do
 				End If
-			Else
+			ElseIf otxtTempCurs.CharEscapement = 0 Then
 				&apos; для цифр без индекса
-				If otxtTempCurs.CharEscapement = 0 Then
-					If IsNumeric( s ) Then &apos; цифра без индекса
-						ovCurs.goRight( 1, False )
-					Else &apos; символ без индекса
-						&apos; TODO ввести опцию: ищем только цифры или еще и символы  (неверно распознанная цифра после OCR)
-						Exit Do
-					End If
-				Else
+				If IsNumeric( s ) Then &apos; цифра без индекса
+					ovCurs.goRight( 1, False )
+				Else &apos; символ без индекса
+					&apos; TODO ввести опцию: ищем только цифры или еще и символы  (неверно распознанная цифра после OCR)
 					Exit Do
 				End If
 			End If

@@ -105,6 +105,10 @@ Sub MakeGraphic( oPara As Object, oContent As Object, bIsText As Boolean, sParag
 	Dim sExt As String : sExt = ValidateFileExt( GetGraphicExt( oContent ) )
 	
 	If bIsText Then &apos; Только для основного текста документа (не для таблиц и Врезок)
+		&apos; проверка, не идет ли одна картинка следом за другой? Тогда вставляем между ними &lt;empty-line /&gt;
+		If sPrevStyle = &quot;Image&quot; Then
+			AddLevelToBodyArray( sBodyParagraphs(), &quot;&lt;empty-line /&gt;&quot;, &quot;&quot;, &quot;&quot;, False ) &apos; для валидности
+		End If
 		&apos; создание тэгов картинок
 		If bIsFootnote = True Then
 			If oContent.AnchorType = 1 Then
@@ -141,47 +145,54 @@ End Sub
 
 &apos; данные графики и ее расширение
 Function GetGraphicExt( ByVal oContent As Object ) As String
+	Dim URL As String
+	If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+		URL = oContent.GraphicUrl
+	Else
+		URL = oContent.Graphic.OriginURL
+	End If
+				
 	Dim sExt As String, sFD As tFileData
 	If oContent.ShapeType = &quot;com.sun.star.drawing.GraphicObjectShape&quot; Then
 		&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
-		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+		If InStr( URL, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
-			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
-			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+			&apos; URL=&quot;file:///....&quot;. oContent.Graphic = Null
+			sFD = GetFileData( ConvertFromURL( URL ) )
 			sExt = sFD.sExt
-		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
-					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
-			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
-			sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+		ElseIf InStr( URL, &quot;http:/&quot; ) &gt; 0 Or InStr( URL, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( URL, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			&apos; URL=&quot;http:///....&quot; или URL=&quot;ftp:///....&quot;. oContent.Graphic = Null
+			sFD = GetFileData( ConvertFromURL( URL ) )
 			sExt = sFD.sExt
 		Else
 			&apos; Картинка &quot;встроена&quot; в файл:
-			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+			&apos; URL=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; )+1, Len(oContent.Graphic.MimeType) )
 		End If
 	Else
 		&apos;If oContent.FrameStyleName = &quot;Graphics&quot; Or oContent.FrameStyleName = &quot;Frame&quot; Or oContent.FrameStyleName = &quot;Frameformat&quot; Then &apos; Картинки 
 		If oContent.ImplementationName = &quot;SwXTextGraphicObject&quot; Then &apos; Картинки 
 			&apos; 1. встроенные в текст или 2. ссылки на них - сами картинки лежат где-то на диске
-			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+			If InStr( URL, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
-				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
-				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+				&apos; URL=&quot;file:///....&quot;. oContent.Graphic = Null
+				sFD = GetFileData( ConvertFromURL( URL ) )
 				sExt = sFD.sExt		
-			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
-					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
-				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
-				sFD = GetFileData( ConvertFromURL( oContent.GraphicUrl ) )
+			ElseIf InStr( URL, &quot;http:/&quot; ) &gt; 0 Or InStr( URL, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( URL, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+				&apos; URL=&quot;http:///....&quot; или URL=&quot;ftp:///....&quot;. oContent.Graphic = Null
+				sFD = GetFileData( ConvertFromURL( URL ) )
 				sExt = sFD.sExt	
 			ElseIf Not IsNull( oContent.Graphic ) Then
 				&apos; Картинка &quot;встроена&quot; в файл:
-				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+				&apos; URL=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 				sExt = Mid( oContent.Graphic.MimeType, InStr( oContent.Graphic.MimeType, &quot;/&quot; ) + 1, Len(oContent.Graphic.MimeType) )
 			Else
 				sExt = sAnyAs
 			End If
 		Else &apos; OLE (Диаграммы) или Formula:
-			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+			&apos; URL отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			sExt = sOLEAs
 		End if
 	End If
@@ -207,6 +218,13 @@ End Function
 
 &apos; сохранение картинки в файл png или jpeg
 Sub	SaveGraphicToFile( oContent As Object, sExt As String)
+	Dim URL As String
+	If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+		URL = oContent.GraphicUrl
+	Else
+		URL = oContent.Graphic.OriginURL
+	End If
+	
 	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
 	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 	
@@ -222,22 +240,22 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 
 	If oContent.supportsService( graphicService ) Then
 		&apos; 1. встроенные в текст или 2. ссылки на них (сами картинки лежат где-то на диске)
-		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+		If InStr( URL, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 			&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
-			&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
-			sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+			&apos; URL=&quot;file:///....&quot;. oContent.Graphic = Null
+			sFileNameURL = ConvertFromURL( URL )
 			&apos; //TODO Доделать - преобразование файла в png или jpg (как в настройках), и копирование его в рабочую временную папку
 			If FileExists( sFileNameURL ) Then
 				FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
 			End If
 			sFileNameURL = GetOOoFBToolsImageURL( sExt )
-		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
-					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
-			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+		ElseIf InStr( URL, &quot;http:/&quot; ) &gt; 0 Or InStr( URL, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( URL, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			&apos; URL=&quot;http:///....&quot; или URL=&quot;ftp:///....&quot;. oContent.Graphic = Null
 			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		Else
 			&apos; Картинка &quot;встроена&quot; в файл:
-			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+			&apos; URL=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
 		End If
@@ -248,27 +266,27 @@ Sub	SaveGraphicToFile( oContent As Object, sExt As String)
 	Else
 		If oContent.supportsService( textGraphService ) Then &apos; Картинки
 			&apos; 1. встроенные в текст или 2. ссылки на них (сами картинки лежат где-то на диске)
-			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
+			If InStr( URL, &quot;file:/&quot; ) &gt; 0 Then &apos; есть полный URL
 				&apos; Ссылки на картинки - Картинка находится не внутри файла, а где-то на диске
-				&apos; oContent.GraphicUrl=&quot;file:///....&quot;. oContent.Graphic = Null
-				sFileNameURL = ConvertFromURL( oContent.GraphicUrl )
+				&apos; URL=&quot;file:///....&quot;. oContent.Graphic = Null
+				sFileNameURL = ConvertFromURL( URL )
 				&apos; Доделать - преобразование файла в png или jpj (как в настройках), и копирование его в рабочую временную папку
 				If FileExists( sFileNameURL ) Then
 					FileCopy sFileNameURL, GetOOoFBToolsImageURL( sExt ) &apos; на случай, если путь к папке с файлами имеет пробелы и русские буквы
 				End If
 				sFileNameURL = GetOOoFBToolsImageURL( sExt )
-			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
-					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
-				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+			ElseIf InStr( URL, &quot;http:/&quot; ) &gt; 0 Or InStr( URL, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( URL, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+				&apos; URL=&quot;http:///....&quot; или URL=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			Else
 				&apos; Картинка &quot;встроена&quot; в файл:
-				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+				&apos; URL=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 				sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 				ExportGraphicToFile( oContent, sFileNameURL, sExt )
 			End If
 		ElseIf isTextEmbeddedObject( oContent ) Then &apos; OLE (Диаграммы) или Formula: (ImplementationName = &quot;SwXTextEmbeddedObject&quot;)
-			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+			&apos; URL отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			sFileNameURL = GetOOoFBToolsImageURL( sExt ) &apos; путь к будущему mime-файлу в зависимости от системы
 			ExportGraphicToFile( oContent, sFileNameURL, sExt )
 		End If
@@ -289,6 +307,13 @@ End Function
 
 &apos; экспорт картинки в файл
 Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt As String )
+	Dim URL As String
+	If OOoWriterVersion() &lt; &quot;6.1&quot; Then
+		URL = oContent.GraphicUrl
+	Else
+		URL = oContent.Graphic.OriginURL
+	End If
+	
 	Dim textGraphService	As String : textGraphService	= &quot;com.sun.star.text.TextGraphicObject&quot;
 	Dim graphicService		As String : graphicService		= &quot;com.sun.star.drawing.GraphicObjectShape&quot;
 
@@ -296,13 +321,13 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 	Dim oGraphic As Object
 
 	If oContent.ShapeType = graphicService Then
-		If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
+		If InStr( URL, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
 			&apos; Картинка &quot;встроена&quot; в файл:
-			&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+			&apos; URL=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 			oGraphic = oContent.Graphic
-		ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
-					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
-			&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+		ElseIf InStr( URL, &quot;http:/&quot; ) &gt; 0 Or InStr( URL, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( URL, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+			&apos; URL=&quot;http:///....&quot; или URL=&quot;ftp:///....&quot;. oContent.Graphic = Null
 			&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 		End If
 	ElseIf isVectorGraphic( oContent ) Then
@@ -310,17 +335,17 @@ Sub ExportGraphicToFile( oContent As Object, sFileNameURL As String, ByVal sExt 
 		oGraphic = oContent.Bitmap
 	Else
 		If oContent.supportsService( textGraphService ) Then &apos; Картинки
-			If InStr( oContent.GraphicUrl, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
+			If InStr( URL, &quot;file:/&quot; ) = 0 Then &apos; нет полного URL
 				&apos; Картинка &quot;встроена&quot; в файл:
-				&apos; oContent.GraphicUrl=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
+				&apos; URL=&quot;vnd.sun.star.GraphicObject:...&quot;. Данные находятся в oContent.Graphic
 				oGraphic = oContent.Graphic
-			ElseIf InStr( oContent.GraphicUrl, &quot;http:/&quot; ) &gt; 0 Or InStr( oContent.GraphicUrl, &quot;ftp:/&quot; ) &gt; 0 Or _
-					InStr( oContent.GraphicUrl, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
-				&apos; oContent.GraphicUrl=&quot;http:///....&quot; или oContent.GraphicUrl=&quot;ftp:///....&quot;. oContent.Graphic = Null
+			ElseIf InStr( URL, &quot;http:/&quot; ) &gt; 0 Or InStr( URL, &quot;ftp:/&quot; ) &gt; 0 Or _
+					InStr( URL, &quot;https:/&quot; ) &gt; 0 Then &apos; полный URL - указатель на сайт
+				&apos; URL=&quot;http:///....&quot; или URL=&quot;ftp:///....&quot;. oContent.Graphic = Null
 				&apos; ничего не делаем - до картинки &quot;не добраться&quot;
 			End If
 		ElseIf isTextEmbeddedObject( oContent ) Then &apos;OLE (Диаграммы) или Formula: (ImplementationName = &quot;SwXTextEmbeddedObject&quot;)
-			&apos; oContent.GraphicUrl отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
+			&apos; URL отсутствует. oContent.Graphic отсутствует. Данные находятся в oContent.ReplacementGraphic.
 			oGraphic = oContent.ReplacementGraphic
 		Else
 			
