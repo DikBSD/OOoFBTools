@@ -2175,21 +2175,136 @@ End Sub
 &apos; =============================================================================================
 &apos; Вставка пробела между русским словом и цифрой (30машин, домов25)
 Sub InsertSpaceBetweenNumLetter( oDoc, oReplace )
-&apos;	With oReplace
-&apos;		.SearchString	= &quot;([0-9]+)([а-яА-ЯёЁ]{2,})&quot;
-&apos;		.ReplaceString	= &quot;$1 $2&quot;
-&apos;	End With
-&apos;	oDoc.ReplaceAll(oReplace)
-&apos;	With oReplace
-&apos;		.SearchString	= &quot;([а-яА-ЯёЁ]+)([0-9]+)&quot;
-&apos;		.ReplaceString	= &quot;$1 $2&quot;
-&apos;	End With
-&apos;	oDoc.ReplaceAll(oReplace)
+	Dim oTextCursor As Object, vFound As Variant, i As Integer
 	
-	Dim oTextCursor As Object : oTextCursor = oDoc.Text.createTextCursor()
-	oTextCursor.gotoStart( False ) &apos; на начало документа
+	&apos; ***** обработка FootNotes *****
+	Dim nFootnoteCount As Integer : nFootnoteCount = ThisComponent.getFootNotes().getCount() 
+	Dim oFootNote As Object
+	
 	&apos; поиск числа, слившихся со следующим за этим числом словом
-	Dim vFound As Variant : vFound = FindNumbersText( oTextCursor )
+	For i=0 To nFootnoteCount-1
+		oFootNote = oDoc.getFootNotes().getByIndex(i)
+		oTextCursor = oFootNote.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindNumbersText( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindNumbersText( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; поиск числа, слившихся с предыдущим до этого числа словом
+	For i=0 To nFootnoteCount-1
+		oFootNote = oDoc.getFootNotes().getByIndex(i)
+		oTextCursor = oFootNote.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindTextNumbers( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindTextNumbers( oTextCursor )
+			Loop
+		End If
+	Next i
+
+	&apos; ***** обработка EndNotes *****
+	Dim nEndNoteCount As Integer : nEndNoteCount = ThisComponent.getEndnotes().getCount() 
+	Dim oEndNote As Object
+	
+	&apos; поиск числа, слившихся со следующим за этим числом словом
+	For i=0 To nEndNoteCount-1
+		oEndNote = oDoc.getEndnotes().getByIndex(i)
+		oTextCursor = oEndNote.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindNumbersText( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindNumbersText( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; поиск числа, слившихся с предыдущим до этого числа словом
+	For i=0 To nEndNoteCount-1
+		oEndNote = oDoc.getEndNotes().getByIndex(i)
+		oTextCursor = oEndNote.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindTextNumbers( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindTextNumbers( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; ***** обработка таблиц *****
+	Dim nTextTableCount As Integer : nTextTableCount = ThisComponent.getTextTables().getCount() 
+	Dim oTextTable As Object, oCell As Object
+	
+	&apos; поиск числа, слившихся со следующим за этим числом словом
+	For i=0 To nTextTableCount-1
+		oTextTable = oDoc.getTextTables().getByIndex(i)
+		oCell = oTextTable.getCellByName(&quot;A1&quot;)
+		oTextCursor = oCell.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindNumbersText( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindNumbersText( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; поиск числа, слившихся с предыдущим до этого числа словом
+	For i=0 To nTextTableCount-1
+		oTextTable = oDoc.getTextTables().getByIndex(i)
+		oCell = oTextTable.getCellByName(&quot;A1&quot;)
+		oTextCursor = oCell.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindTextNumbers( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindTextNumbers( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; ***** обработка врезок *****
+	Dim nTextFrameCount As Integer : nTextFrameCount = ThisComponent.getTextFrames().getCount() 
+	Dim oTextFrame As Object
+	
+	&apos; поиск числа, слившихся со следующим за этим числом словом
+	For i=0 To nTextFrameCount-1
+		oTextFrame = oDoc.getTextFrames().getByIndex(i)
+		oTextCursor = oTextFrame.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindNumbersText( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindNumbersText( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; поиск числа, слившихся с предыдущим до этого числа словом
+	For i=0 To nTextFrameCount-1
+		oTextFrame = oDoc.getTextFrames().getByIndex(i)
+		oTextCursor = oTextFrame.createTextCursor()
+		oTextCursor.gotoStart( False ) &apos; на начало текста
+		vFound = FindTextNumbers( oTextCursor )
+		If Not IsNull( vFound ) Then
+			Do While ( Not IsNull( vFound ) )
+				vFound = FindTextNumbers( oTextCursor )
+			Loop
+		End If
+	Next i
+	
+	&apos; **** текст ***
+	oTextCursor = oDoc.Text.createTextCursor()
+	
+	&apos; поиск числа, слившихся со следующим за этим числом словом
+	oTextCursor.gotoStart( False ) &apos; на начало документа
+	vFound = FindNumbersText( oTextCursor )
 	If Not IsNull( vFound ) Then
 		Do While ( Not IsNull( vFound ) )
 			vFound = FindNumbersText( oTextCursor )
@@ -2217,15 +2332,20 @@ Function FindNumbersText( oTextCursor As Object ) As Variant
 	
 	Dim vFound As Variant : vFound = ThisComponent.findNext( oTextCursor, oSearch )
 	If Not IsNull(vFound) Then
-&apos;		On Error Resume Next
-		If Not IsEmpty( vFound.TextFrame ) Then 
-			Dim oCursor As Variant : oCursor = vFound.Text.createTextCursorByRange( vFound.End )
-			oTextCursor = oCursor
+		Dim oTextCursEdit As Object : oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.Start )
+		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела
+		If ExtendFoundToAllNumbers( oTextCursEdit ) = True Then
+			vFound.String = Left(vFound.String, Len(oTextCursEdit.String)) + &quot; &quot; + Right(vFound.String, Len(vFound.String) - Len(oTextCursEdit.String))
+			oTextCursor.collapseToEnd()
+			FindNumbersText = NULL
+			Exit Function
 		End If
+		
 		oTextCursor.gotoRange( vFound, False )
 		oTextCursor.collapseToEnd()
-		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела.
-		Dim oTextCursEdit As Object : oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.Start )
+		
+		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела
+		oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.Start )
 		If ExtendFoundToAllNumbers( oTextCursEdit ) = True Then
 			oTextCursEdit.String = oTextCursEdit.String + &quot; &quot;
 		End If
@@ -2269,15 +2389,20 @@ Function FindTextNumbers( oTextCursor As Object ) As Variant
 	
 	Dim vFound As Variant : vFound = ThisComponent.findNext( oTextCursor, oSearch )
 	If Not IsNull(vFound) Then
-&apos;		On Error Resume Next
-		If Not IsEmpty( vFound.TextFrame ) Then 
-			Dim oCursor As Variant : oCursor = vFound.Text.createTextCursorByRange( vFound.End )
-			oTextCursor = oCursor
+		Dim oTextCursEdit As Object : oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.End )
+		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела
+		If CollapsFoundToAllNumbers( oTextCursEdit ) = True Then
+			vFound.String = Left(vFound.String, Len(vFound.String) - Len(oTextCursEdit.String) ) + &quot; &quot; + oTextCursEdit.String
+			oTextCursor.collapseToEnd()
+			FindTextNumbers = NULL
+			Exit Function
 		End If
+		
 		oTextCursor.gotoRange( vFound, False )
 		oTextCursor.collapseToEnd()
-		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела.
-		Dim oTextCursEdit As Object : oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.End )
+		
+		&apos; проверка, число - в верхнем индексе. Если да, то - пропускаем. Иначе - вставка пробела
+		oTextCursEdit = vFound.Text.createTextCursorByRange( vFound.End )
 		If CollapsFoundToAllNumbers( oTextCursEdit ) = True Then
 			oTextCursEdit.String = &quot; &quot; + oTextCursEdit.String
 		End If
@@ -2558,7 +2683,7 @@ Function DeleteAllPageBreaks() As Integer
 	oCursor.GoToStart(False)
 	Do
 		If NOT oCursor.gotoEndOfParagraph(True) Then Exit Do
-		If NOT IsEmpty(oCursor.PageDescName) Then oCursor.PageDescName = &quot;&quot;
+		&apos;If NOT IsEmpty(oCursor.PageDescName) Then oCursor.PageDescName = &quot;&quot;
 		If oCursor.BreakType &lt;&gt; com.sun.star.style.BreakType.NONE Then
 			oCursor.BreakType = com.sun.star.style.BreakType.NONE
 			lCount = lCount + 1
@@ -2589,12 +2714,12 @@ End Sub
 &apos; ///////////////////////////////////////////////////////////////////////////////////////////
 &apos; удаление переноса, разорванного абзацем (обработка слов с дефисами и простых слов) в тексте)
 Sub JoinWordDefisParaInText( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar As Object )
-	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
+	Dim oDoc As Object : oDoc = ThisComponent
+	Dim vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
-	Dim oDoc As Object, l As Long
-	oDoc = ThisComponent
+	Dim l As Long
 	
-	vSearch = oDoc.createSearchDescriptor()
+	Dim vSearch As Variant : vSearch = oDoc.createSearchDescriptor()
 	&apos; поиск с регулярными выражениями
 	With vSearch
 		.SearchRegularExpression = True
@@ -2660,9 +2785,9 @@ End Sub
 Sub JoinWordDefisParaInTables( bDefisWordDelOnlyPara, bDefisWordDeAll, oProgressBar As Object )
 	Dim vSearch As Variant, vStartFound As Variant, vEndFound As Variant &apos; для поиска границ слова
 	Dim vL As Variant, vR As Variant &apos; только для чтения слова
-	Dim oDoc As Object, oTable As Object, oCell As Object
+	Dim oTable As Object, oCell As Object
 	Dim nTablesCount As Integer, i As Integer, l As Long
-	oDoc = ThisComponent
+	Dim oDoc As Object : oDoc = ThisComponent
 	nTablesCount = ThisComponent.getTextTables().getCount() 
 	For i=0 To nTablesCount-1
 		oTable = oDoc.getTextTables().getByIndex(i)
