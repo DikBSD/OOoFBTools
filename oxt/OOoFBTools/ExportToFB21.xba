@@ -403,7 +403,7 @@ Sub ExportDoc()
         	Dim Script As String
         	If GetOS() = &quot;WIN&quot; Then &apos; Для Windows
         		&apos;Script = WindowsZipPath() &amp; &quot; a -tzip -mx7 &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot;
-				Script = &quot;zip &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot;
+				Script = &quot;zip -j -9&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; FB2Zip &amp; &quot;&quot;&quot;&quot; &amp; &quot; &quot; &amp; &quot;&quot;&quot;&quot; &amp; NewTranslatedPath &amp; &quot;&quot;&quot;&quot;
         	    Shell( Script, 2, &quot;&quot;, true ) &apos; 2 - окно консоли &quot;свернуто&quot;
         	ElseIf GetOS() = &quot;UNIX&quot; Then &apos; для Nix систем
         		Script = &quot;#!/bin/sh&quot; &amp; chr(10) &amp; &quot;/usr/bin/python -c &quot;&quot;import zipfile; import zlib; z = zipfile.ZipFile(&apos;&quot; &amp; FB2Zip &amp; &quot;&apos;, &apos;w&apos;, zipfile.ZIP_DEFLATED, zlib.Z_BEST_COMPRESSION); z.write(&apos;&quot; &amp; NewTranslatedPath &amp; &quot;&apos;, &apos;&quot; &amp; TranlitFB2Name &amp; &quot;&apos;); z.close()&quot;&quot;&quot;
