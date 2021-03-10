@@ -116,8 +116,10 @@ Sub FB2PropertiesEditorDlgExec()
 			InitFBLibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
 		ElseIf .obtnFB2Flibusta.State = True Or .obtnFB2Flibusta.State = 1 Then
 			InitFBFlibusta() &apos; Инициализация жанрами схемы FictionBook 2 Flibusta
-		Else
+		ElseIf  .obtnFB2Union.State = True Or .obtnFB2Union.State = 1 Then
 			InitFBUnion() &apos; Инициализация жанрами объединенной схемы FictionBook 2 (LibRusEc &amp; Flibusta)
+		Else
+			InitFBCoolLibLitVek() &apos; Инициализация жанрами схемы FictionBook 2 (CoolLib и LitVek)
 		End If
 	End With
 	oProgressBar.setValue(4)
@@ -245,6 +247,18 @@ Sub InitFBUnion()
 
 	With oFB2PropertiesDlg.Model
 		.Title = sFB2PED.sFB2PropEditorDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB2Union
+		.GenreComboBox.StringItemList = sGLN()
+	End With
+End Sub
+
+
+&apos;***************************************************************************
+&apos; Инициализация жанрами схемы FictionBook 2 (CoolLib &amp; LitVek)
+Sub InitFBCoolLibLitVek()
+	GenreFB2CoolLibLitVek()
+
+	With oFB2PropertiesDlg.Model
+		.Title = sFB2PED.sFB2PropEditorDlgTitle &amp; &quot; - &quot; &amp; sGD.sSchemeFB2CoolLibLitVek
 		.GenreComboBox.StringItemList = sGLN()
 	End With
 End Sub
@@ -1772,6 +1786,19 @@ Sub GenreFB2Union()
 
 End Sub
 
+&apos; жанры схемы fb2 (CoolLib &amp; LitVek) - Инициализация жанрами схемы FictionBook 2
+Sub GenreFB2CoolLibLitVek()
+	Dim GenresoolLibLitVekFileName As String
+	If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
+		GenresoolLibLitVekFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-coollib_litvek-schema/coollib_litvek_genres_ru.txt&quot;
+	Else
+		GenresoolLibLitVekFileName = getRootStorage( &quot;DikBSD.OOoFBTools&quot; ) &amp; &quot;/fb2-coollib_litvek-schema/coollib_litvek_genres_en.txt&quot;
+	End If
+	
+	makeGenreList( GenresoolLibLitVekFileName )
+
+End Sub
+
 &apos; формирования выпадающегно списка жанров в зависимости от схемы
 Sub makeGenreList( ByRef FileName As String )
 	Dim oSFA As Object	: oSFA	= createUnoService ( &quot;com.sun.star.ucb.SimpleFileAccess&quot; )
@@ -1843,6 +1870,7 @@ Type tGenreData
 	sSchemeFB2LibRusEc			As String &apos; схема fb2 LibRusEc
 	sSchemeFB2Flibusta			As String &apos; схема fb2 Flibusta
 	sSchemeFB2Union				As String &apos; Объединенная схема fb2 (LibRusEc &amp; Flibusta)
+	sSchemeFB2CoolLibLitVek     As String &apos; схема fb2 (CoolLib &amp; LitVek)
 	&apos; Избранные Жанры
 	sGenreElite					As String &apos; Избранные Жанры
 	sGenreEliteAdd				As String &apos; Добавление Жанра в Избранное
@@ -1977,6 +2005,7 @@ Sub InitFB2PropertiesDlg()
 			.obtnFB2LibRusEc.HelpText		= &quot;Переключение на жанры схемы FictionBook 2 Либрусек&quot;
 			.obtnFB2Flibusta.HelpText		= &quot;Переключение на жанры схемы FictionBook 2 Флибуста&quot;
 			.obtnFB2Union.HelpText			= &quot;Переключение на жанры объединенной схемы FictionBook 2 (Либрусек и Флибуста)&quot;
+			.obtnFB2CoolLibLitVek.HelpText	= &quot;Переключение на жанры FictionBook 2 (CoolLib и LitVek)&quot;
 			.SetPropertiesInDocCmdBtn.Label	= &quot;Сохранить FB2 свойства&quot;
 			.CancelButton.Label		= &quot;Отмена&quot;
 		End With
@@ -2081,6 +2110,7 @@ Sub InitFB2PropertiesDlg()
 			.obtnFB2LibRusEc.HelpText		= &quot;Switching on Genres of Scheme FictionBook 2 LibRusEc&quot;
 			.obtnFB2Flibusta.HelpText		= &quot;Switching on Genres of Scheme FictionBook 2 Flibusta&quot;
 			.obtnFB2Union.HelpText			= &quot;Switching on Genres of Union Scheme FictionBook 2 (LibRusEc &amp; Flibusta)&quot;
+			.obtnFB2CoolLibLitVek.HelpText	= &quot;Switching on Genres of Scheme FictionBook 2 (CoolLib и LitVek)&quot;
 			.SetPropertiesInDocCmdBtn.Label	= &quot;Save fb2 Properties&quot;
 			.CancelButton.Label		= &quot;Cancel&quot;
 		End With
@@ -2184,6 +2214,7 @@ Sub InitGenreMessage()
 			.sSchemeFB2LibRusEc			= &quot;схема fb2 Либрусек&quot;
 			.sSchemeFB2Flibusta			= &quot;схема fb2 Флибуста&quot;
 			.sSchemeFB2Union			= &quot;Объединенная схема fb2&quot;
+			.sSchemeFB2CoolLibLitVek    = &quot;Схема fb2 CoolLib &amp; LitVek&quot;
 			&apos; Избранные Жанры
 			.sGenreElite				= &quot;Избранные Жанры&quot;
 			.sGenreEliteAdd				= &quot;Добавление Жанра в Избранное&quot;
@@ -2209,6 +2240,7 @@ Sub InitGenreMessage()
 			.sSchemeFB2LibRusEc			= &quot;fb2 LibRuSec Scheme&quot;
 			.sSchemeFB2Flibusta			= &quot;fb2 Flibusta Scheme&quot;
 			.sSchemeFB2Union			= &quot;fb2 Union Scheme&quot;
+			.sSchemeFB2CoolLibLitVek    = &quot;fb2 Scheme CoolLib &amp; LitVek&quot;
 			&apos; Elite Genres
 			.sGenreElite				= &quot;The Elite Genres&quot;
 			.sGenreEliteAdd				= &quot;Add the Genre to the Elite Genres List&quot;

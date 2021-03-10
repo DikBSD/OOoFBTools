@@ -16,14 +16,14 @@ Sub cbtnGenreElite_Click()
 	
 	With oGEDlg.Model
 		.Height	= 165
-		.Width	= 261
+		.Width	= 325
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
 	&apos; считаем положение диалога из файла настроек
 	Dim nX As Integer, nY As Integer
 	ReadDlgSettings( getOOoFBToolsSettingsDir() &amp; sConstMyGenreSettings, oGEDlg, nX, nY )
-	oGEDlg.setPosSize( nX, nY, 165, 261, com.sun.star.awt.PosSize.POS )
+	oGEDlg.setPosSize( nX, nY, 165, 325, com.sun.star.awt.PosSize.POS )
 	
 	&apos; читаем избранные жанры из файла, если он есть
 	Dim aArray() As String
@@ -37,8 +37,10 @@ Sub cbtnGenreElite_Click()
 		InitGEFB2LibRusEc() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
 	ElseIf oGEDlg.Model.obtnGEFB2Flibusta.State = True Or oGEDlg.Model.obtnGEFB2Flibusta.State = 1 Then
 		InitGEFB2Flibusta() &apos; Инициализация жанрами схемы FictionBook 2 LibRusEc
-	Else
+	ElseIf oGEDlg.Model.obtnGEFB2Union.State = True Or oGEDlg.Model.obtnGEFB2Union.State = 1 Then
 		InitGEFB2Union() &apos; Инициализация жанрами Объединенной схемы FictionBook 2 (LibRusEc &amp; LibRusEc)
+	Else
+		InitGEFB2CoolLibLitVek() &apos; Инициализация жанрами (CoolLib &amp; LitVek)
 	End If
 	
 	oGEDlg.execute()
@@ -83,6 +85,17 @@ Sub InitGEFB2Union()
 
 	With oGEDlg.Model
 		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB2Union
+		.cboxGE.StringItemList = sGLN()
+	End With
+	
+End Sub
+
+&apos; Инициализация диалога работы со списком Избранных Жанров жанрами (CoolLib &amp; LitVek)
+Sub InitGEFB2CoolLibLitVek()
+	GenreFB2CoolLibLitVek()
+
+	With oGEDlg.Model
+		.Title = sGD.sGenreElite &amp; &quot; - &quot; &amp; sGD.sSchemeFB2CoolLibLitVek
 		.cboxGE.StringItemList = sGLN()
 	End With
 	
@@ -227,6 +240,7 @@ Sub InitGenreFavoritesDlg()
 			.obtnGEFB2LibRuSec.HelpText	= &quot;Переключение на жанры схемы FictionBook 2 Либрусек&quot;
 			.obtnGEFB2Flibusta.HelpText	= &quot;Переключение на жанры схемы FictionBook 2 Флибуста&quot;
 			.obtnGEFB2Union.HelpText	= &quot;Переключение на жанры объединенной схемы FictionBook 2 (Либрусек и Флибуста)&quot;
+			.obtnGECoolLibLitVek.HelpText	= &quot;Переключение на жанры FictionBook 2 (CoolLib и LitVek)&quot;
 			.lblGEGenre.Label		= &quot;Жанр:&quot;
 			.lblGEElite.Label		= &quot;Избранное:&quot;
 			.cbtnGEAdd.Label		= &quot;Добавить&quot;
@@ -242,6 +256,7 @@ Sub InitGenreFavoritesDlg()
 			.obtnGEFB2LibRuSec.HelpText	= &quot;Switching on genres of Librusec FictionBook 2 Scheme&quot;
 			.obtnGEFB2Flibusta.HelpText	= &quot;Switching on genres of Flibusta FictionBook 2 Scheme&quot;
 			.obtnGEFB2Union.HelpText	= &quot;Switching on genres of Union Librusec &amp; Flibusta FictionBook 2 Scheme&quot;
+			.obtnGECoolLibLitVek.HelpText	= &quot;Switching on Genres of Scheme FictionBook 2 (CoolLib и LitVek)&quot;
 			.lblGEGenre.Label		= &quot;The Genre:&quot;
 			.lblGEElite.Label		= &quot;The Selected Works:&quot;
 			.cbtnGEAdd.Label		= &quot;Add&quot;

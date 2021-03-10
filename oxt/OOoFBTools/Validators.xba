@@ -21,13 +21,13 @@ Sub StartValidate()
 
     With oValidateDlg.getModel
         .Height    = 68
-        .Width    = 270
+        .Width    = 328
     End With
     
     &apos; считаем положение диалога из файла настроек
     Dim nX As Integer, nY As Integer
     ReadDlgSettings( sValidatorSettingsFilename, oValidateDlg, nX, nY )
-    oValidateDlg.setPosSize( nX, nY, 68, 270, com.sun.star.awt.PosSize.POS )
+    oValidateDlg.setPosSize( nX, nY, 68, 328, com.sun.star.awt.PosSize.POS )
     
     If GetOS() = &quot;UNIX&quot; Then
     	_xmlPath = UnixXmllintPath() &apos; утилита xmllint для Unix-систем
@@ -117,6 +117,12 @@ Sub FB2Validate()
                 sFB2SchemaPath = &quot;\fb2-union-schema\FictionBook.xsd&quot;
             Else
                 sFB2SchemaPath = &quot;/fb2-union-schema/FictionBook.xsd&quot;
+            End If
+        ElseIf .optbtnFB2CoolLibLitVek.State = True Or .optbtnFB2CoolLibLitVek.State = 1 Then
+            If GetOS() = &quot;WIN&quot; Then
+                sFB2SchemaPath = &quot;\fb2-coollib_litvek-schema\FictionBook.xsd&quot;
+            Else
+                sFB2SchemaPath = &quot;/fb2-coollib_litvek-schema/FictionBook.xsd&quot;
             End If
         End If
     End With
@@ -246,13 +252,13 @@ End Function
 &apos; ==========================================================
 &apos; для хранения сообщений для диалога Валидатора
 Type tValidatorsDlgData
-    sChooseFB2File                As String &apos; Выберите fb2 файл...
+    sChooseFB2File              As String &apos; Выберите fb2 файл...
     sChooseFB2FileToValidate    As String &apos; Выберите fb2 файл для валидации
-    sFileNotExists                As String &apos; Файл не найден
+    sFileNotExists              As String &apos; Файл не найден
     sFB2FileValidate            As String &apos; Валидация fb2-файла
-    sNoErrors                    As String &apos; Ошибок валидации файла не обнаружено:
-    sErrors                        As String &apos; Найдены ошибки валидации файла:
-    sValidatorTitle                As String &apos; Результат вадидации
+    sNoErrors                   As String &apos; Ошибок валидации файла не обнаружено:
+    sErrors                     As String &apos; Найдены ошибки валидации файла:
+    sValidatorTitle             As String &apos; Результат вадидации
 End Type
 
 Public sVD As tValidatorsDlgData
@@ -266,14 +272,14 @@ Sub InitValidateDlg()
     
     If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
         With oValidateDlg.getModel
-            .lblValidFB2Open.Label    = &quot;Открыть файл:&quot;
-            .cmdbtnValCancel.Label    = &quot;Отмена&quot;
+            .lblValidFB2Open.Label   = &quot;Открыть файл:&quot;
+            .cmdbtnValCancel.Label   = &quot;Отмена&quot;
             .cmdbtnValidate.Label    = &quot;Проверить&quot;
         End With
     Else
         With oValidateDlg.getModel
-            .lblValidFB2Open.Label    = &quot;Open the File:&quot;
-            .cmdbtnValCancel.Label    = &quot;Cancel&quot;
+            .lblValidFB2Open.Label   = &quot;Open the File:&quot;
+            .cmdbtnValCancel.Label   = &quot;Cancel&quot;
             .cmdbtnValidate.Label    = &quot;Check&quot;
         End With
     End If
@@ -283,21 +289,21 @@ End Sub
 Sub InitValidateDlgMessage()
     If getOOoLocal() = &quot;ru&quot; OR getOOoLocal() = &quot;uk&quot; Then
         With sVD
-            .sFB2FileValidate            = &quot;Валидация fb2-файла&quot;
-            .sFileNotExists                = &quot;Файл не найден:&quot;
-            .sChooseFB2File                = &quot;Выберите fb2 файл...&quot;
-            .sChooseFB2FileToValidate    = &quot;Выберите fb2 файл для валидации&quot;
-            .sNoErrors                    = &quot;Ошибок валидации файла не обнаружено!&quot;
+            .sFB2FileValidate           = &quot;Валидация fb2-файла&quot;
+            .sFileNotExists             = &quot;Файл не найден:&quot;
+            .sChooseFB2File             = &quot;Выберите fb2 файл...&quot;
+            .sChooseFB2FileToValidate   = &quot;Выберите fb2 файл для валидации&quot;
+            .sNoErrors                  = &quot;Ошибок валидации файла не обнаружено!&quot;
             .sErrors                    = &quot;Найдены ошибки валидации файла:&quot;
             .sValidatorTitle            = &quot;Результат вадидации&quot;
         End With
     Else
         With sVD
-            .sFB2FileValidate            = &quot;Validate the fb2 File&quot;
-            .sFileNotExists                = &quot;File Not Exists:&quot;
-            .sChooseFB2File                = &quot;Choose the fb2 File...&quot;
-            .sChooseFB2FileToValidate    = &quot;Choose the fb2 File for Validate&quot;
-            .sNoErrors                    = &quot;Validation errors is not found!&quot;
+            .sFB2FileValidate           = &quot;Validate the fb2 File&quot;
+            .sFileNotExists             = &quot;File Not Exists:&quot;
+            .sChooseFB2File             = &quot;Choose the fb2 File...&quot;
+            .sChooseFB2FileToValidate   = &quot;Choose the fb2 File for Validate&quot;
+            .sNoErrors                  = &quot;Validation errors is not found!&quot;
             .sErrors                    = &quot;Found the error validation:&quot;
             .sValidatorTitle            = &quot;Result of validation&quot;
         End With
