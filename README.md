@@ -7,12 +7,15 @@
 
 Т.е. внутренняя структура OOoFBTools.oxt должна быть такой:
 
+OOoFBTools.oxt/fb2-coollib_litvek-schema
+
 OOoFBTools.oxt/fb2-flibusta-schema
 
 OOoFBTools.oxt/fb2-librusec-schema
 
 OOoFBTools.oxt/fb2-schema
 
+OOoFBTools.oxt/fb2-union-schema
 ...
 
 OOoFBTools.oxt/Addons.xcu
