@@ -482,7 +482,7 @@ End Sub
 &apos; определяем. какая схема жанров использовалась для конвертации
 Function GetWorkFB2Schema() As String
 	On Error Resume Next
-	Dim sFB21 As String, sFB2LibRusEc As String, sFB2Flibusta As String, sFBUnion As String
+	Dim sFB21 As String, sFB2LibRusEc As String, sFB2Flibusta As String, sFBUnion As String, sFBCoolLib As String
 	sFB21 = &quot;0&quot; : sFB2LibRusEc = &quot;0&quot; : sFB2Flibusta = &quot;0&quot; : sFBUnion = &quot;0&quot;
 	Dim sFileName As String : sFileName = getOOoFBToolsSettingsDir() &amp; sConstFB2PropEditorSettings
 	Dim nX As Long, nY As Long
@@ -510,6 +510,8 @@ Function GetWorkFB2Schema() As String
 					sFB2Flibusta = sSetting(1)
 				ElseIf sSetting(0) = &quot;obtnFB2Union&quot; Then
 					sFBUnion = sSetting(1)
+				ElseIf sSetting(0) = &quot;obtnFB2CoolLibLitVek&quot; Then
+					sFBCoolLib = sSetting(1)
 				End If
 			End If
 		Loop
@@ -523,6 +525,8 @@ Function GetWorkFB2Schema() As String
 			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-flibusta-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 		ElseIf sFBUnion = 1 Then
 			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-union-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
+		ElseIf sFBCoolLib = 1 Then
+			GetWorkFB2Schema = NativeSeparator() &amp; &quot;fb2-coollib_litvek-schema&quot; &amp; NativeSeparator() &amp; &quot;FictionBook.xsd&quot;
 		End If
 	End If
 End Function
